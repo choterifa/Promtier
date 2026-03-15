@@ -20,7 +20,28 @@ struct PreferencesView: View {
     @State private var showingResetAlert = false
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Header con título y botón de cerrar
+            HStack {
+                Text("Preferencias")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape)
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            // TabView sin NavigationView
             TabView {
                 // Tab de Apariencia
                 AppearanceTab()
@@ -61,17 +82,8 @@ struct PreferencesView: View {
                         Label("Avanzado", systemImage: "slider.horizontal.3")
                     }
             }
-            .navigationTitle("Preferencias")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Cerrar") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.escape)
-                }
-            }
         }
-        .frame(width: 700, height: 500)
+        .frame(width: 800, height: 600) // Ventana más grande y espaciosa
         .sheet(isPresented: $showingExportSheet) {
             ExportView()
         }
@@ -291,32 +303,35 @@ struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
-            VStack {
-                Text("Exportar Datos")
-                    .font(.title2)
-                
-                Text("Selecciona qué datos deseas exportar:")
-                    .foregroundColor(.secondary)
-                
-                // TODO: Implementar opciones de exportación
+        VStack(spacing: 24) {
+            Text("Exportar Datos")
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            Text("Selecciona qué datos deseas exportar:")
+                .font(.body)
+                .foregroundColor(.secondary)
+            
+            // TODO: Implementar opciones de exportación
+            
+            Spacer()
+            
+            HStack {
+                Button("Cancelar") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
                 
                 Spacer()
                 
-                HStack {
-                    Button("Cancelar") {
-                        dismiss()
-                    }
-                    Spacer()
-                    Button("Exportar") {
-                        // TODO: Implementar exportación
-                        dismiss()
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button("Exportar") {
+                    // TODO: Implementar exportación
+                    dismiss()
                 }
+                .buttonStyle(.borderedProminent)
             }
-            .padding()
         }
+        .padding(24)
         .frame(width: 400, height: 300)
     }
 }
@@ -325,32 +340,35 @@ struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
-            VStack {
-                Text("Importar Datos")
-                    .font(.title2)
-                
-                Text("Arrastra un archivo JSON aquí o selecciónalo:")
-                    .foregroundColor(.secondary)
-                
-                // TODO: Implementar importación
+        VStack(spacing: 24) {
+            Text("Importar Datos")
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            Text("Arrastra un archivo JSON aquí o selecciónalo:")
+                .font(.body)
+                .foregroundColor(.secondary)
+            
+            // TODO: Implementar importación
+            
+            Spacer()
+            
+            HStack {
+                Button("Cancelar") {
+                    dismiss()
+                }
+                .buttonStyle(.bordered)
                 
                 Spacer()
                 
-                HStack {
-                    Button("Cancelar") {
-                        dismiss()
-                    }
-                    Spacer()
-                    Button("Importar") {
-                        // TODO: Implementar importación
-                        dismiss()
-                    }
-                    .buttonStyle(.borderedProminent)
+                Button("Importar") {
+                    // TODO: Implementar importación
+                    dismiss()
                 }
+                .buttonStyle(.borderedProminent)
             }
-            .padding()
         }
+        .padding(24)
         .frame(width: 400, height: 300)
     }
 }

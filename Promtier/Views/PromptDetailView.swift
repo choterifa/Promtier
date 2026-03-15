@@ -31,30 +31,34 @@ struct PromptDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header principal
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             Text(prompt.title)
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 28, weight: .bold))
                             
                             Spacer()
                             
                             if prompt.isFavorite {
                                 Image(systemName: "star.fill")
                                     .foregroundColor(.yellow)
+                                    .font(.title2)
                             }
                         }
                         
                         if let description = prompt.description, !description.isEmpty {
                             Text(description)
-                                .font(.system(size: 16))
+                                .font(.system(size: 18))
                                 .foregroundColor(.secondary)
+                                .padding(.top, 4)
                         }
                         
-                        HStack(spacing: 16) {
+                        HStack(spacing: 20) {
                             Label("\(prompt.useCount) usos", systemImage: "arrow.counterclockwise")
+                                .font(.subheadline)
                             
                             if let folder = prompt.folder {
                                 Label(folder, systemImage: "folder")
+                                    .font(.subheadline)
                             }
                             
                             Spacer()
@@ -65,20 +69,23 @@ struct PromptDetailView: View {
                         }
                         .font(.caption)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                     
                     Divider()
                     
                     // Contenido del prompt
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("Contenido")
-                            .font(.headline)
+                            .font(.title2)
                         
                         Text(prompt.content)
-                            .font(.system(size: 16, design: .monospaced))
-                            .padding()
+                            .font(.system(size: 18, design: .monospaced)) // Texto más grande
+                            .padding(20)
                             .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
+                            .cornerRadius(12)
                     }
+                    .padding(.horizontal, 24)
                     
                     // Variables de plantilla
                     if !extractedTemplateVariables.isEmpty {
@@ -223,7 +230,7 @@ struct PromptDetailView: View {
                 Text("¿Estás seguro de que deseas eliminar este prompt? Esta acción no se puede deshacer.")
             }
         }
-        .frame(width: 700, height: 600)
+        .frame(width: 800, height: 700) // Ventana más grande y espaciosa
     }
     
     // MARK: - Métodos

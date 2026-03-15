@@ -34,51 +34,67 @@ struct NewPromptView: View {
         NavigationView {
             Form {
                 // Sección de información básica
-                Section(header: Text("Información Básica")) {
+                Section(header: Text("Información Básica")
+                    .font(.headline)
+                    .padding(.top, 10)) {
                     TextField("Título del prompt", text: $title)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.body)
                     
                     ZStack(alignment: .topLeading) {
                         if content.isEmpty {
                             Text("Contenido del prompt...")
                                 .foregroundColor(.secondary)
-                                .padding(.top, 8)
-                                .padding(.leading, 4)
+                                .padding(.top, 12)
+                                .padding(.leading, 8)
+                                .font(.body)
                         }
                         
                         TextEditor(text: $content)
-                            .frame(minHeight: 120)
+                            .frame(minHeight: 150) // Aumentado altura
+                            .font(.body)
                     }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
                     
                     TextField("Descripción (opcional)", text: $description)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.body)
                 }
+                .padding(.horizontal, 20)
                 
                 // Sección de organización
-                Section(header: Text("Organización")) {
+                Section(header: Text("Organización")
+                    .font(.headline)
+                    .padding(.top, 10)) {
                     // Etiquetas
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Etiquetas")
                             .font(.headline)
                         
-                        HStack {
+                        HStack(spacing: 12) {
                             TextField("Nueva etiqueta", text: $tagInput)
-                                .onSubmit {
-                                    addTag()
-                                }
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .font(.body)
                             
                             Button("Agregar") {
                                 addTag()
                             }
                             .disabled(tagInput.isEmpty)
+                            .buttonStyle(.borderedProminent)
                         }
                         
                         // Tags existentes
                         if !tags.isEmpty {
                             LazyVGrid(columns: [
-                                GridItem(.adaptive(minimum: 80))
-                            ], spacing: 8) {
+                                GridItem(.adaptive(minimum: 100))
+                            ], spacing: 10) {
                                 ForEach(tags, id: \.self) { tag in
-                                    HStack {
+                                    HStack(spacing: 8) {
                                         Text(tag)
+                                            .font(.body)
                                         Spacer()
                                         Button(action: { removeTag(tag) }) {
                                             Image(systemName: "xmark.circle.fill")
@@ -86,8 +102,8 @@ struct NewPromptView: View {
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
                                     .background(Color.blue.opacity(0.1))
                                     .cornerRadius(8)
                                 }
@@ -102,23 +118,29 @@ struct NewPromptView: View {
                             Text(folder).tag(folder as String?)
                         }
                     }
+                    .font(.body)
                     
                     // Favorito
                     Toggle("Marcar como favorito", isOn: $isFavorite)
+                        .font(.body)
                 }
+                .padding(.horizontal, 20)
                 
                 // Sección de vista previa
-                Section(header: Text("Vista Previa")) {
+                Section(header: Text("Vista Previa")
+                    .font(.headline)
+                    .padding(.top, 10)) {
                     if !content.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Vista previa del contenido:")
-                                .font(.caption)
+                                .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
                             Text(content)
-                                .padding()
+                                .padding(16)
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(8)
+                                .font(.body)
                             
                             // Variables encontradas
                             let variables = extractTemplateVariables()
@@ -126,13 +148,16 @@ struct NewPromptView: View {
                                 Text("Variables encontradas: \(variables.joined(separator: ", "))")
                                     .font(.caption)
                                     .foregroundColor(.blue)
+                                    .padding(.top, 8)
                             }
                         }
                     } else {
                         Text("Agrega contenido para ver la vista previa")
                             .foregroundColor(.secondary)
+                            .font(.body)
                     }
                 }
+                .padding(.horizontal, 20)
             }
             .navigationTitle(editingPrompt != nil ? "Editar Prompt" : "Nuevo Prompt")
             .toolbar {
@@ -163,7 +188,7 @@ struct NewPromptView: View {
                 }
             }
         }
-        .frame(width: 600, height: 700)
+        .frame(width: 750, height: 800) // Ventana más grande y espaciosa
     }
     
     // MARK: - Métodos

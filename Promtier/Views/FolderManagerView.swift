@@ -24,11 +24,13 @@ struct FolderManagerView: View {
                 // Lista de carpetas
                 List {
                     ForEach(folders, id: \.self) { folder in
-                        HStack {
+                        HStack(spacing: 16) {
                             Image(systemName: "folder")
                                 .foregroundColor(.blue)
+                                .font(.title2)
                             
                             Text(folder)
+                                .font(.body)
                             
                             Spacer()
                             
@@ -37,10 +39,10 @@ struct FolderManagerView: View {
                             Text("\(count)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
                                 .background(Color.gray.opacity(0.2))
-                                .cornerRadius(8)
+                                .cornerRadius(10)
                             
                             // Botones de acción
                             Menu {
@@ -61,18 +63,22 @@ struct FolderManagerView: View {
                             } label: {
                                 Image(systemName: "ellipsis.circle")
                                     .foregroundColor(.secondary)
+                                    .font(.title3)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.vertical, 4)
                     }
                     .onDelete(perform: deleteFolders)
                 }
+                .listStyle(PlainListStyle())
                 
                 // Sección para agregar nueva carpeta
-                VStack(spacing: 16) {
-                    HStack {
+                VStack(spacing: 20) {
+                    HStack(spacing: 12) {
                         TextField("Nombre de la nueva carpeta", text: $newFolderName)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.body)
                         
                         Button("Agregar") {
                             addFolder()
@@ -82,9 +88,10 @@ struct FolderManagerView: View {
                     }
                     
                     if editingFolder != nil {
-                        HStack {
+                        HStack(spacing: 12) {
                             TextField("Nuevo nombre", text: $newFolderName)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .font(.body)
                             
                             Button("Guardar") {
                                 updateFolder()
@@ -99,7 +106,8 @@ struct FolderManagerView: View {
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
             .navigationTitle("Gestión de Carpetas")
             .toolbar {
@@ -119,7 +127,7 @@ struct FolderManagerView: View {
                 Text(alertMessage)
             }
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 600, height: 500) // Ventana más grande y espaciosa
     }
     
     // MARK: - Métodos

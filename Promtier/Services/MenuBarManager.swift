@@ -78,7 +78,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private func showPopover(relativeTo rect: NSRect, of view: NSView) {
         if popover == nil {
             popover = NSPopover()
-            popover?.contentSize = NSSize(width: 640, height: 480) // CONFIGURABLE: Tamaño por defecto
+            popover?.contentSize = NSSize(width: 700, height: 550) // CONFIGURABLE: Tamaño más grande
             popover?.behavior = .transient
             popover?.animates = true
             popover?.delegate = self

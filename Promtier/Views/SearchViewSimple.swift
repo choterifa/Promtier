@@ -23,12 +23,14 @@ struct SearchViewSimple: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header con búsqueda
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .font(.title2)
                 
                 TextField("Buscar prompts...", text: $searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.body)
                     .onSubmit {
                         if let firstPrompt = promptService.filteredPrompts.first {
                             usePrompt(firstPrompt)
@@ -47,16 +49,18 @@ struct SearchViewSimple: View {
                 
                 Button(action: { showingNewPrompt = true }) {
                     Image(systemName: "plus")
+                        .font(.title2)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 Button(action: { showingPreferences = true }) {
                     Image(systemName: "gear")
+                        .font(.title2)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             
             Divider()
             
@@ -133,7 +137,7 @@ struct SearchViewSimple: View {
                 .listStyle(PlainListStyle())
             }
         }
-        .frame(width: 640, height: 480)
+        .frame(width: 700, height: 550) // Aumentado para mejor visibilidad
         .onAppear {
             // Filtrar prompts cuando cambia el texto de búsqueda
             promptService.searchQuery = searchText
