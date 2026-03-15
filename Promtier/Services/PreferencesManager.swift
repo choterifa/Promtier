@@ -79,6 +79,66 @@ class PreferencesManager: ObservableObject {
     
     // MARK: - Datos y Privacidad
     
+    @Published var showInDock: Bool {
+        didSet {
+            userDefaults.set(showInDock, forKey: "showInDock")
+        }
+    }
+    
+    @Published var useAccentColor: Bool {
+        didSet {
+            userDefaults.set(useAccentColor, forKey: "useAccentColor")
+        }
+    }
+    
+    @Published var accentColor: Color {
+        didSet {
+            userDefaults.set(accentColor.toHex(), forKey: "accentColor")
+        }
+    }
+    
+    @Published var showCopyNotifications: Bool {
+        didSet {
+            userDefaults.set(showCopyNotifications, forKey: "showCopyNotifications")
+        }
+    }
+    
+    @Published var showUsageNotifications: Bool {
+        didSet {
+            userDefaults.set(showUsageNotifications, forKey: "showUsageNotifications")
+        }
+    }
+    
+    @Published var icloudSyncEnabled: Bool {
+        didSet {
+            userDefaults.set(icloudSyncEnabled, forKey: "icloudSyncEnabled")
+        }
+    }
+    
+    @Published var memoryOptimization: Bool {
+        didSet {
+            userDefaults.set(memoryOptimization, forKey: "memoryOptimization")
+        }
+    }
+    
+    @Published var searchCache: Bool {
+        didSet {
+            userDefaults.set(searchCache, forKey: "searchCache")
+        }
+    }
+    
+    @Published var developerMode: Bool {
+        didSet {
+            userDefaults.set(developerMode, forKey: "developerMode")
+        }
+    }
+    
+    @Published var errorReporting: Bool {
+        didSet {
+            userDefaults.set(errorReporting, forKey: "errorReporting")
+        }
+    }
+    
     @Published var analyticsEnabled: Bool {
         didSet {
             userDefaults.set(analyticsEnabled, forKey: "analyticsEnabled")
@@ -96,6 +156,25 @@ class PreferencesManager: ObservableObject {
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         self.analyticsEnabled = userDefaults.bool(forKey: "analyticsEnabled")
+        
+        // Nuevas propiedades
+        self.showInDock = userDefaults.bool(forKey: "showInDock")
+        self.useAccentColor = userDefaults.bool(forKey: "useAccentColor")
+        self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
+        self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
+        self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
+        self.memoryOptimization = userDefaults.bool(forKey: "memoryOptimization")
+        self.searchCache = userDefaults.bool(forKey: "searchCache")
+        self.developerMode = userDefaults.bool(forKey: "developerMode")
+        self.errorReporting = userDefaults.bool(forKey: "errorReporting")
+        self.analyticsEnabled = userDefaults.bool(forKey: "analyticsEnabled")
+        
+        // Color de acento
+        if let colorHex = userDefaults.string(forKey: "accentColor") {
+            self.accentColor = Color(hex: colorHex)
+        } else {
+            self.accentColor = .blue
+        }
         
         // Aplicar configuración inicial
         applyInitialSettings()
@@ -133,6 +212,19 @@ class PreferencesManager: ObservableObject {
         self.globalShortcutEnabled = true
         self.language = .spanish
         self.analyticsEnabled = false
+        
+        // Nuevas propiedades por defecto
+        self.showInDock = false
+        self.useAccentColor = true
+        self.showCopyNotifications = true
+        self.showUsageNotifications = false
+        self.icloudSyncEnabled = false
+        self.memoryOptimization = true
+        self.searchCache = true
+        self.developerMode = false
+        self.errorReporting = true
+        self.analyticsEnabled = false
+        self.accentColor = .blue
         
         applyInitialSettings()
     }
@@ -191,12 +283,12 @@ class PreferencesManager: ObservableObject {
                 self.globalShortcutEnabled = globalShortcutEnabled
             }
             
-            if let languageRaw = config["language"] as? String {
-                language = AppLanguage(rawValue: languageRaw) ?? .spanish
-            }
-            
             if let analyticsEnabled = config["analyticsEnabled"] as? Bool {
                 self.analyticsEnabled = analyticsEnabled
+            }
+            
+            if let languageRaw = config["language"] as? String {
+                language = AppLanguage(rawValue: languageRaw) ?? .spanish
             }
             
             applyInitialSettings()
@@ -204,65 +296,5 @@ class PreferencesManager: ObservableObject {
         }
         
         return false
-    }
-}
-
-// MARK: - Enums de Configuración
-
-enum AppAppearance: String, CaseIterable, Identifiable {
-    case light = "light"
-    case dark = "dark"
-    case system = "system"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .light: return "Claro"
-        case .dark: return "Oscuro"
-        case .system: return "Sistema"
-        }
-    }
-}
-
-enum FontSize: String, CaseIterable, Identifiable {
-    case small = "small"
-    case medium = "medium"
-    case large = "large"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .small: return "Pequeño"
-        case .medium: return "Mediano"
-        case .large: return "Grande"
-        }
-    }
-    
-    var scaleFactor: CGFloat {
-        switch self {
-        case .small: return 0.85
-        case .medium: return 1.0
-        case .large: return 1.15
-        }
-    }
-}
-
-enum AppLanguage: String, CaseIterable, Identifiable {
-    case spanish = "es"
-    case english = "en"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .spanish: return "Español"
-        case .english: return "English"
-        }
-    }
-    
-    var code: String {
-        return rawValue
     }
 }

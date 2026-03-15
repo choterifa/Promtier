@@ -18,6 +18,7 @@ struct SearchViewSimple: View {
     @State private var selectedPrompt: Prompt?
     @State private var showingPromptDetail = false
     @State private var showingNewPrompt = false
+    @State private var showingPreferences = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +47,11 @@ struct SearchViewSimple: View {
                 
                 Button(action: { showingNewPrompt = true }) {
                     Image(systemName: "plus")
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { showingPreferences = true }) {
+                    Image(systemName: "gear")
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -98,6 +104,31 @@ struct SearchViewSimple: View {
                     .onTapGesture {
                         usePrompt(prompt)
                     }
+                    .contextMenu {
+                        Button("Copiar") {
+                            usePrompt(prompt)
+                        }
+                        
+                        Button("Ver detalles") {
+                            selectedPrompt = prompt
+                            showingPromptDetail = true
+                        }
+                        
+                        Button("Editar") {
+                            selectedPrompt = prompt
+                            showingNewPrompt = true
+                        }
+                        
+                        Divider()
+                        
+                        Button(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos") {
+                            toggleFavorite(prompt)
+                        }
+                        
+                        Button("Eliminar") {
+                            deletePrompt(prompt)
+                        }
+                    }
                 }
                 .listStyle(PlainListStyle())
             }
@@ -111,14 +142,21 @@ struct SearchViewSimple: View {
             promptService.searchQuery = newValue
         }
         .sheet(isPresented: $showingNewPrompt) {
-            VStack {
-                Text("Nuevo Prompt")
-                    .font(.title2)
-                Text("Funcionalidad de creación de prompts próximamente")
-                    .foregroundColor(.secondary)
+            NewPromptView(prompt: selectedPrompt)
+                .environmentObject(promptService)
+                .environmentObject(preferences)
+        }
+        .sheet(isPresented: $showingPromptDetail) {
+            if let prompt = selectedPrompt {
+                PromptDetailView(prompt: prompt)
+                    .environmentObject(promptService)
+                    .environmentObject(ClipboardService.shared)
+                    .environmentObject(preferences)
             }
-            .padding()
-            .frame(width: 400, height: 200)
+        }
+        .sheet(isPresented: $showingPreferences) {
+            PreferencesView()
+                .environmentObject(preferences)
         }
     }
     
@@ -145,5 +183,17 @@ struct SearchViewSimple: View {
         } catch {
             print("Error al acceder a soundEnabled: \(error)")
         }
+    }
+    
+    /// Cambia el estado de favorito de un prompt
+    private func toggleFavorite(_ prompt: Prompt) {
+        var updatedPrompt = prompt
+        updatedPrompt.isFavorite.toggle()
+        _ = promptService.updatePrompt(updatedPrompt)
+    }
+    
+    /// Elimina un prompt
+    private func deletePrompt(_ prompt: Prompt) {
+        _ = promptService.deletePrompt(prompt)
     }
 }

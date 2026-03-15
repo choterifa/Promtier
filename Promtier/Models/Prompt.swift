@@ -10,7 +10,7 @@ import Foundation
 
 // MODELO PRINCIPAL: Estructura de datos para cada prompt
 struct Prompt: Identifiable, Codable {
-    let id: UUID                    // Identificador único
+    var id: UUID                    // Identificador único
     var title: String               // Título del prompt
     var content: String             // Contenido del prompt
     var description: String?        // Descripción opcional

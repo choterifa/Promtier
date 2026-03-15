@@ -97,11 +97,7 @@ class PromptServiceSimple: ObservableObject {
     
     /// Elimina un prompt
     func deletePrompt(_ prompt: Prompt) -> Bool {
-        guard let index = prompts.firstIndex(where: { $0.id == prompt.id }) else {
-            return false
-        }
-        
-        prompts.remove(at: index)
+        prompts.removeAll { $0.id == prompt.id }
         filterPrompts(query: searchQuery)
         return true
     }

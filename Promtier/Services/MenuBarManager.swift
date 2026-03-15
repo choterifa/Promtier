@@ -10,18 +10,20 @@ import SwiftUI
 import AppKit
 import Combine
 
-// SERVICIO: Control principal del menu bar y popover
+// SERVICIO:// CONFIGURABLE: Gestor del menu bar y popover
 class MenuBarManager: NSObject, ObservableObject {
     static let shared = MenuBarManager()
     
-    // CONFIGURABLE: Icono del menu bar (SF Symbol)
     private let menuBarIcon = "text.bubble"
-    private let menuBarIconAlt = "text.bubble.fill" // Estado activo
+    private let menuBarIconAlt = "text.bubble.fill"
     
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     
     @Published var isPopoverShown = false
+    
+    // CONFIGURABLE: Gestor de atajos (inicialización lazy)
+    private var shortcutManager: ShortcutManager?
     
     private override init() {
         super.init()
@@ -34,7 +36,7 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     deinit {
-        removeGlobalHotkey()
+        // Los atajos se manejan automáticamente por ShortcutManager
     }
     
     // MARK: - Configuración del Menu Bar
@@ -58,7 +60,7 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     /// Alterna la visibilidad del popover
-    @objc private func togglePopover() {
+    @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
         
         if let popover = popover {
@@ -72,7 +74,7 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     
-    /// Muestra el popover anclado al menu bar
+    /// Muestra el popover anclado
     private func showPopover(relativeTo rect: NSRect, of view: NSView) {
         if popover == nil {
             popover = NSPopover()
@@ -84,18 +86,11 @@ class MenuBarManager: NSObject, ObservableObject {
             // CONFIGURABLE: Vista principal SwiftUI
             let contentView = SearchViewSimple()
                 .environmentObject(PromptServiceSimple())
-                .environmentObject(ClipboardService.shared)
                 .environmentObject(PreferencesManager.shared)
+                .environmentObject(self)
             
             popover?.contentViewController = NSHostingController(rootView: contentView)
         }
-        
-        // Actualizar icono a estado activo
-        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
-                                           accessibilityDescription: "Promtier Activo")
-        
-        popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
-        isPopoverShown = true
         
         // CONFIGURABLE: Efecto háptico al abrir
         do {
@@ -105,6 +100,20 @@ class MenuBarManager: NSObject, ObservableObject {
         } catch {
             print("Error al acceder a preferencias: \(error)")
         }
+        
+        popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        
+        // Cambiar icono
+        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
+                                           accessibilityDescription: "Promtier Activo")
+        
+        isPopoverShown = true
+    }
+    
+    /// Muestra el popover
+    func showPopover() {
+        guard let button = statusItem?.button else { return }
+        showPopover(relativeTo: button.bounds, of: button)
     }
     
     /// Cierra el popover
@@ -120,21 +129,13 @@ class MenuBarManager: NSObject, ObservableObject {
     
     // MARK: - Atajos Globales
     
-    /// Configura el atajo global ⌘⇧P
+    /// Configura los atajos globales
     private func setupGlobalHotkey() {
-        print("Atajo global deshabilitado temporalmente")
-    }
-    
-    /// Maneja el atajo global presionado
-    private func handleGlobalHotkey() {
+        // Inicializar ShortcutManager después de que MenuBarManager esté completamente inicializado
         DispatchQueue.main.async {
-            self.togglePopover()
+            self.shortcutManager = ShortcutManager.shared
+            print("✅ Atajos globales configurados")
         }
-    }
-    
-    /// Elimina el atajo global
-    private func removeGlobalHotkey() {
-        print("Removiendo atajo global (no configurado)")
     }
     
     // MARK: - Launch at Login

@@ -17,9 +17,23 @@ struct PromtierApp: App {
     @StateObject private var menuBarManager = MenuBarManager.shared
     
     var body: some Scene {
-        // CONFIGURABLE: Sin ventana principal, solo menu bar
-        Settings {
+        // CONFIGURABLE: Escena completamente vacía - sin ventanas
+        EmptyScene()
+    }
+}
+
+// CONFIGURABLE: Escena que no crea ninguna ventana
+struct EmptyScene: Scene {
+    var body: some Scene {
+        // No crear ninguna ventana en absoluto
+        WindowGroup {
             EmptyView()
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultSize(width: 0, height: 0)
+        .commands {
+            // Vaciar comandos para no mostrar menú
         }
     }
 }
