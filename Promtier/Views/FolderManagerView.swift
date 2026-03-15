@@ -131,7 +131,7 @@ struct FolderManagerView: View {
                 .padding(.bottom, 20)
             }
         }
-        .frame(width: 600, height: 500) // Ventana más grande y espaciosa
+        .frame(width: 500, height: 400) // Tamaño uniforme compacto
         .onAppear {
             loadFolders()
         }

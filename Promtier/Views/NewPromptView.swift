@@ -204,7 +204,7 @@ struct NewPromptView: View {
             .padding(.vertical, 16)
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .frame(width: 750, height: 800) // Ventana más grande y espaciosa
+        .frame(width: 500, height: 400) // Tamaño uniforme compacto
         .onAppear {
             if let prompt = editingPrompt {
                 title = prompt.title

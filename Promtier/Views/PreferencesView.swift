@@ -83,7 +83,7 @@ struct PreferencesView: View {
                     }
             }
         }
-        .frame(width: 800, height: 600) // Ventana más grande y espaciosa
+        .frame(width: 500, height: 400) // Tamaño uniforme compacto
         .sheet(isPresented: $showingExportSheet) {
             ExportView()
         }

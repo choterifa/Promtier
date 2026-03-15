@@ -243,7 +243,7 @@ struct PromptDetailView: View {
             .padding(.vertical, 16)
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .frame(width: 800, height: 700) // Ventana más grande y espaciosa
+        .frame(width: 500, height: 400) // Tamaño uniforme compacto
         .sheet(isPresented: $showingEditSheet) {
             NewPromptView(prompt: prompt)
                 .environmentObject(promptService)
