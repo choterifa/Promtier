@@ -1,0 +1,209 @@
+//
+//  MenuBarManager.swift
+//  Promtier
+//
+//  SERVICIO: Gestión del NSStatusItem y popover principal
+//  Created by Carlos on 15/03/26.
+//
+
+import SwiftUI
+import AppKit
+import Combine
+
+// SERVICIO: Control principal del menu bar y popover
+class MenuBarManager: NSObject, ObservableObject {
+    static let shared = MenuBarManager()
+    
+    // CONFIGURABLE: Icono del menu bar (SF Symbol)
+    private let menuBarIcon = "text.bubble"
+    private let menuBarIconAlt = "text.bubble.fill" // Estado activo
+    
+    private var statusItem: NSStatusItem?
+    private var popover: NSPopover?
+    
+    @Published var isPopoverShown = false
+    
+    private override init() {
+        super.init()
+        // CONFIGURABLE: Retrasar inicialización para evitar problemas de orden
+        DispatchQueue.main.async {
+            self.setupMenuBar()
+            self.setupGlobalHotkey()
+            self.setupLaunchAtLogin()
+        }
+    }
+    
+    deinit {
+        removeGlobalHotkey()
+    }
+    
+    // MARK: - Configuración del Menu Bar
+    
+    /// Configura el NSStatusItem en el menu bar
+    private func setupMenuBar() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        
+        if let button = statusItem?.button {
+            // CONFIGURABLE: Icono y comportamiento
+            button.image = NSImage(systemSymbolName: menuBarIcon, accessibilityDescription: "Promtier")
+            button.action = #selector(togglePopover)
+            button.target = self
+            
+            // CONFIGURABLE: Efectos visuales
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            
+            // Tooltip informativo
+            button.toolTip = "Promtier - Gestor de Prompts (⌘⇧P)"
+        }
+    }
+    
+    /// Alterna la visibilidad del popover
+    @objc private func togglePopover() {
+        guard let button = statusItem?.button else { return }
+        
+        if let popover = popover {
+            if popover.isShown {
+                closePopover()
+            } else {
+                showPopover(relativeTo: button.bounds, of: button)
+            }
+        } else {
+            showPopover(relativeTo: button.bounds, of: button)
+        }
+    }
+    
+    /// Muestra el popover anclado al menu bar
+    private func showPopover(relativeTo rect: NSRect, of view: NSView) {
+        if popover == nil {
+            popover = NSPopover()
+            popover?.contentSize = NSSize(width: 640, height: 480) // CONFIGURABLE: Tamaño por defecto
+            popover?.behavior = .transient
+            popover?.animates = true
+            popover?.delegate = self
+            
+            // CONFIGURABLE: Vista principal SwiftUI
+            let contentView = SearchViewSimple()
+                .environmentObject(PromptServiceSimple())
+                .environmentObject(ClipboardService.shared)
+                .environmentObject(PreferencesManager.shared)
+            
+            popover?.contentViewController = NSHostingController(rootView: contentView)
+        }
+        
+        // Actualizar icono a estado activo
+        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
+                                           accessibilityDescription: "Promtier Activo")
+        
+        popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        isPopoverShown = true
+        
+        // CONFIGURABLE: Efecto háptico al abrir
+        do {
+            if PreferencesManager.shared.hapticFeedback {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+            }
+        } catch {
+            print("Error al acceder a preferencias: \(error)")
+        }
+    }
+    
+    /// Cierra el popover
+    func closePopover() {
+        popover?.performClose(nil)
+        
+        // Restaurar icono normal
+        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIcon, 
+                                           accessibilityDescription: "Promtier")
+        
+        isPopoverShown = false
+    }
+    
+    // MARK: - Atajos Globales
+    
+    /// Configura el atajo global ⌘⇧P
+    private func setupGlobalHotkey() {
+        print("Atajo global deshabilitado temporalmente")
+    }
+    
+    /// Maneja el atajo global presionado
+    private func handleGlobalHotkey() {
+        DispatchQueue.main.async {
+            self.togglePopover()
+        }
+    }
+    
+    /// Elimina el atajo global
+    private func removeGlobalHotkey() {
+        print("Removiendo atajo global (no configurado)")
+    }
+    
+    // MARK: - Launch at Login
+    
+    /// Configura inicio automático al arrancar sistema
+    private func setupLaunchAtLogin() {
+        // CONFIGURABLE: Habilitar/deshabilitar inicio automático
+        // Esta función se activará desde preferencias
+        print("Launch at login configurado")
+    }
+    
+    /// Habilita o deshabilita el inicio automático
+    func setLaunchAtLogin(_ enabled: Bool) {
+        // TODO: Implementar launch at login con ServiceManagement framework
+        print("Launch at login: \(enabled)")
+    }
+    
+    // MARK: - Menú Contextual
+    
+    /// Muestra menú contextual al hacer click derecho
+    @objc private func showContextMenu() {
+        let menu = NSMenu()
+        
+        // CONFIGURABLE: Opciones del menú contextual
+        menu.addItem(NSMenuItem(title: "Mostrar Promtier", action: #selector(togglePopover), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Preferencias...", action: #selector(showPreferences), keyEquivalent: ","))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Acerca de Promtier", action: #selector(showAbout), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Salir", action: #selector(quitApp), keyEquivalent: "q"))
+        
+        statusItem?.menu = menu
+        statusItem?.button?.performClick(nil)
+        statusItem?.menu = nil
+    }
+    
+    @objc private func showPreferences() {
+        // Abrir ventana de preferencias
+        NSApp.sendAction(Selector(("showPreferences:")), to: nil, from: nil)
+    }
+    
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
+    
+    @objc private func quitApp() {
+        NSApp.terminate(nil)
+    }
+}
+
+// MARK: - NSPopoverDelegate
+
+extension MenuBarManager: NSPopoverDelegate {
+    func popoverDidClose(_ notification: Notification) {
+        isPopoverShown = false
+        
+        // Restaurar icono normal
+        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIcon, 
+                                           accessibilityDescription: "Promtier")
+    }
+    
+    func popoverWillShow(_ notification: Notification) {
+        isPopoverShown = true
+        
+        // Actualizar icono a estado activo
+        statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
+                                           accessibilityDescription: "Promtier Activo")
+    }
+}
+

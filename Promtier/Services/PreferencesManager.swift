@@ -1,0 +1,268 @@
+//
+//  PreferencesManager.swift
+//  Promtier
+//
+//  SERVICIO: Gestión de preferencias y configuración de la app
+//  Created by Carlos on 15/03/26.
+//
+
+import Foundation
+import SwiftUI
+import Combine
+import AppKit
+
+// SERVICIO: Gestión centralizada de preferencias con UserDefaults
+class PreferencesManager: ObservableObject {
+    static let shared = PreferencesManager()
+    
+    private let userDefaults = UserDefaults.standard
+    
+    // MARK: - Apariencia
+    
+    @Published var appearance: AppAppearance {
+        didSet {
+            userDefaults.set(appearance.rawValue, forKey: "appearance")
+        }
+    }
+    
+    @Published var fontSize: FontSize {
+        didSet {
+            userDefaults.set(fontSize.rawValue, forKey: "fontSize")
+        }
+    }
+    
+    // MARK: - Comportamiento
+    
+    @Published var launchAtLogin: Bool {
+        didSet {
+            userDefaults.set(launchAtLogin, forKey: "launchAtLogin")
+            // TODO: Implementar launch at login cuando MenuBarManager esté disponible
+            // MenuBarManager.shared.setLaunchAtLogin(launchAtLogin)
+        }
+    }
+    
+    @Published var closeOnOutsideClick: Bool {
+        didSet {
+            userDefaults.set(closeOnOutsideClick, forKey: "closeOnOutsideClick")
+        }
+    }
+    
+    // MARK: - Sonidos y Hápticos
+    
+    @Published var soundEnabled: Bool {
+        didSet {
+            userDefaults.set(soundEnabled, forKey: "soundEnabled")
+        }
+    }
+    
+    @Published var hapticFeedback: Bool {
+        didSet {
+            userDefaults.set(hapticFeedback, forKey: "hapticFeedback")
+        }
+    }
+    
+    // MARK: - Atajos de Teclado
+    
+    @Published var globalShortcutEnabled: Bool {
+        didSet {
+            userDefaults.set(globalShortcutEnabled, forKey: "globalShortcutEnabled")
+        }
+    }
+    
+    // MARK: - Idioma
+    
+    @Published var language: AppLanguage {
+        didSet {
+            userDefaults.set(language.rawValue, forKey: "language")
+        }
+    }
+    
+    // MARK: - Datos y Privacidad
+    
+    @Published var analyticsEnabled: Bool {
+        didSet {
+            userDefaults.set(analyticsEnabled, forKey: "analyticsEnabled")
+        }
+    }
+    
+    private init() {
+        // Inicializar valores desde UserDefaults o defaults
+        self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
+        self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
+        self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
+        self.closeOnOutsideClick = userDefaults.bool(forKey: "closeOnOutsideClick")
+        self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
+        self.hapticFeedback = userDefaults.bool(forKey: "hapticFeedback")
+        self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
+        self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
+        self.analyticsEnabled = userDefaults.bool(forKey: "analyticsEnabled")
+        
+        // Aplicar configuración inicial
+        applyInitialSettings()
+    }
+    
+    // MARK: - Métodos de Configuración
+    
+    /// Aplica configuración inicial al iniciar
+    private func applyInitialSettings() {
+        // Configurar apariencia
+        switch appearance {
+        case .light:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        case .system:
+            NSApp.appearance = nil
+        }
+    }
+    
+    /// Restablece todas las preferencias a valores por defecto
+    func resetToDefaults() {
+        let domain = Bundle.main.bundleIdentifier!
+        userDefaults.removePersistentDomain(forName: domain)
+        
+        // Recargar valores por defecto
+        objectWillChange.send()
+        
+        self.appearance = .system
+        self.fontSize = .medium
+        self.launchAtLogin = false
+        self.closeOnOutsideClick = true
+        self.soundEnabled = true
+        self.hapticFeedback = true
+        self.globalShortcutEnabled = true
+        self.language = .spanish
+        self.analyticsEnabled = false
+        
+        applyInitialSettings()
+    }
+    
+    // MARK: - Exportar/Importar Configuración
+    
+    /// Exporta configuración actual a JSON
+    func exportConfiguration() -> [String: Any] {
+        return [
+            "appearance": appearance.rawValue,
+            "fontSize": fontSize.rawValue,
+            "launchAtLogin": launchAtLogin,
+            "closeOnOutsideClick": closeOnOutsideClick,
+            "soundEnabled": soundEnabled,
+            "hapticFeedback": hapticFeedback,
+            "globalShortcutEnabled": globalShortcutEnabled,
+            "language": language.rawValue,
+            "analyticsEnabled": analyticsEnabled,
+            "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        ]
+    }
+    
+    /// Importa configuración desde diccionario
+    func importConfiguration(_ config: [String: Any]) -> Bool {
+        guard let version = config["version"] as? String else { return false }
+        
+        // Validar compatibilidad de versión (simple)
+        if version.hasPrefix("1.") {
+            objectWillChange.send()
+            
+            if let appearanceRaw = config["appearance"] as? String {
+                appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
+            }
+            
+            if let fontSizeRaw = config["fontSize"] as? String {
+                fontSize = FontSize(rawValue: fontSizeRaw) ?? .medium
+            }
+            
+            if let launchAtLogin = config["launchAtLogin"] as? Bool {
+                self.launchAtLogin = launchAtLogin
+            }
+            
+            if let closeOnOutsideClick = config["closeOnOutsideClick"] as? Bool {
+                self.closeOnOutsideClick = closeOnOutsideClick
+            }
+            
+            if let soundEnabled = config["soundEnabled"] as? Bool {
+                self.soundEnabled = soundEnabled
+            }
+            
+            if let hapticFeedback = config["hapticFeedback"] as? Bool {
+                self.hapticFeedback = hapticFeedback
+            }
+            
+            if let globalShortcutEnabled = config["globalShortcutEnabled"] as? Bool {
+                self.globalShortcutEnabled = globalShortcutEnabled
+            }
+            
+            if let languageRaw = config["language"] as? String {
+                language = AppLanguage(rawValue: languageRaw) ?? .spanish
+            }
+            
+            if let analyticsEnabled = config["analyticsEnabled"] as? Bool {
+                self.analyticsEnabled = analyticsEnabled
+            }
+            
+            applyInitialSettings()
+            return true
+        }
+        
+        return false
+    }
+}
+
+// MARK: - Enums de Configuración
+
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case light = "light"
+    case dark = "dark"
+    case system = "system"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .light: return "Claro"
+        case .dark: return "Oscuro"
+        case .system: return "Sistema"
+        }
+    }
+}
+
+enum FontSize: String, CaseIterable, Identifiable {
+    case small = "small"
+    case medium = "medium"
+    case large = "large"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .small: return "Pequeño"
+        case .medium: return "Mediano"
+        case .large: return "Grande"
+        }
+    }
+    
+    var scaleFactor: CGFloat {
+        switch self {
+        case .small: return 0.85
+        case .medium: return 1.0
+        case .large: return 1.15
+        }
+    }
+}
+
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case spanish = "es"
+    case english = "en"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .spanish: return "Español"
+        case .english: return "English"
+        }
+    }
+    
+    var code: String {
+        return rawValue
+    }
+}
