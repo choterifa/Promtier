@@ -53,13 +53,14 @@ struct PromptCard: View {
                         .stroke(cardBorderColor, lineWidth: isSelected ? 2 : 1)
                 )
         )
-        .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .scaleEffect(isHovered ? 1.015 : 1.0)
+        .animation(.spring(response: 0.08, dampingFraction: 0.8, blendDuration: 0), value: isHovered)
+        .animation(.spring(response: 0.05, dampingFraction: 0.9, blendDuration: 0), value: isSelected)
         .shadow(
-            color: .black.opacity(isHovered ? 0.1 : 0.05),
-            radius: isHovered ? 8 : 4,
+            color: .black.opacity(isHovered ? 0.08 : 0.03),
+            radius: isHovered ? 6 : 3,
             x: 0,
-            y: isHovered ? 4 : 2
+            y: isHovered ? 3 : 1
         )
         .onTapGesture(count: 1, perform: onTap)
         .onTapGesture(count: 2, perform: onDoubleTap)
@@ -71,11 +72,11 @@ struct PromptCard: View {
     // Colores dinámicos basados en el estado
     private var cardBackgroundColor: Color {
         if isSelected {
-            return Color.blue.opacity(0.1)
+            return Color.blue.opacity(0.12)
         } else if isHovered {
             return Color(NSColor.controlBackgroundColor)
         } else {
-            return Color(NSColor.controlBackgroundColor).opacity(0.8)
+            return Color(NSColor.controlBackgroundColor).opacity(0.85)
         }
     }
     
@@ -83,9 +84,9 @@ struct PromptCard: View {
         if isSelected {
             return Color.blue
         } else if isHovered {
-            return Color.gray.opacity(0.3)
+            return Color.gray.opacity(0.25)
         } else {
-            return Color.gray.opacity(0.2)
+            return Color.gray.opacity(0.15)
         }
     }
 }

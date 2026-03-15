@@ -276,13 +276,13 @@ struct SearchViewSimple: View {
             print("Error al acceder a hapticFeedback: \(error)")
         }
         
-        // Sonido - CONFIGURABLE: Acceso seguro a preferencias
+        // Sonido moderno de copia
         do {
             if preferences.soundEnabled {
-                NSSound.beep()
+                SoundService.shared.playCopySound()
             }
         } catch {
-            print("Error al acceder a soundEnabled: \(error)")
+            print("Error al reproducir sonido: \(error)")
         }
     }
     
@@ -291,6 +291,11 @@ struct SearchViewSimple: View {
         var updatedPrompt = prompt
         updatedPrompt.isFavorite.toggle()
         _ = promptService.updatePrompt(updatedPrompt)
+        
+        // Sonido sutil de interacción
+        if preferences.soundEnabled {
+            SoundService.shared.playInteractionSound()
+        }
     }
     
     /// Elimina un prompt
