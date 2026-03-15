@@ -19,6 +19,8 @@ struct SearchViewSimple: View {
     @State private var showingPromptDetail = false
     @State private var showingNewPrompt = false
     @State private var showingPreferences = false
+    @State private var showingPreview = false
+    @State private var hoveredPrompt: Prompt?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -105,7 +107,17 @@ struct SearchViewSimple: View {
                     }
                     .padding(.vertical, 4)
                     .contentShape(Rectangle())
-                    .onTapGesture {
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(selectedPrompt?.id == prompt.id ? Color.blue.opacity(0.2) : Color.clear)
+                    )
+                    .onHover { isHovering in
+                        hoveredPrompt = isHovering ? prompt : nil
+                    }
+                    .onTapGesture(count: 1) {
+                        selectedPrompt = prompt
+                    }
+                    .onTapGesture(count: 2) {
                         usePrompt(prompt)
                     }
                     .contextMenu {
@@ -138,6 +150,17 @@ struct SearchViewSimple: View {
             }
         }
         .frame(width: 500, height: 400) // Tamaño ajustado a 500x400
+        .onKeyPress(.space) {
+            if showingPreview {
+                showingPreview = false
+                return .handled
+            } else if let prompt = selectedPrompt ?? hoveredPrompt {
+                selectedPrompt = prompt
+                showingPreview = true
+                return .handled
+            }
+            return .ignored
+        }
         .onAppear {
             // Filtrar prompts cuando cambia el texto de búsqueda
             promptService.searchQuery = searchText
@@ -161,6 +184,19 @@ struct SearchViewSimple: View {
         .sheet(isPresented: $showingPreferences) {
             PreferencesView()
                 .environmentObject(preferences)
+        }
+        .popover(isPresented: $showingPreview) {
+            if let prompt = selectedPrompt {
+                PromptPreviewView(prompt: prompt)
+                    .onKeyPress(.space) {
+                        showingPreview = false
+                        return .handled
+                    }
+                    .onKeyPress(.escape) {
+                        showingPreview = false
+                        return .handled
+                    }
+            }
         }
     }
     
