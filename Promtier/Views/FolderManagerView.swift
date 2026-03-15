@@ -19,7 +19,28 @@ struct FolderManagerView: View {
     @State private var editingFolder: String?
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Header con título y botón de cerrar
+            HStack {
+                Text("Gestión de Carpetas")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape)
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            // Contenido principal
             VStack {
                 // Lista de carpetas
                 List {
@@ -109,25 +130,16 @@ struct FolderManagerView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .navigationTitle("Gestión de Carpetas")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.escape)
-                }
-            }
-            .onAppear {
-                loadFolders()
-            }
-            .alert("Información", isPresented: $showingAlert) {
-                Button("OK") { }
-            } message: {
-                Text(alertMessage)
-            }
         }
         .frame(width: 600, height: 500) // Ventana más grande y espaciosa
+        .onAppear {
+            loadFolders()
+        }
+        .alert("Información", isPresented: $showingAlert) {
+            Button("OK") { }
+        } message: {
+            Text(alertMessage)
+        }
     }
     
     // MARK: - Métodos

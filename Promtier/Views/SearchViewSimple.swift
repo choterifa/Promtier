@@ -137,7 +137,7 @@ struct SearchViewSimple: View {
                 .listStyle(PlainListStyle())
             }
         }
-        .frame(width: 700, height: 550) // Aumentado para mejor visibilidad
+        .frame(width: 500, height: 400) // Tamaño ajustado a 500x400
         .onAppear {
             // Filtrar prompts cuando cambia el texto de búsqueda
             promptService.searchQuery = searchText

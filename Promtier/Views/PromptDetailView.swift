@@ -27,7 +27,28 @@ struct PromptDetailView: View {
     }
     
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Header con título y botón de cerrar
+            HStack {
+                Text("Detalles del Prompt")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape)
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            // Contenido principal
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header principal
@@ -172,65 +193,70 @@ struct PromptDetailView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Detalles del Prompt")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cerrar") {
-                        dismiss()
+            
+            // Footer con botones de acción
+            HStack {
+                Menu {
+                    Button(action: { copyPrompt() }) {
+                        Label("Copiar", systemImage: "doc.on.doc")
                     }
-                    .keyboardShortcut(.escape)
+                    .keyboardShortcut("c", modifiers: .command)
+                    
+                    Button(action: { copyWithVariables() }) {
+                        Label("Copiar con variables", systemImage: "doc.text")
+                    }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
+                    
+                    Divider()
+                    
+                    Button(action: { showingEditSheet = true }) {
+                        Label("Editar", systemImage: "pencil")
+                    }
+                    .keyboardShortcut("e", modifiers: .command)
+                    
+                    Button(action: { toggleFavorite() }) {
+                        Label(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos", 
+                              systemImage: prompt.isFavorite ? "star" : "star.fill")
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: { deletePrompt() }) {
+                        Label("Eliminar", systemImage: "trash")
+                    }
+                    .keyboardShortcut(.delete)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.title2)
                 }
+                .buttonStyle(.bordered)
                 
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: { copyPrompt() }) {
-                            Label("Copiar", systemImage: "doc.on.doc")
-                        }
-                        .keyboardShortcut("c", modifiers: .command)
-                        
-                        Button(action: { copyWithVariables() }) {
-                            Label("Copiar con variables", systemImage: "doc.text")
-                        }
-                        .keyboardShortcut("c", modifiers: [.command, .shift])
-                        
-                        Divider()
-                        
-                        Button(action: { showingEditSheet = true }) {
-                            Label("Editar", systemImage: "pencil")
-                        }
-                        .keyboardShortcut("e", modifiers: .command)
-                        
-                        Button(action: { toggleFavorite() }) {
-                            Label(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos", 
-                                  systemImage: prompt.isFavorite ? "star" : "star.fill")
-                        }
-                        
-                        Divider()
-                        
-                        Button(action: { deletePrompt() }) {
-                            Label("Eliminar", systemImage: "trash")
-                        }
-                        .keyboardShortcut(.delete)
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
                 }
+                .keyboardShortcut(.escape)
+                .buttonStyle(.bordered)
             }
-            .sheet(isPresented: $showingEditSheet) {
-                NewPromptView(prompt: prompt)
-                    .environmentObject(promptService)
-                    .environmentObject(preferences)
-            }
-            .alert("Eliminar Prompt", isPresented: $isProcessing) {
-                Button("Cancelar", role: .cancel) { }
-                Button("Eliminar", role: .destructive) {
-                    confirmDelete()
-                }
-            } message: {
-                Text("¿Estás seguro de que deseas eliminar este prompt? Esta acción no se puede deshacer.")
-            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.controlBackgroundColor))
         }
         .frame(width: 800, height: 700) // Ventana más grande y espaciosa
+        .sheet(isPresented: $showingEditSheet) {
+            NewPromptView(prompt: prompt)
+                .environmentObject(promptService)
+                .environmentObject(preferences)
+        }
+        .alert("Eliminar Prompt", isPresented: $isProcessing) {
+            Button("Cancelar", role: .cancel) { }
+            Button("Eliminar", role: .destructive) {
+                confirmDelete()
+            }
+        } message: {
+            Text("¿Estás seguro de que deseas eliminar este prompt? Esta acción no se puede deshacer.")
+        }
     }
     
     // MARK: - Métodos
