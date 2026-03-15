@@ -24,132 +24,165 @@ struct SearchViewSimple: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con búsqueda
-            HStack(spacing: 16) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
-                    .font(.title2)
-                
-                TextField("Buscar prompts...", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(.body)
-                    .onSubmit {
-                        if let firstPrompt = promptService.filteredPrompts.first {
-                            usePrompt(firstPrompt)
+            // Header moderno con búsqueda
+            VStack(spacing: 16) {
+                HStack(spacing: 20) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.blue)
+                            .font(.title3)
+                        
+                        TextField("Buscar prompts...", text: $searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 16, weight: .medium))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            .onSubmit {
+                                if let firstPrompt = promptService.filteredPrompts.first {
+                                    usePrompt(firstPrompt)
+                                }
+                            }
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                                    .font(.title3)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
-                
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Button(action: { showingNewPrompt = true }) {
+                            Image(systemName: "plus")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color.blue)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Button(action: { showingPreferences = true }) {
+                            Image(systemName: "gear")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
-                
-                Spacer()
-                
-                Button(action: { showingNewPrompt = true }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { showingPreferences = true }) {
-                    Image(systemName: "gear")
-                        .font(.title2)
-                }
-                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Divider()
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
             // Contenido principal
             if promptService.filteredPrompts.isEmpty {
-                VStack(spacing: 20) {
-                    Image(systemName: "text.bubble")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
+                VStack(spacing: 32) {
+                    Spacer()
                     
-                    Text(searchText.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
-                        .font(.system(size: 18, weight: .medium))
+                    Image(systemName: "text.bubble")
+                        .font(.system(size: 64))
+                        .foregroundColor(.secondary.opacity(0.6))
+                    
+                    VStack(spacing: 12) {
+                        Text(searchText.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text(searchText.isEmpty ? "Crea tu primer prompt para comenzar" : "Intenta con otros términos de búsqueda")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                     
                     if searchText.isEmpty {
                         Button("Crear Primer Prompt") {
                             showingNewPrompt = true
                         }
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
                     }
+                    
+                    Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 24)
             } else {
-                // Lista de prompts
-                List(promptService.filteredPrompts, id: \.id) { prompt in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(prompt.title)
-                                .font(.system(size: 14, weight: .medium))
-                            
-                            Text(prompt.content)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                        
-                        Spacer()
-                        
-                        if prompt.isFavorite {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    .contentShape(Rectangle())
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(selectedPrompt?.id == prompt.id ? Color.blue.opacity(0.2) : Color.clear)
-                    )
-                    .onHover { isHovering in
-                        hoveredPrompt = isHovering ? prompt : nil
-                    }
-                    .onTapGesture(count: 1) {
-                        selectedPrompt = prompt
-                    }
-                    .onTapGesture(count: 2) {
-                        usePrompt(prompt)
-                    }
-                    .contextMenu {
-                        Button("Copiar") {
-                            usePrompt(prompt)
-                        }
-                        
-                        Button("Ver detalles") {
-                            selectedPrompt = prompt
-                            showingPromptDetail = true
-                        }
-                        
-                        Button("Editar") {
-                            selectedPrompt = prompt
-                            showingNewPrompt = true
-                        }
-                        
-                        Divider()
-                        
-                        Button(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos") {
-                            toggleFavorite(prompt)
-                        }
-                        
-                        Button("Eliminar") {
-                            deletePrompt(prompt)
+                // Lista moderna de prompts
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                            PromptCard(
+                                prompt: prompt,
+                                isSelected: selectedPrompt?.id == prompt.id,
+                                isHovered: hoveredPrompt?.id == prompt.id,
+                                onTap: {
+                                    selectedPrompt = prompt
+                                },
+                                onDoubleTap: {
+                                    usePrompt(prompt)
+                                },
+                                onHover: { isHovering in
+                                    hoveredPrompt = isHovering ? prompt : nil
+                                }
+                            )
+                            .contextMenu {
+                                Button("Copiar") {
+                                    usePrompt(prompt)
+                                }
+                                
+                                Button("Ver detalles") {
+                                    selectedPrompt = prompt
+                                    showingPromptDetail = true
+                                }
+                                
+                                Button("Editar") {
+                                    selectedPrompt = prompt
+                                    showingNewPrompt = true
+                                }
+                                
+                                Divider()
+                                
+                                Button(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos") {
+                                    toggleFavorite(prompt)
+                                }
+                                
+                                Button("Eliminar") {
+                                    deletePrompt(prompt)
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
                 }
-                .listStyle(PlainListStyle())
             }
         }
-        .frame(width: 500, height: 400) // Tamaño ajustado a 500x400
+        .frame(width: 560, height: 480) // Tamaño aumentado para mejor diseño
         .onKeyPress(.space) {
             if showingPreview {
                 showingPreview = false
@@ -157,6 +190,34 @@ struct SearchViewSimple: View {
             } else if let prompt = selectedPrompt ?? hoveredPrompt {
                 selectedPrompt = prompt
                 showingPreview = true
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.upArrow) {
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
+               currentIndex > 0 {
+                selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.downArrow) {
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
+               currentIndex < promptService.filteredPrompts.count - 1 {
+                selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                return .handled
+            } else if promptService.filteredPrompts.isEmpty == false && selectedPrompt == nil {
+                selectedPrompt = promptService.filteredPrompts.first
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            if let prompt = selectedPrompt {
+                usePrompt(prompt)
                 return .handled
             }
             return .ignored
