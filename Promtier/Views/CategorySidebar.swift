@@ -10,17 +10,18 @@ import SwiftUI
 
 struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
-    @Binding var selectedCategory: String?
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
     
-    private var categoryCounts: [PredefinedCategory: Int] {
-        Dictionary(uniqueKeysWithValues: categories.map { category in
-            let count = promptService.prompts.filter { $0.folder == category.displayName }.count
-            return (category, count)
-        })
+    private var categoryCounts: [String: Int] {
+        var counts: [String: Int] = [:]
+        for prompt in promptService.prompts {
+            let folder = prompt.folder ?? "Sin categoría"
+            counts[folder, default: 0] += 1
+        }
+        return counts
     }
     
     var body: some View {
@@ -45,14 +46,26 @@ struct CategorySidebar: View {
                     icon: "square.grid.2x2",
                     color: .gray,
                     count: promptService.prompts.count,
-                    isSelected: selectedCategory == nil
+                    isSelected: promptService.selectedCategory == nil
                 ) {
-                    selectedCategory = nil
+                    promptService.selectedCategory = nil
+                }
+                
+                // Botón "Sin categoría"
+                CategoryButton(
+                    title: "Sin categoría",
+                    icon: "folder",
+                    color: .gray,
+                    count: categoryCounts["Sin categoría"] ?? 0,
+                    isSelected: promptService.selectedCategory == "Sin categoría"
+                ) {
+                    promptService.selectedCategory = "Sin categoría"
                 }
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
             .padding(.bottom, 12)
+            .frame(maxWidth: .infinity)
             
             Divider()
                 .padding(.horizontal, 16)
@@ -61,28 +74,23 @@ struct CategorySidebar: View {
             ScrollView {
                 LazyVStack(spacing: 8) {
                     ForEach(categories, id: \.rawValue) { category in
-                        let count = categoryCounts[category] ?? 0
+                        let count = categoryCounts[category.displayName] ?? 0
                         
                         CategoryButton(
                             title: category.displayName,
                             icon: category.icon,
                             color: category.color,
                             count: count,
-                            isSelected: selectedCategory == category.displayName
+                            isSelected: promptService.selectedCategory == category.displayName
                         ) {
-                            selectedCategory = category.displayName
-            // DEBUG: Print category selection
-            print("=== DEBUG: Category Selected ===")
-            print("Category tapped: \(category.displayName)")
-            print("Category rawValue: \(category.rawValue)")
-            print("Setting selectedCategory to: \(category.displayName)")
-            print("=== END DEBUG CATEGORY ===\n")
-        }
+                            promptService.selectedCategory = category.displayName
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+            .frame(maxWidth: .infinity)
         }
         .frame(width: 180) // Aumentado a 180px para ser ~30% del ancho total
         .background(Color(NSColor.controlBackgroundColor))
@@ -100,52 +108,60 @@ struct CategoryButton: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @State private var isHovered = false
+    
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                // Icono con color
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(color)
-                    .frame(width: 24, height: 24)
-                
-                // Título
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Spacer()
-                
-                // Contador
-                Text("\(count)")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : .secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(isSelected ? color.opacity(0.8) : Color.gray.opacity(0.1))
-                    )
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? color.opacity(0.15) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1)
-                    )
-            )
+        HStack(spacing: 12) {
+            // Icono con color
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(color)
+                .frame(width: 24, height: 24)
+            
+            // Título
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+            
+            Spacer()
+            
+            // Contador
+            Text("\(count)")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isSelected ? .white : .secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isSelected ? color : Color.gray.opacity(0.1))
+                )
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? color.opacity(0.15) : (isHovered ? Color.gray.opacity(0.1) : Color.clear))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+        )
+        .contentShape(Rectangle()) // Asegura área de clic completa
+        .onHover { hovering in
+            isHovered = hovering
+        }
+        .highPriorityGesture(
+            TapGesture().onEnded {
+                action()
+            }
+        )
     }
 }
 
 #Preview {
     HStack(spacing: 0) {
-        CategorySidebar(selectedCategory: .constant(nil))
+        CategorySidebar()
             .environmentObject(PromptService())
         
         Rectangle()

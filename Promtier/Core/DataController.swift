@@ -65,7 +65,7 @@ class DataController: ObservableObject {
                 // CONFIGURABLE: Manejo de errores de guardado
                 print("Error guardando contexto: \(error)")
                 let nsError = error as NSError
-                fatalError("Error no controlado al guardar: \(nsError), \(nsError.userInfo)")
+                print("Error no controlado al guardar: \(nsError), \(nsError.userInfo)")
             }
         }
     }

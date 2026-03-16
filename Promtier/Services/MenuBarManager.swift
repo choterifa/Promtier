@@ -101,6 +101,9 @@ class MenuBarManager: NSObject, ObservableObject {
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         }
         
+        // Hacer la aplicación activa para evitar requerir doble clic
+        NSApp.activate(ignoringOtherApps: true)
+        
         popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
         
         // Cambiar icono

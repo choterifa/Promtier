@@ -11,7 +11,7 @@ import AppKit
 import UniformTypeIdentifiers
 
 struct PreferencesView: View {
-    @Environment(\.dismiss) private var dismiss
+    var onClose: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
     
@@ -31,7 +31,7 @@ struct PreferencesView: View {
                 Spacer()
                 
                 Button("Cerrar") {
-                    dismiss()
+                    onClose()
                 }
                 .keyboardShortcut(.escape)
                 .foregroundColor(.primary)
@@ -93,7 +93,6 @@ struct PreferencesView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
         }
-        .frame(width: 770, height: 312)
         .sheet(isPresented: $showingExportSheet) {
             ExportView()
         }
@@ -724,6 +723,6 @@ struct ImportView: View {
 }
 
 #Preview {
-    PreferencesView()
+    PreferencesView(onClose: {})
         .environmentObject(PreferencesManager.shared)
 }

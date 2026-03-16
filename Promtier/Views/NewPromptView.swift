@@ -1,4 +1,4 @@
-//
+ //
 //  NewPromptView.swift
 //  Promtier
 //
@@ -10,7 +10,7 @@ import SwiftUI
 import Foundation
 
 struct NewPromptView: View {
-    @Environment(\.dismiss) private var dismiss
+    var onClose: () -> Void
     
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
@@ -23,8 +23,9 @@ struct NewPromptView: View {
     // CONFIGURABLE: Modo edición
     @State private var editingPrompt: Prompt?
     
-    init(prompt: Prompt? = nil) {
+    init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self._editingPrompt = State(initialValue: prompt)
+        self.onClose = onClose
     }
     
     var body: some View {
@@ -161,7 +162,7 @@ struct NewPromptView: View {
             // Footer moderno con botones
             HStack(spacing: 16) {
                 Button("Cancelar") {
-                    dismiss()
+                    onClose()
                 }
                 .keyboardShortcut(.escape)
                 .buttonStyle(.bordered)
@@ -180,9 +181,7 @@ struct NewPromptView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 560, height: 480)
         .onAppear {
             if let prompt = editingPrompt {
                 title = prompt.title
@@ -223,7 +222,7 @@ struct NewPromptView: View {
             _ = promptService.createPrompt(newPrompt)
         }
         
-        dismiss()
+        onClose()
     }
     
     private func getAvailableFolders() -> [String] {
@@ -235,7 +234,7 @@ struct NewPromptView: View {
 }
 
 #Preview {
-    NewPromptView()
+    NewPromptView(onClose: {})
         .environmentObject(PromptService())
         .environmentObject(PreferencesManager.shared)
 }

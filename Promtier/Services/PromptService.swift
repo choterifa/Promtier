@@ -67,11 +67,6 @@ class PromptService: ObservableObject {
     func createPrompt(_ prompt: Prompt) -> Bool {
         let context = dataController.viewContext
         
-        // Verificar duplicados por título
-        if prompts.contains(where: { $0.title.lowercased() == prompt.title.lowercased() }) {
-            return false // CONFIGURABLE: Permitir duplicados o no
-        }
-        
         _ = PromptEntity.create(from: prompt, in: context)
         dataController.save()
         
@@ -129,7 +124,11 @@ class PromptService: ObservableObject {
         
         // Filtrar por categoría si hay una seleccionada
         if let category = selectedCategory {
-            filtered = filtered.filter { $0.folder == category }
+            if category == "Sin categoría" {
+                filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
+            } else {
+                filtered = filtered.filter { $0.folder == category }
+            }
         }
         
         // Filtrar por texto si hay consulta
@@ -141,10 +140,10 @@ class PromptService: ObservableObject {
             }
         }
         
-        // CONFIGURABLE: Límite de resultados mostrados
-        if filtered.count > 50 {
-            filtered = Array(filtered.prefix(50))
-        }
+        // CONFIGURABLE: Límite de resultados mostrados comentado para que se muestren todos en la categoría
+        // if filtered.count > 50 {
+        //    filtered = Array(filtered.prefix(50))
+        // }
         
         filteredPrompts = filtered
     }

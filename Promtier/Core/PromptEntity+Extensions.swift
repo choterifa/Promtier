@@ -17,11 +17,17 @@ extension PromptEntity {
     
     /// Convierte entidad de Core Data a modelo Swift
     func toPrompt() -> Prompt {
-        return Prompt(
+        var prompt = Prompt(
             title: title,
             content: content,
             folder: folder
         )
+        prompt.id = id
+        prompt.isFavorite = isFavorite
+        prompt.createdAt = createdAt
+        prompt.modifiedAt = modifiedAt
+        prompt.useCount = Int(useCount)
+        return prompt
     }
     
     /// Actualiza entidad desde modelo Swift
@@ -38,6 +44,7 @@ extension PromptEntity {
     static func create(from prompt: Prompt, in context: NSManagedObjectContext) -> PromptEntity {
         let entity = PromptEntity(context: context)
         entity.id = prompt.id
+        entity.createdAt = prompt.createdAt
         entity.updateFromPrompt(prompt)
         return entity
     }

@@ -10,13 +10,13 @@ import SwiftUI
 
 struct PromptDetailView: View {
     let prompt: Prompt
-    @Environment(\.dismiss) private var dismiss
+    var onClose: () -> Void
+    var onEdit: (Prompt) -> Void
     
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var clipboardService: ClipboardService
     @EnvironmentObject var preferences: PreferencesManager
     
-    @State private var showingEditSheet = false
     @State private var showingVariableSheet = false
     @State private var templateVariables: [String: String] = [:]
     @State private var isProcessing = false
@@ -38,7 +38,7 @@ struct PromptDetailView: View {
                 Spacer()
                 
                 Button("Cerrar") {
-                    dismiss()
+                    onClose()
                 }
                 .keyboardShortcut(.escape)
                 .foregroundColor(.primary)
@@ -244,7 +244,7 @@ struct PromptDetailView: View {
                     
                     Divider()
                     
-                    Button(action: { showingEditSheet = true }) {
+                    Button(action: { onEdit(prompt) }) {
                         Label("Editar", systemImage: "pencil")
                     }
                     .keyboardShortcut("e", modifiers: .command)
@@ -279,7 +279,7 @@ struct PromptDetailView: View {
                 Spacer()
                 
                 Button("Cerrar") {
-                    dismiss()
+                    onClose()
                 }
                 .keyboardShortcut(.escape)
                 .font(.system(size: 14, weight: .medium))
@@ -298,13 +298,6 @@ struct PromptDetailView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(NSColor.windowBackgroundColor))
-        }
-        .frame(width: 560, height: 480)
-        .sheet(isPresented: $showingEditSheet) {
-            NewPromptView(prompt: prompt)
-                .environmentObject(promptService)
-                .environmentObject(preferences)
         }
         .alert("Eliminar Prompt", isPresented: $isProcessing) {
             Button("Cancelar", role: .cancel) { }
@@ -332,7 +325,7 @@ struct PromptDetailView: View {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
         }
         
-        dismiss()
+        onClose()
     }
     
     private func copyWithVariables() {
@@ -348,7 +341,7 @@ struct PromptDetailView: View {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
         }
         
-        dismiss()
+        onClose()
     }
     
     private func toggleFavorite() {
@@ -363,7 +356,7 @@ struct PromptDetailView: View {
     
     private func confirmDelete() {
         _ = promptService.deletePrompt(prompt)
-        dismiss()
+        onClose()
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -381,7 +374,7 @@ struct PromptDetailView: View {
         folder: "Trabajo"
     )
     
-    PromptDetailView(prompt: samplePrompt)
+    PromptDetailView(prompt: samplePrompt, onClose: {}, onEdit: { _ in })
         .environmentObject(PromptService())
         .environmentObject(ClipboardService.shared)
         .environmentObject(PreferencesManager.shared)
