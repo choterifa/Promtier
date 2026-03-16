@@ -49,12 +49,19 @@ struct FolderManagerView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ScrollView {
                         VStack(spacing: 2) {
-                            ForEach(promptService.folders) { folder in
+                            ForEach(Array(promptService.folders.enumerated()), id: \.offset) { index, folder in
                                 CategoryRow(
                                     folder: folder,
                                     isEditing: editingFolder?.id == folder.id,
                                     onEdit: { startEditing(folder) },
                                     onDelete: { promptService.deleteFolder(folder) }
+                                )
+                                .scaleEffect(isReady ? 1.0 : 0.95)
+                                .opacity(isReady ? 1 : 0)
+                                .animation(
+                                    .spring(response: 0.4, dampingFraction: 0.7)
+                                    .delay(Double(index) * 0.04),
+                                    value: isReady
                                 )
                             }
                         }
@@ -76,6 +83,9 @@ struct FolderManagerView: View {
                             .font(.headline)
                             .fontWeight(.bold)
                     }
+                    .scaleEffect(isReady ? 1.0 : 0.9)
+                    .opacity(isReady ? 1 : 0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.08), value: isReady)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Nombre")
@@ -94,6 +104,9 @@ struct FolderManagerView: View {
                                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                             )
                     }
+                    .scaleEffect(isReady ? 1.0 : 0.9)
+                    .opacity(isReady ? 1 : 0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.12), value: isReady)
                     
                     HStack(alignment: .top, spacing: 24) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -117,6 +130,9 @@ struct FolderManagerView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                        .scaleEffect(isReady ? 1.0 : 0.9)
+                        .opacity(isReady ? 1 : 0)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.15), value: isReady)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Color")
@@ -124,7 +140,7 @@ struct FolderManagerView: View {
                                 .foregroundColor(.primary.opacity(0.7))
                             
                             LazyVGrid(columns: [GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22))], spacing: 8) {
-                                ForEach(presetColors, id: \.self) { color in
+                                ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
                                     Circle()
                                         .fill(color)
                                         .frame(width: 20, height: 20)
@@ -133,7 +149,13 @@ struct FolderManagerView: View {
                                                 .stroke(Color.white, lineWidth: selectedColor == color ? 2.5 : 0)
                                                 .shadow(radius: 1)
                                         )
-                                        .scaleEffect(selectedColor == color ? 1.15 : 1.0)
+                                        .scaleEffect(selectedColor == color ? 1.15 : (isReady ? 1.0 : 0.5))
+                                        .opacity(isReady ? 1 : 0)
+                                        .animation(
+                                            .spring(response: 0.4, dampingFraction: 0.6)
+                                            .delay(Double(index) * 0.03),
+                                            value: isReady
+                                        )
                                         .onTapGesture {
                                             selectedColor = color
                                         }
@@ -183,8 +205,12 @@ struct FolderManagerView: View {
         }
         .opacity(isReady ? 1 : 0)
         .onAppear {
-            withAnimation(.easeIn(duration: 0.15)) {
-                isReady = true
+            // Sincronización fina: Esperamos a que la ventana se mueva un poco
+            // antes de empezar el desvanecimiento y la cascada de elementos.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    isReady = true
+                }
             }
         }
     }
