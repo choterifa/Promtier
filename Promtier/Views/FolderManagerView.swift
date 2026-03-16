@@ -247,23 +247,23 @@ struct CategoryRow: View {
             if isHovered || isEditing {
                 HStack(spacing: 10) {
                     Button(action: onEdit) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.blue)
-                            .frame(width: 24, height: 24)
-                            .background(Color.blue.opacity(0.1))
-                            .clipShape(Circle())
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundColor(.blue.opacity(0.8))
+                            .frame(width: 26, height: 26)
+                            .background(Color.blue.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
                     .help("Editar categoría")
                     
                     Button(action: onDelete) {
                         Image(systemName: "trash.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.red.opacity(0.8))
-                            .frame(width: 24, height: 24)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(Circle())
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.red.opacity(0.7))
+                            .frame(width: 26, height: 26)
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
                     .help("Eliminar categoría")
