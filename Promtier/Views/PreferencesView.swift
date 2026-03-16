@@ -22,12 +22,6 @@ struct PreferencesView: View {
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
     
-    // Estados temporales para redimensionado suave
-    @State private var tempWidth: Double = 0
-    @State private var tempHeight: Double = 0
-    @State private var isResizingWidth = false
-    @State private var isResizingHeight = false
-    
     private let tabs = [
         (title: "Apariencia", icon: "paintbrush.fill"),
         (title: "General", icon: "gearshape.fill"),
@@ -106,12 +100,7 @@ struct PreferencesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     switch selectedTab {
-                    case 0: AppearanceTab(
-                        tempWidth: $tempWidth,
-                        tempHeight: $tempHeight,
-                        isResizingWidth: $isResizingWidth,
-                        isResizingHeight: $isResizingHeight
-                    )
+                    case 0: AppearanceTab()
                     case 1: BehaviorTab()
                     case 2: ShortcutsTab()
                     case 3: DataTab(
@@ -126,9 +115,9 @@ struct PreferencesView: View {
             }
         }
         .onAppear {
-            // Inicializar estados temporales
-            tempWidth = preferences.windowWidth
-            tempHeight = preferences.windowHeight
+            // Inicializar estados temporales en el manager para el HUD
+            preferences.previewWidth = preferences.windowWidth
+            preferences.previewHeight = preferences.windowHeight
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
@@ -248,11 +237,6 @@ struct SettingsRow<Content: View>: View {
 struct AppearanceTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
-    @Binding var tempWidth: Double
-    @Binding var tempHeight: Double
-    @Binding var isResizingWidth: Bool
-    @Binding var isResizingHeight: Bool
-    
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "Interfaz", icon: "display") {
@@ -280,11 +264,11 @@ struct AppearanceTab: View {
             }
             
             SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {
-                SettingsRow("Ancho", subtitle: "\(Int(tempWidth))px") {
-                    Slider(value: $tempWidth, in: 450...1000, step: 10, onEditingChanged: { editing in
-                        isResizingWidth = editing
+                SettingsRow("Ancho", subtitle: "\(Int(preferences.previewWidth))px") {
+                    Slider(value: $preferences.previewWidth, in: 450...1000, step: 10, onEditingChanged: { editing in
+                        preferences.isResizingVisible = editing
                         if !editing {
-                            preferences.windowWidth = tempWidth
+                            preferences.windowWidth = preferences.previewWidth
                         }
                     })
                     .frame(width: 150)
@@ -292,42 +276,14 @@ struct AppearanceTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Alto", subtitle: "\(Int(tempHeight))px") {
-                    Slider(value: $tempHeight, in: 400...900, step: 10, onEditingChanged: { editing in
-                        isResizingHeight = editing
+                SettingsRow("Alto", subtitle: "\(Int(preferences.previewHeight))px") {
+                    Slider(value: $preferences.previewHeight, in: 400...900, step: 10, onEditingChanged: { editing in
+                        preferences.isResizingVisible = editing
                         if !editing {
-                            preferences.windowHeight = tempHeight
+                            preferences.windowHeight = preferences.previewHeight
                         }
                     })
                     .frame(width: 150)
-                }
-                
-                // Guía Visual de Redimensionado (Mini-mapa)
-                if isResizingWidth || isResizingHeight {
-                    VStack(spacing: 8) {
-                        Text("Sugerencia visual de tamaño:")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.blue.opacity(0.8))
-                        
-                        ZStack(alignment: .topLeading) {
-                            // Fondo de referencia
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.primary.opacity(0.05))
-                                .frame(width: 100, height: 90)
-                            
-                            // Tamaño objetivo (Miniatura proporcional)
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.blue, lineWidth: 2)
-                                .background(Color.blue.opacity(0.1))
-                                .frame(width: (tempWidth / 1000) * 100, 
-                                       height: (tempHeight / 900) * 90)
-                                .animation(.spring(response: 0.2), value: tempWidth)
-                                .animation(.spring(response: 0.2), value: tempHeight)
-                        }
-                        .padding(8)
-                    }
-                    .padding(.top, 8)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
         }

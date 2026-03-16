@@ -66,6 +66,11 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    // MARK: - Estado de Redimensionado (No persistente)
+    @Published var isResizingVisible: Bool = false
+    @Published var previewWidth: CGFloat = 0
+    @Published var previewHeight: CGFloat = 0
+    
     // MARK: - Sonidos
     
     @Published var soundEnabled: Bool {

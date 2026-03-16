@@ -19,6 +19,7 @@ class MenuBarManager: NSObject, ObservableObject {
     
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
+    private var ghostWindow: NSPanel?
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main
@@ -246,12 +247,83 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     private func setupDimensionObserver() {
+        // Observar ancho/alto para la ventana real
         Publishers.CombineLatest(preferencesManager.$windowWidth, preferencesManager.$windowHeight)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] width, height in
                 self?.updatePopoverSize(width: width, height: height)
             }
             .store(in: &cancellables)
+            
+        // Observar estado de redimensionado para la Ventana Fantasma (Ghost Window)
+        preferencesManager.$isResizingVisible
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isVisible in
+                if isVisible {
+                    self?.showGhostWindow()
+                } else {
+                    self?.hideGhostWindow()
+                }
+            }
+            .store(in: &cancellables)
+            
+        // Observar dimensiones proyectadas para sincronizar la Ventana Fantasma
+        Publishers.CombineLatest(preferencesManager.$previewWidth, preferencesManager.$previewHeight)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] width, height in
+                self?.updateGhostWindowSize(width: width, height: height)
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Gestión de Ghost Window (Guía Visual Externa)
+    
+    private func showGhostWindow() {
+        guard let button = statusItem?.button, let window = button.window else { return }
+        
+        if ghostWindow == nil {
+            let panel = NSPanel(
+                contentRect: .zero,
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isFloatingPanel = true
+            panel.level = .statusBar
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = false
+            panel.ignoresMouseEvents = true // No interferir con los sliders
+            
+            // Contenido visual: un simple borde azul traslúcido
+            let view = NSView()
+            view.wantsLayer = true
+            view.layer?.cornerRadius = 16
+            view.layer?.borderWidth = 3
+            view.layer?.borderColor = NSColor.systemBlue.withAlphaComponent(0.6).cgColor
+            view.layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.05).cgColor
+            
+            panel.contentView = view
+            self.ghostWindow = panel
+        }
+        
+        updateGhostWindowSize(width: preferencesManager.previewWidth, height: preferencesManager.previewHeight)
+        ghostWindow?.orderFrontRegardless()
+    }
+    
+    private func hideGhostWindow() {
+        ghostWindow?.orderOut(nil)
+    }
+    
+    private func updateGhostWindowSize(width: CGFloat, height: CGFloat) {
+        guard let ghost = ghostWindow, let button = statusItem?.button, let buttonWindow = button.window else { return }
+        
+        // Calcular posición centrada respecto al icono del menu bar
+        let buttonFrame = buttonWindow.frame
+        let newX = buttonFrame.midX - (width / 2)
+        let newY = buttonFrame.minY - height // Justo debajo del menu bar
+        
+        ghost.setFrame(NSRect(x: newX, y: newY, width: width, height: height), display: true, animate: false)
     }
     
     private func updatePopoverSize(width: CGFloat, height: CGFloat) {
