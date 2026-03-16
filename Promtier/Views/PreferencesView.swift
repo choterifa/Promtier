@@ -126,7 +126,6 @@ struct PreferencesView: View {
                     .offset(x: 200, y: -200)
             }
         )
-        .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
         .alert("Restablecer", isPresented: $showingResetAlert) {

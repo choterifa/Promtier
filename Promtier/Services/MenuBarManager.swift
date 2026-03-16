@@ -21,6 +21,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var popover: NSPopover?
     
     @Published var isPopoverShown = false
+    private var cancellables = Set<AnyCancellable>()
     
     // Servicios compartidos
     private let promptService = PromptService()
@@ -36,6 +37,7 @@ class MenuBarManager: NSObject, ObservableObject {
             self.setupMenuBar()
             self.setupGlobalHotkey()
             self.setupLaunchAtLogin()
+            self.setupThemeObserver()
         }
     }
     
@@ -93,7 +95,11 @@ class MenuBarManager: NSObject, ObservableObject {
                 .environmentObject(self.preferencesManager)
                 .environmentObject(self)
             
+            
             popover?.contentViewController = NSHostingController(rootView: contentView)
+            
+            // Aplicar apariencia inicial al popover
+            updatePopoverAppearance()
         }
         
     
@@ -184,6 +190,30 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @objc private func quitApp() {
         NSApp.terminate(nil)
+    }
+    
+    // MARK: - Gestión de Tema
+    
+    private func setupThemeObserver() {
+        preferencesManager.$appearance
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updatePopoverAppearance()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func updatePopoverAppearance() {
+        guard let popover = popover else { return }
+        
+        switch preferencesManager.appearance {
+        case .light:
+            popover.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            popover.appearance = NSAppearance(named: .darkAqua)
+        case .system:
+            popover.appearance = nil // Hereda del sistema
+        }
     }
 }
 

@@ -50,6 +50,7 @@ struct SearchViewSimple: View {
         }
         .frame(width: 650, height: 480)
         .background(Color(NSColor.windowBackgroundColor))
+        .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
         .onAppear {
             // Asegurar foco en la ventana
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
