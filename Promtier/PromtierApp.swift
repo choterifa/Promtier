@@ -12,8 +12,8 @@ import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Ejecutar con un pequeño retraso para asegurar que la app está lista
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // Aumentar el retraso a 3 segundos para dar tiempo al sistema TCC a inicializarse
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
         }
     }

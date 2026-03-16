@@ -111,18 +111,27 @@ class ShortcutManager: ObservableObject {
     
     // MARK: - Accesibilidad
     
-    func checkAccessibilityPermissions(forceDialog: Bool = false) {
-        let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
-        let isTrusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+    @discardableResult
+    func checkAccessibilityPermissions(forceDialog: Bool = false) -> Bool {
+        // Usar opciones explícitas para evitar que AXIsProcessTrusted() devuelva un estado erróneo
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
+        let isTrusted = AXIsProcessTrustedWithOptions(options)
+        
+        print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
         
         if !isTrusted && forceDialog {
             DispatchQueue.main.async {
+                // Verificar UNA VEZ MÁS antes de mostrar el diálogo por si acaso
+                if AXIsProcessTrustedWithOptions(options) { return }
+                
                 let alert = NSAlert()
                 alert.messageText = "Acceso de Accesibilidad Requerido"
-                alert.informativeText = "Para que los atajos funcionen mejor, por favor activa Promtier en los Ajustes de Accesibilidad.\n\nAl pulsar 'Entendido', se abrirá la configuración por ti."
-                alert.alertStyle = .informational
-                alert.addButton(withTitle: "Entendido")
+                alert.informativeText = "Para que Promtier funcione correctamente (pestañas inteligentes y pegado automático), activa el acceso en los Ajustes de Sistema.\n\nSi ya lo tienes activado, desactívalo y vuelve a activarlo para que macOS reconozca la nueva versión."
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "Abrir Ajustes")
+                alert.addButton(withTitle: "Ya lo hice / Ahora no")
                 
+                NSApp.activate(ignoringOtherApps: true)
                 if alert.runModal() == .alertFirstButtonReturn {
                     let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
                     if let url = url {
@@ -131,6 +140,7 @@ class ShortcutManager: ObservableObject {
                 }
             }
         }
+        return isTrusted
     }
     
     // MARK: - Monitores de Eventos

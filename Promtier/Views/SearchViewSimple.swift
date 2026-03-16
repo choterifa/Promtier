@@ -118,11 +118,6 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .popover(isPresented: $showingPreview) {
-            if let prompt = selectedPrompt {
-                PromptPreviewView(prompt: prompt)
-            }
-        }
     }
     
     private var mainView: some View {
@@ -265,6 +260,12 @@ struct SearchViewSimple: View {
                                         }
                                     }
                                 )
+                                .popover(isPresented: Binding(
+                                    get: { showingPreview && selectedPrompt?.id == prompt.id },
+                                    set: { if !$0 { showingPreview = false } }
+                                ), arrowEdge: .leading) {
+                                    PromptPreviewView(prompt: prompt)
+                                }
                                 .contextMenu {
                                     Button(action: { usePrompt(prompt) }) {
                                         Label("Copiar", systemImage: "doc.on.doc")

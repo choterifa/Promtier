@@ -90,9 +90,9 @@ struct PromptPreviewView: View {
             
             // Footer con atajos de ayuda
             HStack {
-                Text("Presiona ") + Text("Espacio").fontWeight(.bold) + Text(" para cerrar")
+                Text("Presiona **Espacio** para cerrar")
                 Spacer()
-                Text("Esc").fontWeight(.bold) + Text(" también funciona")
+                Text("**Esc** también funciona")
             }
             .font(.system(size: 11))
             .foregroundColor(.secondary.opacity(0.5))
