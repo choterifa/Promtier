@@ -8,6 +8,7 @@
 
 import AppKit
 import Combine
+import Carbon
 
 class ShortcutManager: ObservableObject {
     static let shared = ShortcutManager()
@@ -45,45 +46,90 @@ class ShortcutManager: ObservableObject {
         }),
     ]
     
+    private var hotKeyRef: EventHotKeyRef?
     private var localMonitor: Any?
-    private var globalMonitor: Any?
     
     private init() {
         print("✅ ShortcutManager inicializado")
         checkAccessibilityPermissions()
         setupMonitors()
+        setupCarbonHotKey()
+    }
+    
+    // MARK: - Carbon HotKey (Detección Global Real)
+    
+    func setupCarbonHotKey() {
+        if let ref = hotKeyRef {
+            UnregisterEventHotKey(ref)
+            hotKeyRef = nil
+        }
+        
+        let prefs = PreferencesManager.shared
+        guard prefs.globalShortcutEnabled else { return }
+        
+        let keyCode = UInt32(prefs.hotkeyCode)
+        var carbonModifiers: UInt32 = 0
+        let flags = NSEvent.ModifierFlags(rawValue: UInt(prefs.hotkeyModifiers))
+        
+        if flags.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
+        if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
+        if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
+        if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
+        
+        let hotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 1) // 'PROM'
+        
+        var registration: EventHotKeyRef?
+        let status = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &registration)
+        
+        if status == noErr {
+            hotKeyRef = registration
+            
+            // Instalar el manejador de eventos
+            var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+            
+            InstallEventHandler(GetApplicationEventTarget(), { (nextHandler, theEvent, userData) -> OSStatus in
+                // Llamada estática para evitar captura de contexto
+                ShortcutManager.handleGlobalHotKey()
+                return noErr
+            }, 1, &eventType, nil, nil)
+            
+            print("💎 Carbon HotKey registrado: \(prefs.hotkeyCode)")
+        }
+    }
+    
+    // Método estático para el handler de Carbon
+    static func handleGlobalHotKey() {
+        DispatchQueue.main.async {
+            shared.handleCarbonHotKey()
+        }
+    }
+    
+    func handleCarbonHotKey() {
+        print("🚀 Carbon HotKey detectado!")
+        MenuBarManager.shared.togglePopover()
     }
     
     // MARK: - Accesibilidad
     
     func checkAccessibilityPermissions(forceDialog: Bool = false) {
-        // Al pasar 'false', evitamos que macOS muestre su ventana negra nativa
         let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         let isTrusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
         
-        if !isTrusted {
-            print("⚠️ Permisos de accesibilidad no concedidos.")
-            
-            if forceDialog {
-                DispatchQueue.main.async {
-                    // 1. Mostrar primero nuestra alerta informativa
-                    let alert = NSAlert()
-                    alert.messageText = "Acceso de Accesibilidad Requerido"
-                    alert.informativeText = "Para que los atajos globales funcionen, por favor activa Promtier en los Ajustes de Accesibilidad.\n\nAl pulsar 'Entendido', se abrirá la configuración por ti."
-                    alert.alertStyle = .informational
-                    alert.addButton(withTitle: "Entendido")
-                    
-                    // 2. Si el usuario da a "Entendido", abrir los ajustes
-                    if alert.runModal() == .alertFirstButtonReturn {
-                        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-                        if let url = url {
-                            NSWorkspace.shared.open(url)
-                        }
+        if !isTrusted && forceDialog {
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Acceso de Accesibilidad Requerido"
+                alert.informativeText = "Para que los atajos funcionen mejor, por favor activa Promtier en los Ajustes de Accesibilidad.\n\nAl pulsar 'Entendido', se abrirá la configuración por ti."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "Entendido")
+                
+                if alert.runModal() == .alertFirstButtonReturn {
+                    let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                    if let url = url {
+                        NSWorkspace.shared.open(url)
                     }
                 }
             }
-        } else {
-            print("✅ Aplicación con permisos de accesibilidad.")
         }
     }
     
@@ -94,37 +140,21 @@ class ShortcutManager: ObservableObject {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             return self?.handleKeyEvent(event)
         }
-        
-        // Monitor global (cuando la app NO está en foco)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            _ = self?.handleKeyEvent(event)
-        }
     }
     
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
-        guard isEnabled && PreferencesManager.shared.globalShortcutEnabled else { return event }
+        guard isEnabled else { return event }
         
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let keyCode = Int(event.keyCode)
         
-        let prefs = PreferencesManager.shared
-        
-        // Atajo personalizado para Toggle Popover
-        if modifiers.rawValue == UInt(prefs.hotkeyModifiers) && keyCode == prefs.hotkeyCode {
-            print("🚀 Atajo global detectado: Toggle Popover")
-            DispatchQueue.main.async {
-                MenuBarManager.shared.togglePopover()
-            }
-            return nil
-        }
-        
-        // ⌘K (Búsqueda Rápida) - KeyCode 40 es 'K'
+        // ⌘K (Búsqueda Rápida)
         if modifiers == .command && keyCode == 40 {
             MenuBarManager.shared.showWithState(.main)
             return nil
         }
         
-        // ⌘N (Nuevo Prompt) - KeyCode 45 es 'N'
+        // ⌘N (Nuevo Prompt)
         if modifiers == .command && keyCode == 45 {
             MenuBarManager.shared.showWithState(.newPrompt)
             return nil
@@ -137,12 +167,15 @@ class ShortcutManager: ObservableObject {
     
     func enableShortcuts() {
         isEnabled = true
-        print("✅ Atajos habilitados")
+        setupCarbonHotKey()
     }
     
     func disableShortcuts() {
         isEnabled = false
-        print("⚠️ Atajos deshabilitados")
+        if let ref = hotKeyRef {
+            UnregisterEventHotKey(ref)
+            hotKeyRef = nil
+        }
     }
     
     func toggleShortcuts() {
@@ -153,11 +186,5 @@ class ShortcutManager: ObservableObject {
         }
     }
     
-    // MARK: - Información
-    
-    func getShortcutInfo() -> [(name: String, key: String, modifiers: String)] {
-        return shortcuts.map { shortcut in
-            return (name: shortcut.name, key: shortcut.keyCombination, modifiers: "")
-        }
-    }
+    func getShortcutInfo() -> [(name: String, key: String, modifiers: String)] { [] }
 }
