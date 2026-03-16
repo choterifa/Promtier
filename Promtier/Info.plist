@@ -38,6 +38,10 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
+		<key>NSDocumentsFolderUsageDescription</key>
+		<string>Promtier necesita acceso para guardar y exportar prompts</string>
+		<key>NSDownloadsFolderUsageDescription</key>
+		<string>Promtier necesita acceso para exportar prompts a esta carpeta</string>
 	</dict>
 </dict>
 </plist>

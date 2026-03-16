@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 // VISTA PRINCIPAL SIMPLIFICADA: Búsqueda básica con resultados
 struct SearchViewSimple: View {
@@ -198,7 +199,7 @@ struct SearchViewSimple: View {
             if showingPreview {
                 showingPreview = false
                 return .handled
-            } else if let prompt = selectedPrompt {
+            } else if selectedPrompt != nil {
                 // Solo mostrar preview si hay un prompt seleccionado
                 showingPreview = true
                 return .handled
@@ -365,28 +366,35 @@ struct SearchViewSimple: View {
         let timestamp = dateFormatter.string(from: Date())
         let fileName = "prompts_export_\(timestamp).txt"
         
-        // Obtener ruta de Descargas
-        if let downloadsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let fileURL = downloadsURL.appendingPathComponent(fileName)
-            
-            do {
-                try exportContent.write(to: fileURL, atomically: true, encoding: .utf8)
-                
-                // Mostrar notificación de éxito
-                let alert = NSAlert()
-                alert.messageText = "Exportación completada"
-                alert.informativeText = "Los prompts han sido exportados a:\n\(fileName)"
-                alert.alertStyle = .informational
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
-                
-            } catch {
-                let alert = NSAlert()
-                alert.messageText = "Error al exportar"
-                alert.informativeText = error.localizedDescription
-                alert.alertStyle = .critical
-                alert.addButton(withTitle: "OK")
-                alert.runModal()
+        // Crear el diálogo de guardar nativo de macOS
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.plainText]
+        savePanel.nameFieldStringValue = fileName
+        savePanel.title = "Exportar Prompts"
+        savePanel.message = "Elige dónde guardar el archivo de prompts exportados"
+        
+        // Mostrar el diálogo y esperar respuesta del usuario
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    try exportContent.write(to: url, atomically: true, encoding: .utf8)
+                    
+                    // Mostrar notificación de éxito
+                    let alert = NSAlert()
+                    alert.messageText = "Exportación completada"
+                    alert.informativeText = "Los prompts han sido exportados a:\n\(url.lastPathComponent)"
+                    alert.alertStyle = .informational
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                    
+                } catch {
+                    let alert = NSAlert()
+                    alert.messageText = "Error al exportar"
+                    alert.informativeText = error.localizedDescription
+                    alert.alertStyle = .critical
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
             }
         }
     }

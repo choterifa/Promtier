@@ -218,13 +218,13 @@ struct NewPromptView: View {
         )
         
         if let editingPrompt = editingPrompt {
-            // Actualizar prompt existente
+            // Actualizar prompt existente - mantener ID original
             var updatedPrompt = newPrompt
-            updatedPrompt.id = editingPrompt.id // Necesitamos poder asignar el ID
+            updatedPrompt.id = editingPrompt.id // Mantener el ID original
+            updatedPrompt.isFavorite = isFavorite
             updatedPrompt.createdAt = editingPrompt.createdAt
             updatedPrompt.modifiedAt = Date()
             updatedPrompt.useCount = editingPrompt.useCount
-            updatedPrompt.isFavorite = isFavorite
             
             _ = promptService.updatePrompt(updatedPrompt)
         } else {
