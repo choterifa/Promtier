@@ -78,7 +78,7 @@ struct CategorySidebar: View {
                 .padding(.vertical, 12)
             }
         }
-        .frame(width: 140) // Reducido de 200px a 140px
+        .frame(width: 180) // Aumentado a 180px para ser ~30% del ancho total
         .background(Color(NSColor.controlBackgroundColor))
         .border(Color.gray.opacity(0.2), width: 1)
     }

@@ -205,7 +205,7 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .frame(width: 600, height: 480) // Reducido de 760px a 600px
+        .frame(width: 650, height: 480) // Aumentado a 650px para acomodar sidebar más grande
         .onKeyPress(.space) {
             // Optimización: Manejo más eficiente del espacio
             if showingPreview {

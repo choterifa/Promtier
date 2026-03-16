@@ -24,7 +24,7 @@ struct PreferencesView: View {
             // Header moderno con título y botón de cerrar
             HStack(spacing: 20) {
                 Text("Preferencias")
-                    .font(.title2)
+                    .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
@@ -93,7 +93,7 @@ struct PreferencesView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
         }
-        .frame(width: 560, height: 480)
+        .frame(width: 770, height: 312)
         .sheet(isPresented: $showingExportSheet) {
             ExportView()
         }
@@ -126,7 +126,7 @@ struct AppearanceTab: View {
                 // Sección de Tema
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Tema")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -143,7 +143,7 @@ struct AppearanceTab: View {
                 // Sección de Tipografía
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Tipografía")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -175,7 +175,7 @@ struct BehaviorTab: View {
                 // Sección de Interacción
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Interacción")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -208,7 +208,7 @@ struct BehaviorTab: View {
                 // Sección de Notificaciones
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Notificaciones")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -233,7 +233,7 @@ struct BehaviorTab: View {
                 // Sección de Inicio
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Inicio")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -269,7 +269,7 @@ struct ShortcutsTab: View {
                 // Sección de Atajos Globales
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Atajos Globales")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -333,7 +333,7 @@ struct ShortcutsTab: View {
                 // Sección de Atajos en la App
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Atajos en la App")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 8) {
@@ -398,11 +398,11 @@ struct DataTab: View {
                 // Sección de Exportación/Importación
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Exportación/Importación")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
-                        Button("Exportar datos...") {
+                        Button("Exportar datos") {
                             showingExportSheet = true
                         }
                         .font(.system(size: 16))
@@ -420,7 +420,7 @@ struct DataTab: View {
                         )
                         .buttonStyle(PlainButtonStyle())
                         
-                        Button("Importar datos...") {
+                        Button("Importar datos") {
                             showingImportSheet = true
                         }
                         .font(.system(size: 16))
@@ -443,7 +443,7 @@ struct DataTab: View {
                 // Sección de Sincronización
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Sincronización")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     VStack(spacing: 12) {
@@ -468,7 +468,7 @@ struct DataTab: View {
                 // Sección de Restablecimiento
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Restablecimiento")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     Button("Restablecer configuración") {
@@ -505,7 +505,7 @@ struct ExportView: View {
             // Header moderno
             HStack(spacing: 20) {
                 Text("Exportar Datos")
-                    .font(.title2)
+                    .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
@@ -606,7 +606,7 @@ struct ExportView: View {
             .padding(.vertical, 16)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 560, height: 400)
+        .frame(width: 770, height: 260)
     }
 }
 
@@ -618,7 +618,7 @@ struct ImportView: View {
             // Header moderno
             HStack(spacing: 20) {
                 Text("Importar Datos")
-                    .font(.title2)
+                    .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
@@ -719,7 +719,7 @@ struct ImportView: View {
             .padding(.vertical, 16)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 560, height: 400)
+        .frame(width: 770, height: 260)
     }
 }
 
