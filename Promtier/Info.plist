@@ -43,5 +43,7 @@
 		<key>NSDownloadsFolderUsageDescription</key>
 		<string>Promtier necesita acceso para exportar prompts a esta carpeta</string>
 	</dict>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Promtier necesita controlar System Events para pegar automáticamente tus prompts en otras aplicaciones.</string>
 </dict>
 </plist>

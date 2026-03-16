@@ -40,8 +40,13 @@ struct PromptCard: View {
         return attrString
     }
     
+    // EXTENSIÓN: Contador de variables
     private var variableCount: Int {
         prompt.extractTemplateVariables().count
+    }
+
+    private var variableCountText: String {
+        "\(variableCount)"
     }
     
     var body: some View {
@@ -129,6 +134,7 @@ struct PromptCard: View {
                     .frame(width: 10) // Espacio fijo reservado
             }
         }
+
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(

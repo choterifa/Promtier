@@ -45,14 +45,25 @@ class ClipboardService: ObservableObject {
     
     /// Ejecuta el pegado automático mediante AppleScript
     private func performAutoPaste() {
-        // CONFIGURABLE: Retraso sutil para dejar que la otra app tome foco si es necesario
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let scriptSource = "tell application \"System Events\" to keystroke \"v\" using {command down}"
-            if let script = NSAppleScript(source: scriptSource) {
-                var error: NSDictionary?
-                script.executeAndReturnError(&error)
-                if let err = error {
-                    print("Error en Auto-Paste: \(err)")
+        // 1. Cerrar el popover primero para devolver el foco a la app anterior
+        DispatchQueue.main.async {
+            MenuBarManager.shared.closePopover()
+            
+            // 2. Esperar un poco más (0.4s) para asegurar que el foco cambió realmente
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                // Script mejorado: Asegura que System Events responda y usa keystroke "v"
+                let scriptSource = """
+                tell application "System Events"
+                    keystroke "v" using {command down}
+                end tell
+                """
+                
+                if let script = NSAppleScript(source: scriptSource) {
+                    var error: NSDictionary?
+                    script.executeAndReturnError(&error)
+                    if let err = error {
+                        print("Error en Auto-Paste: \(err)")
+                    }
                 }
             }
         }

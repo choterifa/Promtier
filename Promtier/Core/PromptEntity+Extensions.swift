@@ -9,6 +9,8 @@
 import Foundation
 import CoreData
 
+
+
 // IMPORTAR MODELOS PARA CONVERSIÓN
 // Nota: Este archivo necesita acceso a los modelos de datos
 
@@ -52,6 +54,8 @@ extension PromptEntity {
         return entity
     }
 }
+
+
 
 // EXTENSIÓN: Consultas predefinidas para PromptEntity
 extension PromptEntity {
