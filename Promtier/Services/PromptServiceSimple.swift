@@ -133,6 +133,25 @@ class PromptServiceSimple: ObservableObject {
         return prompts
     }
     
+    /// Exporta todos los prompts a texto plano
+    func exportAllPrompts() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = dateFormatter.string(from: Date())
+        
+        var exportText = "=== PROMPTS EXPORTADOS ===\n"
+        exportText += "Fecha: \(timestamp)\n\n"
+        
+        for prompt in prompts {
+            exportText += "Título: \(prompt.title)\n"
+            exportText += "Descripción: \(prompt.description ?? "Sin descripción")\n"
+            exportText += "Contenido:\n\(prompt.content)\n"
+            exportText += "---\n\n"
+        }
+        
+        return exportText
+    }
+    
     /// Busca prompts por carpeta
     func getPromptsInFolder(_ folder: String) -> [Prompt] {
         return prompts.filter { $0.folder == folder }

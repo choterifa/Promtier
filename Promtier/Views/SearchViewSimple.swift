@@ -172,25 +172,18 @@ struct SearchViewSimple: View {
                                     usePrompt(prompt)
                                 }
                                 
-                                Button("Ver detalles") {
+                                Button("Editar") { 
                                     selectedPrompt = prompt
-                                    showingPromptDetail = true
-                                }
-                                
-                                Button("Editar") {
-                                    selectedPrompt = prompt
-                                    showingEditPrompt = true
+                                    showingEditPrompt = true 
                                 }
                                 
                                 Divider()
                                 
-                                Button(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos") {
-                                    toggleFavorite(prompt)
+                                Button("Exportar a texto plano") {
+                                    exportPromptsToFile()
                                 }
                                 
-                                Button("Eliminar") {
-                                    deletePrompt(prompt)
-                                }
+                                Button("Eliminar") { deletePrompt(prompt) }
                             }
                         }
                     }
@@ -360,6 +353,41 @@ struct SearchViewSimple: View {
         // Actualizar en cola principal para evitar threading issues
         DispatchQueue.main.async {
             _ = self.promptService.deletePrompt(prompt)
+        }
+    }
+    
+    /// Exporta todos los prompts a un archivo de texto
+    private func exportPromptsToFile() {
+        let exportContent = promptService.exportAllPrompts()
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = dateFormatter.string(from: Date())
+        let fileName = "prompts_export_\(timestamp).txt"
+        
+        // Obtener ruta de Descargas
+        if let downloadsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let fileURL = downloadsURL.appendingPathComponent(fileName)
+            
+            do {
+                try exportContent.write(to: fileURL, atomically: true, encoding: .utf8)
+                
+                // Mostrar notificación de éxito
+                let alert = NSAlert()
+                alert.messageText = "Exportación completada"
+                alert.informativeText = "Los prompts han sido exportados a:\n\(fileName)"
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+                
+            } catch {
+                let alert = NSAlert()
+                alert.messageText = "Error al exportar"
+                alert.informativeText = error.localizedDescription
+                alert.alertStyle = .critical
+                alert.addButton(withTitle: "OK")
+                alert.runModal()
+            }
         }
     }
 }
