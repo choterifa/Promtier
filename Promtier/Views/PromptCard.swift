@@ -18,6 +18,32 @@ struct PromptCard: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     
+    private var highlightedContent: AttributedString {
+        var attrString = AttributedString(prompt.content)
+        let pattern = "\\{\\{([^}]+)\\}\\}"
+        
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return attrString
+        }
+        
+        let range = NSRange(prompt.content.startIndex..<prompt.content.endIndex, in: prompt.content)
+        let matches = regex.matches(in: prompt.content, options: [], range: range)
+        
+        // Aplicar estilos de atrás hacia adelante para no romper los índices (aunque AttributedString maneja rangos, es buena práctica)
+        for match in matches.reversed() {
+            if let range = Range(match.range, in: attrString) {
+                attrString[range].foregroundColor = .blue
+                attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
+            }
+        }
+        
+        return attrString
+    }
+    
+    private var variableCount: Int {
+        prompt.extractTemplateVariables().count
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
             // Icono de categoría refinado
@@ -51,7 +77,7 @@ struct PromptCard: View {
                     .foregroundColor(isSelected ? .blue : .primary)
                     .lineLimit(1)
                 
-                Text(prompt.content)
+                Text(highlightedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.8))
                     .lineLimit(3)
@@ -79,6 +105,20 @@ struct PromptCard: View {
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
                     .background(Color.primary.opacity(0.04))
+                    .clipShape(Capsule())
+                }
+                
+                if variableCount > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "cube.transparent.fill")
+                            .font(.system(size: 8))
+                        Text("\(variableCount)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.blue.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.1))
                     .clipShape(Capsule())
                 }
                 
