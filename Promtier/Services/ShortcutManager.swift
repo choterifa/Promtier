@@ -45,12 +45,53 @@ class ShortcutManager: ObservableObject {
         }),
     ]
     
+    private var localMonitor: Any?
+    private var globalMonitor: Any?
+    
     private init() {
         print("✅ ShortcutManager inicializado")
-        print("📋 Atajos disponibles:")
-        for shortcut in shortcuts {
-            print("   \(shortcut.keyCombination) - \(shortcut.name)")
+        setupMonitors()
+    }
+    
+    // MARK: - Monitores de Eventos
+    
+    private func setupMonitors() {
+        // Monitor local (cuando la app está en foco)
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            return self?.handleKeyEvent(event)
         }
+        
+        // Monitor global (cuando la app NO está en foco)
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            _ = self?.handleKeyEvent(event)
+        }
+    }
+    
+    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
+        guard isEnabled && PreferencesManager.shared.globalShortcutEnabled else { return event }
+        
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let keyCode = event.keyCode
+        
+        // ⌘⇧P (Escamotear/Mostrar Ventana) - KeyCode 35 es 'P'
+        if modifiers == [.command, .shift] && keyCode == 35 {
+            MenuBarManager.shared.togglePopover()
+            return nil // Bloquear evento si es local
+        }
+        
+        // ⌘K (Búsqueda Rápida) - KeyCode 40 es 'K'
+        if modifiers == .command && keyCode == 40 {
+            MenuBarManager.shared.showWithState(.main)
+            return nil
+        }
+        
+        // ⌘N (Nuevo Prompt) - KeyCode 45 es 'N'
+        if modifiers == .command && keyCode == 45 {
+            MenuBarManager.shared.showWithState(.newPrompt)
+            return nil
+        }
+        
+        return event
     }
     
     // MARK: - Control

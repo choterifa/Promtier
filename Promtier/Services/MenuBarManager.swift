@@ -21,6 +21,14 @@ class MenuBarManager: NSObject, ObservableObject {
     private var popover: NSPopover?
     
     @Published var isPopoverShown = false
+    @Published var activeViewState: PopoverViewState = .main
+    
+    enum PopoverViewState {
+        case main
+        case newPrompt
+        case preferences
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     // Servicios compartidos
@@ -72,10 +80,24 @@ class MenuBarManager: NSObject, ObservableObject {
             if popover.isShown {
                 closePopover()
             } else {
+                activeViewState = .main
                 showPopover(relativeTo: button.bounds, of: button)
             }
         } else {
+            activeViewState = .main
             showPopover(relativeTo: button.bounds, of: button)
+        }
+    }
+    
+    /// Muestra el popover con un estado específico
+    func showWithState(_ state: PopoverViewState) {
+        guard let button = statusItem?.button else { return }
+        self.activeViewState = state
+        showPopover(relativeTo: button.bounds, of: button)
+        
+        // Si es búsqueda, asegurar que el query esté limpio o enfocado (esto se manejará en la vista)
+        if state == .main {
+            // Podríamos limpiar la búsqueda aquí si quisiéramos
         }
     }
     
@@ -117,6 +139,7 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Muestra el popover
     func showPopover() {
         guard let button = statusItem?.button else { return }
+        activeViewState = .main
         showPopover(relativeTo: button.bounds, of: button)
     }
     

@@ -15,6 +15,8 @@ struct SearchViewSimple: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     
+    @EnvironmentObject var menuBarManager: MenuBarManager
+    
     enum ViewState {
         case main
         case newPrompt
@@ -23,6 +25,7 @@ struct SearchViewSimple: View {
     }
     
     @State private var viewState: ViewState = .main
+    @FocusState private var isSearchFocused: Bool
     @State private var selectedPrompt: Prompt?
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
@@ -86,6 +89,19 @@ struct SearchViewSimple: View {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             }
         }
+        .onChange(of: menuBarManager.activeViewState) { newState in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                switch newState {
+                case .main:
+                    viewState = .main
+                    isSearchFocused = true
+                case .newPrompt:
+                    viewState = .newPrompt
+                case .preferences:
+                    viewState = .preferences
+                }
+            }
+        }
         .popover(isPresented: $showingPreview) {
             if let prompt = selectedPrompt {
                 PromptPreviewView(prompt: prompt)
@@ -121,6 +137,7 @@ struct SearchViewSimple: View {
                             TextField("Buscar tus prompts...", text: $promptService.searchQuery)
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
+                                .focused($isSearchFocused)
                             
                             if !promptService.searchQuery.isEmpty {
                                 Button(action: { promptService.searchQuery = "" }) {
