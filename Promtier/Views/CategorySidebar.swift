@@ -13,6 +13,7 @@ struct CategorySidebar: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var showingFolderManager = false
+    @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
@@ -126,6 +127,16 @@ struct CategorySidebar: View {
         .sheet(isPresented: $showingFolderManager) {
             FolderManagerView()
                 .environmentObject(promptService)
+        }
+        .onChange(of: showingFolderManager) { oldValue, newValue in
+            menuBarManager.isModalActive = newValue
+        }
+        .onChange(of: menuBarManager.isModalActive) { oldValue, newValue in
+            // Sincronización bidireccional: si el manager limpia el estado (ej: al cerrar el popover),
+            // cerramos localmente el sheet para que no se bloquee nada al volver.
+            if !newValue && showingFolderManager {
+                showingFolderManager = false
+            }
         }
     }
 }

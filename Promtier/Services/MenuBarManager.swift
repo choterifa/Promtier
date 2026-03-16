@@ -22,6 +22,11 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main
+    @Published var isModalActive: Bool = false {
+        didSet {
+            updatePopoverBehavior()
+        }
+    }
     
     enum PopoverViewState {
         case main
@@ -64,8 +69,8 @@ class MenuBarManager: NSObject, ObservableObject {
             button.action = #selector(togglePopover)
             button.target = self
             
-            // CONFIGURABLE: Efectos visuales
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            // CONFIGURABLE: Solo permitir click izquierdo para mayor estabilidad
+            button.sendAction(on: [.leftMouseUp])
             
             // Tooltip informativo
             button.toolTip = "Promtier - Gestor de Prompts (⌘⇧P)"
@@ -152,6 +157,9 @@ class MenuBarManager: NSObject, ObservableObject {
                                            accessibilityDescription: "Promtier")
         
         isPopoverShown = false
+        
+        // Limpiar estado modal si existiera al cerrar
+        isModalActive = false
     }
     
     // MARK: - Atajos Globales
@@ -226,6 +234,13 @@ class MenuBarManager: NSObject, ObservableObject {
         case .system:
             popover.appearance = nil // Hereda del sistema
         }
+    }
+    
+    private func updatePopoverBehavior() {
+        guard let popover = popover else { return }
+        // Si hay un modal activo (como el FolderManager), no queremos que el popover 
+        // se cierre solo al hacer clic fuera, porque eso rompe la gestión de Sheets en SwiftUI
+        popover.behavior = isModalActive ? .applicationDefined : .transient
     }
 }
 
