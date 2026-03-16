@@ -20,14 +20,16 @@ struct Prompt: Identifiable, Codable {
     var useCount: Int               // Contador de uso
     var lastUsedAt: Date?           // Última vez que se copió
     var icon: String?                // Icono personalizado (SFSymbol)
+    var showcaseImages: [Data] = []  // Imágenes de resultados (max 3)
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, folder: String? = nil, icon: String? = nil) {
+    init(title: String, content: String, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = []) {
         self.id = UUID()
         self.title = title
         self.content = content
         self.folder = folder
         self.icon = icon
+        self.showcaseImages = showcaseImages
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()

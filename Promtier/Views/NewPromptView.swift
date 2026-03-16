@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Foundation
+import UniformTypeIdentifiers
 
 struct NewPromptView: View {
     var prompt: Prompt?
@@ -21,6 +22,7 @@ struct NewPromptView: View {
     @State private var selectedFolder: String?
     @State private var isFavorite = false
     @State private var selectedIcon: String?
+    @State private var showcaseImages: [Data] = []
     @State private var isSaving = false
     @State private var showingZenEditor = false
     @State private var showingIconPicker = false
@@ -245,6 +247,74 @@ struct NewPromptView: View {
                 }
                 .padding(.horizontal, 4)
                 .frame(height: 44)
+                
+                // Galería de Resultados (Imágenes)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Resultados (Max 3)")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        if showcaseImages.count < 3 {
+                            Button(action: selectImages) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("Añadir Imagen")
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    HStack(spacing: 12) {
+                        ForEach(0..<3, id: \.self) { index in
+                            ZStack(alignment: .topTrailing) {
+                                if index < showcaseImages.count {
+                                    if let nsImage = NSImage(data: showcaseImages[index]) {
+                                        Image(nsImage: nsImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 80, height: 60, alignment: .top)
+                                            .clipped()
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                            )
+                                        
+                                        Button(action: { showcaseImages.remove(at: index) }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.red)
+                                                .background(Circle().fill(Color.white))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .offset(x: 5, y: -5)
+                                    }
+                                } else {
+                                    // Placeholder vacío
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.primary.opacity(0.03))
+                                        .frame(width: 80, height: 60)
+                                        .overlay(
+                                            Image(systemName: "photo")
+                                                .foregroundColor(.secondary.opacity(0.2))
+                                        )
+                                }
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+                .padding(.top, 4)
             }
             .padding(24)
         }
@@ -277,6 +347,7 @@ struct NewPromptView: View {
                 selectedFolder = prompt.folder
                 isFavorite = prompt.isFavorite
                 selectedIcon = prompt.icon
+                showcaseImages = prompt.showcaseImages
             }
         }
     }
@@ -291,10 +362,11 @@ struct NewPromptView: View {
             updated.folder = selectedFolder
             updated.isFavorite = isFavorite
             updated.icon = selectedIcon
+            updated.showcaseImages = showcaseImages
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
-            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon)
+            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages)
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
         }
@@ -319,6 +391,25 @@ struct NewPromptView: View {
         if let proxy = proxy {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 proxy.scrollTo(newSelection ?? "none", anchor: .center)
+            }
+        }
+    }
+    
+    private func selectImages() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.image]
+        
+        if panel.runModal() == .OK {
+            for url in panel.urls {
+                if showcaseImages.count < 3 {
+                    if let data = try? Data(contentsOf: url) {
+                        // Opcional: Podríamos comprimir la imagen aquí si Core Data se vuelve lento
+                        showcaseImages.append(data)
+                    }
+                }
             }
         }
     }

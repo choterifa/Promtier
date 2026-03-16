@@ -93,6 +93,44 @@ struct PromptPreviewView: View {
                         .lineSpacing(6)
                         .foregroundColor(.primary.opacity(0.9))
                         .textSelection(.enabled)
+                    
+                    // Galería de Resultados (Showcase)
+                    if !prompt.showcaseImages.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Divider().padding(.vertical, 8)
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .foregroundColor(.blue)
+                                Text("RESULTADOS DEL PROMPT")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(prompt.showcaseImages, id: \.self) { imageData in
+                                        if let nsImage = NSImage(data: imageData) {
+                                            Image(nsImage: nsImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 200, height: 140, alignment: .top)
+                                                .clipped()
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                                )
+                                                .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 2)
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
