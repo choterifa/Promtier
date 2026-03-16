@@ -10,6 +10,7 @@ import SwiftUI
 
 struct FolderManagerView: View {
     @EnvironmentObject var promptService: PromptService
+    var folderToEdit: Folder? = nil
     var onClose: () -> Void
     
     @State private var folders: [Folder] = []
@@ -205,6 +206,10 @@ struct FolderManagerView: View {
         }
         .opacity(isReady ? 1 : 0)
         .onAppear {
+            if let initialFolder = folderToEdit {
+                startEditing(initialFolder)
+            }
+            
             // Sincronización fina: Esperamos a que la ventana se mueva un poco
             // antes de empezar el desvanecimiento y la cascada de elementos.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -319,6 +324,6 @@ struct CategoryRow: View {
 }
 
 #Preview {
-    FolderManagerView(onClose: {})
+    FolderManagerView(folderToEdit: nil, onClose: {})
         .environmentObject(PromptService())
 }

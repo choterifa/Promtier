@@ -40,8 +40,9 @@ struct SearchViewSimple: View {
                 .environmentObject(preferences)
                 .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
             case .folderManager:
-                FolderManagerView(onClose: {
+                FolderManagerView(folderToEdit: menuBarManager.folderToEdit, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        menuBarManager.folderToEdit = nil // Limpiar al cerrar
                         menuBarManager.activeViewState = .main
                     }
                 })

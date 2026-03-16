@@ -22,6 +22,7 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main
+    @Published var folderToEdit: Folder? = nil
     @Published var isModalActive: Bool = false {
         didSet {
             updatePopoverBehavior()

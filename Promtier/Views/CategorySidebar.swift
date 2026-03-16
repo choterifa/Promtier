@@ -113,6 +113,22 @@ struct CategorySidebar: View {
                         ) {
                             promptService.selectedCategory = folder.name
                         }
+                        .contextMenu {
+                            Button {
+                                menuBarManager.folderToEdit = folder
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .folderManager
+                                }
+                            } label: {
+                                Label("Editar", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                promptService.deleteFolder(folder)
+                            } label: {
+                                Label("Eliminar", systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 12)
