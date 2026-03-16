@@ -10,6 +10,7 @@ import SwiftUI
 
 struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var preferences: PreferencesManager
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
@@ -29,10 +30,10 @@ struct CategorySidebar: View {
             // Header sutil
             HStack {
                 Text("Explorar")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .tracking(1.2 * preferences.fontSize.scale)
                 
                 Spacer()
             }
@@ -110,18 +111,19 @@ struct SidebarItem: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
                     .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                    .frame(width: 20)
+                    .frame(width: 20 * preferences.fontSize.scale)
                 
                 Text(title)
-                    .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                    .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
                     .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
                     .lineLimit(1)
                 
@@ -129,7 +131,7 @@ struct SidebarItem: View {
                 
                 if count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)

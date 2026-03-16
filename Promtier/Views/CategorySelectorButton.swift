@@ -15,18 +15,20 @@ struct CategorySelectorButton: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 // Icono con color
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
                     .foregroundColor(color)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 20 * preferences.fontSize.scale, height: 20 * preferences.fontSize.scale)
                 
                 // Título
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 

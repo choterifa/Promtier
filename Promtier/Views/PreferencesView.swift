@@ -33,9 +33,9 @@ struct PreferencesView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Configuración")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                     Text("Personaliza tu experiencia en Promtier")
-                        .font(.system(size: 13))
+                        .font(.system(size: 13 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
                 }
                 
@@ -60,9 +60,9 @@ struct PreferencesView: View {
                     Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
                         HStack(spacing: 8) {
                             Image(systemName: tabs[index].icon)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
                             Text(tabs[index].title)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -145,6 +145,8 @@ struct SettingsSection<Content: View>: View {
     let icon: String
     let content: Content
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     init(title: String, icon: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.icon = icon
@@ -156,9 +158,9 @@ struct SettingsSection<Content: View>: View {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .foregroundColor(.blue)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
                 Text(title.uppercased())
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
             }
@@ -183,6 +185,8 @@ struct SettingsRow<Content: View>: View {
     let subtitle: String?
     let content: Content
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     init(_ label: String, subtitle: String? = nil, @ViewBuilder content: () -> Content) {
         self.label = label
         self.subtitle = subtitle
@@ -193,10 +197,10 @@ struct SettingsRow<Content: View>: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
                 if let subtitle = subtitle {
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: 12 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
                 }
             }
@@ -324,14 +328,16 @@ struct ShortcutItem: View {
     let label: String
     let shortcut: String
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 13))
+                .font(.system(size: 13 * preferences.fontSize.scale))
                 .foregroundColor(.secondary)
             Spacer()
             Text(shortcut)
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .font(.system(size: 13 * preferences.fontSize.scale, weight: .bold, design: .monospaced))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.blue.opacity(0.1))
