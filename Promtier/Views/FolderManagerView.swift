@@ -241,42 +241,44 @@ struct CategoryRow: View {
             Text(folder.name)
                 .font(.system(size: 14, weight: isEditing ? .bold : .medium))
                 .foregroundColor(isEditing ? .primary : .primary.opacity(0.8))
+                .lineLimit(1)
             
             Spacer()
             
-            if isHovered || isEditing {
-                HStack(spacing: 10) {
-                    Button(action: onEdit) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 11, weight: .black))
-                            .foregroundColor(.blue.opacity(0.8))
-                            .frame(width: 26, height: 26)
-                            .background(Color.blue.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Editar categoría")
-                    
-                    Button(action: onDelete) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.red.opacity(0.7))
-                            .frame(width: 26, height: 26)
-                            .background(Color.red.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Eliminar categoría")
+            // Contenedor de acciones con ancho fijo para evitar saltos
+            HStack(spacing: 8) {
+                Button(action: onEdit) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 11, weight: .black))
+                        .foregroundColor(.blue.opacity(0.8))
+                        .frame(width: 26, height: 26)
+                        .background(Color.blue.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                .buttonStyle(.plain)
+                .help("Editar categoría")
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.red.opacity(0.7))
+                        .frame(width: 26, height: 26)
+                        .background(Color.red.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .help("Eliminar categoría")
             }
+            .opacity(isHovered || isEditing ? 1 : 0)
+            .scaleEffect(isHovered || isEditing ? 1 : 0.9)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered || isEditing)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 24)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isEditing ? Color.blue.opacity(0.08) : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 12)
         )
         .onHover { h in withAnimation(.easeInOut(duration: 0.2)) { isHovered = h } }
         .contentShape(Rectangle())
