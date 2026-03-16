@@ -38,7 +38,7 @@ struct SearchViewSimple: View {
                     }
                 })
                 .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
             case .folderManager:
                 FolderManagerView(folderToEdit: menuBarManager.folderToEdit, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
