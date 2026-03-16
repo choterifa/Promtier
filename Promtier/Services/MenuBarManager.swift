@@ -23,7 +23,7 @@ class MenuBarManager: NSObject, ObservableObject {
     @Published var isPopoverShown = false
     
     // Servicios compartidos
-    private let promptService = PromptServiceSimple()
+    private let promptService = PromptService()
     private let preferencesManager = PreferencesManager.shared
     
     // CONFIGURABLE: Gestor de atajos (inicialización lazy)

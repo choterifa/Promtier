@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 
 // VISTA PRINCIPAL SIMPLIFICADA: Búsqueda básica con resultados
 struct SearchViewSimple: View {
-    @EnvironmentObject var promptService: PromptServiceSimple
+    @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var selectedCategory: String?

@@ -12,7 +12,7 @@ import Foundation
 struct NewPromptView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @EnvironmentObject var promptService: PromptServiceSimple
+    @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var title = ""
@@ -236,6 +236,6 @@ struct NewPromptView: View {
 
 #Preview {
     NewPromptView()
-        .environmentObject(PromptServiceSimple())
+        .environmentObject(PromptService())
         .environmentObject(PreferencesManager.shared)
 }

@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct FolderManagerView: View {
-    @EnvironmentObject var promptService: PromptServiceSimple
+    @EnvironmentObject var promptService: PromptService
     @Environment(\.dismiss) private var dismiss
     
     @State private var folders: [String] = []
@@ -383,5 +383,5 @@ struct FolderCard: View {
 
 #Preview {
     FolderManagerView()
-        .environmentObject(PromptServiceSimple())
+        .environmentObject(PromptService())
 }

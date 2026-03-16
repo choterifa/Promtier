@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct CategorySidebar: View {
-    @EnvironmentObject var promptService: PromptServiceSimple
+    @EnvironmentObject var promptService: PromptService
     @Binding var selectedCategory: String?
     
     private var categories: [PredefinedCategory] {
@@ -71,7 +71,13 @@ struct CategorySidebar: View {
                             isSelected: selectedCategory == category.displayName
                         ) {
                             selectedCategory = category.displayName
-                        }
+            // DEBUG: Print category selection
+            print("=== DEBUG: Category Selected ===")
+            print("Category tapped: \(category.displayName)")
+            print("Category rawValue: \(category.rawValue)")
+            print("Setting selectedCategory to: \(category.displayName)")
+            print("=== END DEBUG CATEGORY ===\n")
+        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -140,7 +146,7 @@ struct CategoryButton: View {
 #Preview {
     HStack(spacing: 0) {
         CategorySidebar(selectedCategory: .constant(nil))
-            .environmentObject(PromptServiceSimple())
+            .environmentObject(PromptService())
         
         Rectangle()
             .fill(Color.gray.opacity(0.1))

@@ -19,6 +19,7 @@ class PromptService: ObservableObject {
     @Published var prompts: [Prompt] = []
     @Published var filteredPrompts: [Prompt] = []
     @Published var searchQuery: String = ""
+    @Published var selectedCategory: String? = nil
     @Published var isLoading: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
@@ -29,6 +30,13 @@ class PromptService: ObservableObject {
             .debounce(for: .milliseconds(150), scheduler: RunLoop.main) // CONFIGURABLE: Debounce de búsqueda
             .sink { [weak self] query in
                 self?.filterPrompts(query: query)
+            }
+            .store(in: &cancellables)
+            
+        // Observar cambios en categoría para filtrar automáticamente
+        $selectedCategory
+            .sink { [weak self] _ in
+                self?.filterPrompts(query: self?.searchQuery ?? "")
             }
             .store(in: &cancellables)
         
@@ -115,24 +123,30 @@ class PromptService: ObservableObject {
     
     // MARK: - Búsqueda y Filtrado
     
-    /// Filtra prompts basado en consulta de búsqueda
+    /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
     private func filterPrompts(query: String) {
-        if query.isEmpty {
-            filteredPrompts = prompts
-            return
+        var filtered = prompts
+        
+        // Filtrar por categoría si hay una seleccionada
+        if let category = selectedCategory {
+            filtered = filtered.filter { $0.folder == category }
         }
         
-        // CONFIGURABLE: Algoritmo de búsqueda simplificado
-        let lowercaseQuery = query.lowercased()
-        filteredPrompts = prompts.filter { prompt in
-            prompt.title.lowercased().contains(lowercaseQuery) ||
-            prompt.content.lowercased().contains(lowercaseQuery)
+        // Filtrar por texto si hay consulta
+        if !query.isEmpty {
+            let lowercaseQuery = query.lowercased()
+            filtered = filtered.filter { prompt in
+                prompt.title.lowercased().contains(lowercaseQuery) ||
+                prompt.content.lowercased().contains(lowercaseQuery)
+            }
         }
         
         // CONFIGURABLE: Límite de resultados mostrados
-        if filteredPrompts.count > 50 {
-            filteredPrompts = Array(filteredPrompts.prefix(50))
+        if filtered.count > 50 {
+            filtered = Array(filtered.prefix(50))
         }
+        
+        filteredPrompts = filtered
     }
     
     /// Obtiene prompts favoritos
@@ -145,6 +159,29 @@ class PromptService: ObservableObject {
     func getPromptsInFolder(_ folder: String) -> [Prompt] {
         return prompts.filter { $0.folder == folder }
             .sorted { $0.modifiedAt > $1.modifiedAt }
+    }
+    
+    /// Obtiene todos los prompts
+    func getAllPrompts() -> [Prompt] {
+        return prompts
+    }
+    
+    /// Exporta todos los prompts a texto plano
+    func exportAllPrompts() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = dateFormatter.string(from: Date())
+        
+        var exportText = "=== PROMPTS EXPORTADOS ===\n"
+        exportText += "Fecha: \(timestamp)\n\n"
+        
+        for prompt in prompts {
+            exportText += "Título: \(prompt.title)\n"
+            exportText += "Contenido:\n\(prompt.content)\n"
+            exportText += "---\n\n"
+        }
+        
+        return exportText
     }
     
     // MARK: - Operaciones de Uso

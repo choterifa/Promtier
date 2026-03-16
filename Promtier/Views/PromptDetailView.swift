@@ -12,7 +12,7 @@ struct PromptDetailView: View {
     let prompt: Prompt
     @Environment(\.dismiss) private var dismiss
     
-    @EnvironmentObject var promptService: PromptServiceSimple
+    @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var clipboardService: ClipboardService
     @EnvironmentObject var preferences: PreferencesManager
     
@@ -382,7 +382,7 @@ struct PromptDetailView: View {
     )
     
     PromptDetailView(prompt: samplePrompt)
-        .environmentObject(PromptServiceSimple())
+        .environmentObject(PromptService())
         .environmentObject(ClipboardService.shared)
         .environmentObject(PreferencesManager.shared)
 }
