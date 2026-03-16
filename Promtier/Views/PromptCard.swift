@@ -122,11 +122,11 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
-                if isHovered || isSelected {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.primary.opacity(0.2))
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.primary.opacity(0.2))
+                    .opacity(isHovered || isSelected ? 1 : 0)
+                    .frame(width: 10) // Espacio fijo reservado
             }
         }
         .padding(.horizontal, 16)
@@ -139,7 +139,7 @@ struct PromptCard: View {
                         .stroke(cardBorderColor, lineWidth: 1)
                 )
         )
-        .scaleEffect(isHovered ? 1.005 : 1.0)
+        // Eliminado scaleEffect para mayor estabilidad visual
         .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
         .contentShape(Rectangle())
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
