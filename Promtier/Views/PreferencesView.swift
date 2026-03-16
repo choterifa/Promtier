@@ -89,13 +89,6 @@ struct PreferencesView: View {
                 .tabItem {
                     Label("Datos", systemImage: "externaldrive")
                 }
-                
-                // Tab de Avanzado
-                AdvancedTab()
-                    .environmentObject(preferences)
-                    .tabItem {
-                        Label("Avanzado", systemImage: "slider.horizontal.3")
-                    }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
@@ -525,92 +518,6 @@ struct DataTab: View {
                             )
                     )
                     .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(.vertical, 20)
-        }
-    }
-}
-
-struct AdvancedTab: View {
-    @EnvironmentObject var preferences: PreferencesManager
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Sección de Rendimiento
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Rendimiento")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Optimización de memoria", isOn: $preferences.memoryOptimization)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Caché de búsqueda", isOn: $preferences.searchCache)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                    }
-                }
-                
-                // Sección de Depuración
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Depuración")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Modo desarrollador", isOn: $preferences.developerMode)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        if preferences.developerMode {
-                            Text("El modo desarrollador muestra información adicional para depuración.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                                .padding(.leading, 16)
-                        }
-                    }
-                }
-                
-                // Sección de Privacidad
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Privacidad")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Recopilar datos anónimos de uso", isOn: $preferences.analyticsEnabled)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Enviar informes de errores", isOn: $preferences.errorReporting)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                    }
                 }
             }
             .padding(.vertical, 20)

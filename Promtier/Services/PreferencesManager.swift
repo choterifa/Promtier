@@ -115,36 +115,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var memoryOptimization: Bool {
-        didSet {
-            userDefaults.set(memoryOptimization, forKey: "memoryOptimization")
-        }
-    }
-    
-    @Published var searchCache: Bool {
-        didSet {
-            userDefaults.set(searchCache, forKey: "searchCache")
-        }
-    }
-    
-    @Published var developerMode: Bool {
-        didSet {
-            userDefaults.set(developerMode, forKey: "developerMode")
-        }
-    }
-    
-    @Published var errorReporting: Bool {
-        didSet {
-            userDefaults.set(errorReporting, forKey: "errorReporting")
-        }
-    }
-    
-    @Published var analyticsEnabled: Bool {
-        didSet {
-            userDefaults.set(analyticsEnabled, forKey: "analyticsEnabled")
-        }
-    }
-    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -155,7 +125,6 @@ class PreferencesManager: ObservableObject {
         self.hapticFeedback = userDefaults.bool(forKey: "hapticFeedback")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
-        self.analyticsEnabled = userDefaults.bool(forKey: "analyticsEnabled")
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
@@ -163,11 +132,6 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
-        self.memoryOptimization = userDefaults.bool(forKey: "memoryOptimization")
-        self.searchCache = userDefaults.bool(forKey: "searchCache")
-        self.developerMode = userDefaults.bool(forKey: "developerMode")
-        self.errorReporting = userDefaults.bool(forKey: "errorReporting")
-        self.analyticsEnabled = userDefaults.bool(forKey: "analyticsEnabled")
         
         // Color de acento
         if let colorHex = userDefaults.string(forKey: "accentColor") {
@@ -211,7 +175,6 @@ class PreferencesManager: ObservableObject {
         self.hapticFeedback = true
         self.globalShortcutEnabled = true
         self.language = .spanish
-        self.analyticsEnabled = false
         
         // Nuevas propiedades por defecto
         self.showInDock = false
@@ -219,11 +182,6 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
-        self.memoryOptimization = true
-        self.searchCache = true
-        self.developerMode = false
-        self.errorReporting = true
-        self.analyticsEnabled = false
         self.accentColor = .blue
         
         applyInitialSettings()
@@ -242,7 +200,6 @@ class PreferencesManager: ObservableObject {
             "hapticFeedback": hapticFeedback,
             "globalShortcutEnabled": globalShortcutEnabled,
             "language": language.rawValue,
-            "analyticsEnabled": analyticsEnabled,
             "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         ]
     }
@@ -281,10 +238,6 @@ class PreferencesManager: ObservableObject {
             
             if let globalShortcutEnabled = config["globalShortcutEnabled"] as? Bool {
                 self.globalShortcutEnabled = globalShortcutEnabled
-            }
-            
-            if let analyticsEnabled = config["analyticsEnabled"] as? Bool {
-                self.analyticsEnabled = analyticsEnabled
             }
             
             if let languageRaw = config["language"] as? String {
