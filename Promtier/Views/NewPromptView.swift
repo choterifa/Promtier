@@ -78,14 +78,15 @@ struct NewPromptView: View {
                                     Text("Contenido del prompt...")
                                         .foregroundColor(.secondary)
                                         .padding(.top, 12)
-                                        .padding(.leading, 16)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .padding(.leading, 12)
+                                        .font(.system(size: 16))
                                 }
                                 
                                 TextEditor(text: $content)
-                                    .frame(minHeight: 150)
                                     .font(.system(size: 16))
-                                    .padding(16)
+                                    .scrollContentBackground(.hidden) // Ocultar fondo blanco por defecto
+                                    .padding(8)
+                                    .frame(minHeight: 150)
                             }
                             .background(
                                 RoundedRectangle(cornerRadius: 12)

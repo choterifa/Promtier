@@ -86,32 +86,7 @@ struct SearchViewSimple: View {
             // Contenido principal
             VStack(spacing: 0) {
                 // Header estandarizado con búsqueda
-                VStack(spacing: 16) {
-                    HStack(spacing: 20) {
-                        Text("Promtier")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        Button("Cerrar") {
-                            NSApplication.shared.keyWindow?.close()
-                        }
-                        .keyboardShortcut(.escape)
-                        .foregroundColor(.primary)
-                        .frame(width: 36, height: 36)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(NSColor.controlBackgroundColor))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
+                VStack(spacing: 12) {
                     HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.blue)
@@ -161,7 +136,7 @@ struct SearchViewSimple: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+                .padding(.vertical, 16)
                 .background(Color.gray.opacity(0.15))
                 
                 // Separador moderno
