@@ -274,12 +274,12 @@ struct SearchViewSimple: View {
                                     }
                                 )
                                 .contextMenu {
-                                    Button("Copiar") {
-                                        usePrompt(prompt)
+                                    Button(action: { usePrompt(prompt) }) {
+                                        Label("Copiar", systemImage: "doc.on.doc")
                                     }
                                     
-                                    Button("Editar") { 
-                                        withAnimation(.spring()) { viewState = .editPrompt(prompt) }
+                                    Button(action: { withAnimation(.spring()) { viewState = .editPrompt(prompt) } }) {
+                                        Label("Editar", systemImage: "pencil")
                                     }
                                     
                                     Button(action: { toggleFavorite(prompt) }) {
@@ -289,11 +289,13 @@ struct SearchViewSimple: View {
                                     
                                     Divider()
                                     
-                                    Button("Exportar a texto plano") {
-                                        exportPromptsToFile()
+                                    Button(action: { exportPromptsToFile() }) {
+                                        Label("Exportar a texto plano", systemImage: "square.and.arrow.up")
                                     }
                                     
-                                    Button("Eliminar") { deletePrompt(prompt) }
+                                    Button(role: .destructive, action: { deletePrompt(prompt) }) {
+                                        Label("Eliminar", systemImage: "trash")
+                                    }
                                 }
                             }
                         }
