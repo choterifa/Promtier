@@ -36,7 +36,6 @@ class MenuBarManager: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.setupMenuBar()
             self.setupGlobalHotkey()
-            self.setupLaunchAtLogin()
             self.setupThemeObserver()
         }
     }
@@ -145,18 +144,8 @@ class MenuBarManager: NSObject, ObservableObject {
     
     // MARK: - Launch at Login
     
-    /// Configura inicio automático al arrancar sistema
-    private func setupLaunchAtLogin() {
-        // CONFIGURABLE: Habilitar/deshabilitar inicio automático
-        // Esta función se activará desde preferencias
-        print("Launch at login configurado")
-    }
-    
-    /// Habilita o deshabilita el inicio automático
-    func setLaunchAtLogin(_ enabled: Bool) {
-        // TODO: Implementar launch at login con ServiceManagement framework
-        print("Launch at login: \(enabled)")
-    }
+    // El inicio automático ahora se gestiona directamente en PreferencesManager
+    // mediante SMAppService, asegurando persistencia y estados correctos.
     
     // MARK: - Menú Contextual
     

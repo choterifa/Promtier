@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import Combine
 import AppKit
+import ServiceManagement
 
 // SERVICIO: Gestión centralizada de preferencias con UserDefaults
 class PreferencesManager: ObservableObject {
@@ -37,8 +38,7 @@ class PreferencesManager: ObservableObject {
     @Published var launchAtLogin: Bool {
         didSet {
             userDefaults.set(launchAtLogin, forKey: "launchAtLogin")
-            // TODO: Implementar launch at login cuando MenuBarManager esté disponible
-            // MenuBarManager.shared.setLaunchAtLogin(launchAtLogin)
+            applyLaunchAtLogin()
         }
     }
     
@@ -83,6 +83,7 @@ class PreferencesManager: ObservableObject {
     @Published var showInDock: Bool {
         didSet {
             userDefaults.set(showInDock, forKey: "showInDock")
+            applyDockPolicy()
         }
     }
     
@@ -123,9 +124,44 @@ class PreferencesManager: ObservableObject {
         
         // Aplicar configuración inicial
         applyAppearance()
+        applyDockPolicy()
+        applyLaunchAtLogin()
     }
     
     // MARK: - Métodos de Configuración
+    
+    /// Configura el inicio automático al iniciar sesión
+    private func applyLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if launchAtLogin {
+                if service.status != .enabled {
+                    try service.register()
+                    print("✅ Inicio automático activado")
+                }
+            } else {
+                if service.status == .enabled {
+                    try service.unregister()
+                    print("✅ Inicio automático desactivado")
+                }
+            }
+        } catch {
+            print("❌ Error configurando inicio automático: \(error)")
+        }
+    }
+    
+    /// Configura la visibilidad en el Dock
+    private func applyDockPolicy() {
+        DispatchQueue.main.async {
+            let policy: NSApplication.ActivationPolicy = self.showInDock ? .regular : .accessory
+            NSApp.setActivationPolicy(policy)
+            
+            // Si se muestra en el Dock, asegurar que aparezca al frente
+            if self.showInDock {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+    }
     
     /// Aplica la apariencia seleccionada al sistema
     private func applyAppearance() {
