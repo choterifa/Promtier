@@ -26,6 +26,7 @@ struct NewPromptView: View {
     @State private var isSaving = false
     @State private var showingZenEditor = false
     @State private var showingIconPicker = false
+    @State private var isDragging = false
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -317,6 +318,14 @@ struct NewPromptView: View {
                 .padding(.top, 4)
             }
             .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isDragging ? Color.blue : Color.clear, lineWidth: 2)
+                    .background(isDragging ? Color.blue.opacity(0.05) : Color.clear)
+            )
+            .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
+                handleDrop(providers: providers)
+            }
         }
         .frame(width: 600, height: 500)
         .background(
@@ -412,6 +421,36 @@ struct NewPromptView: View {
                 }
             }
         }
+    }
+    
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        var found = false
+        for provider in providers {
+            if provider.canLoadObject(ofClass: URL.self) {
+                _ = provider.loadObject(ofClass: URL.self) { url, error in
+                    if let url = url, let data = try? Data(contentsOf: url) {
+                        DispatchQueue.main.async {
+                            if showcaseImages.count < 3 {
+                                showcaseImages.append(data)
+                            }
+                        }
+                    }
+                }
+                found = true
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
+                    if let data = data {
+                        DispatchQueue.main.async {
+                            if showcaseImages.count < 3 {
+                                showcaseImages.append(data)
+                            }
+                        }
+                    }
+                }
+                found = true
+            }
+        }
+        return found
     }
 }
 
