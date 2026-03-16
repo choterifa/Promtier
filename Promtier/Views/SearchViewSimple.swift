@@ -90,7 +90,7 @@ struct SearchViewSimple: View {
                             
                             TextField("Buscar tus prompts...", text: $promptService.searchQuery)
                                 .textFieldStyle(.plain)
-                                .font(.system(size: 15))
+                                .font(.system(size: 15 * preferences.fontSize.scale))
                             
                             if !promptService.searchQuery.isEmpty {
                                 Button(action: { promptService.searchQuery = "" }) {
@@ -164,11 +164,11 @@ struct SearchViewSimple: View {
                         
                         VStack(spacing: 12) {
                             Text(promptService.searchQuery.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
                                 .foregroundColor(.primary)
                             
                             Text(promptService.searchQuery.isEmpty ? "Crea tu primer prompt para comenzar" : "Intenta con otros términos de búsqueda")
-                                .font(.system(size: 14))
+                                .font(.system(size: 14 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
                         

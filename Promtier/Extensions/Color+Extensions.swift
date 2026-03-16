@@ -86,9 +86,9 @@ enum FontSize: String, CaseIterable {
     
     var scale: CGFloat {
         switch self {
-        case .small: return 0.9
+        case .small: return 0.8 // 15px -> 12px
         case .medium: return 1.0
-        case .large: return 1.1
+        case .large: return 1.3 // 15px -> 19.5px
         }
     }
 }
