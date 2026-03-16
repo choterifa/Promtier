@@ -135,7 +135,9 @@ struct CategorySidebar: View {
             // Sincronización bidireccional: si el manager limpia el estado (ej: al cerrar el popover),
             // cerramos localmente el sheet para que no se bloquee nada al volver.
             if !newValue && showingFolderManager {
-                showingFolderManager = false
+                withAnimation(.spring()) {
+                    showingFolderManager = false
+                }
             }
         }
     }

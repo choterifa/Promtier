@@ -77,9 +77,15 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     
-    /// Alterna la visibilidad del popover
+    /// Alterna la visibilidad del popover o cierra modales activos
     @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
+        
+        // Si hay un modal activo (ej: FolderManager), el primer click solo cierra el modal
+        if isModalActive {
+            isModalActive = false
+            return
+        }
         
         if let popover = popover {
             if popover.isShown {
