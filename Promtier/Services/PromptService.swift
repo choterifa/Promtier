@@ -226,34 +226,27 @@ class PromptService: ObservableObject {
     
     // MARK: - Operaciones de Uso
     
-    /// Registra uso de prompt y lo copia al clipboard
-    func usePrompt(_ prompt: Prompt) {
-        // Incrementar contador de uso
+    /// Registra uso de prompt (contadores y fechas) sin copiar al clipboard
+    func recordPromptUse(_ prompt: Prompt) {
         var updatedPrompt = prompt
         updatedPrompt.recordUse()
-        
         _ = updatePrompt(updatedPrompt)
-        
-        // Copiar al clipboard
+    }
+    
+    /// Registra uso de prompt y lo copia al clipboard (Versión estándar)
+    func usePrompt(_ prompt: Prompt) {
+        recordPromptUse(prompt)
         clipboardService.copyToClipboard(prompt.content)
     }
     
-    /// Copia prompt con variables de plantilla
+    /// Copia prompt con variables de plantilla (Legacy/Internal)
     func usePromptWithVariables(_ prompt: Prompt, variables: [String: String]) {
         var processedContent = prompt.content
-        
-        // Reemplazar variables {{nombre}} con valores proporcionados
         for (key, value) in variables {
             processedContent = processedContent.replacingOccurrences(of: "{{\(key)}}", with: value)
         }
-        
-        // Copiar contenido procesado
         clipboardService.copyToClipboard(processedContent)
-        
-        // Registrar uso
-        var updatedPrompt = prompt
-        updatedPrompt.recordUse()
-        _ = updatePrompt(updatedPrompt)
+        recordPromptUse(prompt)
     }
     
     // MARK: - Estadísticas

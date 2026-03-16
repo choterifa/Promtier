@@ -58,10 +58,10 @@ struct SearchViewSimple: View {
                             withAnimation { fillingVariablesFor = nil }
                         }
                     
-                    VariableFillView(prompt: prompt, onCopy: { finalContent in
-                        ClipboardService.shared.copyToClipboard(finalContent)
-                        promptService.usePrompt(prompt) // Registrar uso
-                        withAnimation { fillingVariablesFor = nil }
+                VariableFillView(prompt: prompt, onCopy: { finalContent in
+                    ClipboardService.shared.copyToClipboard(finalContent)
+                    promptService.recordPromptUse(prompt) // Solo registrar uso, NO copiar base
+                    withAnimation { fillingVariablesFor = nil }
                         
                         // Sonido y feedback
                         if preferences.soundEnabled {

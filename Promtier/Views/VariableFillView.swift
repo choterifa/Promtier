@@ -21,14 +21,20 @@ struct VariableFillView: View {
     }
     
     private var processedContent: String {
-        var content = prompt.content
+        var result = prompt.content
         for variable in variables {
             let value = variableValues[variable] ?? ""
             if !value.isEmpty {
-                content = content.replacingOccurrences(of: "{{\(variable)}}", with: value)
+                // Patrón robusto: busca {{ variable }} con espacios opcionales
+                let escapedVar = NSRegularExpression.escapedPattern(for: variable)
+                let pattern = "\\{\\{\\s*\(escapedVar)\\s*\\}\\}"
+                if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
+                    let range = NSRange(result.startIndex..<result.endIndex, in: result)
+                    result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: value)
+                }
             }
         }
-        return content
+        return result
     }
     
     var body: some View {

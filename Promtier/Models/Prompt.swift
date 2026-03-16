@@ -59,8 +59,10 @@ struct Prompt: Identifiable, Codable {
         regex?.enumerateMatches(in: content, options: [], range: range) { match, _, _ in
             if let captureRange = match?.range(at: 1),
                let variableName = (content as NSString).substring(with: captureRange) as String? {
-                if !variables.contains(variableName) {
-                    variables.append(variableName)
+                // Limpiar espacios en blanco alrededor del nombre de la variable
+                let trimmedName = variableName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty && !variables.contains(trimmedName) {
+                    variables.append(trimmedName)
                 }
             }
         }
