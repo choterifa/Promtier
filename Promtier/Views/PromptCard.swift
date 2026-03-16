@@ -111,7 +111,7 @@ struct PromptCard: View {
                 
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
-                        Image(systemName: "hand.tap.fill")
+                        Image(systemName: "doc.on.doc.fill")
                             .font(.system(size: 8))
                         Text("\(prompt.useCount)")
                             .font(.system(size: 9, weight: .bold))

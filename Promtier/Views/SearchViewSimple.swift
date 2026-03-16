@@ -290,6 +290,9 @@ struct SearchViewSimple: View {
                                     
                                     Button(action: { 
                                         selectedPrompt = prompt
+                                        if preferences.soundEnabled {
+                                            SoundService.shared.playMagicSound()
+                                        }
                                         withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
                                     }) {
                                         Label("Editar", systemImage: "pencil")
@@ -302,7 +305,12 @@ struct SearchViewSimple: View {
                                     
                                     Divider()
                                     
-                                    Button(action: { exportPromptsToFile() }) {
+                                    Button(action: { 
+                                        if preferences.soundEnabled {
+                                            SoundService.shared.playInteractionSound()
+                                        }
+                                        exportPromptsToFile() 
+                                    }) {
                                         Label("Exportar a texto plano", systemImage: "square.and.arrow.up")
                                     }
                                     
@@ -437,13 +445,17 @@ struct SearchViewSimple: View {
         
         // Sonido
         if self.preferences.soundEnabled {
-            SoundService.shared.playInteractionSound()
+            SoundService.shared.playFavoriteSound()
         }
     }
     
     /// Elimina un prompt - Versión optimizada
     private func deletePrompt(_ prompt: Prompt) {
         _ = self.promptService.deletePrompt(prompt)
+        
+        if self.preferences.soundEnabled {
+            SoundService.shared.playDeleteSound()
+        }
     }
     
     /// Exporta todos los prompts a un archivo de texto

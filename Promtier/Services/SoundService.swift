@@ -54,4 +54,30 @@ class SoundService {
             NSSound.beep()
         }
     }
+    
+    /// Reproduce un sonido "mágico" para edición
+    func playMagicSound() {
+        if let sound = NSSound(named: "Hero") {
+            sound.volume = 0.3
+            sound.play()
+        } else {
+            playSuccessSound()
+        }
+    }
+    
+    /// Reproduce un sonido de papelera/eliminación
+    func playDeleteSound() {
+        if let sound = NSSound(named: "Basso") {
+            sound.volume = 0.3
+            sound.play()
+        }
+    }
+    
+    /// Reproduce un sonido de estrella/favorito
+    func playFavoriteSound() {
+        if let sound = NSSound(named: "Pop") {
+            sound.volume = 0.4
+            sound.play()
+        }
+    }
 }
