@@ -126,41 +126,42 @@ struct SidebarItem: View {
     @State private var isHovered = false
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                    .frame(width: 20 * preferences.fontSize.scale)
-                
-                Text(title)
-                    .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
-                    .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                    .lineLimit(1)
-                
-                Spacer()
-                
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                        .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
-                        )
-                }
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
+                .foregroundColor(isSelected ? .white : color.opacity(0.8))
+                .frame(width: 20 * preferences.fontSize.scale)
+            
+            Text(title)
+                .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                .lineLimit(1)
+            
+            Spacer()
+            
+            if count > 0 {
+                Text("\(count)")
+                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                    .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+                    )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
-                    .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
-            )
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+                .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
         .onHover { hovering in
             isHovered = hovering
         }

@@ -35,8 +35,8 @@ class PromptService: ObservableObject {
             
         // Observar cambios en categoría para filtrar automáticamente
         $selectedCategory
-            .sink { [weak self] _ in
-                self?.filterPrompts(query: self?.searchQuery ?? "")
+            .sink { [weak self] category in
+                self?.filterPrompts(query: self?.searchQuery ?? "", categoryOverride: category)
             }
             .store(in: &cancellables)
         
@@ -122,11 +122,19 @@ class PromptService: ObservableObject {
     // MARK: - Búsqueda y Filtrado
     
     /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
-    private func filterPrompts(query: String) {
+    private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
         var filtered = prompts
         
+        // Determinar qué categoría usar (la del override o la actual)
+        let category: String?
+        if let override = categoryOverride, override == "USE_CURRENT" {
+            category = selectedCategory
+        } else {
+            category = categoryOverride
+        }
+        
         // Filtrar por categoría si hay una seleccionada
-        if let category = selectedCategory {
+        if let category = category {
             switch category {
             case "Recientes":
                 // Mostrar usados en las últimas 48 horas o los últimos 10
