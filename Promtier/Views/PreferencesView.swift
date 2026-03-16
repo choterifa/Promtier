@@ -103,9 +103,8 @@ struct PreferencesView: View {
                     case 1: BehaviorTab()
                     case 2: ShortcutsTab()
                     case 3: DataTab(
-                        showingExportSheet: $showingExportSheet,
-                        showingImportSheet: $showingImportSheet,
-                        showingResetAlert: $showingResetAlert
+                        showingResetAlert: $showingResetAlert,
+                        onClose: onClose
                     )
                     default: EmptyView()
                     }
@@ -204,9 +203,9 @@ struct SettingsRow<Content: View>: View {
         HStack(spacing: 12) {
             if let icon = icon {
                 Image(systemName: icon)
-                    .font(.system(size: 16 * preferences.fontSize.scale))
+                    .font(.system(size: 18 * preferences.fontSize.scale))
                     .foregroundColor(iconColor ?? .blue)
-                    .frame(width: 24 * preferences.fontSize.scale)
+                    .frame(width: 28 * preferences.fontSize.scale)
             }
             
             VStack(alignment: .leading, spacing: 2) {
@@ -223,6 +222,7 @@ struct SettingsRow<Content: View>: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+        .contentShape(Rectangle())
     }
 }
 
@@ -375,26 +375,35 @@ struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     
-    @Binding var showingExportSheet: Bool
-    @Binding var showingImportSheet: Bool
     @Binding var showingResetAlert: Bool
+    var onClose: () -> Void
     
     @State private var importStatus: String?
     
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "Transferencia", icon: "arrow.left.arrow.right") {
-                Button(action: { exportData() }) {
+                Button(action: { 
+                    onClose()
+                    exportData() 
+                }) {
                     SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de seguridad en JSON") {
-                        Image(systemName: "square.and.arrow.up").font(.subheadline).foregroundColor(.blue)
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
                     }
                 }.buttonStyle(.plain)
                 
                 Divider().padding(.leading, 20)
                 
-                Button(action: { importData() }) {
+                Button(action: { 
+                    onClose()
+                    importData() 
+                }) {
                     SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo JSON") {
-                        Image(systemName: "square.and.arrow.down").font(.subheadline).foregroundColor(.blue)
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
                     }
                 }.buttonStyle(.plain)
             }
