@@ -29,144 +29,134 @@ struct NewPromptView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header Premium
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+            // Header Premium con Acciones
+            HStack(alignment: .center) {
+                Button(action: onClose) {
+                    Text("Cancelar")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(0.05))
+                        )
+                }
+                .buttonStyle(.plain)
+                
+                Spacer()
+                
+                VStack(spacing: 2) {
                     Text(prompt != nil ? "Editar Prompt" : "Nuevo Prompt")
-                        .font(.system(size: 24, weight: .bold))
-                    Text(prompt != nil ? "Actualiza los detalles de tu prompt" : "Crea una nueva herramienta de productividad")
-                        .font(.system(size: 13))
+                        .font(.system(size: 15, weight: .bold))
+                    Text(prompt != nil ? "Actualiza los detalles" : "Crea una herramienta")
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(.secondary)
+                Button(action: savePrompt) {
+                    Text(prompt != nil ? "Guardar" : "Crear")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
+                                .shadow(color: title.isEmpty || content.isEmpty ? .clear : Color.blue.opacity(0.2), radius: 4, y: 2)
+                        )
                 }
                 .buttonStyle(.plain)
-                .help("Cerrar (Esc)")
+                .disabled(title.isEmpty || content.isEmpty)
             }
-            .padding(.horizontal, 32)
-            .padding(.top, 32)
-            .padding(.bottom, 24)
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
             
             Divider()
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 24)
             
-            // Contenido Principal
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    // SECCIÓN: Escritura
-                    SettingsSection(title: "Contenido", icon: "pencil.and.outline") {
-                        VStack(spacing: 0) {
-                            TextField("Título del prompt", text: $title)
-                                .textFieldStyle(.plain)
-                                .font(.system(size: 16, weight: .semibold))
+            // Contenido Principal - Optimizado para Espacio
+            VStack(spacing: 20) {
+                // Título y Editor integrados en una gran tarjeta "Content-First"
+                VStack(spacing: 0) {
+                    TextField("Título del prompt...", text: $title)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 18, weight: .bold))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 12)
+                    
+                    Divider().padding(.horizontal, 20)
+                    
+                    ZStack(alignment: .topLeading) {
+                        if content.isEmpty {
+                            Text("Escribe aquí el contenido de tu prompt...")
+                                .foregroundColor(.secondary.opacity(0.4))
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 16)
-                            
-                            Divider().padding(.leading, 20)
-                            
-                            ZStack(alignment: .topLeading) {
-                                if content.isEmpty {
-                                    Text("Escribe aquí el contenido de tu prompt...")
-                                        .foregroundColor(.secondary.opacity(0.5))
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 16)
-                                        .font(.system(size: 14))
-                                }
-                                
-                                TextEditor(text: $content)
-                                    .font(.system(size: 14, design: .monospaced))
-                                    .scrollContentBackground(.hidden)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .frame(minHeight: 120)
-                            }
+                                .font(.system(size: 15))
                         }
-                    }
-                    
-                    // SECCIÓN: Organización
-                    SettingsSection(title: "Organización", icon: "folder.fill") {
-                        VStack(spacing: 0) {
-                            SettingsRow("Favorito", subtitle: "Acceso rápido en la barra lateral") {
-                                Toggle("", isOn: $isFavorite)
-                                    .toggleStyle(.switch)
-                            }
-                            
-                            Divider().padding(.leading, 20)
-                            
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Categoría")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 12)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        CategoryTag(title: "Sin categoría", icon: "folder", color: .gray, isSelected: selectedFolder == nil) {
-                                            selectedFolder = nil
-                                        }
-                                        
-                                        ForEach(PredefinedCategory.allCases, id: \.self) { category in
-                                            CategoryTag(title: category.displayName, icon: category.icon, color: category.color, isSelected: selectedFolder == category.displayName) {
-                                                selectedFolder = category.displayName
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 16)
-                                }
-                            }
-                        }
+                        
+                        TextEditor(text: $content)
+                            .font(.system(size: 15, design: .default))
+                            .scrollContentBackground(.hidden)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity) // Ocupar todo el espacio
                     }
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 24)
-            }
-            
-            // Acciones Inferiores
-            VStack(spacing: 0) {
-                Divider()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.primary.opacity(0.02))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                        )
+                )
                 
-                HStack(spacing: 16) {
-                    Button(action: onClose) {
-                        Text("Cancelar")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 100, height: 36)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.primary.opacity(0.05))
-                            )
+                // Organización compacta
+                HStack(spacing: 20) {
+                    // Favorito sutil
+                    Button(action: { isFavorite.toggle() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: isFavorite ? "star.fill" : "star")
+                                .foregroundColor(isFavorite ? .yellow : .secondary)
+                            Text("Prioridad")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary.opacity(0.8))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(isFavorite ? Color.yellow.opacity(0.1) : Color.primary.opacity(0.03))
+                        )
                     }
                     .buttonStyle(.plain)
                     
-                    Spacer()
+                    Divider().frame(height: 20)
                     
-                    Button(action: savePrompt) {
-                        Text(prompt != nil ? "Guardar" : "Crear")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 120, height: 36)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
-                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : .blue.opacity(0.3), radius: 4, y: 2)
-                            )
+                    // Categorías horizontales compactas
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            CategoryTag(title: "Sin categoría", icon: "folder", color: .gray, isSelected: selectedFolder == nil) {
+                                selectedFolder = nil
+                            }
+                            
+                            ForEach(PredefinedCategory.allCases, id: \.self) { category in
+                                CategoryTag(title: category.displayName, icon: category.icon, color: category.color, isSelected: selectedFolder == category.displayName) {
+                                    selectedFolder = category.displayName
+                                }
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .disabled(title.isEmpty || content.isEmpty)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 20)
-                .background(Color.primary.opacity(0.02))
+                .padding(.horizontal, 4)
             }
+            .padding(24)
         }
         .frame(width: 600, height: 500)
         .background(
