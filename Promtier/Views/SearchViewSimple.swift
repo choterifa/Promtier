@@ -103,7 +103,7 @@ struct SearchViewSimple: View {
                 localEventMonitor = nil
             }
         }
-        .onChange(of: menuBarManager.activeViewState) { newState in
+        .onChange(of: menuBarManager.activeViewState) { oldState, newState in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 switch newState {
                 case .main:

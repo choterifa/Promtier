@@ -224,6 +224,67 @@ class PromptService: ObservableObject {
         return exportText
     }
     
+    /// Exporta todos los prompts en formato JSON (Copia de seguridad completa)
+    func exportAllPromptsAsJSON() -> Data? {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            encoder.dateEncodingStrategy = .iso8601
+            return try encoder.encode(prompts)
+        } catch {
+            print("❌ Error codificando prompts a JSON: \(error)")
+            return nil
+        }
+    }
+    
+    /// Importa prompts desde un archivo JSON
+    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int) {
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let importedPrompts = try decoder.decode([Prompt].self, from: data)
+            
+            var successCount = 0
+            var failedCount = 0
+            
+            for prompt in importedPrompts {
+                // Comprobar si ya existe por ID para evitar duplicados exactos
+                if prompts.contains(where: { $0.id == prompt.id }) {
+                    failedCount += 1
+                    continue
+                }
+                
+                if createPrompt(prompt) {
+                    successCount += 1
+                } else {
+                    failedCount += 1
+                }
+            }
+            
+            loadPrompts()
+            return (successCount, failedCount)
+        } catch {
+            print("❌ Error decodificando archivo de importación: \(error)")
+            return (0, 0)
+        }
+    }
+    
+    /// Restablece toda la base de datos (BORRADO TOTAL)
+    func resetAllData() {
+        let context = dataController.viewContext
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        
+        do {
+            try context.execute(deleteRequest)
+            dataController.save()
+            loadPrompts()
+            print("⚠️ Base de datos restablecida a cero")
+        } catch {
+            print("❌ Error al restablecer base de datos: \(error)")
+        }
+    }
+    
     // MARK: - Operaciones de Uso
     
     /// Registra uso de prompt (contadores y fechas) sin copiar al clipboard

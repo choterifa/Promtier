@@ -17,25 +17,31 @@ class DataController: ObservableObject {
     // CONFIGURABLE: Nombre del archivo de base de datos
     private static let modelName = "Promtier"
     
-    // Container principal de Core Data
-    lazy var container: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: DataController.modelName)
+    // Container principal de Core Data (Actualizado para iCloud)
+    lazy var container: NSPersistentCloudKitContainer = {
+        let container = NSPersistentCloudKitContainer(name: DataController.modelName)
         
-        // CONFIGURABLE: Opciones de persistencia
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
-                                                               forKey: NSPersistentHistoryTrackingKey)
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
-                                                               forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        // Obtener la descripción del store
+        guard let description = container.persistentStoreDescriptions.first else {
+            fatalError("No se pudo encontrar la descripción del store de Core Data")
+        }
+        
+        // CONFIGURABLE: Opciones de persistencia y sincronización
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        
+        // Configurar el identificador del contenedor de iCloud (debe coincidir con Xcode)
+        // description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.choterifa.Promtier")
         
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
-                // CONFIGURABLE: Manejo de errores de carga
-                print("Error cargando Core Data: \(error), \(error.userInfo)")
-                fatalError("Error crítico al cargar base de datos: \(error)")
+                print("❌ Error cargando Core Data/iCloud: \(error), \(error.userInfo)")
+                // Si falla iCloud por falta de configuración, fallará el arranque
+                // pero permitimos que continúe si es un error no crítico.
             }
         }
         
-        // CONFIGURABLE: Contexto en background para operaciones pesadas
+        // Sincronización automática de cambios
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         

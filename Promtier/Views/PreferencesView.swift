@@ -14,6 +14,7 @@ struct PreferencesView: View {
     var onClose: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     
     @State private var selectedTab: Int = 0
     @State private var showingExportSheet = false
@@ -128,11 +129,14 @@ struct PreferencesView: View {
         )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
-        .alert("Restablecer", isPresented: $showingResetAlert) {
+        .alert("Restablecer Todo", isPresented: $showingResetAlert) {
             Button("Cancelar", role: .cancel) { }
-            Button("Restablecer", role: .destructive) { preferences.resetToDefaults() }
+            Button("Restablecer a Fábrica", role: .destructive) {
+                preferences.resetToDefaults()
+                promptService.resetAllData()
+            }
         } message: {
-            Text("Se perderán todos tus ajustes personalizados.")
+            Text("Se perderán permanentemente todos tus ajustes y prompts de la biblioteca.")
         }
     }
 }
@@ -366,26 +370,37 @@ struct ShortcutItem: View {
 
 struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
+    
     @Binding var showingExportSheet: Bool
     @Binding var showingImportSheet: Bool
     @Binding var showingResetAlert: Bool
     
+    @State private var importStatus: String?
+    
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "Transferencia", icon: "arrow.left.arrow.right") {
-                Button(action: { showingExportSheet = true }) {
-                    SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de tus prompts") {
-                        Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+                Button(action: { exportData() }) {
+                    SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de seguridad en JSON") {
+                        Image(systemName: "square.and.arrow.up").font(.subheadline).foregroundColor(.blue)
                     }
                 }.buttonStyle(.plain)
                 
                 Divider().padding(.leading, 20)
                 
-                Button(action: { showingImportSheet = true }) {
-                    SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo") {
-                        Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+                Button(action: { importData() }) {
+                    SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo JSON") {
+                        Image(systemName: "square.and.arrow.down").font(.subheadline).foregroundColor(.blue)
                     }
                 }.buttonStyle(.plain)
+            }
+            
+            if let status = importStatus {
+                Text(status)
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                    .padding(.top, -16)
             }
             
             SettingsSection(title: "Cloud", icon: "icloud.fill") {
@@ -398,7 +413,7 @@ struct DataTab: View {
             Button(action: { showingResetAlert = true }) {
                 HStack {
                     Image(systemName: "arrow.counterclockwise")
-                    Text("Restablecer todos los ajustes")
+                    Text("Restablecer todos los ajustes y datos")
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.red)
@@ -414,6 +429,60 @@ struct DataTab: View {
                 )
             }
             .buttonStyle(.plain)
+        }
+    }
+    
+    /// Lógica de exportación nativa
+    private func exportData() {
+        guard let data = promptService.exportAllPromptsAsJSON() else { return }
+        
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.json]
+        savePanel.nameFieldStringValue = "promtier_backup_\(Int(Date().timeIntervalSince1970)).json"
+        savePanel.title = "Exportar Biblioteca"
+        
+        NSApp.activate(ignoringOtherApps: true)
+        
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                do {
+                    try data.write(to: url)
+                    print("✅ Biblioteca exportada a \(url.path)")
+                } catch {
+                    print("❌ Error guardando archivo: \(error)")
+                }
+            }
+        }
+    }
+    
+    /// Lógica de importación nativa
+    private func importData() {
+        let openPanel = NSOpenPanel()
+        openPanel.allowedContentTypes = [.json]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.title = "Importar Biblioteca"
+        
+        NSApp.activate(ignoringOtherApps: true)
+        
+        openPanel.begin { response in
+            if response == .OK, let url = openPanel.url {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let result = promptService.importPromptsFromData(data)
+                    
+                    withAnimation {
+                        importStatus = "Importados: \(result.success) | Omitidos: \(result.failed)"
+                    }
+                    
+                    // Limpiar status después de 5 segundos
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        importStatus = nil
+                    }
+                } catch {
+                    print("❌ Error leyendo archivo: \(error)")
+                }
+            }
         }
     }
 }
