@@ -262,7 +262,7 @@ struct SearchViewSimple: View {
                                 )
                                 .popover(isPresented: Binding(
                                     get: { showingPreview && selectedPrompt?.id == prompt.id },
-                                    set: { if !$0 { showingPreview = false } }
+                                    set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
                                 ), arrowEdge: .top) {
                                     PromptPreviewView(prompt: prompt)
                                 }
@@ -297,40 +297,6 @@ struct SearchViewSimple: View {
                     }
                 }
             }
-        }
-        .onKeyPress(.upArrow) {
-            // Optimización: Navegación más fluida
-            guard !promptService.filteredPrompts.isEmpty else { return .ignored }
-            
-            if let currentPrompt = selectedPrompt,
-               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                if currentIndex > 0 {
-                    selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
-                    return .handled
-                }
-            } else {
-                // Seleccionar primer elemento si no hay selección
-                selectedPrompt = promptService.filteredPrompts.first
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.downArrow) {
-            // Optimización: Navegación más fluida
-            guard !promptService.filteredPrompts.isEmpty else { return .ignored }
-            
-            if let currentPrompt = selectedPrompt,
-               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                if currentIndex < promptService.filteredPrompts.count - 1 {
-                    selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
-                    return .handled
-                }
-            } else {
-                // Seleccionar primer elemento si no hay selección
-                selectedPrompt = promptService.filteredPrompts.first
-                return .handled
-            }
-            return .ignored
         }
     }
     
@@ -371,6 +337,38 @@ struct SearchViewSimple: View {
                 }
                 return nil
             }
+        }
+        
+        // Flecha Arriba (KeyCode 126)
+        if keyCode == 126 {
+            guard !promptService.filteredPrompts.isEmpty else { return event }
+            DispatchQueue.main.async {
+                if let currentPrompt = selectedPrompt,
+                   let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                    if currentIndex > 0 {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                    }
+                } else {
+                    selectedPrompt = promptService.filteredPrompts.first
+                }
+            }
+            return nil
+        }
+        
+        // Flecha Abajo (KeyCode 125)
+        if keyCode == 125 {
+            guard !promptService.filteredPrompts.isEmpty else { return event }
+            DispatchQueue.main.async {
+                if let currentPrompt = selectedPrompt,
+                   let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                    if currentIndex < promptService.filteredPrompts.count - 1 {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                    }
+                } else {
+                    selectedPrompt = promptService.filteredPrompts.first
+                }
+            }
+            return nil
         }
         
         return event
