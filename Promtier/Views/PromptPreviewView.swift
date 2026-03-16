@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PromptPreviewView: View {
     let prompt: Prompt
+    @State private var isVisible = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -21,6 +22,24 @@ struct PromptPreviewView: View {
                     .foregroundColor(.primary)
                 
                 Spacer()
+                
+                // Botón de cerrar
+                Button(action: {
+                    // Cerrar el popover desde adentro
+                    if let window = NSApp.keyWindow {
+                        window.orderOut(nil)
+                    }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 24, height: 24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.1))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -35,6 +54,7 @@ struct PromptPreviewView: View {
                     .foregroundColor(.primary)
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
             }
             .background(Color(NSColor.textBackgroundColor))
         }
@@ -42,6 +62,16 @@ struct PromptPreviewView: View {
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(8)
         .shadow(radius: 10)
+        .onAppear {
+            // Optimización: Asegurar visibilidad y foco
+            isVisible = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            }
+        }
+        .onDisappear {
+            isVisible = false
+        }
     }
 }
 

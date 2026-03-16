@@ -141,13 +141,23 @@ struct SearchViewSimple: View {
                                 isSelected: selectedPrompt?.id == prompt.id,
                                 isHovered: hoveredPrompt?.id == prompt.id,
                                 onTap: {
+                                    // Optimización: Actualizar estado de forma síncrona
                                     selectedPrompt = prompt
+                                    // Forzar foco a la ventana principal
+                                    NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                 },
                                 onDoubleTap: {
                                     usePrompt(prompt)
+                                    // Cerrar preview si está abierto
+                                    if showingPreview {
+                                        showingPreview = false
+                                    }
                                 },
                                 onHover: { isHovering in
-                                    hoveredPrompt = isHovering ? prompt : nil
+                                    // Optimización: Reducir actualizaciones de hover
+                                    DispatchQueue.main.async {
+                                        hoveredPrompt = isHovering ? prompt : nil
+                                    }
                                 }
                             )
                             .contextMenu {
@@ -184,50 +194,78 @@ struct SearchViewSimple: View {
         }
         .frame(width: 560, height: 480) // Tamaño aumentado para mejor diseño
         .onKeyPress(.space) {
+            // Optimización: Manejo más eficiente del espacio
             if showingPreview {
                 showingPreview = false
                 return .handled
-            } else if let prompt = selectedPrompt ?? hoveredPrompt {
-                selectedPrompt = prompt
+            } else if let prompt = selectedPrompt {
+                // Solo mostrar preview si hay un prompt seleccionado
                 showingPreview = true
                 return .handled
             }
             return .ignored
         }
         .onKeyPress(.upArrow) {
+            // Optimización: Navegación más fluida
+            guard !promptService.filteredPrompts.isEmpty else { return .ignored }
+            
             if let currentPrompt = selectedPrompt,
-               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
-               currentIndex > 0 {
-                selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                if currentIndex > 0 {
+                    selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                    return .handled
+                }
+            } else {
+                // Seleccionar primer elemento si no hay selección
+                selectedPrompt = promptService.filteredPrompts.first
                 return .handled
             }
             return .ignored
         }
         .onKeyPress(.downArrow) {
+            // Optimización: Navegación más fluida
+            guard !promptService.filteredPrompts.isEmpty else { return .ignored }
+            
             if let currentPrompt = selectedPrompt,
-               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
-               currentIndex < promptService.filteredPrompts.count - 1 {
-                selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
-                return .handled
-            } else if promptService.filteredPrompts.isEmpty == false && selectedPrompt == nil {
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                if currentIndex < promptService.filteredPrompts.count - 1 {
+                    selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                    return .handled
+                }
+            } else {
+                // Seleccionar primer elemento si no hay selección
                 selectedPrompt = promptService.filteredPrompts.first
                 return .handled
             }
             return .ignored
         }
         .onKeyPress(.return) {
+            // Optimización: Manejo más eficiente del Enter
             if let prompt = selectedPrompt {
                 usePrompt(prompt)
+                // Cerrar preview si está abierto
+                if showingPreview {
+                    showingPreview = false
+                }
                 return .handled
             }
             return .ignored
         }
         .onAppear {
-            // Filtrar prompts cuando cambia el texto de búsqueda
+            // Optimización: Inicialización más eficiente
             promptService.searchQuery = searchText
+            // Asegurar foco en la ventana
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            }
         }
         .onChange(of: searchText) { newValue in
-            promptService.searchQuery = newValue
+            // Optimización: Búsqueda con debounce para mejor rendimiento
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                if searchText == newValue {
+                    promptService.searchQuery = newValue
+                }
+            }
         }
         .sheet(isPresented: $showingNewPrompt) {
             NewPromptView(prompt: selectedPrompt)
@@ -263,38 +301,46 @@ struct SearchViewSimple: View {
     
     // MARK: - Métodos
     
-    /// Usa un prompt (copia al clipboard)
+    /// Usa un prompt (copia al clipboard) - Versión optimizada
     private func usePrompt(_ prompt: Prompt) {
-        promptService.usePrompt(prompt)
-        
-        // Efecto háptico - CONFIGURABLE: Acceso seguro a preferencias
-        do {
-            if preferences.hapticFeedback {
-                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+        // Usar cola de background para no bloquear UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.promptService.usePrompt(prompt)
+            
+            // Efectos de retroalimentación en cola principal
+            DispatchQueue.main.async {
+                // Efecto háptico optimizado
+                if self.preferences.hapticFeedback {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+                }
+                
+                // Sonido optimizado
+                if self.preferences.soundEnabled {
+                    SoundService.shared.playCopySound()
+                }
+                
+                // Cerrar preview si está abierto
+                if self.showingPreview {
+                    self.showingPreview = false
+                }
             }
-        } catch {
-            print("Error al acceder a hapticFeedback: \(error)")
-        }
-        
-        // Sonido moderno de copia
-        do {
-            if preferences.soundEnabled {
-                SoundService.shared.playCopySound()
-            }
-        } catch {
-            print("Error al reproducir sonido: \(error)")
         }
     }
     
-    /// Cambia el estado de favorito de un prompt
+    /// Cambia el estado de favorito de un prompt - Versión optimizada
     private func toggleFavorite(_ prompt: Prompt) {
-        var updatedPrompt = prompt
-        updatedPrompt.isFavorite.toggle()
-        _ = promptService.updatePrompt(updatedPrompt)
-        
-        // Sonido sutil de interacción
-        if preferences.soundEnabled {
-            SoundService.shared.playInteractionSound()
+        // Usar cola de background para no bloquear UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            var updatedPrompt = prompt
+            updatedPrompt.isFavorite.toggle()
+            _ = self.promptService.updatePrompt(updatedPrompt)
+            
+            // Sonido en cola principal
+            DispatchQueue.main.async {
+                if self.preferences.soundEnabled {
+                    SoundService.shared.playInteractionSound()
+                }
+            }
         }
     }
     

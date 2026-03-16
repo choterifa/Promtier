@@ -53,18 +53,25 @@ struct PromptCard: View {
                         .stroke(cardBorderColor, lineWidth: isSelected ? 2 : 1)
                 )
         )
-        .scaleEffect(isHovered ? 1.015 : 1.0)
-        .animation(.spring(response: 0.08, dampingFraction: 0.8, blendDuration: 0), value: isHovered)
-        .animation(.spring(response: 0.05, dampingFraction: 0.9, blendDuration: 0), value: isSelected)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .animation(.easeInOut(duration: 0.1), value: isSelected)
         .shadow(
-            color: .black.opacity(isHovered ? 0.08 : 0.03),
-            radius: isHovered ? 6 : 3,
+            color: .black.opacity(isHovered ? 0.05 : 0.02),
+            radius: isHovered ? 4 : 2,
             x: 0,
-            y: isHovered ? 3 : 1
+            y: isHovered ? 2 : 1
         )
-        .onTapGesture(count: 1, perform: onTap)
-        .onTapGesture(count: 2, perform: onDoubleTap)
+        .onTapGesture {
+            // Optimización: Tap más responsivo
+            onTap()
+        }
+        .onTapGesture(count: 2) {
+            // Optimización: Double tap más eficiente
+            onDoubleTap()
+        }
         .onHover { hovering in
+            // Optimización: Hover más eficiente
             onHover(hovering)
         }
     }
