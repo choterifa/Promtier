@@ -105,7 +105,20 @@ struct NewPromptView: View {
                             .scrollContentBackground(.hidden)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity) // Ocupar todo el espacio
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        // Contador de caracteres sutil
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                Text("\(content.count) caracteres")
+                                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.secondary.opacity(0.6))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                            }
+                        }
                     }
                 }
                 .background(
