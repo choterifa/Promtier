@@ -48,6 +48,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var autoPaste: Bool {
+        didSet {
+            userDefaults.set(autoPaste, forKey: "autoPaste")
+        }
+    }
+    
     // MARK: - Sonidos
     
     @Published var soundEnabled: Bool {
@@ -107,6 +113,7 @@ class PreferencesManager: ObservableObject {
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
+        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
@@ -149,6 +156,7 @@ class PreferencesManager: ObservableObject {
         self.soundEnabled = true
         self.globalShortcutEnabled = true
         self.language = .spanish
+        self.autoPaste = false
         
         // Nuevas propiedades por defecto
         self.showInDock = false

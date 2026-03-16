@@ -182,18 +182,29 @@ struct SettingsSection<Content: View>: View {
 struct SettingsRow<Content: View>: View {
     let label: String
     let subtitle: String?
+    let icon: String?
+    let iconColor: Color?
     let content: Content
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    init(_ label: String, subtitle: String? = nil, @ViewBuilder content: () -> Content) {
+    init(_ label: String, subtitle: String? = nil, icon: String? = nil, iconColor: Color? = nil, @ViewBuilder content: () -> Content) {
         self.label = label
         self.subtitle = subtitle
+        self.icon = icon
+        self.iconColor = iconColor
         self.content = content()
     }
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 16 * preferences.fontSize.scale))
+                    .foregroundColor(iconColor ?? .blue)
+                    .frame(width: 24 * preferences.fontSize.scale)
+            }
+            
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
@@ -258,8 +269,15 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Cerrar al Perder Foco", subtitle: "Cierra la ventana automáticamente") {
+                SettingsRow("Cerrar al copiar", subtitle: "Cierra la ventana automáticamente", icon: "xmark.square.fill", iconColor: .red) {
                     Toggle("", isOn: $preferences.closeOnOutsideClick)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Pegado Instantáneo", subtitle: "Pega automáticamente el prompt en la aplicación activa después de copiarlo.", icon: "wand.and.stars", iconColor: .orange) {
+                    Toggle("", isOn: $preferences.autoPaste)
                         .toggleStyle(.switch)
                 }
             }

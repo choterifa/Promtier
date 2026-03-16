@@ -36,6 +36,26 @@ class ClipboardService: ObservableObject {
         
         // CONFIGURABLE: Notificación visual (opcional)
         showCopyNotification()
+        
+        // AUTO-PASTE: Magia de pegado si está habilitada
+        if PreferencesManager.shared.autoPaste {
+            performAutoPaste()
+        }
+    }
+    
+    /// Ejecuta el pegado automático mediante AppleScript
+    private func performAutoPaste() {
+        // CONFIGURABLE: Retraso sutil para dejar que la otra app tome foco si es necesario
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            let scriptSource = "tell application \"System Events\" to keystroke \"v\" using {command down}"
+            if let script = NSAppleScript(source: scriptSource) {
+                var error: NSDictionary?
+                script.executeAndReturnError(&error)
+                if let err = error {
+                    print("Error en Auto-Paste: \(err)")
+                }
+            }
+        }
     }
     
     /// Obtiene el contenido actual del clipboard

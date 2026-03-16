@@ -53,6 +53,17 @@ struct CategorySidebar: View {
                     promptService.selectedCategory = nil
                 }
                 
+                // Botón "Recientes"
+                SidebarItem(
+                    title: "Recientes",
+                    icon: "clock.arrow.2.circlepath",
+                    color: .purple,
+                    count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
+                    isSelected: promptService.selectedCategory == "Recientes"
+                ) {
+                    promptService.selectedCategory = "Recientes"
+                }
+                
                 // Botón "Favoritos" (Nuevo?) - No, mantengamos lo que hay pero mejorado
                 
                 // Botón "Sin categoría"

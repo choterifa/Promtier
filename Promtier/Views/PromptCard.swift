@@ -17,7 +17,7 @@ struct PromptCard: View {
     let onHover: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
-    
+    Hola {{nombre}}, ¿cómo estás hoy?
     var body: some View {
         HStack(spacing: 16) {
             // Icono de categoría refinado
@@ -54,7 +54,7 @@ struct PromptCard: View {
                 Text(prompt.content)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.8))
-                    .lineLimit(1)
+                    .lineLimit(3)
             }
             
             Spacer()
@@ -66,6 +66,20 @@ struct PromptCard: View {
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
                         .shadow(color: .yellow.opacity(0.3), radius: 2)
+                }
+                
+                if prompt.useCount > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "hand.tap.fill")
+                            .font(.system(size: 8))
+                        Text("\(prompt.useCount)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(Color.primary.opacity(0.04))
+                    .clipShape(Capsule())
                 }
                 
                 if isHovered || isSelected {

@@ -18,6 +18,7 @@ struct Prompt: Identifiable, Codable {
     var createdAt: Date              // Fecha de creación
     var modifiedAt: Date            // Fecha de modificación
     var useCount: Int               // Contador de uso
+    var lastUsedAt: Date?           // Última vez que se copió
     
     // Inicializador con valores por defecto
     init(title: String, content: String, folder: String? = nil) {
@@ -36,6 +37,7 @@ struct Prompt: Identifiable, Codable {
     /// Incrementa el contador de uso del prompt
     mutating func recordUse() {
         useCount += 1
+        lastUsedAt = Date()
         modifiedAt = Date()
     }
     

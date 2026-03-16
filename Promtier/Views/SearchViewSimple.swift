@@ -26,6 +26,7 @@ struct SearchViewSimple: View {
     @State private var selectedPrompt: Prompt?
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
+    @State private var fillingVariablesFor: Prompt?
     
     var body: some View {
         ZStack {
@@ -46,6 +47,34 @@ struct SearchViewSimple: View {
                 PreferencesView(onClose: { viewState = .main })
                     .environmentObject(preferences)
                     .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+            }
+            
+            // Overlay de Variables Dinámicas
+            if let prompt = fillingVariablesFor {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture { 
+                            withAnimation { fillingVariablesFor = nil }
+                        }
+                    
+                    VariableFillView(prompt: prompt, onCopy: { finalContent in
+                        ClipboardService.shared.copyToClipboard(finalContent)
+                        promptService.usePrompt(prompt) // Registrar uso
+                        withAnimation { fillingVariablesFor = nil }
+                        
+                        // Sonido y feedback
+                        if preferences.soundEnabled {
+                            SoundService.shared.playCopySound()
+                        }
+                    }, onCancel: {
+                        withAnimation { fillingVariablesFor = nil }
+                    })
+                    .transition(.scale.combined(with: .opacity))
+                    .environmentObject(preferences)
+                }
+                .zIndex(100)
+                .transition(.opacity)
             }
         }
         .frame(width: 650, height: 480)
@@ -308,6 +337,14 @@ struct SearchViewSimple: View {
     
     /// Usa un prompt (copia al clipboard) - Versión optimizada
     private func usePrompt(_ prompt: Prompt) {
+        // Si tiene variables, mostrar el formulario primero
+        if prompt.hasTemplateVariables() {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                fillingVariablesFor = prompt
+            }
+            return
+        }
+        
         self.promptService.usePrompt(prompt)
         
         if self.preferences.soundEnabled {

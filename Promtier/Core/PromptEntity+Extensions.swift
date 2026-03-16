@@ -27,6 +27,7 @@ extension PromptEntity {
         prompt.createdAt = createdAt
         prompt.modifiedAt = modifiedAt
         prompt.useCount = Int(useCount)
+        prompt.lastUsedAt = lastUsedAt
         return prompt
     }
     
@@ -38,6 +39,7 @@ extension PromptEntity {
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)
         modifiedAt = prompt.modifiedAt
+        lastUsedAt = prompt.lastUsedAt
     }
     
     /// Crea nueva entidad desde modelo Swift

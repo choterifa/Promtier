@@ -124,20 +124,61 @@ class PromptService: ObservableObject {
         
         // Filtrar por categoría si hay una seleccionada
         if let category = selectedCategory {
-            if category == "Sin categoría" {
+            switch category {
+            case "Recientes":
+                // Mostrar usados en las últimas 48 horas o los últimos 10
+                let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
+                filtered = filtered.filter { prompt in
+                    if let lastUsed = prompt.lastUsedAt {
+                        return lastUsed > fortyEightHoursAgo
+                    }
+                    return false
+                }
+                // Si hay pocos, rellenar con los más usados históricamente
+                if filtered.count < 5 {
+                    let mostUsed = prompts.sorted { $0.useCount > $1.useCount }.prefix(10)
+                    for p in mostUsed {
+                        if !filtered.contains(where: { $0.id == p.id }) {
+                            filtered.append(p)
+                        }
+                    }
+                }
+                filtered.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
+                
+            case "Sin categoría":
                 filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
-            } else {
+            default:
                 filtered = filtered.filter { $0.folder == category }
             }
         }
         
-        // Filtrar por texto si hay consulta
+        // Filtrar por texto si hay consulta - Búsqueda Inteligente (Ponderada)
         if !query.isEmpty {
             let lowercaseQuery = query.lowercased()
-            filtered = filtered.filter { prompt in
-                prompt.title.lowercased().contains(lowercaseQuery) ||
-                prompt.content.lowercased().contains(lowercaseQuery)
+            
+            // Asignar puntuaciones para ordenación inteligente
+            let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
+                var score = 0
+                let title = prompt.title.lowercased()
+                let content = prompt.content.lowercased()
+                
+                if title == lowercaseQuery { score += 100 } // Coincidencia exacta título
+                else if title.hasPrefix(lowercaseQuery) { score += 70 } // Empieza por
+                else if title.contains(lowercaseQuery) { score += 50 } // Contiene
+                
+                if content.contains(lowercaseQuery) { score += 30 } // Contiene en cuerpo
+                
+                if let folder = prompt.folder?.lowercased(), folder.contains(lowercaseQuery) {
+                    score += 20 // Coincidencia en categoría
+                }
+                
+                return (prompt, score)
             }
+            
+            filtered = scoredPrompts
+                .filter { $0.1 > 0 }
+                .sorted { $0.1 > $1.1 }
+                .map { $0.0 }
         }
         
         // CONFIGURABLE: Límite de resultados mostrados comentado para que se muestren todos en la categoría

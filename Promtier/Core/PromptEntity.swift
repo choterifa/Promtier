@@ -29,5 +29,6 @@ extension PromptEntity {
     @NSManaged public var title: String
     @NSManaged public var useCount: Int32
     @NSManaged public var folder: String?
+    @NSManaged public var lastUsedAt: Date?
     
 }

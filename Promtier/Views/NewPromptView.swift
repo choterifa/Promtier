@@ -21,6 +21,7 @@ struct NewPromptView: View {
     @State private var selectedFolder: String?
     @State private var isFavorite = false
     @State private var isSaving = false
+    @State private var showingZenEditor = false
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -118,6 +119,24 @@ struct NewPromptView: View {
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
                             }
+                        }
+                        
+                        // Botón de Modo Zen
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { showingZenEditor = true }) {
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.blue)
+                                        .padding(8)
+                                        .background(Circle().fill(Color.blue.opacity(0.1)))
+                                }
+                                .buttonStyle(.plain)
+                                .padding(12)
+                                .help("Modo Zen (Expandido)")
+                            }
+                            Spacer()
                         }
                     }
                 }
@@ -220,6 +239,15 @@ struct NewPromptView: View {
                     .offset(x: -250, y: 200)
             }
         )
+        .overlay {
+            if showingZenEditor {
+                ZenEditorView(title: $title, content: $content) {
+                    showingZenEditor = false
+                }
+                .environmentObject(preferences)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .onAppear {
             if let prompt = prompt {
                 title = prompt.title
