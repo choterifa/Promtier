@@ -84,7 +84,7 @@ struct NewPromptView: View {
                 VStack(spacing: 0) {
                     TextField("Título del prompt...", text: $title)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         .padding(.bottom, 12)
@@ -97,11 +97,11 @@ struct NewPromptView: View {
                                 .foregroundColor(.secondary.opacity(0.4))
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 16)
-                                .font(.system(size: 15))
+                                .font(.system(size: 15 * preferences.fontSize.scale))
                         }
                         
                         TextEditor(text: $content)
-                            .font(.system(size: 15, design: .default))
+                            .font(.system(size: 15 * preferences.fontSize.scale, design: .default))
                             .scrollContentBackground(.hidden)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -170,9 +170,9 @@ struct NewPromptView: View {
                                 .padding(.horizontal, 2)
                                 .fixedSize(horizontal: true, vertical: false)
                             }
-                            .onChange(of: selectedFolder) { newSelection in
+                            .onChange(of: selectedFolder) { oldValue, newValue in
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    proxy.scrollTo(newSelection ?? "none", anchor: .center)
+                                    proxy.scrollTo(newValue ?? "none", anchor: .center)
                                 }
                             }
                             
@@ -241,7 +241,7 @@ struct NewPromptView: View {
         let allCategories = [nil] + PredefinedCategory.allCases.map { $0.displayName }
         guard let currentIndex = allCategories.firstIndex(of: selectedFolder) else { return }
         
-        let nextIndex: Int
+        let nextIndex: Int 
         if forward {
             nextIndex = (currentIndex + 1) % allCategories.count
         } else {

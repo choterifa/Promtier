@@ -16,6 +16,8 @@ struct PromptCard: View {
     let onDoubleTap: () -> Void
     let onHover: (Bool) -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     var body: some View {
         HStack(spacing: 16) {
             // Icono de categoría refinado
@@ -45,12 +47,12 @@ struct PromptCard: View {
             // Texto detallado
             VStack(alignment: .leading, spacing: 4) {
                 Text(prompt.title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(isSelected ? .blue : .primary)
                     .lineLimit(1)
                 
                 Text(prompt.content)
-                    .font(.system(size: 13))
+                    .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.8))
                     .lineLimit(1)
             }

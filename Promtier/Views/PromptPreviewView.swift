@@ -11,14 +11,14 @@ import SwiftUI
 struct PromptPreviewView: View {
     let prompt: Prompt
     @State private var isVisible = false
+    @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
         VStack(spacing: 0) {
             // Header con título
             HStack {
                 Text(prompt.title)
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
                     .foregroundColor(.primary)
                 
                 Spacer()
@@ -50,7 +50,7 @@ struct PromptPreviewView: View {
             // Contenido del prompt
             ScrollView {
                 Text(prompt.content)
-                    .font(.system(size: 16, design: .monospaced))
+                    .font(.system(size: 16 * preferences.fontSize.scale, design: .monospaced))
                     .foregroundColor(.primary)
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)

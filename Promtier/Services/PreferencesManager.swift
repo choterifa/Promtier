@@ -22,6 +22,7 @@ class PreferencesManager: ObservableObject {
     @Published var appearance: AppAppearance {
         didSet {
             userDefaults.set(appearance.rawValue, forKey: "appearance")
+            applyAppearance()
         }
     }
     
@@ -114,21 +115,22 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         
         // Aplicar configuración inicial
-        applyInitialSettings()
+        applyAppearance()
     }
     
     // MARK: - Métodos de Configuración
     
-    /// Aplica configuración inicial al iniciar
-    private func applyInitialSettings() {
-        // Configurar apariencia
-        switch appearance {
-        case .light:
-            NSApp.appearance = NSAppearance(named: .aqua)
-        case .dark:
-            NSApp.appearance = NSAppearance(named: .darkAqua)
-        case .system:
-            NSApp.appearance = nil
+    /// Aplica la apariencia seleccionada al sistema
+    private func applyAppearance() {
+        DispatchQueue.main.async {
+            switch self.appearance {
+            case .light:
+                NSApp.appearance = NSAppearance(named: .aqua)
+            case .dark:
+                NSApp.appearance = NSAppearance(named: .darkAqua)
+            case .system:
+                NSApp.appearance = nil
+            }
         }
     }
     
@@ -154,7 +156,7 @@ class PreferencesManager: ObservableObject {
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
         
-        applyInitialSettings()
+        applyAppearance()
     }
     
     // MARK: - Exportar/Importar Configuración
@@ -209,7 +211,7 @@ class PreferencesManager: ObservableObject {
                 language = AppLanguage(rawValue: languageRaw) ?? .spanish
             }
             
-            applyInitialSettings()
+            applyAppearance()
             return true
         }
         
