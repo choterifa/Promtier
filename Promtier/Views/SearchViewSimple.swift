@@ -18,6 +18,7 @@ struct SearchViewSimple: View {
     @State private var selectedPrompt: Prompt?
     @State private var showingPromptDetail = false
     @State private var showingNewPrompt = false
+    @State private var showingEditPrompt = false
     @State private var showingPreferences = false
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
@@ -64,7 +65,11 @@ struct SearchViewSimple: View {
                     Spacer()
                     
                     HStack(spacing: 12) {
-                        Button(action: { showingNewPrompt = true }) {
+                        Button(action: { 
+                            // Limpiar selección para crear nuevo prompt
+                            selectedPrompt = nil
+                            showingNewPrompt = true 
+                        }) {
                             Image(systemName: "plus")
                                 .font(.title2)
                                 .foregroundColor(.white)
@@ -121,6 +126,7 @@ struct SearchViewSimple: View {
                     
                     if searchText.isEmpty {
                         Button("Crear Primer Prompt") {
+                            selectedPrompt = nil
                             showingNewPrompt = true
                         }
                         .buttonStyle(.borderedProminent)
@@ -172,7 +178,7 @@ struct SearchViewSimple: View {
                                 
                                 Button("Editar") {
                                     selectedPrompt = prompt
-                                    showingNewPrompt = true
+                                    showingEditPrompt = true
                                 }
                                 
                                 Divider()
@@ -268,6 +274,11 @@ struct SearchViewSimple: View {
             }
         }
         .sheet(isPresented: $showingNewPrompt) {
+            NewPromptView(prompt: nil)
+                .environmentObject(promptService)
+                .environmentObject(preferences)
+        }
+        .sheet(isPresented: $showingEditPrompt) {
             NewPromptView(prompt: selectedPrompt)
                 .environmentObject(promptService)
                 .environmentObject(preferences)
@@ -329,23 +340,26 @@ struct SearchViewSimple: View {
     
     /// Cambia el estado de favorito de un prompt - Versión optimizada
     private func toggleFavorite(_ prompt: Prompt) {
-        // Usar cola de background para no bloquear UI
-        DispatchQueue.global(qos: .userInitiated).async {
-            var updatedPrompt = prompt
-            updatedPrompt.isFavorite.toggle()
+        // Preparar actualización en background
+        var updatedPrompt = prompt
+        updatedPrompt.isFavorite.toggle()
+        
+        // Actualizar en cola principal para evitar threading issues
+        DispatchQueue.main.async {
             _ = self.promptService.updatePrompt(updatedPrompt)
             
-            // Sonido en cola principal
-            DispatchQueue.main.async {
-                if self.preferences.soundEnabled {
-                    SoundService.shared.playInteractionSound()
-                }
+            // Sonido
+            if self.preferences.soundEnabled {
+                SoundService.shared.playInteractionSound()
             }
         }
     }
     
-    /// Elimina un prompt
+    /// Elimina un prompt - Versión optimizada
     private func deletePrompt(_ prompt: Prompt) {
-        _ = promptService.deletePrompt(prompt)
+        // Actualizar en cola principal para evitar threading issues
+        DispatchQueue.main.async {
+            _ = self.promptService.deletePrompt(prompt)
+        }
     }
 }

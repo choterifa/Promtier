@@ -160,36 +160,6 @@ struct AppearanceTab: View {
                             .padding(.top, 4)
                     }
                 }
-                
-                // Sección de Colores
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Colores")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Usar colores de acento del sistema", isOn: $preferences.useAccentColor)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        if !preferences.useAccentColor {
-                            HStack(spacing: 16) {
-                                Text("Color de acento")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                ColorPicker("", selection: $preferences.accentColor)
-                                    .labelsHidden()
-                            }
-                        }
-                    }
-                }
             }
             .padding(.vertical, 20)
         }

@@ -85,18 +85,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var useAccentColor: Bool {
-        didSet {
-            userDefaults.set(useAccentColor, forKey: "useAccentColor")
-        }
-    }
-    
-    @Published var accentColor: Color {
-        didSet {
-            userDefaults.set(accentColor.toHex(), forKey: "accentColor")
-        }
-    }
-    
     @Published var showCopyNotifications: Bool {
         didSet {
             userDefaults.set(showCopyNotifications, forKey: "showCopyNotifications")
@@ -128,17 +116,9 @@ class PreferencesManager: ObservableObject {
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
-        self.useAccentColor = userDefaults.bool(forKey: "useAccentColor")
         self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
-        
-        // Color de acento
-        if let colorHex = userDefaults.string(forKey: "accentColor") {
-            self.accentColor = Color(hex: colorHex)
-        } else {
-            self.accentColor = .blue
-        }
         
         // Aplicar configuración inicial
         applyInitialSettings()
@@ -178,11 +158,9 @@ class PreferencesManager: ObservableObject {
         
         // Nuevas propiedades por defecto
         self.showInDock = false
-        self.useAccentColor = true
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
-        self.accentColor = .blue
         
         applyInitialSettings()
     }
