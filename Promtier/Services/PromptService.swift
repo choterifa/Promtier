@@ -18,6 +18,7 @@ class PromptService: ObservableObject {
     // CONFIGURABLE: Publicación de cambios para UI reactiva
     @Published var prompts: [Prompt] = []
     @Published var filteredPrompts: [Prompt] = []
+    @Published var folders: [Folder] = []
     @Published var searchQuery: String = ""
     @Published var selectedCategory: String? = nil
     @Published var isLoading: Bool = false
@@ -40,7 +41,54 @@ class PromptService: ObservableObject {
             }
             .store(in: &cancellables)
         
+        seedDefaultFolders() // Crear categorías de sistema si no existen
+        loadFolders()
         loadPrompts()
+    }
+    
+    /// Crea las carpetas por defecto si no han sido sembradas aún en esta versión
+    private func seedDefaultFolders() {
+        let context = dataController.viewContext
+        
+        // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
+        let seedKey = "hasSeededDefaultsV21"
+        if UserDefaults.standard.bool(forKey: seedKey) { return }
+        
+        let request = FolderEntity.fetchAll(in: context)
+        
+        do {
+            let entities = try context.fetch(request)
+            let existingNames = entities.map { $0.name }
+            
+            print("🌱 Sembrando categorías base como guía...")
+            var seededCount = 0
+            
+            for cat in PredefinedCategory.allCases {
+                // Solo añadir si no existe ya una con ese nombre exacto
+                if !existingNames.contains(cat.displayName) {
+                    let folder = Folder(
+                        id: UUID(),
+                        name: cat.displayName,
+                        color: cat.hexColor,
+                        icon: cat.icon,
+                        createdAt: Date(),
+                        parentId: nil
+                    )
+                    _ = FolderEntity.create(from: folder, in: context)
+                    seededCount += 1
+                }
+            }
+            
+            if seededCount > 0 {
+                dataController.save()
+                print("✅ \(seededCount) categorías base añadidas.")
+            }
+            
+            UserDefaults.standard.set(true, forKey: seedKey)
+            
+        } catch {
+            print("Error sembrando categorías: \(error)")
+        }
     }
     
     // MARK: - Operaciones CRUD
@@ -63,6 +111,22 @@ class PromptService: ObservableObject {
         } catch {
             print("Error cargando prompts: \(error)")
             DispatchQueue.main.async { self.isLoading = false }
+        }
+    }
+    
+    /// Carga todas las carpetas desde Core Data
+    func loadFolders() {
+        let request = FolderEntity.fetchAll(in: dataController.viewContext)
+        
+        do {
+            let entities = try dataController.viewContext.fetch(request)
+            let loadedFolders = entities.map { $0.toFolder() }
+            
+            DispatchQueue.main.async {
+                self.folders = loadedFolders
+            }
+        } catch {
+            print("Error cargando carpetas: \(error)")
         }
     }
     
@@ -114,6 +178,82 @@ class PromptService: ObservableObject {
             }
         } catch {
             print("Error eliminando prompt: \(error)")
+        }
+        
+        return false
+    }
+    
+    // MARK: - Operaciones de Carpetas
+    
+    /// Crea una nueva carpeta
+    func createFolder(_ folder: Folder) -> Bool {
+        let context = dataController.viewContext
+        _ = FolderEntity.create(from: folder, in: context)
+        dataController.save()
+        loadFolders()
+        return true
+    }
+    
+    /// Actualiza una carpeta existente
+    func updateFolder(_ folder: Folder, oldName: String? = nil) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", folder.id as CVarArg)
+        
+        do {
+            let entities = try context.fetch(request)
+            if let entity = entities.first {
+                entity.updateFromFolder(folder)
+                
+                // Si el nombre cambió, actualizar todos los prompts asociados
+                if let oldName = oldName, oldName != folder.name {
+                    let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                    promptRequest.predicate = NSPredicate(format: "folder == %@", oldName)
+                    
+                    let promptEntities = try context.fetch(promptRequest)
+                    for promptEntity in promptEntities {
+                        promptEntity.folder = folder.name
+                    }
+                }
+                
+                dataController.save()
+                loadFolders()
+                loadPrompts()
+                return true
+            }
+        } catch {
+            print("Error actualizando carpeta: \(error)")
+        }
+        
+        return false
+    }
+    
+    /// Elimina una carpeta
+    func deleteFolder(_ folder: Folder) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", folder.id as CVarArg)
+        
+        do {
+            let entities = try context.fetch(request)
+            if let entity = entities.first {
+                // Desasociar prompts antes de borrar la carpeta
+                let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                promptRequest.predicate = NSPredicate(format: "folder == %@", folder.name)
+                
+                let promptEntities = try context.fetch(promptRequest)
+                for promptEntity in promptEntities {
+                    promptEntity.folder = nil
+                }
+                
+                context.delete(entity)
+                dataController.save()
+                loadFolders()
+                loadPrompts()
+                return true
+            }
+        } catch {
+            print("Error eliminando carpeta: \(error)")
         }
         
         return false

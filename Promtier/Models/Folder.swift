@@ -13,14 +13,26 @@ struct Folder: Identifiable, Codable, Hashable {
     let id: UUID                    // Identificador único
     var name: String                // Nombre de carpeta
     var color: String?              // Color opcional (hex)
+    var icon: String?               // Icono opcional (SFSymbol)
     var createdAt: Date              // Fecha de creación
     var parentId: UUID?             // ID de carpeta padre para anidación
     
-    // Inicializador con valores por defecto
-    init(name: String, color: String? = nil, parentId: UUID? = nil) {
+    // Inicializador completo para reconstrucción desde Core Data
+    init(id: UUID, name: String, color: String?, icon: String?, createdAt: Date, parentId: UUID?) {
+        self.id = id
+        self.name = name
+        self.color = color
+        self.icon = icon
+        self.createdAt = createdAt
+        self.parentId = parentId
+    }
+    
+    // Inicializador de conveniencia para nuevas carpetas
+    init(name: String, color: String? = nil, icon: String? = nil, parentId: UUID? = nil) {
         self.id = UUID()
         self.name = name
         self.color = color
+        self.icon = icon
         self.createdAt = Date()
         self.parentId = parentId
     }

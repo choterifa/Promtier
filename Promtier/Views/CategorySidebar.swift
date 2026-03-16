@@ -12,6 +12,8 @@ struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     
+    @State private var showingFolderManager = false
+    
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
@@ -30,12 +32,22 @@ struct CategorySidebar: View {
             // Header sutil
             HStack {
                 Text("Explorar")
-                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .bold))
+                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
                     .tracking(1.2 * preferences.fontSize.scale)
                 
                 Spacer()
+                
+                Button {
+                    showingFolderManager = true
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(.blue.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+                .help("Gestionar Categorías")
             }
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -86,17 +98,17 @@ struct CategorySidebar: View {
             // Lista de categorías
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 4) {
-                    ForEach(categories, id: \.self) { category in
-                        let count = categoryCounts[category.displayName] ?? 0
+                    ForEach(promptService.folders) { folder in
+                        let count = categoryCounts[folder.name] ?? 0
                         
                         SidebarItem(
-                            title: category.displayName,
-                            icon: category.icon,
-                            color: category.color,
+                            title: folder.name,
+                            icon: folder.icon ?? "folder.fill",
+                            color: Color(hex: folder.displayColor),
                             count: count,
-                            isSelected: promptService.selectedCategory == category.displayName
+                            isSelected: promptService.selectedCategory == folder.name
                         ) {
-                            promptService.selectedCategory = category.displayName
+                            promptService.selectedCategory = folder.name
                         }
                     }
                 }
@@ -111,6 +123,10 @@ struct CategorySidebar: View {
                 Color.primary.opacity(0.02)
             }
         )
+        .sheet(isPresented: $showingFolderManager) {
+            FolderManagerView()
+                .environmentObject(promptService)
+        }
     }
 }
 

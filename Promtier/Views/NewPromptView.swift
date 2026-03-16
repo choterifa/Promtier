@@ -216,11 +216,16 @@ struct NewPromptView: View {
                                     }
                                     .id("none")
                                     
-                                    ForEach(PredefinedCategory.allCases, id: \.self) { category in
-                                        CategoryTag(title: category.displayName, icon: category.icon, color: category.color, isSelected: selectedFolder == category.displayName) {
-                                            selectedFolder = category.displayName
+                                    ForEach(promptService.folders) { folder in
+                                        CategoryTag(
+                                            title: folder.name,
+                                            icon: folder.icon ?? "folder.fill",
+                                            color: Color(hex: folder.displayColor),
+                                            isSelected: selectedFolder == folder.name
+                                        ) {
+                                            selectedFolder = folder.name
                                         }
-                                        .id(category.displayName)
+                                        .id(folder.name)
                                     }
                                 }
                                 .padding(.vertical, 4)

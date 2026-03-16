@@ -164,3 +164,15 @@ enum PredefinedCategory: String, CaseIterable {
         return Self.allCases.first { $0.displayName == category }
     }
 }
+
+extension NSColor {
+    var hexString: String {
+        guard let rgbColor = self.usingColorSpace(.sRGB) else {
+            return "FFFFFF"
+        }
+        let r = Int(rgbColor.redComponent * 255)
+        let g = Int(rgbColor.greenComponent * 255)
+        let b = Int(rgbColor.blueComponent * 255)
+        return String(format: "%02X%02X%02X", r, g, b)
+    }
+}
