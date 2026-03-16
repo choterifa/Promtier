@@ -188,7 +188,7 @@ struct SearchViewSimple: View {
                                         NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                     },
                                     onDoubleTap: {
-                                        usePrompt(prompt)
+                                        withAnimation(.spring()) { viewState = .editPrompt(prompt) }
                                     },
                                     onHover: { isHovering in
                                         // Optimización: Reducir actualizaciones de hover
@@ -271,11 +271,19 @@ struct SearchViewSimple: View {
         .onKeyPress(.return) {
             // Optimización: Manejo más eficiente del Enter
             if let prompt = selectedPrompt {
-                usePrompt(prompt)
+                withAnimation(.spring()) { viewState = .editPrompt(prompt) }
                 // Cerrar preview si está abierto
                 if showingPreview {
                     showingPreview = false
                 }
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(characters: CharacterSet(charactersIn: "c"), phases: .down) { press in
+            // Cmd + C para copiar el prompt seleccionado
+            if press.modifiers.contains(.command), let prompt = selectedPrompt {
+                usePrompt(prompt)
                 return .handled
             }
             return .ignored
@@ -287,11 +295,6 @@ struct SearchViewSimple: View {
     /// Usa un prompt (copia al clipboard) - Versión optimizada
     private func usePrompt(_ prompt: Prompt) {
         self.promptService.usePrompt(prompt)
-        
-        // Efectos de retroalimentación
-        if self.preferences.hapticFeedback {
-            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
-        }
         
         if self.preferences.soundEnabled {
             SoundService.shared.playCopySound()

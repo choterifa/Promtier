@@ -96,11 +96,7 @@ class MenuBarManager: NSObject, ObservableObject {
             popover?.contentViewController = NSHostingController(rootView: contentView)
         }
         
-        // CONFIGURABLE: Efecto háptico al abrir
-        if PreferencesManager.shared.hapticFeedback {
-            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-        }
-        
+    
         // Hacer la aplicación activa para evitar requerir doble clic
         NSApp.activate(ignoringOtherApps: true)
         

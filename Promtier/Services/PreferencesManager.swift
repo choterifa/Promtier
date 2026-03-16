@@ -47,17 +47,11 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    // MARK: - Sonidos y Hápticos
+    // MARK: - Sonidos
     
     @Published var soundEnabled: Bool {
         didSet {
             userDefaults.set(soundEnabled, forKey: "soundEnabled")
-        }
-    }
-    
-    @Published var hapticFeedback: Bool {
-        didSet {
-            userDefaults.set(hapticFeedback, forKey: "hapticFeedback")
         }
     }
     
@@ -110,7 +104,6 @@ class PreferencesManager: ObservableObject {
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         self.closeOnOutsideClick = userDefaults.bool(forKey: "closeOnOutsideClick")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
-        self.hapticFeedback = userDefaults.bool(forKey: "hapticFeedback")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         
@@ -152,7 +145,6 @@ class PreferencesManager: ObservableObject {
         self.launchAtLogin = false
         self.closeOnOutsideClick = true
         self.soundEnabled = true
-        self.hapticFeedback = true
         self.globalShortcutEnabled = true
         self.language = .spanish
         
@@ -175,7 +167,6 @@ class PreferencesManager: ObservableObject {
             "launchAtLogin": launchAtLogin,
             "closeOnOutsideClick": closeOnOutsideClick,
             "soundEnabled": soundEnabled,
-            "hapticFeedback": hapticFeedback,
             "globalShortcutEnabled": globalShortcutEnabled,
             "language": language.rawValue,
             "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -208,10 +199,6 @@ class PreferencesManager: ObservableObject {
             
             if let soundEnabled = config["soundEnabled"] as? Bool {
                 self.soundEnabled = soundEnabled
-            }
-            
-            if let hapticFeedback = config["hapticFeedback"] as? Bool {
-                self.hapticFeedback = hapticFeedback
             }
             
             if let globalShortcutEnabled = config["globalShortcutEnabled"] as? Bool {

@@ -15,152 +15,229 @@ struct PreferencesView: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     
+    @State private var selectedTab: Int = 0
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
     
+    private let tabs = [
+        (title: "Apariencia", icon: "paintbrush.fill"),
+        (title: "General", icon: "gearshape.fill"),
+        (title: "Atajos", icon: "keyboard.fill"),
+        (title: "Datos", icon: "externaldrive.fill")
+    ]
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Header moderno con título y botón de cerrar
-            HStack(spacing: 20) {
-                Text("Preferencias")
-                    .font(.system(size: 19, weight: .semibold))
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+            // Header Premium
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Configuración")
+                        .font(.system(size: 24, weight: .bold))
+                    Text("Personaliza tu experiencia en Promtier")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
-                Button("Cerrar") {
-                    onClose()
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.secondary)
                 }
-                .keyboardShortcut(.escape)
-                .foregroundColor(.primary)
-                .frame(width: 36, height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                .buttonStyle(.plain)
+                .help("Cerrar (Esc)")
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 32)
+            .padding(.bottom, 24)
+            
+            // Selector de pestañas personalizado (Segmented Premium)
+            HStack(spacing: 4) {
+                ForEach(0..<tabs.count, id: \.self) { index in
+                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: tabs[index].icon)
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(tabs[index].title)
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            ZStack {
+                                if selectedTab == index {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.blue)
+                                        .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.clear)
+                                }
+                            }
                         )
-                )
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-            .background(Color(NSColor.windowBackgroundColor))
-            
-            // Separador moderno
-            Rectangle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(height: 1)
-                .padding(.horizontal, 24)
-            
-            // TabView moderno sin NavigationView
-            TabView {
-                // Tab de Apariencia
-                AppearanceTab()
-                    .environmentObject(preferences)
-                    .tabItem {
-                        Label("Apariencia", systemImage: "paintbrush")
+                        .foregroundColor(selectedTab == index ? .white : .primary)
                     }
-                
-                // Tab de Comportamiento
-                BehaviorTab()
-                    .environmentObject(preferences)
-                    .tabItem {
-                        Label("Comportamiento", systemImage: "gear")
-                    }
-                
-                // Tab de Atajos
-                ShortcutsTab()
-                    .environmentObject(preferences)
-                    .tabItem {
-                        Label("Atajos", systemImage: "keyboard")
-                    }
-                
-                // Tab de Datos
-                DataTab(
-                    showingExportSheet: $showingExportSheet,
-                    showingImportSheet: $showingImportSheet,
-                    showingResetAlert: $showingResetAlert
-                )
-                .environmentObject(preferences)
-                .tabItem {
-                    Label("Datos", systemImage: "externaldrive")
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-        }
-        .sheet(isPresented: $showingExportSheet) {
-            ExportView()
-        }
-        .sheet(isPresented: $showingImportSheet) {
-            ImportView()
-        }
-        .alert("Restablecer Configuración", isPresented: $showingResetAlert) {
-            Button("Cancelar", role: .cancel) { }
-            Button("Restablecer", role: .destructive) {
-                resetPreferences()
+            .padding(6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.05))
+            )
+            .padding(.horizontal, 32)
+            .padding(.bottom, 24)
+            
+            Divider()
+                .padding(.horizontal, 32)
+            
+            // Contenido de la pestaña
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    switch selectedTab {
+                    case 0: AppearanceTab()
+                    case 1: BehaviorTab()
+                    case 2: ShortcutsTab()
+                    case 3: DataTab(
+                        showingExportSheet: $showingExportSheet,
+                        showingImportSheet: $showingImportSheet,
+                        showingResetAlert: $showingResetAlert
+                    )
+                    default: EmptyView()
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 32)
             }
-        } message: {
-            Text("Esta acción restablecerá todas las preferencias a sus valores por defecto. ¿Estás seguro?")
         }
-    }
-    
-    private func resetPreferences() {
-        preferences.resetToDefaults()
+        .frame(width: 650, height: 500)
+        .background(
+            ZStack {
+                Color(NSColor.windowBackgroundColor)
+                
+                // Decoración sutil de fondo
+                Circle()
+                    .fill(Color.blue.opacity(0.03))
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 60)
+                    .offset(x: 200, y: -200)
+            }
+        )
+        .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
+        .sheet(isPresented: $showingExportSheet) { ExportView() }
+        .sheet(isPresented: $showingImportSheet) { ImportView() }
+        .alert("Restablecer", isPresented: $showingResetAlert) {
+            Button("Cancelar", role: .cancel) { }
+            Button("Restablecer", role: .destructive) { preferences.resetToDefaults() }
+        } message: {
+            Text("Se perderán todos tus ajustes personalizados.")
+        }
     }
 }
 
-// MARK: - Tabs de Preferencias
+// MARK: - Componentes de Estilo
+
+struct SettingsSection<Content: View>: View {
+    let title: String
+    let icon: String
+    let content: Content
+    
+    init(title: String, icon: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.icon = icon
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 14, weight: .bold))
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+            }
+            
+            VStack(spacing: 1) {
+                content
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.primary.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+            )
+        }
+    }
+}
+
+struct SettingsRow<Content: View>: View {
+    let label: String
+    let subtitle: String?
+    let content: Content
+    
+    init(_ label: String, subtitle: String? = nil, @ViewBuilder content: () -> Content) {
+        self.label = label
+        self.subtitle = subtitle
+        self.content = content()
+    }
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 14, weight: .medium))
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            content
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+    }
+}
+
+// MARK: - Tabs Rediseñados
 
 struct AppearanceTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Sección de Tema
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Tema")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        Picker("Apariencia", selection: $preferences.appearance) {
-                            Text("Claro").tag(AppAppearance.light)
-                            Text("Oscuro").tag(AppAppearance.dark)
-                            Text("Automático").tag(AppAppearance.system)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .font(.system(size: 16))
+        VStack(spacing: 32) {
+            SettingsSection(title: "Interfaz", icon: "display") {
+                SettingsRow("Apariencia", subtitle: "Selecciona el modo visual de la app") {
+                    Picker("", selection: $preferences.appearance) {
+                        Text("Claro").tag(AppAppearance.light)
+                        Text("Oscuro").tag(AppAppearance.dark)
+                        Text("Sistema").tag(AppAppearance.system)
                     }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
                 }
                 
-                // Sección de Tipografía
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Tipografía")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        Picker("Tamaño de fuente", selection: $preferences.fontSize) {
-                            Text("Pequeña").tag(FontSize.small)
-                            Text("Mediana").tag(FontSize.medium)
-                            Text("Grande").tag(FontSize.large)
-                        }
-                        .font(.system(size: 16))
-                        
-                        Text("El tamaño de fuente afecta a toda la interfaz de la aplicación.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Tamaño de Fuente", subtitle: "Ajusta el texto de tus prompts") {
+                    Picker("", selection: $preferences.fontSize) {
+                        Text("S").tag(FontSize.small)
+                        Text("M").tag(FontSize.medium)
+                        Text("L").tag(FontSize.large)
                     }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
                 }
             }
-            .padding(.vertical, 20)
         }
     }
 }
@@ -169,92 +246,34 @@ struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Sección de Interacción
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Interacción")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Efectos hápticos", isOn: $preferences.hapticFeedback)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Sonidos del sistema", isOn: $preferences.soundEnabled)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Cerrar al hacer clic fuera", isOn: $preferences.closeOnOutsideClick)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                    }
+        VStack(spacing: 32) {
+            SettingsSection(title: "Interacción", icon: "hand.tap.fill") {
+                SettingsRow("Sonidos", subtitle: "Feedback auditivo al copiar") {
+                    Toggle("", isOn: $preferences.soundEnabled)
+                        .toggleStyle(.switch)
                 }
                 
-                // Sección de Notificaciones
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Notificaciones")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Mostrar notificaciones de copia", isOn: $preferences.showCopyNotifications)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Notificaciones de uso", isOn: $preferences.showUsageNotifications)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                    }
-                }
+                Divider().padding(.leading, 20)
                 
-                // Sección de Inicio
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Inicio")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Iniciar automáticamente al encender el Mac", isOn: $preferences.launchAtLogin)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Toggle("Mostrar en el Dock", isOn: $preferences.showInDock)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                    }
+                SettingsRow("Cerrar al Perder Foco", subtitle: "Cierra la ventana automáticamente") {
+                    Toggle("", isOn: $preferences.closeOnOutsideClick)
+                        .toggleStyle(.switch)
                 }
             }
-            .padding(.vertical, 20)
+            
+            SettingsSection(title: "Sistema", icon: "macwindow") {
+                SettingsRow("Inicio Automático", subtitle: "Abrir Promtier al iniciar sesión") {
+                    Toggle("", isOn: $preferences.launchAtLogin)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Mostrar en el Dock", subtitle: "Icono visible en la barra de apps") {
+                    Toggle("", isOn: $preferences.showInDock)
+                        .toggleStyle(.switch)
+                }
+            }
         }
     }
 }
@@ -263,124 +282,61 @@ struct ShortcutsTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Sección de Atajos Globales
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Atajos Globales")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Habilitar atajos globales", isOn: $preferences.globalShortcutEnabled)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        if preferences.globalShortcutEnabled {
-                            VStack(spacing: 8) {
-                                HStack {
-                                    Text("Mostrar/Ocultar:")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text("⌘⇧P")
-                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                        .foregroundColor(.blue)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(6)
-                                }
-                                
-                                HStack {
-                                    Text("Búsqueda rápida:")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text("⌘K")
-                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                        .foregroundColor(.blue)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(6)
-                                }
-                                
-                                HStack {
-                                    Text("Nuevo prompt:")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text("⌘N")
-                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                        .foregroundColor(.blue)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(6)
-                                }
-                            }
-                            .padding(.leading, 16)
-                        }
-                    }
+        VStack(spacing: 32) {
+            SettingsSection(title: "Atajos Globales", icon: "command") {
+                SettingsRow("Atajos Globales", subtitle: "Habilitar combinaciones en todo el sistema") {
+                    Toggle("", isOn: $preferences.globalShortcutEnabled)
+                        .toggleStyle(.switch)
                 }
                 
-                // Sección de Atajos en la App
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Atajos en la App")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
+                if preferences.globalShortcutEnabled {
+                    Divider().padding(.leading, 20)
                     
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("Copiar prompt:")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("⌘C")
-                                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
-                        }
-                        
-                        HStack {
-                            Text("Editar prompt:")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("⌘E")
-                                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
-                        }
-                        
-                        HStack {
-                            Text("Eliminar prompt:")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("⌘⌫")
-                                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
-                        }
+                    VStack(spacing: 12) {
+                        ShortcutItem(label: "Mostrar Ventana", shortcut: "⌘⇧P")
+                        ShortcutItem(label: "Búsqueda Rápida", shortcut: "⌘K")
+                        ShortcutItem(label: "Nuevo Prompt", shortcut: "⌘N")
                     }
+                    .padding(20)
                 }
             }
-            .padding(.vertical, 20)
+            
+            SettingsSection(title: "Gestión Local", icon: "keyboard") {
+                SettingsRow("Copiar Seleccionado", subtitle: "Atajo dentro de la app") {
+                    Text("⌘C").font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1)).cornerRadius(6)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Editar Seleccionado", subtitle: "Abrir editor rápidamente") {
+                    Text("Enter").font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1)).cornerRadius(6)
+                }
+            }
+        }
+    }
+}
+
+struct ShortcutItem: View {
+    let label: String
+    let shortcut: String
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(shortcut)
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue.opacity(0.1))
+                .foregroundColor(.blue)
+                .cornerRadius(6)
         }
     }
 }
@@ -392,104 +348,49 @@ struct DataTab: View {
     @Binding var showingResetAlert: Bool
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Sección de Exportación/Importación
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Exportación/Importación")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        Button("Exportar datos") {
-                            showingExportSheet = true
-                        }
-                        .font(.system(size: 16))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Button("Importar datos") {
-                            showingImportSheet = true
-                        }
-                        .font(.system(size: 16))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                        .buttonStyle(PlainButtonStyle())
+        VStack(spacing: 32) {
+            SettingsSection(title: "Transferencia", icon: "arrow.left.arrow.right") {
+                Button(action: { showingExportSheet = true }) {
+                    SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de tus prompts") {
+                        Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
                     }
-                }
+                }.buttonStyle(.plain)
                 
-                // Sección de Sincronización
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Sincronización")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Toggle("Sincronizar con iCloud", isOn: $preferences.icloudSyncEnabled)
-                                .font(.system(size: 16))
-                                .toggleStyle(SwitchToggleStyle())
-                            
-                            Spacer()
-                        }
-                        
-                        if preferences.icloudSyncEnabled {
-                            Text("Los datos se sincronizarán automáticamente entre tus dispositivos.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                                .padding(.leading, 16)
-                        }
-                    }
-                }
+                Divider().padding(.leading, 20)
                 
-                // Sección de Restablecimiento
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Restablecimiento")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Button("Restablecer configuración") {
-                        showingResetAlert = true
+                Button(action: { showingImportSheet = true }) {
+                    SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo") {
+                        Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
                     }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.red)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.red.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                    .buttonStyle(PlainButtonStyle())
+                }.buttonStyle(.plain)
+            }
+            
+            SettingsSection(title: "Cloud", icon: "icloud.fill") {
+                SettingsRow("iCloud Sync", subtitle: "Sincroniza entre tus Macs") {
+                    Toggle("", isOn: $preferences.icloudSyncEnabled)
+                        .toggleStyle(.switch)
                 }
             }
-            .padding(.vertical, 20)
+            
+            Button(action: { showingResetAlert = true }) {
+                HStack {
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("Restablecer todos los ajustes")
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.red.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.red.opacity(0.1), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 }
