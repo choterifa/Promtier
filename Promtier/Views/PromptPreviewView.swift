@@ -15,63 +15,76 @@ struct PromptPreviewView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con título
-            HStack {
+            // Header estilo Quick Look
+            HStack(spacing: 12) {
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.blue)
+                
                 Text(prompt.title)
-                    .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                // Botón de cerrar
-                Button(action: {
-                    // Cerrar el popover desde adentro
-                    if let window = NSApp.keyWindow {
-                        window.orderOut(nil)
-                    }
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 24, height: 24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.1))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
+                Text("Vista Previa")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.primary.opacity(0.05)))
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.vertical, 14)
+            .background(VisualEffectView(material: .headerView, blendingMode: .withinWindow))
             
             Divider()
             
-            // Contenido del prompt
+            // Contenido con tipografía mejorada
             ScrollView {
-                Text(prompt.content)
-                    .font(.system(size: 16 * preferences.fontSize.scale, design: .monospaced))
-                    .foregroundColor(.primary)
-                    .padding(20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(prompt.content)
+                        .font(.system(size: 14 * preferences.fontSize.scale, design: .monospaced))
+                        .lineSpacing(6)
+                        .foregroundColor(.primary.opacity(0.9))
+                        .textSelection(.enabled)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(Color(NSColor.textBackgroundColor))
+            .background(VisualEffectView(material: .contentBackground, blendingMode: .withinWindow))
         }
-        .frame(width: 400, height: 300)
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(8)
-        .shadow(radius: 10)
+        .frame(width: 480, height: 360)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+        )
         .onAppear {
-            // Optimización: Asegurar visibilidad y foco
             isVisible = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-            }
         }
         .onDisappear {
             isVisible = false
         }
+    }
+}
+
+// Auxiliar para efectos de desenfoque nativos
+struct VisualEffectView: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }
 

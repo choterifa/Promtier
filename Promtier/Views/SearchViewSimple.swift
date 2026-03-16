@@ -118,18 +118,6 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .popover(isPresented: $showingPreview) {
-            if let prompt = selectedPrompt {
-                PromptPreviewView(prompt: prompt)
-                    .onKeyPress(.space) {
-                        showingPreview = false
-                        return .handled
-                    }
-                    .onKeyPress(.escape) {
-                        showingPreview = false
-                        return .handled
-                    }
-            }
         }
     }
     
@@ -260,6 +248,7 @@ struct SearchViewSimple: View {
                                     onTap: {
                                         // Optimización: Actualizar estado de forma síncrona
                                         selectedPrompt = prompt
+                                        isSearchFocused = false // Quitar foco de la búsqueda
                                         // Forzar foco a la ventana principal
                                         NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                     },
@@ -297,6 +286,20 @@ struct SearchViewSimple: View {
                                         Label("Eliminar", systemImage: "trash")
                                     }
                                 }
+                                .popover(isPresented: Binding(
+                                    get: { showingPreview && selectedPrompt?.id == prompt.id },
+                                    set: { if !$0 { showingPreview = false } }
+                                )) {
+                                    PromptPreviewView(prompt: prompt)
+                                        .onKeyPress(.space) {
+                                            showingPreview = false
+                                            return .handled
+                                        }
+                                        .onKeyPress(.escape) {
+                                            showingPreview = false
+                                            return .handled
+                                        }
+                                }
                             }
                         }
                         .padding(.horizontal, 24)
@@ -305,18 +308,7 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .onKeyPress(.space) {
-            // Optimización: Manejo más eficiente del espacio
-            if showingPreview {
-                showingPreview = false
-                return .handled
-            } else if selectedPrompt != nil {
-                // Solo mostrar preview si hay un prompt seleccionado
-                showingPreview = true
-                return .handled
-            }
-            return .ignored
-        }
+        // Eliminamos el onKeyPress de aquí ya que lo manejaremos en el monitor local
         .onKeyPress(.upArrow) {
             // Optimización: Navegación más fluida
             guard !promptService.filteredPrompts.isEmpty else { return .ignored }
@@ -378,6 +370,17 @@ struct SearchViewSimple: View {
                     usePrompt(prompt)
                 }
                 return nil
+            }
+        }
+        
+        // Barra Espaciadora (KeyCode 49) -> Vista Previa (Quick Look)
+        // Solo si NO estamos en el buscador
+        if keyCode == 49 {
+            if !isSearchFocused && selectedPrompt != nil {
+                DispatchQueue.main.async {
+                    self.showingPreview.toggle()
+                }
+                return nil // Bloquear propagación al sistema
             }
         }
         
