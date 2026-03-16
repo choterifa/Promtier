@@ -16,6 +16,7 @@ struct SearchViewSimple: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var searchText = ""
+    @State private var selectedCategory: String?
     @State private var selectedPrompt: Prompt?
     @State private var showingPromptDetail = false
     @State private var showingNewPrompt = false
@@ -25,7 +26,13 @@ struct SearchViewSimple: View {
     @State private var hoveredPrompt: Prompt?
     
     var body: some View {
-        VStack(spacing: 0) {
+        HStack(spacing: 0) {
+            // Sidebar de categorías
+            CategorySidebar(selectedCategory: $selectedCategory)
+                .environmentObject(promptService)
+            
+            // Contenido principal
+            VStack(spacing: 0) {
             // Header moderno con búsqueda
             VStack(spacing: 16) {
                 HStack(spacing: 20) {
@@ -193,7 +200,7 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .frame(width: 560, height: 480) // Tamaño aumentado para mejor diseño
+        .frame(width: 760, height: 480) // Aumentado para incluir sidebar
         .onKeyPress(.space) {
             // Optimización: Manejo más eficiente del espacio
             if showingPreview {
@@ -255,6 +262,7 @@ struct SearchViewSimple: View {
         .onAppear {
             // Optimización: Inicialización más eficiente
             promptService.searchQuery = searchText
+            promptService.selectedCategory = selectedCategory
             // Asegurar foco en la ventana
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
@@ -267,6 +275,10 @@ struct SearchViewSimple: View {
                     promptService.searchQuery = newValue
                 }
             }
+        }
+        .onChange(of: selectedCategory) { _, newValue in
+            // Sincronizar categoría con el servicio
+            promptService.selectedCategory = newValue
         }
         .sheet(isPresented: $showingNewPrompt) {
             NewPromptView(prompt: nil)
@@ -302,6 +314,7 @@ struct SearchViewSimple: View {
                         return .handled
                     }
             }
+        }
         }
     }
     

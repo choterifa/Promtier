@@ -57,10 +57,29 @@ struct FolderManagerView: View {
             
             // Contenido principal moderno
             VStack(spacing: 20) {
-                // Lista moderna de carpetas
+                // Categorías predefinidas
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Categorías Predefinidas")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
+                        ForEach(PredefinedCategory.allCases, id: \.rawValue) { category in
+                            let count = promptService.prompts.filter { $0.folder == category.displayName }.count
+                            
+                            PredefinedCategoryCard(
+                                category: category,
+                                promptCount: count
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                
+                // Lista de carpetas personalizadas
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(folders, id: \.self) { folder in
+                        ForEach(getCustomFolders(), id: \.self) { folder in
                             FolderCard(
                                 folder: folder,
                                 promptCount: promptService.prompts.filter { $0.folder == folder }.count,
@@ -196,8 +215,15 @@ struct FolderManagerView: View {
     // MARK: - Métodos
     
     private func loadFolders() {
-        let uniqueFolders = Set(promptService.prompts.compactMap { $0.folder })
-        folders = Array(uniqueFolders).sorted()
+        let allFolders = Set(promptService.prompts.compactMap { $0.folder })
+        let predefinedCategories = Set(PredefinedCategory.allCases.map { $0.displayName })
+        folders = Array(allFolders.subtracting(predefinedCategories)).sorted()
+    }
+    
+    private func getCustomFolders() -> [String] {
+        let allFolders = Set(promptService.prompts.compactMap { $0.folder })
+        let predefinedCategories = Set(PredefinedCategory.allCases.map { $0.displayName })
+        return Array(allFolders.subtracting(predefinedCategories)).sorted()
     }
     
     private func addFolder() {

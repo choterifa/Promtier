@@ -17,6 +17,7 @@ class PromptServiceSimple: ObservableObject {
     @Published var prompts: [Prompt] = []
     @Published var filteredPrompts: [Prompt] = []
     @Published var searchQuery: String = ""
+    @Published var selectedCategory: String? = nil
     @Published var isLoading: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
@@ -30,6 +31,13 @@ class PromptServiceSimple: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Observar cambios en categoría para filtrar automáticamente
+        $selectedCategory
+            .sink { [weak self] _ in
+                self?.filterPrompts(query: self?.searchQuery ?? "")
+            }
+            .store(in: &cancellables)
+        
         loadSampleData()
     }
     
@@ -39,25 +47,43 @@ class PromptServiceSimple: ObservableObject {
     private func loadSampleData() {
         isLoading = true
         
-        // CONFIGURABLE: Datos de ejemplo
+        // CONFIGURABLE: Datos de ejemplo con categorías predefinidas
         prompts = [
             Prompt(
-                title: "Code Review",
-                content: "Por favor, revisa este código y proporciona feedback constructivo sobre:\n\n1. Calidad del código\n2. Buenas prácticas\n3. Posibles mejoras\n4. Seguridad\n\nCódigo:\n{{codigo}}",
-                description: "Plantilla para revisión de código",
-                folder: "Trabajo"
+                title: "Poses para Modelos 3D",
+                content: "Genera poses para modelos 3D con las siguientes características:\n\n- Estilo: {{estilo}}\n- Ángulo: {{angulo}}\n- Iluminación: {{iluminacion}}\n- Expresión: {{expresion}}\n\nDetalles adicionales: {{detalles}}",
+                description: "Plantilla para generar poses de modelos IA",
+                folder: "IA/Modelos"
             ),
             Prompt(
-                title: "Blog Post Outline",
-                content: "Crea un esquema para un blog post sobre {{tema}} con:\n\n- Título atractivo\n- Introducción\n- Puntos principales (3-5)\n- Conclusión\n- Call to action\n\nPúblico objetivo: {{audiencia}}",
-                description: "Estructura para artículos de blog",
-                folder: "Personal"
+                title: "Función Python Optimizada",
+                content: "Crea una función Python optimizada para {{funcionalidad}} con:\n\n- Parámetros: {{parametros}}\n- Retorno: {{retorno}}\n- Manejo de errores: {{errores}}\n- Documentación incluida",
+                description: "Plantilla para funciones Python",
+                folder: "Código"
+            ),
+            Prompt(
+                title: "Ideas para Contenido Creativo",
+                content: "Genera ideas para contenido sobre {{tema}} dirigido a {{audiencia}}:\n\n- Formato: {{formato}}\n- Tono: {{tono}}\n- Longitud: {{longitud}}\n- Palabras clave: {{keywords}}",
+                description: "Brainstorming de contenido creativo",
+                folder: "Creativo"
             ),
             Prompt(
                 title: "Email Profesional",
                 content: "Asunto: {{asunto}}\n\nEstimado/a {{nombre}},\n\n{{mensaje}}\n\nSaludos cordiales,\n{{firma}}",
                 description: "Plantilla para emails profesionales",
                 folder: "Trabajo"
+            ),
+            Prompt(
+                title: "Resumen de Estudio",
+                content: "Tema: {{tema}}\n\nConceptos clave:\n- {{concepto1}}\n- {{concepto2}}\n- {{concepto3}}\n\nEjemplos prácticos:\n{{ejemplos}}\n\nPreguntas de repaso:\n{{preguntas}}",
+                description: "Plantilla para resúmenes de estudio",
+                folder: "Estudio"
+            ),
+            Prompt(
+                title: "Recordatorio Personal",
+                content: "Recordatorio para {{fecha}}:\n\nTarea: {{tarea}}\nPrioridad: {{prioridad}}\nNotas: {{notas}}",
+                description: "Recordatorios personales rápidos",
+                folder: "Personal"
             )
         ]
         
@@ -101,25 +127,31 @@ class PromptServiceSimple: ObservableObject {
     
     // MARK: - Búsqueda y Filtrado
     
-    /// Filtra prompts basado en consulta de búsqueda
+    /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
     private func filterPrompts(query: String) {
-        if query.isEmpty {
-            filteredPrompts = prompts
-            return
+        var filtered = prompts
+        
+        // Filtrar por categoría si hay una seleccionada
+        if let category = selectedCategory {
+            filtered = filtered.filter { $0.folder == category }
         }
         
-        // CONFIGURABLE: Algoritmo de búsqueda simplificado
-        let lowercaseQuery = query.lowercased()
-        filteredPrompts = prompts.filter { prompt in
-            prompt.title.lowercased().contains(lowercaseQuery) ||
-            prompt.content.lowercased().contains(lowercaseQuery) ||
-            (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
+        // Filtrar por texto si hay consulta
+        if !query.isEmpty {
+            let lowercaseQuery = query.lowercased()
+            filtered = filtered.filter { prompt in
+                prompt.title.lowercased().contains(lowercaseQuery) ||
+                prompt.content.lowercased().contains(lowercaseQuery) ||
+                (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
+            }
         }
         
         // CONFIGURABLE: Límite de resultados mostrados
-        if filteredPrompts.count > 50 {
-            filteredPrompts = Array(filteredPrompts.prefix(50))
+        if filtered.count > 50 {
+            filtered = Array(filtered.prefix(50))
         }
+        
+        filteredPrompts = filtered
     }
     
     /// Obtiene prompts favoritos

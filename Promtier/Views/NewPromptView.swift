@@ -121,30 +121,36 @@ struct NewPromptView: View {
                             .foregroundColor(.primary)
                         
                         VStack(spacing: 16) {
-                            // Carpetas
+                            // Carpetas - Selector visual de categorías
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Carpeta")
+                                Text("Categoría")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                     .foregroundColor(.secondary)
                                 
-                                Picker("Carpeta", selection: $selectedFolder) {
-                                    Text("Sin carpeta").tag(String?.none)
-                                    ForEach(getAvailableFolders(), id: \.self) { folder in
-                                        Text(folder).tag(folder as String?)
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
+                                    // Opción "Sin categoría"
+                                    CategorySelectorButton(
+                                        title: "Sin categoría",
+                                        icon: "folder",
+                                        color: .gray,
+                                        isSelected: selectedFolder == nil
+                                    ) {
+                                        selectedFolder = nil
+                                    }
+                                    
+                                    // Categorías predefinidas
+                                    ForEach(PredefinedCategory.allCases, id: \.rawValue) { category in
+                                        CategorySelectorButton(
+                                            title: category.displayName,
+                                            icon: category.icon,
+                                            color: category.color,
+                                            isSelected: selectedFolder == category.displayName
+                                        ) {
+                                            selectedFolder = category.displayName
+                                        }
                                     }
                                 }
-                                .font(.system(size: 16))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(NSColor.controlBackgroundColor))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
                             }
                             
                             // Favorito

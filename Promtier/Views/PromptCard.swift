@@ -18,6 +18,25 @@ struct PromptCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Indicador de categoría con color
+            if let folder = prompt.folder,
+               let category = PredefinedCategory.fromString(folder) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(category.color.opacity(0.15))
+                        .frame(width: 24, height: 24)
+                    
+                    Image(systemName: category.icon)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(category.color)
+                }
+            } else {
+                Image(systemName: "doc.text")
+                    .foregroundColor(.secondary)
+                    .font(.title3)
+                    .frame(width: 24, height: 24)
+            }
+            
             // Contenido principal
             VStack(alignment: .leading, spacing: 8) {
                 // Título

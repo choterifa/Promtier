@@ -113,3 +113,54 @@ enum AppLanguage: String, CaseIterable {
         }
     }
 }
+
+// MARK: - Predefined Categories
+
+enum PredefinedCategory: String, CaseIterable {
+    case iaModels = "IA/Modelos"
+    case code = "Código"
+    case creative = "Creativo"
+    case work = "Trabajo"
+    case personal = "Personal"
+    case study = "Estudio"
+    
+    var displayName: String { rawValue }
+    
+    var color: Color {
+        switch self {
+        case .iaModels: return Color.blue
+        case .code: return Color.green
+        case .creative: return Color.purple
+        case .work: return Color.orange
+        case .personal: return Color.pink
+        case .study: return Color.yellow
+        }
+    }
+    
+    var hexColor: String {
+        switch self {
+        case .iaModels: return "#007AFF"
+        case .code: return "#34C759"
+        case .creative: return "#AF52DE"
+        case .work: return "#FF9500"
+        case .personal: return "#FF2D92"
+        case .study: return "#FFCC00"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .iaModels: return "brain.head.profile"
+        case .code: return "chevron.left.forwardslash.chevron.right"
+        case .creative: return "paintbrush.pointed"
+        case .work: return "briefcase"
+        case .personal: return "heart"
+        case .study: return "book"
+        }
+    }
+    
+    static func fromString(_ category: String?) -> PredefinedCategory? {
+        guard let category = category else { return nil }
+        return Self.allCases.first { $0.displayName == category }
+    }
+}
