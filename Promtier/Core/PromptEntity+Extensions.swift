@@ -20,7 +20,6 @@ extension PromptEntity {
         return Prompt(
             title: title,
             content: content,
-            description: promptDescription,
             folder: folder
         )
     }
@@ -29,7 +28,6 @@ extension PromptEntity {
     func updateFromPrompt(_ prompt: Prompt) {
         title = prompt.title
         content = prompt.content
-        promptDescription = prompt.description
         folder = prompt.folder
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)

@@ -82,13 +82,6 @@ struct PromptDetailView: View {
                             }
                         }
                         
-                        if let description = prompt.description, !description.isEmpty {
-                            Text(description)
-                                .font(.system(size: 18))
-                                .foregroundColor(.secondary)
-                                .padding(.top, 4)
-                        }
-                        
                         HStack(spacing: 20) {
                             Label("\(prompt.useCount) usos", systemImage: "arrow.counterclockwise")
                                 .font(.subheadline)
@@ -385,7 +378,6 @@ struct PromptDetailView: View {
     let samplePrompt = Prompt(
         title: "Code Review",
         content: "Por favor, revisa este código: {{codigo}}",
-        description: "Plantilla para revisión de código",
         folder: "Trabajo"
     )
     

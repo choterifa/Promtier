@@ -126,8 +126,7 @@ class PromptService: ObservableObject {
         let lowercaseQuery = query.lowercased()
         filteredPrompts = prompts.filter { prompt in
             prompt.title.lowercased().contains(lowercaseQuery) ||
-            prompt.content.lowercased().contains(lowercaseQuery) ||
-            (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
+            prompt.content.lowercased().contains(lowercaseQuery)
         }
         
         // CONFIGURABLE: Límite de resultados mostrados

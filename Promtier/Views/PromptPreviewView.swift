@@ -79,7 +79,6 @@ struct PromptPreviewView: View {
     let samplePrompt = Prompt(
         title: "Code Review",
         content: "Por favor, revisa este código y proporciona feedback constructivo sobre:\n\n1. Arquitectura y diseño\n2. Buenas prácticas\n3. Performance\n4. Seguridad\n\n{{codigo}}",
-        description: "Plantilla para revisión de código",
         folder: nil
     )
     

@@ -52,37 +52,31 @@ class PromptServiceSimple: ObservableObject {
             Prompt(
                 title: "Poses para Modelos 3D",
                 content: "Genera poses para modelos 3D con las siguientes características:\n\n- Estilo: {{estilo}}\n- Ángulo: {{angulo}}\n- Iluminación: {{iluminacion}}\n- Expresión: {{expresion}}\n\nDetalles adicionales: {{detalles}}",
-                description: "Plantilla para generar poses de modelos IA",
                 folder: "IA/Modelos"
             ),
             Prompt(
                 title: "Función Python Optimizada",
                 content: "Crea una función Python optimizada para {{funcionalidad}} con:\n\n- Parámetros: {{parametros}}\n- Retorno: {{retorno}}\n- Manejo de errores: {{errores}}\n- Documentación incluida",
-                description: "Plantilla para funciones Python",
                 folder: "Código"
             ),
             Prompt(
                 title: "Ideas para Contenido Creativo",
                 content: "Genera ideas para contenido sobre {{tema}} dirigido a {{audiencia}}:\n\n- Formato: {{formato}}\n- Tono: {{tono}}\n- Longitud: {{longitud}}\n- Palabras clave: {{keywords}}",
-                description: "Brainstorming de contenido creativo",
                 folder: "Creativo"
             ),
             Prompt(
                 title: "Email Profesional",
                 content: "Asunto: {{asunto}}\n\nEstimado/a {{nombre}},\n\n{{mensaje}}\n\nSaludos cordiales,\n{{firma}}",
-                description: "Plantilla para emails profesionales",
                 folder: "Trabajo"
             ),
             Prompt(
                 title: "Resumen de Estudio",
                 content: "Tema: {{tema}}\n\nConceptos clave:\n- {{concepto1}}\n- {{concepto2}}\n- {{concepto3}}\n\nEjemplos prácticos:\n{{ejemplos}}\n\nPreguntas de repaso:\n{{preguntas}}",
-                description: "Plantilla para resúmenes de estudio",
                 folder: "Estudio"
             ),
             Prompt(
                 title: "Recordatorio Personal",
                 content: "Recordatorio para {{fecha}}:\n\nTarea: {{tarea}}\nPrioridad: {{prioridad}}\nNotas: {{notas}}",
-                description: "Recordatorios personales rápidos",
                 folder: "Personal"
             )
         ]
@@ -141,8 +135,7 @@ class PromptServiceSimple: ObservableObject {
             let lowercaseQuery = query.lowercased()
             filtered = filtered.filter { prompt in
                 prompt.title.lowercased().contains(lowercaseQuery) ||
-                prompt.content.lowercased().contains(lowercaseQuery) ||
-                (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
+                prompt.content.lowercased().contains(lowercaseQuery)
             }
         }
         
@@ -176,7 +169,6 @@ class PromptServiceSimple: ObservableObject {
         
         for prompt in prompts {
             exportText += "Título: \(prompt.title)\n"
-            exportText += "Descripción: \(prompt.description ?? "Sin descripción")\n"
             exportText += "Contenido:\n\(prompt.content)\n"
             exportText += "---\n\n"
         }

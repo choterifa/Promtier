@@ -123,7 +123,6 @@ struct PromptCard: View {
             prompt: Prompt(
                 title: "Code Review",
                 content: "Por favor, revisa este código y proporciona feedback constructivo sobre:\n\n1. Arquitectura y diseño\n2. Buenas prácticas\n3. Performance\n4. Seguridad\n\n{{codigo}}",
-                description: "Plantilla para revisión de código",
                 folder: "Trabajo"
             ),
             isSelected: false,
@@ -137,7 +136,6 @@ struct PromptCard: View {
             prompt: Prompt(
                 title: "Blog Post Outline",
                 content: "Crea un esquema para un blog post sobre {{tema}} con introducción, puntos clave y conclusión.",
-                description: "Plantilla para blog posts",
                 folder: "Contenido"
             ),
             isSelected: true,
@@ -151,7 +149,6 @@ struct PromptCard: View {
             prompt: Prompt(
                 title: "Email Profesional",
                 content: "Asunto: {{asunto}}\n\nCuerpo del email profesional...",
-                description: "Plantilla de email",
                 folder: "Trabajo"
             ),
             isSelected: false,

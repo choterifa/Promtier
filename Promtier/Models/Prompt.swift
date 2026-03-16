@@ -13,7 +13,6 @@ struct Prompt: Identifiable, Codable {
     var id: UUID                    // Identificador único
     var title: String               // Título del prompt
     var content: String             // Contenido del prompt
-    var description: String?        // Descripción opcional
     var folder: String?             // Carpeta de organización
     var isFavorite: Bool            // Marcar como favorito
     var createdAt: Date              // Fecha de creación
@@ -21,11 +20,10 @@ struct Prompt: Identifiable, Codable {
     var useCount: Int               // Contador de uso
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, description: String? = nil, folder: String? = nil) {
+    init(title: String, content: String, folder: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
-        self.description = description
         self.folder = folder
         self.isFavorite = false
         self.createdAt = Date()

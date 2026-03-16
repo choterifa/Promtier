@@ -17,7 +17,6 @@ struct NewPromptView: View {
     
     @State private var title = ""
     @State private var content = ""
-    @State private var description = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
     
@@ -95,20 +94,6 @@ struct NewPromptView: View {
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
                             )
-                            
-                            TextField("Descripción (opcional)", text: $description)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(.system(size: 16, weight: .medium))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(NSColor.controlBackgroundColor))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
                         }
                     }
                     .padding(.horizontal, 24)
@@ -202,7 +187,6 @@ struct NewPromptView: View {
             if let prompt = editingPrompt {
                 title = prompt.title
                 content = prompt.content
-                description = prompt.description ?? ""
                 selectedFolder = prompt.folder
                 isFavorite = prompt.isFavorite
             }
@@ -219,7 +203,6 @@ struct NewPromptView: View {
         let newPrompt = Prompt(
             title: title,
             content: content,
-            description: description.isEmpty ? nil : description,
             folder: selectedFolder
         )
         
