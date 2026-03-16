@@ -86,8 +86,16 @@ struct PromptCard: View {
         .scaleEffect(isHovered ? 1.005 : 1.0)
         .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
         .contentShape(Rectangle())
-        .onTapGesture(count: 1, perform: onTap)
-        .onTapGesture(count: 2, perform: onDoubleTap)
+        // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
+        .onTapGesture {
+            onTap()
+        }
+        // GESTO SIMULTÁNEO PARA EL DOBLE CLIC
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                onDoubleTap()
+            }
+        )
         .onHover { hovering in
             onHover(hovering)
         }
