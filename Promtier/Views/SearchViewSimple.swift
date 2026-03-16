@@ -77,7 +77,7 @@ struct SearchViewSimple: View {
                 .transition(.opacity)
             }
         }
-        .frame(width: 650, height: 480)
+        .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
         .onAppear {

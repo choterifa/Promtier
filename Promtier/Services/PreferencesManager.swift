@@ -54,6 +54,18 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var windowWidth: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowWidth), forKey: "windowWidth")
+        }
+    }
+    
+    @Published var windowHeight: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+        }
+    }
+    
     // MARK: - Sonidos
     
     @Published var soundEnabled: Bool {
@@ -131,6 +143,13 @@ class PreferencesManager: ObservableObject {
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
+        
+        // Dimensiones de ventana (Defaults: 560x480)
+        let savedWidth = userDefaults.double(forKey: "windowWidth")
+        self.windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 560
+        
+        let savedHeight = userDefaults.double(forKey: "windowHeight")
+        self.windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 480
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
@@ -211,6 +230,8 @@ class PreferencesManager: ObservableObject {
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .spanish
         self.autoPaste = false
+        self.windowWidth = 560
+        self.windowHeight = 480
         
         // Nuevas propiedades por defecto
         self.showInDock = false

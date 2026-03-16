@@ -52,6 +52,7 @@ class MenuBarManager: NSObject, ObservableObject {
             self.setupMenuBar()
             self.setupGlobalHotkey()
             self.setupThemeObserver()
+            self.setupDimensionObserver()
         }
     }
     
@@ -118,7 +119,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private func showPopover(relativeTo rect: NSRect, of view: NSView) {
         if popover == nil {
             popover = NSPopover()
-            popover?.contentSize = NSSize(width: 560, height: 480) // CONFIGURABLE: Tamaño modernizado
+            popover?.contentSize = NSSize(width: preferencesManager.windowWidth, height: preferencesManager.windowHeight)
             popover?.behavior = .transient
             popover?.animates = true
             popover?.delegate = self
@@ -242,6 +243,19 @@ class MenuBarManager: NSObject, ObservableObject {
         case .system:
             popover.appearance = nil // Hereda del sistema
         }
+    }
+    
+    private func setupDimensionObserver() {
+        Publishers.CombineLatest(preferencesManager.$windowWidth, preferencesManager.$windowHeight)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] width, height in
+                self?.updatePopoverSize(width: width, height: height)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func updatePopoverSize(width: CGFloat, height: CGFloat) {
+        popover?.contentSize = NSSize(width: width, height: height)
     }
     
     /// Actualiza el comportamiento del popover basado en el estado

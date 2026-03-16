@@ -332,7 +332,7 @@ struct NewPromptView: View {
                 handleDrop(providers: providers)
             }
         }
-        .frame(width: 600, height: 500)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor)
