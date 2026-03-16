@@ -109,14 +109,35 @@ struct SearchViewSimple: View {
     private var mainView: some View {
         HStack(spacing: 0) {
             // Sidebar de categorías
-            CategorySidebar()
-                .environmentObject(promptService)
+            if preferences.showSidebar {
+                CategorySidebar()
+                    .environmentObject(promptService)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
             
             // Contenido principal
             VStack(spacing: 0) {
                 // Header Premium con búsqueda
                 VStack(spacing: 0) {
                     HStack(spacing: 16) {
+                        // Botón Colapsar Sidebar
+                        Button(action: {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                preferences.showSidebar.toggle()
+                            }
+                        }) {
+                            Image(systemName: preferences.showSidebar ? "sidebar.left" : "sidebar.right")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(preferences.showSidebar ? .blue : .secondary)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help(preferences.showSidebar ? "Ocultar Sidebar" : "Mostrar Sidebar")
+                        
                         // Buscador Estilizado
                         HStack(spacing: 12) {
                             Image(systemName: "magnifyingglass")
@@ -315,6 +336,16 @@ struct SearchViewSimple: View {
                 }
                 return nil
             }
+        }
+        
+        // Cmd + B (KeyCode 11) -> Alternar Sidebar
+        if modifiers == .command && keyCode == 11 {
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    preferences.showSidebar.toggle()
+                }
+            }
+            return nil
         }
         
         // Espacio (KeyCode 49) -> Vista Previa (Quick Look)

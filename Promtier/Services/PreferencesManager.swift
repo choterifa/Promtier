@@ -42,6 +42,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var showSidebar: Bool {
+        didSet {
+            userDefaults.set(showSidebar, forKey: "showSidebar")
+        }
+    }
+    
     @Published var closeOnOutsideClick: Bool {
         didSet {
             userDefaults.set(closeOnOutsideClick, forKey: "closeOnOutsideClick")
@@ -139,6 +145,8 @@ class PreferencesManager: ObservableObject {
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
+        // Sidebar visible por defecto
+        self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
         self.closeOnOutsideClick = userDefaults.bool(forKey: "closeOnOutsideClick")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
@@ -228,6 +236,7 @@ class PreferencesManager: ObservableObject {
         self.appearance = .system
         self.fontSize = .medium
         self.launchAtLogin = false
+        self.showSidebar = true
         self.closeOnOutsideClick = true
         self.soundEnabled = true
         self.globalShortcutEnabled = true
@@ -255,6 +264,9 @@ class PreferencesManager: ObservableObject {
             "appearance": appearance.rawValue,
             "fontSize": fontSize.rawValue,
             "launchAtLogin": launchAtLogin,
+            "showSidebar": showSidebar,
+            "windowWidth": Double(windowWidth),
+            "windowHeight": Double(windowHeight),
             "closeOnOutsideClick": closeOnOutsideClick,
             "soundEnabled": soundEnabled,
             "globalShortcutEnabled": globalShortcutEnabled,
@@ -297,6 +309,18 @@ class PreferencesManager: ObservableObject {
             
             if let languageRaw = config["language"] as? String {
                 language = AppLanguage(rawValue: languageRaw) ?? .spanish
+            }
+            
+            if let showSidebar = config["showSidebar"] as? Bool {
+                self.showSidebar = showSidebar
+            }
+            
+            if let width = config["windowWidth"] as? Double {
+                self.windowWidth = CGFloat(width)
+            }
+            
+            if let height = config["windowHeight"] as? Double {
+                self.windowHeight = CGFloat(height)
             }
             
             applyAppearance()
