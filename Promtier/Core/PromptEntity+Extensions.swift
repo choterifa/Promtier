@@ -31,6 +31,7 @@ extension PromptEntity {
         return prompt
     }
     
+    
     /// Actualiza entidad desde modelo Swift
     func updateFromPrompt(_ prompt: Prompt) {
         title = prompt.title

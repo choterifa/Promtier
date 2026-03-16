@@ -20,6 +20,17 @@ struct VariableFillView: View {
         prompt.extractTemplateVariables()
     }
     
+    private var processedContent: String {
+        var content = prompt.content
+        for variable in variables {
+            let value = variableValues[variable] ?? ""
+            if !value.isEmpty {
+                content = content.replacingOccurrences(of: "{{\(variable)}}", with: value)
+            }
+        }
+        return content
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -74,6 +85,33 @@ struct VariableFillView: View {
                 .padding(24)
             }
             
+            // Sección de Previsualización en Tiempo Real
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("VISTA PREVIA")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.5))
+                }
+                
+                ScrollView {
+                    Text(processedContent)
+                        .font(.system(size: 13 * preferences.fontSize.scale))
+                        .foregroundColor(.primary.opacity(0.7))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(height: 80)
+                .padding(12)
+                .background(Color.primary.opacity(0.02))
+                .cornerRadius(8)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+            
             Divider().padding(.horizontal, 24)
             
             // Footer
@@ -88,14 +126,7 @@ struct VariableFillView: View {
                 .buttonStyle(.plain)
                 
                 Button(action: {
-                    var finalContent = prompt.content
-                    // Reemplazar cada variable encontrada en el prompt
-                    for variable in variables {
-                        let value = variableValues[variable] ?? ""
-                        // Reemplazar la etiqueta exacta {{variable}} por su valor
-                        finalContent = finalContent.replacingOccurrences(of: "{{\(variable)}}", with: value)
-                    }
-                    onCopy(finalContent)
+                    onCopy(processedContent)
                 }) {
                     HStack {
                         Image(systemName: "doc.on.doc.fill")
@@ -107,12 +138,12 @@ struct VariableFillView: View {
                     .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.blue)
-                            .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
+                            .fill(variableValues.values.contains { !$0.isEmpty } ? Color.blue : Color.gray.opacity(0.3))
+                            .shadow(color: variableValues.values.contains { !$0.isEmpty } ? .blue.opacity(0.3) : .clear, radius: 4, y: 2)
                     )
                 }
                 .buttonStyle(.plain)
-                .disabled(variableValues.values.contains { $0.isEmpty } || variableValues.count < variables.count)
+                .disabled(variableValues.isEmpty || variableValues.values.allSatisfy { $0.isEmpty })
             }
             .padding(24)
         }

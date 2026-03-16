@@ -17,7 +17,7 @@ struct PromptCard: View {
     let onHover: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
-    Hola {{nombre}}, ¿cómo estás hoy?
+    
     var body: some View {
         HStack(spacing: 16) {
             // Icono de categoría refinado
