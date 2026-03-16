@@ -317,8 +317,11 @@ struct ShortcutsTab: View {
                 if preferences.globalShortcutEnabled {
                     Divider().padding(.leading, 20)
                     
-                    VStack(spacing: 12) {
-                        ShortcutItem(label: "Mostrar Ventana", shortcut: "⌘⇧P")
+                    VStack(spacing: 16) {
+                        ShortcutRecorderView()
+                        
+                        Divider().padding(.horizontal, 10)
+                        
                         ShortcutItem(label: "Búsqueda Rápida", shortcut: "⌘K")
                         ShortcutItem(label: "Nuevo Prompt", shortcut: "⌘N")
                     }

@@ -70,6 +70,18 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var hotkeyCode: Int {
+        didSet {
+            userDefaults.set(hotkeyCode, forKey: "hotkeyCode")
+        }
+    }
+    
+    @Published var hotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(hotkeyModifiers, forKey: "hotkeyModifiers")
+        }
+    }
+    
     // MARK: - Idioma
     
     @Published var language: AppLanguage {
@@ -113,6 +125,10 @@ class PreferencesManager: ObservableObject {
         self.closeOnOutsideClick = userDefaults.bool(forKey: "closeOnOutsideClick")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
+        
+        // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
+        self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
+        self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
@@ -191,6 +207,8 @@ class PreferencesManager: ObservableObject {
         self.closeOnOutsideClick = true
         self.soundEnabled = true
         self.globalShortcutEnabled = true
+        self.hotkeyCode = 35
+        self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .spanish
         self.autoPaste = false
         

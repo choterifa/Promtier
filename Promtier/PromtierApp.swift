@@ -10,14 +10,24 @@ import SwiftUI
 import AppKit
 import Combine
 
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Ejecutar con un pequeño retraso para asegurar que la app está lista
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
+        }
+    }
+}
+
 @main
 struct PromtierApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     // CONFIGURABLE: Gestor del menu bar
     @StateObject private var menuBarManager = MenuBarManager.shared
     
     var body: some Scene {
-        // CONFIGURABLE: Escena completamente vacía - sin ventanas
+        // CONFIGURABLE: Escena completamente vacía
         EmptyScene()
     }
 }

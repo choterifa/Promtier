@@ -50,7 +50,41 @@ class ShortcutManager: ObservableObject {
     
     private init() {
         print("✅ ShortcutManager inicializado")
+        checkAccessibilityPermissions()
         setupMonitors()
+    }
+    
+    // MARK: - Accesibilidad
+    
+    func checkAccessibilityPermissions(forceDialog: Bool = false) {
+        // Al pasar 'false', evitamos que macOS muestre su ventana negra nativa
+        let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        let isTrusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        if !isTrusted {
+            print("⚠️ Permisos de accesibilidad no concedidos.")
+            
+            if forceDialog {
+                DispatchQueue.main.async {
+                    // 1. Mostrar primero nuestra alerta informativa
+                    let alert = NSAlert()
+                    alert.messageText = "Acceso de Accesibilidad Requerido"
+                    alert.informativeText = "Para que los atajos globales funcionen, por favor activa Promtier en los Ajustes de Accesibilidad.\n\nAl pulsar 'Entendido', se abrirá la configuración por ti."
+                    alert.alertStyle = .informational
+                    alert.addButton(withTitle: "Entendido")
+                    
+                    // 2. Si el usuario da a "Entendido", abrir los ajustes
+                    if alert.runModal() == .alertFirstButtonReturn {
+                        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+                        if let url = url {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                }
+            }
+        } else {
+            print("✅ Aplicación con permisos de accesibilidad.")
+        }
     }
     
     // MARK: - Monitores de Eventos
@@ -71,12 +105,17 @@ class ShortcutManager: ObservableObject {
         guard isEnabled && PreferencesManager.shared.globalShortcutEnabled else { return event }
         
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let keyCode = event.keyCode
+        let keyCode = Int(event.keyCode)
         
-        // ⌘⇧P (Escamotear/Mostrar Ventana) - KeyCode 35 es 'P'
-        if modifiers == [.command, .shift] && keyCode == 35 {
-            MenuBarManager.shared.togglePopover()
-            return nil // Bloquear evento si es local
+        let prefs = PreferencesManager.shared
+        
+        // Atajo personalizado para Toggle Popover
+        if modifiers.rawValue == UInt(prefs.hotkeyModifiers) && keyCode == prefs.hotkeyCode {
+            print("🚀 Atajo global detectado: Toggle Popover")
+            DispatchQueue.main.async {
+                MenuBarManager.shared.togglePopover()
+            }
+            return nil
         }
         
         // ⌘K (Búsqueda Rápida) - KeyCode 40 es 'K'
