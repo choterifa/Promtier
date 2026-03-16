@@ -15,6 +15,7 @@ struct PreferencesView: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var menuBarManager: MenuBarManager
     
     @State private var selectedTab: Int = 0
     @State private var showingExportSheet = false
@@ -374,6 +375,7 @@ struct ShortcutItem: View {
 struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var menuBarManager: MenuBarManager
     
     @Binding var showingResetAlert: Bool
     var onClose: () -> Void
@@ -385,6 +387,7 @@ struct DataTab: View {
             SettingsSection(title: "Transferencia", icon: "arrow.left.arrow.right") {
                 Button(action: { 
                     onClose()
+                    menuBarManager.closePopover()
                     exportData() 
                 }) {
                     SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de seguridad en JSON") {
@@ -398,6 +401,7 @@ struct DataTab: View {
                 
                 Button(action: { 
                     onClose()
+                    menuBarManager.closePopover()
                     importData() 
                 }) {
                     SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo JSON") {
