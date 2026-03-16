@@ -19,7 +19,6 @@ struct SearchViewSimple: View {
         case main
         case newPrompt
         case editPrompt(Prompt)
-        case detail(Prompt)
         case preferences
     }
     
@@ -40,11 +39,6 @@ struct SearchViewSimple: View {
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
             case .editPrompt(let prompt):
                 NewPromptView(prompt: prompt, onClose: { viewState = .main })
-                    .environmentObject(promptService)
-                    .environmentObject(preferences)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
-            case .detail(let prompt):
-                PromptDetailView(prompt: prompt, onClose: { viewState = .main }, onEdit: { p in viewState = .editPrompt(p) })
                     .environmentObject(promptService)
                     .environmentObject(preferences)
                     .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
@@ -194,7 +188,7 @@ struct SearchViewSimple: View {
                                         NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                     },
                                     onDoubleTap: {
-                                        withAnimation(.spring()) { viewState = .detail(prompt) }
+                                        usePrompt(prompt)
                                     },
                                     onHover: { isHovering in
                                         // Optimización: Reducir actualizaciones de hover
