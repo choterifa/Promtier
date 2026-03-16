@@ -321,7 +321,11 @@ class MenuBarManager: NSObject, ObservableObject {
         // Calcular posición centrada respecto al icono del menu bar
         let buttonFrame = buttonWindow.frame
         let newX = buttonFrame.midX - (width / 2)
-        let newY = buttonFrame.minY - height // Justo debajo del menu bar
+        
+        // Ajuste vertical: La flecha del popover suele tener ~14px.
+        // Restamos el offset para que el marco azul coincida con el borde blanco real.
+        let arrowOffset: CGFloat = 14
+        let newY = buttonFrame.minY - height - arrowOffset 
         
         ghost.setFrame(NSRect(x: newX, y: newY, width: width, height: height), display: true, animate: false)
     }
