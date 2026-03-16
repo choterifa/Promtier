@@ -28,11 +28,12 @@ struct PromptDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con título y botón de cerrar
-            HStack {
+            // Header moderno con título y botón de cerrar
+            HStack(spacing: 20) {
                 Text("Detalles del Prompt")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -40,22 +41,37 @@ struct PromptDetailView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Divider()
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
             // Contenido principal
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Header principal
+                    // Header principal moderno
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             Text(prompt.title)
                                 .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.primary)
                             
                             Spacer()
                             
@@ -76,10 +92,12 @@ struct PromptDetailView: View {
                         HStack(spacing: 20) {
                             Label("\(prompt.useCount) usos", systemImage: "arrow.counterclockwise")
                                 .font(.subheadline)
+                                .foregroundColor(.secondary)
                             
                             if let folder = prompt.folder {
                                 Label(folder, systemImage: "folder")
                                     .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
                             
                             Spacer()
@@ -88,43 +106,63 @@ struct PromptDetailView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        .font(.caption)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
                     
                     Divider()
                     
-                    // Contenido del prompt
+                    // Contenido del prompt moderno
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Contenido")
                             .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
                         Text(prompt.content)
-                            .font(.system(size: 18, design: .monospaced)) // Texto más grande
+                            .font(.system(size: 18, design: .monospaced))
                             .padding(20)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.gray.opacity(0.1))
+                            )
                     }
                     .padding(.horizontal, 24)
                     
-                    // Variables de plantilla
+                    // Variables de plantilla moderno
                     if !extractedTemplateVariables.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Variables de Plantilla")
-                                .font(.headline)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 12) {
                                 ForEach(extractedTemplateVariables, id: \.self) { variable in
                                     HStack {
                                         Text("{{\(variable)}}")
                                             .font(.system(.body, design: .monospaced))
                                             .foregroundColor(.blue)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.blue.opacity(0.1))
+                                            .cornerRadius(6)
                                         
                                         Spacer()
                                         
                                         TextField("Valor", text: binding(for: variable))
-                                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                                            .textFieldStyle(PlainTextFieldStyle())
+                                            .font(.system(size: 16))
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(Color(NSColor.controlBackgroundColor))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                                    )
+                                            )
                                             .frame(width: 200)
                                     }
                                 }
@@ -133,21 +171,33 @@ struct PromptDetailView: View {
                             Button("Copiar con variables") {
                                 copyWithVariables()
                             }
-                            .buttonStyle(.borderedProminent)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue)
+                            )
+                            .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.horizontal, 24)
                     }
                     
-                    // Etiquetas
+                    // Etiquetas moderno
                     if !prompt.tags.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             Text("Etiquetas")
-                                .font(.headline)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
                             LazyVGrid(columns: [
                                 GridItem(.adaptive(minimum: 80))
                             ], spacing: 8) {
                                 ForEach(prompt.tags, id: \.self) { tag in
                                     Text(tag)
+                                        .font(.system(size: 14, weight: .medium))
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
                                         .background(Color.blue.opacity(0.1))
@@ -156,45 +206,62 @@ struct PromptDetailView: View {
                                 }
                             }
                         }
+                        .padding(.horizontal, 24)
                     }
                     
-                    // Metadatos
-                    VStack(alignment: .leading, spacing: 12) {
+                    // Metadatos moderno
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("Metadatos")
-                            .font(.headline)
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Text("Creado:")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
                                 Spacer()
                                 Text(formatDate(prompt.createdAt))
-                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
                             }
                             
                             HStack {
                                 Text("Modificado:")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
                                 Spacer()
                                 Text(formatDate(prompt.modifiedAt))
-                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
                             }
                             
                             HStack {
                                 Text("ID:")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
                                 Spacer()
                                 Text(prompt.id.uuidString.prefix(8) + "...")
                                     .font(.system(.body, design: .monospaced))
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.primary)
                             }
                         }
-                        .font(.caption)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                     
                     Spacer()
                 }
                 .padding()
             }
             
-            // Footer con botones de acción
+            // Footer moderno con botones de acción
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
+            
             HStack {
                 Menu {
                     Button(action: { copyPrompt() }) {
@@ -228,8 +295,18 @@ struct PromptDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.title2)
+                        .foregroundColor(.primary)
+                        .frame(width: 36, height: 36)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color(NSColor.controlBackgroundColor))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -237,13 +314,25 @@ struct PromptDetailView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 500, height: 400) // Tamaño uniforme compacto
+        .frame(width: 560, height: 480)
         .sheet(isPresented: $showingEditSheet) {
             NewPromptView(prompt: prompt)
                 .environmentObject(promptService)

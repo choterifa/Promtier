@@ -20,11 +20,12 @@ struct FolderManagerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con título y botón de cerrar
-            HStack {
+            // Header moderno con título y botón de cerrar
+            HStack(spacing: 20) {
                 Text("Gestión de Carpetas")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -32,106 +33,156 @@ struct FolderManagerView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Divider()
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            // Contenido principal
-            VStack {
-                // Lista de carpetas
-                List {
-                    ForEach(folders, id: \.self) { folder in
-                        HStack(spacing: 16) {
-                            Image(systemName: "folder")
-                                .foregroundColor(.blue)
-                                .font(.title2)
-                            
-                            Text(folder)
-                                .font(.body)
-                            
-                            Spacer()
-                            
-                            // Contador de prompts en esta carpeta
-                            let count = promptService.prompts.filter { $0.folder == folder }.count
-                            Text("\(count)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(Color.gray.opacity(0.2))
-                                .cornerRadius(10)
-                            
-                            // Botones de acción
-                            Menu {
-                                Button("Editar nombre") {
+            // Contenido principal moderno
+            VStack(spacing: 20) {
+                // Lista moderna de carpetas
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(folders, id: \.self) { folder in
+                            FolderCard(
+                                folder: folder,
+                                promptCount: promptService.prompts.filter { $0.folder == folder }.count,
+                                onEdit: {
                                     editingFolder = folder
                                     newFolderName = folder
-                                }
-                                
-                                Button("Ver prompts", role: nil) {
-                                    // TODO: Implementar navegación a prompts de esta carpeta
-                                }
-                                
-                                Divider()
-                                
-                                Button("Eliminar", role: .destructive) {
+                                },
+                                onDelete: {
                                     deleteFolder(folder)
                                 }
-                            } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .foregroundColor(.secondary)
-                                    .font(.title3)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            )
                         }
-                        .padding(.vertical, 4)
                     }
-                    .onDelete(perform: deleteFolders)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
                 }
-                .listStyle(PlainListStyle())
                 
-                // Sección para agregar nueva carpeta
-                VStack(spacing: 20) {
-                    HStack(spacing: 12) {
-                        TextField("Nombre de la nueva carpeta", text: $newFolderName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.body)
-                        
-                        Button("Agregar") {
-                            addFolder()
-                        }
-                        .disabled(newFolderName.isEmpty)
-                        .buttonStyle(.borderedProminent)
-                    }
+                // Sección moderna para agregar nueva carpeta
+                VStack(spacing: 16) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 24)
                     
-                    if editingFolder != nil {
+                    VStack(spacing: 16) {
+                        Text("Nueva Carpeta")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
                         HStack(spacing: 12) {
-                            TextField("Nuevo nombre", text: $newFolderName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .font(.body)
+                            TextField("Nombre de la nueva carpeta", text: $newFolderName)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 16, weight: .medium))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
                             
-                            Button("Guardar") {
-                                updateFolder()
+                            Button("Agregar") {
+                                addFolder()
                             }
                             .disabled(newFolderName.isEmpty)
-                            .buttonStyle(.borderedProminent)
-                            
-                            Button("Cancelar") {
-                                editingFolder = nil
-                                newFolderName = ""
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(newFolderName.isEmpty ? Color.gray : Color.blue)
+                            )
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        if editingFolder != nil {
+                            VStack(spacing: 12) {
+                                Text("Editar Carpeta")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
+                                
+                                HStack(spacing: 12) {
+                                    TextField("Nuevo nombre", text: $newFolderName)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                        .font(.system(size: 16, weight: .medium))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color(NSColor.controlBackgroundColor))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                                )
+                                        )
+                                    
+                                    Button("Guardar") {
+                                        updateFolder()
+                                    }
+                                    .disabled(newFolderName.isEmpty)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(newFolderName.isEmpty ? Color.gray : Color.blue)
+                                    )
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    Button("Cancelar") {
+                                        editingFolder = nil
+                                        newFolderName = ""
+                                    }
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color(NSColor.controlBackgroundColor))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                            )
+                                    )
+                                    .buttonStyle(PlainButtonStyle())
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
             }
         }
-        .frame(width: 500, height: 400) // Tamaño uniforme compacto
+        .frame(width: 560, height: 480)
         .onAppear {
             loadFolders()
         }
@@ -225,6 +276,82 @@ struct FolderManagerView: View {
     private func showAlert(_ message: String) {
         alertMessage = message
         showingAlert = true
+    }
+}
+
+// MARK: - Componente FolderCard
+
+struct FolderCard: View {
+    let folder: String
+    let promptCount: Int
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "folder")
+                .foregroundColor(.blue)
+                .font(.title2)
+                .frame(width: 32, height: 32)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(folder)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Text("\(promptCount) \(promptCount == 1 ? "prompt" : "prompts")")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Contador visual
+            Text("\(promptCount)")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.blue)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+            
+            // Botón de acciones
+            Menu {
+                Button("Editar nombre", action: onEdit)
+                
+                Button("Ver prompts", role: nil) {
+                    // TODO: Implementar navegación a prompts de esta carpeta
+                }
+                
+                Divider()
+                
+                Button("Eliminar", role: .destructive, action: onDelete)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundColor(.secondary)
+                    .font(.system(size: 18))
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 

@@ -32,11 +32,12 @@ struct NewPromptView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con título y botón de cerrar
-            HStack {
+            // Header moderno con título y botón de cerrar
+            HStack(spacing: 20) {
                 Text(editingPrompt != nil ? "Editar Prompt" : "Nuevo Prompt")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -44,114 +45,208 @@ struct NewPromptView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
-            
-            // Formulario sin NavigationView
-            ScrollView {
-                Form {
-                    // Sección de información básica
-                    Section(header: Text("Información Básica")
-                        .font(.headline)
-                        .padding(.top, 10)) {
-                        TextField("Título del prompt", text: $title)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.body)
-                        
-                        ZStack(alignment: .topLeading) {
-                            if content.isEmpty {
-                                Text("Contenido del prompt...")
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 12)
-                                    .padding(.leading, 8)
-                                    .font(.body)
-                            }
-                            
-                            TextEditor(text: $content)
-                                .frame(minHeight: 150) // Aumentado altura
-                                .font(.body)
-                        }
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                         )
+                )
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
+            
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
+            
+            // Contenido principal moderno
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Sección de información básica
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Información Básica")
+                            .font(.headline)
+                            .foregroundColor(.primary)
                         
-                        TextField("Descripción (opcional)", text: $description)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.body)
+                        VStack(spacing: 12) {
+                            TextField("Título del prompt", text: $title)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 16, weight: .medium))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            
+                            ZStack(alignment: .topLeading) {
+                                if content.isEmpty {
+                                    Text("Contenido del prompt...")
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 12)
+                                        .padding(.leading, 16)
+                                        .font(.system(size: 16, weight: .medium))
+                                }
+                                
+                                TextEditor(text: $content)
+                                    .frame(minHeight: 150)
+                                    .font(.system(size: 16))
+                                    .padding(16)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            
+                            TextField("Descripción (opcional)", text: $description)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(.system(size: 16, weight: .medium))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                        }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                     
                     // Sección de organización
-                    Section(header: Text("Organización")
-                        .font(.headline)
-                        .padding(.top, 10)) {
-                        // Etiquetas
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Etiquetas")
-                                .font(.headline)
-                            
-                            HStack(spacing: 12) {
-                                TextField("Nueva etiqueta", text: $tagInput)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .font(.body)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Organización")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        VStack(spacing: 16) {
+                            // Etiquetas
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Etiquetas")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
                                 
-                                Button("Agregar") {
-                                    addTag()
+                                HStack(spacing: 12) {
+                                    TextField("Nueva etiqueta", text: $tagInput)
+                                        .textFieldStyle(PlainTextFieldStyle())
+                                        .font(.system(size: 16, weight: .medium))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color(NSColor.controlBackgroundColor))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                                )
+                                        )
+                                    
+                                    Button("Agregar") {
+                                        addTag()
+                                    }
+                                    .disabled(tagInput.isEmpty)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(tagInput.isEmpty ? Color.gray : Color.blue)
+                                    )
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .disabled(tagInput.isEmpty)
-                                .buttonStyle(.borderedProminent)
-                            }
-                            
-                            // Tags existentes
-                            if !tags.isEmpty {
-                                LazyVGrid(columns: [
-                                    GridItem(.adaptive(minimum: 100))
-                                ], spacing: 10) {
-                                    ForEach(tags, id: \.self) { tag in
-                                        HStack(spacing: 8) {
-                                            Text(tag)
-                                                .font(.body)
-                                            Spacer()
-                                            Button(action: { removeTag(tag) }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .foregroundColor(.red)
+                                
+                                // Tags existentes
+                                if !tags.isEmpty {
+                                    LazyVGrid(columns: [
+                                        GridItem(.adaptive(minimum: 100))
+                                    ], spacing: 10) {
+                                        ForEach(tags, id: \.self) { tag in
+                                            HStack(spacing: 8) {
+                                                Text(tag)
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(.blue)
+                                                Spacer()
+                                                Button(action: { removeTag(tag) }) {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .foregroundColor(.red.opacity(0.8))
+                                                        .font(.system(size: 16))
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
                                             }
-                                            .buttonStyle(PlainButtonStyle())
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(Color.blue.opacity(0.1))
+                                            .cornerRadius(8)
                                         }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(8)
                                     }
                                 }
                             }
-                        }
-                        
-                        // Carpetas
-                        Picker("Carpeta", selection: $selectedFolder) {
-                            Text("Sin carpeta").tag(String?.none)
-                            ForEach(getAvailableFolders(), id: \.self) { folder in
-                                Text(folder).tag(folder as String?)
+                            
+                            // Carpetas
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Carpeta")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
+                                
+                                Picker("Carpeta", selection: $selectedFolder) {
+                                    Text("Sin carpeta").tag(String?.none)
+                                    ForEach(getAvailableFolders(), id: \.self) { folder in
+                                        Text(folder).tag(folder as String?)
+                                    }
+                                }
+                                .font(.system(size: 16))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            
+                            // Favorito
+                            HStack(spacing: 12) {
+                                Toggle("Marcar como favorito", isOn: $isFavorite)
+                                    .font(.system(size: 16))
+                                    .toggleStyle(SwitchToggleStyle())
+                                
+                                Spacer()
                             }
                         }
-                        .font(.body)
-                        
-                        // Favorito
-                        Toggle("Marcar como favorito", isOn: $isFavorite)
-                            .font(.body)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     
                     // Sección de vista previa
-                    Section(header: Text("Vista Previa")
-                        .font(.headline)
-                        .padding(.top, 10)) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Vista Previa")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
                         if !content.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Vista previa del contenido:")
@@ -161,8 +256,8 @@ struct NewPromptView: View {
                                 Text(content)
                                     .padding(16)
                                     .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(8)
-                                    .font(.body)
+                                    .cornerRadius(12)
+                                    .font(.system(size: 16))
                                 
                                 // Variables encontradas
                                 let variables = extractTemplateVariables()
@@ -176,21 +271,40 @@ struct NewPromptView: View {
                         } else {
                             Text("Agrega contenido para ver la vista previa")
                                 .foregroundColor(.secondary)
-                                .font(.body)
+                                .font(.system(size: 16))
+                                .padding(.vertical, 20)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
                 }
-                .padding(.bottom, 20)
             }
             
-            // Footer con botones
-            HStack {
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
+            
+            // Footer moderno con botones
+            HStack(spacing: 12) {
                 Button("Cancelar") {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -198,13 +312,21 @@ struct NewPromptView: View {
                     savePrompt()
                 }
                 .disabled(title.isEmpty || content.isEmpty)
-                .buttonStyle(.borderedProminent)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill((title.isEmpty || content.isEmpty) ? Color.gray : Color.blue)
+                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 500, height: 400) // Tamaño uniforme compacto
+        .frame(width: 560, height: 480)
         .onAppear {
             if let prompt = editingPrompt {
                 title = prompt.title

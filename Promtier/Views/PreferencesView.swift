@@ -21,11 +21,12 @@ struct PreferencesView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header con título y botón de cerrar
-            HStack {
+            // Header moderno con título y botón de cerrar
+            HStack(spacing: 20) {
                 Text("Preferencias")
                     .font(.title2)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -33,15 +34,29 @@ struct PreferencesView: View {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .buttonStyle(.bordered)
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Divider()
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            // TabView sin NavigationView
+            // TabView moderno sin NavigationView
             TabView {
                 // Tab de Apariencia
                 AppearanceTab()
@@ -82,8 +97,10 @@ struct PreferencesView: View {
                         Label("Avanzado", systemImage: "slider.horizontal.3")
                     }
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
-        .frame(width: 500, height: 400) // Tamaño uniforme compacto
+        .frame(width: 560, height: 480)
         .sheet(isPresented: $showingExportSheet) {
             ExportView()
         }
@@ -111,37 +128,78 @@ struct AppearanceTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        Form {
-            Section(header: Text("Tema")) {
-                Picker("Apariencia", selection: $preferences.appearance) {
-                    Text("Claro").tag(AppAppearance.light)
-                    Text("Oscuro").tag(AppAppearance.dark)
-                    Text("Automático").tag(AppAppearance.system)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-            }
-            
-            Section(header: Text("Tipografía")) {
-                Picker("Tamaño de fuente", selection: $preferences.fontSize) {
-                    Text("Pequeña").tag(FontSize.small)
-                    Text("Mediana").tag(FontSize.medium)
-                    Text("Grande").tag(FontSize.large)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Sección de Tema
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Tema")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        Picker("Apariencia", selection: $preferences.appearance) {
+                            Text("Claro").tag(AppAppearance.light)
+                            Text("Oscuro").tag(AppAppearance.dark)
+                            Text("Automático").tag(AppAppearance.system)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .font(.system(size: 16))
+                    }
                 }
                 
-                Text("El tamaño de fuente afecta a toda la interfaz de la aplicación.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Section(header: Text("Colores")) {
-                Toggle("Usar colores de acento del sistema", isOn: $preferences.useAccentColor)
+                // Sección de Tipografía
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Tipografía")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        Picker("Tamaño de fuente", selection: $preferences.fontSize) {
+                            Text("Pequeña").tag(FontSize.small)
+                            Text("Mediana").tag(FontSize.medium)
+                            Text("Grande").tag(FontSize.large)
+                        }
+                        .font(.system(size: 16))
+                        
+                        Text("El tamaño de fuente afecta a toda la interfaz de la aplicación.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
+                }
                 
-                if !preferences.useAccentColor {
-                    ColorPicker("Color de acento", selection: $preferences.accentColor)
+                // Sección de Colores
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Colores")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Usar colores de acento del sistema", isOn: $preferences.useAccentColor)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        if !preferences.useAccentColor {
+                            HStack(spacing: 16) {
+                                Text("Color de acento")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.secondary)
+                                
+                                Spacer()
+                                
+                                ColorPicker("", selection: $preferences.accentColor)
+                                    .labelsHidden()
+                            }
+                        }
+                    }
                 }
             }
+            .padding(.vertical, 20)
         }
-        .padding()
     }
 }
 
@@ -149,24 +207,93 @@ struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        Form {
-            Section(header: Text("Interacción")) {
-                Toggle("Efectos hápticos", isOn: $preferences.hapticFeedback)
-                Toggle("Sonidos del sistema", isOn: $preferences.soundEnabled)
-                Toggle("Cerrar al hacer clic fuera", isOn: $preferences.closeOnOutsideClick)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Sección de Interacción
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Interacción")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Efectos hápticos", isOn: $preferences.hapticFeedback)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Sonidos del sistema", isOn: $preferences.soundEnabled)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Cerrar al hacer clic fuera", isOn: $preferences.closeOnOutsideClick)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                    }
+                }
+                
+                // Sección de Notificaciones
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Notificaciones")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Mostrar notificaciones de copia", isOn: $preferences.showCopyNotifications)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Notificaciones de uso", isOn: $preferences.showUsageNotifications)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                    }
+                }
+                
+                // Sección de Inicio
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Inicio")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Iniciar automáticamente al encender el Mac", isOn: $preferences.launchAtLogin)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Mostrar en el Dock", isOn: $preferences.showInDock)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                    }
+                }
             }
-            
-            Section(header: Text("Notificaciones")) {
-                Toggle("Mostrar notificaciones de copia", isOn: $preferences.showCopyNotifications)
-                Toggle("Notificaciones de uso", isOn: $preferences.showUsageNotifications)
-            }
-            
-            Section(header: Text ("Inicio")) {
-                Toggle("Iniciar automáticamente al encender el Mac", isOn: $preferences.launchAtLogin)
-                Toggle("Mostrar en el Dock", isOn: $preferences.showInDock)
-            }
+            .padding(.vertical, 20)
         }
-        .padding()
     }
 }
 
@@ -174,58 +301,125 @@ struct ShortcutsTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        Form {
-            Section(header: Text("Atajos Globales")) {
-                Toggle("Habilitar atajos globales", isOn: $preferences.globalShortcutEnabled)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Sección de Atajos Globales
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Atajos Globales")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Habilitar atajos globales", isOn: $preferences.globalShortcutEnabled)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        if preferences.globalShortcutEnabled {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Text("Mostrar/Ocultar:")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("⌘⇧P")
+                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.blue)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
+                                
+                                HStack {
+                                    Text("Búsqueda rápida:")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("⌘K")
+                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.blue)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
+                                
+                                HStack {
+                                    Text("Nuevo prompt:")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("⌘N")
+                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.blue)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
+                            }
+                            .padding(.leading, 16)
+                        }
+                    }
+                }
                 
-                if preferences.globalShortcutEnabled {
-                    HStack {
-                        Text("Mostrar/Ocultar:")
-                        Spacer()
-                        Text("⌘⇧P")
-                            .foregroundColor(.secondary)
-                    }
+                // Sección de Atajos en la App
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Atajos en la App")
+                        .font(.headline)
+                        .foregroundColor(.primary)
                     
-                    HStack {
-                        Text("Búsqueda rápida:")
-                        Spacer()
-                        Text("⌘K")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Nuevo prompt:")
-                        Spacer()
-                        Text("⌘N")
-                            .foregroundColor(.secondary)
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Copiar prompt:")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("⌘C")
+                                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        
+                        HStack {
+                            Text("Editar prompt:")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("⌘E")
+                                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        
+                        HStack {
+                            Text("Eliminar prompt:")
+                                .font(.system(size: 16))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("⌘⌫")
+                                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
                     }
                 }
             }
-            
-            Section(header: Text("Atajos en la App")) {
-                HStack {
-                    Text("Copiar prompt:")
-                    Spacer()
-                    Text("⌘C")
-                        .foregroundColor(.secondary)
-                }
-                
-                HStack {
-                    Text("Editar prompt:")
-                    Spacer()
-                    Text("⌘E")
-                        .foregroundColor(.secondary)
-                }
-                
-                HStack {
-                    Text("Eliminar prompt:")
-                    Spacer()
-                    Text("⌘⌫")
-                        .foregroundColor(.secondary)
-                }
-            }
+            .padding(.vertical, 20)
         }
-        .padding()
     }
 }
 
@@ -236,34 +430,105 @@ struct DataTab: View {
     @Binding var showingResetAlert: Bool
     
     var body: some View {
-        Form {
-            Section(header: Text("Exportación/Importación")) {
-                Button("Exportar datos...") {
-                    showingExportSheet = true
+        ScrollView {
+            VStack(spacing: 24) {
+                // Sección de Exportación/Importación
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Exportación/Importación")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        Button("Exportar datos...") {
+                            showingExportSheet = true
+                        }
+                        .font(.system(size: 16))
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Button("Importar datos...") {
+                            showingImportSheet = true
+                        }
+                        .font(.system(size: 16))
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
                 
-                Button("Importar datos...") {
-                    showingImportSheet = true
+                // Sección de Sincronización
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Sincronización")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Sincronizar con iCloud", isOn: $preferences.icloudSyncEnabled)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        if preferences.icloudSyncEnabled {
+                            Text("Los datos se sincronizarán automáticamente entre tus dispositivos.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                                .padding(.leading, 16)
+                        }
+                    }
                 }
-            }
-            
-            Section(header: Text("Sincronización")) {
-                Toggle("Sincronizar con iCloud", isOn: $preferences.icloudSyncEnabled)
                 
-                if preferences.icloudSyncEnabled {
-                    Text("Los datos se sincronizarán automáticamente entre tus dispositivos.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // Sección de Restablecimiento
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Restablecimiento")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Button("Restablecer configuración") {
+                        showingResetAlert = true
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.red.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            
-            Section(header: Text("Restablecimiento")) {
-                Button("Restablecer configuración", role: .destructive) {
-                    showingResetAlert = true
-                }
-            }
+            .padding(.vertical, 20)
         }
-        .padding()
     }
 }
 
@@ -271,29 +536,85 @@ struct AdvancedTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        Form {
-            Section(header: Text("Rendimiento")) {
-                Toggle("Optimización de memoria", isOn: $preferences.memoryOptimization)
-                Toggle("Caché de búsqueda", isOn: $preferences.searchCache)
-            }
-            
-            Section(header: Text("Depuración")) {
-                Toggle("Modo desarrollador", isOn: $preferences.developerMode)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Sección de Rendimiento
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Rendimiento")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Optimización de memoria", isOn: $preferences.memoryOptimization)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Caché de búsqueda", isOn: $preferences.searchCache)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                    }
+                }
                 
-                if preferences.developerMode {
-                    Text("El modo desarrollador muestra información adicional para depuración.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // Sección de Depuración
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Depuración")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Modo desarrollador", isOn: $preferences.developerMode)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        if preferences.developerMode {
+                            Text("El modo desarrollador muestra información adicional para depuración.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                                .padding(.leading, 16)
+                        }
+                    }
+                }
+                
+                // Sección de Privacidad
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Privacidad")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Toggle("Recopilar datos anónimos de uso", isOn: $preferences.analyticsEnabled)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Toggle("Enviar informes de errores", isOn: $preferences.errorReporting)
+                                .font(.system(size: 16))
+                                .toggleStyle(SwitchToggleStyle())
+                            
+                            Spacer()
+                        }
+                    }
                 }
             }
-            
-            Section(header: Text("Privacidad")) {
-                Toggle("Recopilar datos anónimos de uso", isOn: $preferences.analyticsEnabled)
-                
-                Toggle("Enviar informes de errores", isOn: $preferences.errorReporting)
-            }
+            .padding(.vertical, 20)
         }
-        .padding()
     }
 }
 
@@ -303,24 +624,90 @@ struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Exportar Datos")
-                .font(.title2)
-                .fontWeight(.semibold)
+        VStack(spacing: 0) {
+            // Header moderno
+            HStack(spacing: 20) {
+                Text("Exportar Datos")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
+                }
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Text("Selecciona qué datos deseas exportar:")
-                .font(.body)
-                .foregroundColor(.secondary)
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            // TODO: Implementar opciones de exportación
+            // Contenido principal
+            VStack(spacing: 32) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue.opacity(0.8))
+                    
+                    Text("Selecciona qué datos deseas exportar:")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    // TODO: Implementar opciones de exportación
+                    Text("Opciones de exportación próximamente")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 40)
             
-            Spacer()
+            // Footer moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            HStack {
+            HStack(spacing: 12) {
                 Button("Cancelar") {
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -328,11 +715,21 @@ struct ExportView: View {
                     // TODO: Implementar exportación
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.blue)
+                )
+                .buttonStyle(PlainButtonStyle())
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .padding(24)
-        .frame(width: 400, height: 300)
+        .frame(width: 560, height: 400)
     }
 }
 
@@ -340,24 +737,90 @@ struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Importar Datos")
-                .font(.title2)
-                .fontWeight(.semibold)
+        VStack(spacing: 0) {
+            // Header moderno
+            HStack(spacing: 20) {
+                Text("Importar Datos")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button("Cerrar") {
+                    dismiss()
+                }
+                .foregroundColor(.primary)
+                .frame(width: 36, height: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
             
-            Text("Arrastra un archivo JSON aquí o selecciónalo:")
-                .font(.body)
-                .foregroundColor(.secondary)
+            // Separador moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            // TODO: Implementar importación
+            // Contenido principal
+            VStack(spacing: 32) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue.opacity(0.8))
+                    
+                    Text("Arrastra un archivo JSON aquí o selecciónalo:")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    // TODO: Implementar importación
+                    Text("Importación de archivos próximamente")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 40)
             
-            Spacer()
+            // Footer moderno
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+                .padding(.horizontal, 24)
             
-            HStack {
+            HStack(spacing: 12) {
                 Button("Cancelar") {
                     dismiss()
                 }
-                .buttonStyle(.bordered)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -365,11 +828,21 @@ struct ImportView: View {
                     // TODO: Implementar importación
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.blue)
+                )
+                .buttonStyle(PlainButtonStyle())
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .padding(24)
-        .frame(width: 400, height: 300)
+        .frame(width: 560, height: 400)
     }
 }
 
