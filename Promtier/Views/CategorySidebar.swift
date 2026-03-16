@@ -26,35 +26,38 @@ struct CategorySidebar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "folder")
-                        .foregroundColor(.blue)
-                        .font(.title3)
-                    
-                    Text("Categorías")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                }
+            // Header sutil
+            HStack {
+                Text("Explorar")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
                 
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 32)
+            .padding(.bottom, 16)
+            
+            VStack(spacing: 4) {
                 // Botón "Todas"
-                CategoryButton(
+                SidebarItem(
                     title: "Todas",
-                    icon: "square.grid.2x2",
-                    color: .gray,
+                    icon: "square.grid.2x2.fill",
+                    color: .blue,
                     count: promptService.prompts.count,
                     isSelected: promptService.selectedCategory == nil
                 ) {
                     promptService.selectedCategory = nil
                 }
                 
+                // Botón "Favoritos" (Nuevo?) - No, mantengamos lo que hay pero mejorado
+                
                 // Botón "Sin categoría"
-                CategoryButton(
+                SidebarItem(
                     title: "Sin categoría",
-                    icon: "folder",
+                    icon: "folder.fill",
                     color: .gray,
                     count: categoryCounts["Sin categoría"] ?? 0,
                     isSelected: promptService.selectedCategory == "Sin categoría"
@@ -62,21 +65,19 @@ struct CategorySidebar: View {
                     promptService.selectedCategory = "Sin categoría"
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
             
             Divider()
-                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .padding(.horizontal, 24)
             
             // Lista de categorías
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(categories, id: \.rawValue) { category in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 4) {
+                    ForEach(categories, id: \.self) { category in
                         let count = categoryCounts[category.displayName] ?? 0
                         
-                        CategoryButton(
+                        SidebarItem(
                             title: category.displayName,
                             icon: category.icon,
                             color: category.color,
@@ -87,20 +88,21 @@ struct CategorySidebar: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 24)
             }
-            .frame(maxWidth: .infinity)
         }
-        .frame(width: 180) // Aumentado a 180px para ser ~30% del ancho total
-        .background(Color(NSColor.controlBackgroundColor))
-        .border(Color.gray.opacity(0.2), width: 1)
+        .frame(width: 200)
+        .background(
+            ZStack {
+                Color(NSColor.windowBackgroundColor).opacity(0.95)
+                Color.primary.opacity(0.02)
+            }
+        )
     }
 }
 
-// MARK: - CategoryButton Component
-
-struct CategoryButton: View {
+struct SidebarItem: View {
     let title: String
     let icon: String
     let color: Color
@@ -111,51 +113,43 @@ struct CategoryButton: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Icono con color
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(color)
-                .frame(width: 24, height: 24)
-            
-            // Título
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            // Contador
-            Text("\(count)")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(isSelected ? .white : .secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isSelected ? color : Color.gray.opacity(0.1))
-                )
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : color.opacity(0.8))
+                    .frame(width: 20)
+                
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                    .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                
+                Spacer()
+                
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+                        )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+                    .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+            )
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? color.opacity(0.15) : (isHovered ? Color.gray.opacity(0.1) : Color.clear))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? color.opacity(0.5) : Color.clear, lineWidth: 1)
-                )
-        )
-        .contentShape(Rectangle()) // Asegura área de clic completa
+        .buttonStyle(.plain)
         .onHover { hovering in
             isHovered = hovering
         }
-        .highPriorityGesture(
-            TapGesture().onEnded {
-                action()
-            }
-        )
     }
 }
 

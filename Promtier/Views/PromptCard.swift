@@ -18,103 +18,101 @@ struct PromptCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Indicador de categoría con color
+            // Icono de categoría refinado
             if let folder = prompt.folder,
                let category = PredefinedCategory.fromString(folder) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(category.color.opacity(0.15))
-                        .frame(width: 24, height: 24)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(category.color.opacity(0.1))
+                        .frame(width: 32, height: 32)
                     
                     Image(systemName: category.icon)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(category.color)
                 }
             } else {
-                Image(systemName: "doc.text")
-                    .foregroundColor(.secondary)
-                    .font(.title3)
-                    .frame(width: 24, height: 24)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.primary.opacity(0.05))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
             }
             
-            // Contenido principal
-            VStack(alignment: .leading, spacing: 8) {
-                // Título
+            // Texto detallado
+            VStack(alignment: .leading, spacing: 4) {
                 Text(prompt.title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(isSelected ? .blue : .primary)
                     .lineLimit(1)
                 
-                // Descripción/Contenido
                 Text(prompt.content)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary.opacity(0.8))
+                    .lineLimit(1)
             }
             
             Spacer()
             
-            // Estrella de favorito
-            if prompt.isFavorite {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
-                    .font(.system(size: 16))
+            // Indicadores de estado
+            HStack(spacing: 12) {
+                if prompt.isFavorite {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 12))
+                        .shadow(color: .yellow.opacity(0.3), radius: 2)
+                }
+                
+                if isHovered || isSelected {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.primary.opacity(0.2))
+                }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(cardBorderColor, lineWidth: isSelected ? 2 : 1)
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(cardBorderColor, lineWidth: 1)
                 )
         )
-        .scaleEffect(isHovered ? 1.01 : 1.0)
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .animation(.easeInOut(duration: 0.1), value: isSelected)
-        .shadow(
-            color: .black.opacity(isHovered ? 0.05 : 0.02),
-            radius: isHovered ? 4 : 2,
-            x: 0,
-            y: isHovered ? 2 : 1
-        )
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                onTap()
-            }
-        )
-        .simultaneousGesture(
-            TapGesture(count: 2).onEnded {
-                onDoubleTap()
-            }
-        )
+        .scaleEffect(isHovered ? 1.005 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 1, perform: onTap)
+        .onTapGesture(count: 2, perform: onDoubleTap)
         .onHover { hovering in
-            // Optimización: Hover más eficiente
             onHover(hovering)
         }
     }
     
-    // Colores dinámicos basados en el estado
+    // Colores dinámicos Premium
     private var cardBackgroundColor: Color {
         if isSelected {
-            return Color.blue.opacity(0.12)
+            return Color.blue.opacity(0.05)
         } else if isHovered {
-            return Color.gray.opacity(0.08)
+            return Color.primary.opacity(0.04)
         } else {
-            return Color.gray.opacity(0.05)
+            return Color.primary.opacity(0.02)
         }
     }
     
     private var cardBorderColor: Color {
         if isSelected {
-            return Color.blue
+            return Color.blue.opacity(0.3)
         } else if isHovered {
-            return Color.gray.opacity(0.25)
+            return Color.primary.opacity(0.08)
         } else {
-            return Color.gray.opacity(0.15)
+            return Color.primary.opacity(0.04)
         }
     }
 }

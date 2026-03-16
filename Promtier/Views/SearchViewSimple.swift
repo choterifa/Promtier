@@ -79,65 +79,78 @@ struct SearchViewSimple: View {
             
             // Contenido principal
             VStack(spacing: 0) {
-                // Header estandarizado con búsqueda
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.blue)
-                            .font(.title3)
+                // Header Premium con búsqueda
+                VStack(spacing: 0) {
+                    HStack(spacing: 16) {
+                        // Buscador Estilizado
+                        HStack(spacing: 12) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.blue)
+                            
+                            TextField("Buscar tus prompts...", text: $promptService.searchQuery)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 15))
+                            
+                            if !promptService.searchQuery.isEmpty {
+                                Button(action: { promptService.searchQuery = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary.opacity(0.5))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.primary.opacity(0.04))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                )
+                        )
                         
-                        TextField("Buscar prompts...", text: $promptService.searchQuery)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .font(.system(size: 16, weight: .medium))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.gray.opacity(0.05))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                        // Acciones rápidas
+                        HStack(spacing: 10) {
+                            Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { viewState = .newPrompt } }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 34, height: 34)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.blue)
+                                            .shadow(color: Color.blue.opacity(0.3), radius: 4, y: 2)
                                     )
-                            )
-                        
-                        Button(action: { withAnimation(.spring()) { viewState = .newPrompt } }) {
-                            Image(systemName: "plus")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.blue)
-                                )
+                            }
+                            .buttonStyle(.plain)
+                            .help("Nuevo Prompt (N)")
+                            
+                            Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { viewState = .preferences } }) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.7))
+                                    .frame(width: 34, height: 34)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.primary.opacity(0.04))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .help("Configuración (Cmd+,)")
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Button(action: { withAnimation(.spring()) { viewState = .preferences } }) {
-                            Image(systemName: "gear")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.gray.opacity(0.05))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                                        )
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .background(Color.gray.opacity(0.15))
-                
-                // Separador moderno
-                Rectangle()
-                    .fill(Color.gray.opacity(0.15))
-                    .frame(height: 1)
                     .padding(.horizontal, 24)
+                    .padding(.vertical, 20)
+                }
+                .background(Color(NSColor.windowBackgroundColor))
+                
+                Divider().padding(.horizontal, 24)
                 
                 // Contenido principal
                 if promptService.filteredPrompts.isEmpty {
