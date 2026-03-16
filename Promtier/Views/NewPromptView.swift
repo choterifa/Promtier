@@ -139,29 +139,58 @@ struct NewPromptView: View {
                     
                     Divider().frame(height: 20)
                     
-                    // Categorías horizontales: Carrusel Real Corregido para Ventana de Nuevo Prompt
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            CategoryTag(title: "Sin categoría", icon: "folder", color: .gray, isSelected: selectedFolder == nil) {
-                                selectedFolder = nil
+                    // Categorías horizontales: Carrusel con ScrollViewReader y Botones Físicos
+                    ScrollViewReader { proxy in
+                        HStack(spacing: 4) {
+                            // Botón Scroll Izquierda
+                            Button(action: { navigateCategory(forward: false, proxy: proxy) }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20, height: 32)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
                             }
+                            .buttonStyle(.plain)
                             
-                            ForEach(PredefinedCategory.allCases, id: \.self) { category in
-                                CategoryTag(title: category.displayName, icon: category.icon, color: category.color, isSelected: selectedFolder == category.displayName) {
-                                    selectedFolder = category.displayName
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    CategoryTag(title: "Sin categoría", icon: "folder", color: .gray, isSelected: selectedFolder == nil) {
+                                        selectedFolder = nil
+                                    }
+                                    .id("none")
+                                    
+                                    ForEach(PredefinedCategory.allCases, id: \.self) { category in
+                                        CategoryTag(title: category.displayName, icon: category.icon, color: category.color, isSelected: selectedFolder == category.displayName) {
+                                            selectedFolder = category.displayName
+                                        }
+                                        .id(category.displayName)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 2)
+                                .fixedSize(horizontal: true, vertical: false)
+                            }
+                            .onChange(of: selectedFolder) { newSelection in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    proxy.scrollTo(newSelection ?? "none", anchor: .center)
                                 }
                             }
+                            
+                            // Botón Scroll Derecha
+                            Button(action: { navigateCategory(forward: true, proxy: proxy) }) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20, height: 32)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.04)))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 4)
-                        .fixedSize(horizontal: true, vertical: false) // FORZAR ANCHO PARA SCROLL
                     }
                     .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle()) // Área de interacción completa
                 }
                 .padding(.horizontal, 4)
-                .frame(height: 44) // Altura fija para asegurar estabilidad
-                .fixedSize(horizontal: false, vertical: true)
+                .frame(height: 44)
             }
             .padding(24)
         }
@@ -206,6 +235,27 @@ struct NewPromptView: View {
         }
         
         onClose()
+    }
+    
+    private func navigateCategory(forward: Bool, proxy: ScrollViewProxy? = nil) {
+        let allCategories = [nil] + PredefinedCategory.allCases.map { $0.displayName }
+        guard let currentIndex = allCategories.firstIndex(of: selectedFolder) else { return }
+        
+        let nextIndex: Int
+        if forward {
+            nextIndex = (currentIndex + 1) % allCategories.count
+        } else {
+            nextIndex = (currentIndex - 1 + allCategories.count) % allCategories.count
+        }
+        
+        let newSelection = allCategories[nextIndex]
+        selectedFolder = newSelection
+        
+        if let proxy = proxy {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                proxy.scrollTo(newSelection ?? "none", anchor: .center)
+            }
+        }
     }
 }
 
