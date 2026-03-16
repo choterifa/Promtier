@@ -32,6 +32,7 @@ class MenuBarManager: NSObject, ObservableObject {
         case main
         case newPrompt
         case preferences
+        case folderManager
     }
     
     private var cancellables = Set<AnyCancellable>()
@@ -242,11 +243,14 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     
+    /// Actualiza el comportamiento del popover basado en el estado
     private func updatePopoverBehavior() {
         guard let popover = popover else { return }
-        // Si hay un modal activo (como el FolderManager), no queremos que el popover 
-        // se cierre solo al hacer clic fuera, porque eso rompe la gestión de Sheets en SwiftUI
-        popover.behavior = isModalActive ? .applicationDefined : .transient
+        
+        // Si estamos en cualquier vista que no sea la principal, mantenemos el popover abierto
+        // para evitar que un click fuera cierre accidentalmente la ventana de edición.
+        let needsPersistence = activeViewState != .main || isModalActive
+        popover.behavior = needsPersistence ? .applicationDefined : .transient
     }
 }
 

@@ -10,7 +10,7 @@ import SwiftUI
 
 struct FolderManagerView: View {
     @EnvironmentObject var promptService: PromptService
-    @Environment(\.dismiss) private var dismiss
+    var onClose: () -> Void
     
     @State private var folders: [Folder] = []
     @State private var newFolderName = ""
@@ -18,31 +18,34 @@ struct FolderManagerView: View {
     @State private var selectedIcon: String? = "folder.fill"
     @State private var showingIconPicker = false
     @State private var editingFolder: Folder?
+    @State private var isReady = false
     
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
-       var body: some View {
+    
+    var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Gestionar Categorías")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 20, weight: .bold))
                     Text("Personaliza tu flujo de trabajo")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                Button("Hecho") { dismiss() }
+                Button("Hecho") { onClose() }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    .controlSize(.regular)
             }
-            .padding(24)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
             .background(Color(NSColor.windowBackgroundColor))
             
             Divider()
             
             HStack(alignment: .top, spacing: 0) {
-                // Lista de categorías unificada y premium
+                // Lista de categorías - Ajustado para vista unificada
                 VStack(alignment: .leading, spacing: 0) {
                     ScrollView {
                         VStack(spacing: 2) {
@@ -58,30 +61,30 @@ struct FolderManagerView: View {
                         .padding(.vertical, 12)
                     }
                 }
-                .frame(width: 280)
+                .frame(width: 240)
                 .background(Color.primary.opacity(0.02))
                 
                 Divider()
                 
                 // Formulario de edición refinado
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         Image(systemName: editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
-                            .font(.title2)
+                            .font(.title3)
                             .foregroundColor(.blue)
                         Text(editingFolder == nil ? "Nueva Categoría" : "Editar Categoría")
-                            .font(.title3)
+                            .font(.headline)
                             .fontWeight(.bold)
                     }
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Nombre de la Categoría")
-                            .font(.system(size: 13, weight: .semibold))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Nombre")
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.primary.opacity(0.7))
                         
-                        TextField("Ej: Marketing, Personal...", text: $newFolderName)
+                        TextField("Ej: Marketing...", text: $newFolderName)
                             .textFieldStyle(.plain)
-                            .padding(12)
+                            .padding(10)
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(Color.primary.opacity(0.04))
@@ -92,47 +95,45 @@ struct FolderManagerView: View {
                             )
                     }
                     
-                    HStack(alignment: .top, spacing: 32) {
-                        VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Icono")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.primary.opacity(0.7))
                             
                             Button {
                                 showingIconPicker = true
                             } label: {
                                 Image(systemName: selectedIcon ?? "folder.fill")
-                                    .font(.system(size: 20))
-                                    .frame(width: 56, height: 56)
+                                    .font(.system(size: 18))
+                                    .frame(width: 44, height: 44)
                                     .background(selectedColor.opacity(0.12))
                                     .foregroundColor(selectedColor)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
+                                        RoundedRectangle(cornerRadius: 10)
                                             .stroke(selectedColor.opacity(0.2), lineWidth: 1)
                                     )
-                                    .shadow(color: selectedColor.opacity(0.1), radius: 5, y: 2)
                             }
                             .buttonStyle(.plain)
                         }
                         
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Color")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.primary.opacity(0.7))
                             
-                            LazyVGrid(columns: [GridItem(.fixed(26)), GridItem(.fixed(26)), GridItem(.fixed(26)), GridItem(.fixed(26)), GridItem(.fixed(26))], spacing: 12) {
+                            LazyVGrid(columns: [GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22))], spacing: 8) {
                                 ForEach(presetColors, id: \.self) { color in
                                     Circle()
                                         .fill(color)
-                                        .frame(width: 24, height: 24)
+                                        .frame(width: 20, height: 20)
                                         .overlay(
                                             Circle()
-                                                .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
-                                                .shadow(radius: 2)
+                                                .stroke(Color.white, lineWidth: selectedColor == color ? 2.5 : 0)
+                                                .shadow(radius: 1)
                                         )
-                                        .scaleEffect(selectedColor == color ? 1.2 : 1.0)
-                                        .animation(.spring(response: 0.3), value: selectedColor)
+                                        .scaleEffect(selectedColor == color ? 1.15 : 1.0)
                                         .onTapGesture {
                                             selectedColor = color
                                         }
@@ -143,16 +144,16 @@ struct FolderManagerView: View {
                     
                     Spacer()
                     
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
                         if editingFolder != nil {
                             Button("Cancelar") {
                                 resetForm()
                             }
                             .buttonStyle(.plain)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
                             .background(Color.primary.opacity(0.05))
-                            .cornerRadius(10)
+                            .cornerRadius(8)
                         }
                         
                         Spacer()
@@ -160,27 +161,31 @@ struct FolderManagerView: View {
                         Button {
                             saveFolder()
                         } label: {
-                            Text(editingFolder == nil ? "Crear Categoría" : "Guardar Cambios")
+                            Text(editingFolder == nil ? "Crear" : "Guardar")
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
                                 .background(newFolderName.isEmpty ? Color.gray.opacity(0.3) : selectedColor)
-                                .cornerRadius(12)
-                                .shadow(color: selectedColor.opacity(newFolderName.isEmpty ? 0 : 0.3), radius: 8, y: 4)
+                                .cornerRadius(10)
                         }
                         .buttonStyle(.plain)
                         .disabled(newFolderName.isEmpty)
                     }
                 }
-                .padding(32)
+                .padding(24)
                 .frame(maxWidth: .infinity)
                 .background(Color(NSColor.textBackgroundColor).opacity(0.3))
             }
         }
-        .frame(width: 760, height: 520)
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
+        }
+        .opacity(isReady ? 1 : 0)
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.15)) {
+                isReady = true
+            }
         }
     }
     
@@ -288,6 +293,6 @@ struct CategoryRow: View {
 }
 
 #Preview {
-    FolderManagerView()
+    FolderManagerView(onClose: {})
         .environmentObject(PromptService())
 }

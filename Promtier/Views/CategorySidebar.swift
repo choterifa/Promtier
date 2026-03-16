@@ -41,7 +41,9 @@ struct CategorySidebar: View {
                 Spacer()
                 
                 Button {
-                    showingFolderManager = true
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        menuBarManager.activeViewState = .folderManager
+                    }
                 } label: {
                     Image(systemName: "plus.circle")
                         .font(.system(size: 14))
@@ -124,22 +126,6 @@ struct CategorySidebar: View {
                 Color.primary.opacity(0.02)
             }
         )
-        .sheet(isPresented: $showingFolderManager) {
-            FolderManagerView()
-                .environmentObject(promptService)
-        }
-        .onChange(of: showingFolderManager) { oldValue, newValue in
-            menuBarManager.isModalActive = newValue
-        }
-        .onChange(of: menuBarManager.isModalActive) { oldValue, newValue in
-            // Sincronización bidireccional: si el manager limpia el estado (ej: al cerrar el popover),
-            // cerramos localmente el sheet para que no se bloquee nada al volver.
-            if !newValue && showingFolderManager {
-                withAnimation(.spring()) {
-                    showingFolderManager = false
-                }
-            }
-        }
     }
 }
 

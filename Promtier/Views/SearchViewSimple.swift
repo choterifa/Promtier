@@ -1,11 +1,3 @@
-//
-//  SearchViewSimple.swift
-//  Promtier
-//
-//  VISTA PRINCIPAL SIMPLIFICADA: Interfaz básica de búsqueda
-//  Created by Carlos on 15/03/26.
-//
-
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
@@ -14,17 +6,8 @@ import UniformTypeIdentifiers
 struct SearchViewSimple: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
-    
     @EnvironmentObject var menuBarManager: MenuBarManager
     
-    enum ViewState {
-        case main
-        case newPrompt
-        case editPrompt(Prompt)
-        case preferences
-    }
-    
-    @State private var viewState: ViewState = .main
     @FocusState private var isSearchFocused: Bool
     @State private var localEventMonitor: Any?
     @State private var selectedPrompt: Prompt?
@@ -34,23 +17,36 @@ struct SearchViewSimple: View {
     
     var body: some View {
         ZStack {
-            switch viewState {
+            switch menuBarManager.activeViewState {
             case .main:
                 mainView
+                    .transition(.opacity)
             case .newPrompt:
-                NewPromptView(onClose: { viewState = .main })
-                    .environmentObject(promptService)
-                    .environmentObject(preferences)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
-            case .editPrompt(let prompt):
-                NewPromptView(prompt: prompt, onClose: { viewState = .main })
-                    .environmentObject(promptService)
-                    .environmentObject(preferences)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                NewPromptView(prompt: selectedPrompt, onClose: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedPrompt = nil
+                        menuBarManager.activeViewState = .main
+                    }
+                })
+                .environmentObject(promptService)
+                .environmentObject(preferences)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
             case .preferences:
-                PreferencesView(onClose: { viewState = .main })
-                    .environmentObject(preferences)
-                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+                PreferencesView(onClose: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        menuBarManager.activeViewState = .main
+                    }
+                })
+                .environmentObject(preferences)
+                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+            case .folderManager:
+                FolderManagerView(onClose: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        menuBarManager.activeViewState = .main
+                    }
+                })
+                .environmentObject(promptService)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
             }
             
             // Overlay de Variables Dinámicas
@@ -62,12 +58,11 @@ struct SearchViewSimple: View {
                             withAnimation { fillingVariablesFor = nil }
                         }
                     
-                VariableFillView(prompt: prompt, onCopy: { finalContent in
-                    ClipboardService.shared.copyToClipboard(finalContent)
-                    promptService.recordPromptUse(prompt) // Solo registrar uso, NO copiar base
-                    withAnimation { fillingVariablesFor = nil }
+                    VariableFillView(prompt: prompt, onCopy: { finalContent in
+                        ClipboardService.shared.copyToClipboard(finalContent)
+                        promptService.recordPromptUse(prompt)
+                        withAnimation { fillingVariablesFor = nil }
                         
-                        // Sonido y feedback
                         if preferences.soundEnabled {
                             SoundService.shared.playCopySound()
                         }
@@ -85,12 +80,10 @@ struct SearchViewSimple: View {
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
         .onAppear {
-            // Asegurar foco en la ventana
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             }
             
-            // Monitor local de eventos para atajos de gestión local
             if localEventMonitor == nil {
                 localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                     return handleLocalKeyEvent(event)
@@ -101,21 +94,6 @@ struct SearchViewSimple: View {
             if let monitor = localEventMonitor {
                 NSEvent.removeMonitor(monitor)
                 localEventMonitor = nil
-            }
-        }
-        .onChange(of: menuBarManager.activeViewState) { oldState, newState in
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    switch newState {
-                    case .main:
-                        viewState = .main
-                        isSearchFocused = true
-                    case .newPrompt:
-                        viewState = .newPrompt
-                    case .preferences:
-                        viewState = .preferences
-                    }
-                }
             }
         }
     }
@@ -163,7 +141,12 @@ struct SearchViewSimple: View {
                         
                         // Acciones rápidas
                         HStack(spacing: 10) {
-                            Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { viewState = .newPrompt } }) {
+                            Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedPrompt = nil
+                                menuBarManager.activeViewState = .newPrompt
+                            }
+                        }) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.white)
@@ -177,7 +160,11 @@ struct SearchViewSimple: View {
                             .buttonStyle(.plain)
                             .help("Nuevo Prompt (N)")
                             
-                            Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { viewState = .preferences } }) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .preferences
+                                }
+                            }) {
                                 Image(systemName: "gearshape.fill")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.primary.opacity(0.7))
@@ -225,7 +212,7 @@ struct SearchViewSimple: View {
                         if promptService.searchQuery.isEmpty {
                             Button("Crear Primer Prompt") {
                                 selectedPrompt = nil
-                                withAnimation(.spring()) { viewState = .newPrompt }
+                                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.large)
@@ -251,7 +238,8 @@ struct SearchViewSimple: View {
                                         NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                     },
                                     onDoubleTap: {
-                                        withAnimation(.spring()) { viewState = .editPrompt(prompt) }
+                                        selectedPrompt = prompt
+                                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                                     },
                                     onHover: { isHovering in
                                         // Optimización: Reducir actualizaciones de hover
@@ -271,7 +259,10 @@ struct SearchViewSimple: View {
                                         Label("Copiar", systemImage: "doc.on.doc")
                                     }
                                     
-                                    Button(action: { withAnimation(.spring()) { viewState = .editPrompt(prompt) } }) {
+                                    Button(action: { 
+                                        selectedPrompt = prompt
+                                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
+                                    }) {
                                         Label("Editar", systemImage: "pencil")
                                     }
                                     
@@ -303,7 +294,7 @@ struct SearchViewSimple: View {
     /// Maneja eventos de teclado locales para Cmd+C, Enter y navegación
     private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
         // Solo manejar si estamos en la vista principal
-        guard case .main = viewState, fillingVariablesFor == nil else { return event }
+        guard case .main = menuBarManager.activeViewState, fillingVariablesFor == nil else { return event }
         
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let keyCode = event.keyCode
@@ -312,7 +303,7 @@ struct SearchViewSimple: View {
         if keyCode == 36 {
             if let prompt = selectedPrompt {
                 DispatchQueue.main.async {
-                    withAnimation(.spring()) { viewState = .editPrompt(prompt) }
+                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 }
                 return nil
             }
