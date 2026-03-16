@@ -63,7 +63,7 @@ struct FolderManagerView: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 8) {
                         ForEach(PredefinedCategory.allCases, id: \.rawValue) { category in
                             let count = promptService.prompts.filter { $0.folder == category.displayName }.count
                             

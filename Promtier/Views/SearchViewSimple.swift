@@ -33,74 +33,79 @@ struct SearchViewSimple: View {
             
             // Contenido principal
             VStack(spacing: 0) {
-            // Header moderno con búsqueda
+            // Header estandarizado con búsqueda
             VStack(spacing: 16) {
                 HStack(spacing: 20) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.blue)
-                            .font(.title3)
-                        
-                        TextField("Buscar prompts...", text: $searchText)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .font(.system(size: 16, weight: .medium))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.gray.opacity(0.05))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .onSubmit {
-                                if let firstPrompt = promptService.filteredPrompts.first {
-                                    usePrompt(firstPrompt)
-                                }
-                            }
-                        
-                        if !searchText.isEmpty {
-                            Button(action: { searchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
-                                    .font(.title3)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
+                    Text("Promtier")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
                     
                     Spacer()
                     
-                    HStack(spacing: 12) {
-                        Button(action: { 
-                            // Limpiar selección para crear nuevo prompt
-                            selectedPrompt = nil
-                            showingNewPrompt = true 
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.blue)
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Button(action: { showingPreferences = true }) {
-                            Image(systemName: "gear")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                                .frame(width: 36, height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.gray.opacity(0.05))
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    Button("Cerrar") {
+                        NSApplication.shared.keyWindow?.close()
                     }
+                    .keyboardShortcut(.escape)
+                    .foregroundColor(.primary)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(NSColor.controlBackgroundColor))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.blue)
+                        .font(.title3)
+                    
+                    TextField("Buscar prompts...", text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 16, weight: .medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.05))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                    
+                    Button(action: { showingNewPrompt = true }) {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.blue)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: { showingPreferences = true }) {
+                        Image(systemName: "gear")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.gray.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, 24)
@@ -200,7 +205,7 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .frame(width: 760, height: 480) // Aumentado para incluir sidebar
+        .frame(width: 600, height: 480) // Reducido de 760px a 600px
         .onKeyPress(.space) {
             // Optimización: Manejo más eficiente del espacio
             if showingPreview {

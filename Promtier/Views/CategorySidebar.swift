@@ -78,7 +78,7 @@ struct CategorySidebar: View {
                 .padding(.vertical, 12)
             }
         }
-        .frame(width: 200)
+        .frame(width: 140) // Reducido de 200px a 140px
         .background(Color(NSColor.controlBackgroundColor))
         .border(Color.gray.opacity(0.2), width: 1)
     }
@@ -122,8 +122,8 @@ struct CategoryButton: View {
                             .fill(isSelected ? color.opacity(0.8) : Color.gray.opacity(0.1))
                     )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? color.opacity(0.15) : Color.clear)

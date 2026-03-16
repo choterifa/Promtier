@@ -128,7 +128,7 @@ struct NewPromptView: View {
                                     .fontWeight(.medium)
                                     .foregroundColor(.secondary)
                                 
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 1), spacing: 6) {
                                     // Opción "Sin categoría"
                                     CategorySelectorButton(
                                         title: "Sin categoría",
