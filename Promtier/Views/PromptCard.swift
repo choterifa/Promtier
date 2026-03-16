@@ -84,8 +84,6 @@ struct PromptCard: View {
                 )
         )
         .scaleEffect(isHovered ? 1.005 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
         .contentShape(Rectangle())
         .onTapGesture(count: 1, perform: onTap)

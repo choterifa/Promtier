@@ -123,6 +123,7 @@ struct SidebarItem: View {
                 Text(title)
                     .font(.system(size: 13, weight: isSelected ? .bold : .medium))
                     .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                    .lineLimit(1)
                 
                 Spacer()
                 
