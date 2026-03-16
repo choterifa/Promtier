@@ -263,7 +263,7 @@ struct SearchViewSimple: View {
                                 .popover(isPresented: Binding(
                                     get: { showingPreview && selectedPrompt?.id == prompt.id },
                                     set: { if !$0 { showingPreview = false } }
-                                ), arrowEdge: .leading) {
+                                ), arrowEdge: .top) {
                                     PromptPreviewView(prompt: prompt)
                                 }
                                 .contextMenu {
