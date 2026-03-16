@@ -282,6 +282,11 @@ struct SearchViewSimple: View {
                                         withAnimation(.spring()) { viewState = .editPrompt(prompt) }
                                     }
                                     
+                                    Button(action: { toggleFavorite(prompt) }) {
+                                        Label(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos", 
+                                              systemImage: prompt.isFavorite ? "star.slash" : "star.fill")
+                                    }
+                                    
                                     Divider()
                                     
                                     Button("Exportar a texto plano") {
