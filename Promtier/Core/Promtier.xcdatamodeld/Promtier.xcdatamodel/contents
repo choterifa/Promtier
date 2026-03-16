@@ -12,9 +12,9 @@
         <attribute name="folder" optional="YES" attributeType="String"/>
         <attribute name="lastUsedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="icon" optional="YES" attributeType="String"/>
-        <attribute name="image1" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
-        <attribute name="image2" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
-        <attribute name="image3" optional="YES" attributeType="Binary" usesScalarValueType="NO"/>
+        <attribute name="image1" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="image2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="image3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>

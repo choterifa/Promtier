@@ -419,9 +419,9 @@ struct NewPromptView: View {
         if panel.runModal() == .OK {
             for url in panel.urls {
                 if showcaseImages.count < 3 {
-                    if let data = try? Data(contentsOf: url) {
-                        // Opcional: Podríamos comprimir la imagen aquí si Core Data se vuelve lento
-                        showcaseImages.append(data)
+                    if let data = try? Data(contentsOf: url),
+                       let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                        showcaseImages.append(optimizedData)
                     }
                 }
             }
@@ -434,9 +434,11 @@ struct NewPromptView: View {
             if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, error in
                     if let url = url, let data = try? Data(contentsOf: url) {
-                        DispatchQueue.main.async {
-                            if showcaseImages.count < 3 {
-                                showcaseImages.append(data)
+                        if let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                            DispatchQueue.main.async {
+                                if showcaseImages.count < 3 {
+                                    showcaseImages.append(optimizedData)
+                                }
                             }
                         }
                     }
@@ -444,10 +446,10 @@ struct NewPromptView: View {
                 found = true
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
-                    if let data = data {
+                    if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
                         DispatchQueue.main.async {
                             if showcaseImages.count < 3 {
-                                showcaseImages.append(data)
+                                showcaseImages.append(optimizedData)
                             }
                         }
                     }
