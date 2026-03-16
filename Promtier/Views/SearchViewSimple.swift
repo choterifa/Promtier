@@ -104,15 +104,17 @@ struct SearchViewSimple: View {
             }
         }
         .onChange(of: menuBarManager.activeViewState) { oldState, newState in
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                switch newState {
-                case .main:
-                    viewState = .main
-                    isSearchFocused = true
-                case .newPrompt:
-                    viewState = .newPrompt
-                case .preferences:
-                    viewState = .preferences
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    switch newState {
+                    case .main:
+                        viewState = .main
+                        isSearchFocused = true
+                    case .newPrompt:
+                        viewState = .newPrompt
+                    case .preferences:
+                        viewState = .preferences
+                    }
                 }
             }
         }

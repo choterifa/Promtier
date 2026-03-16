@@ -436,20 +436,24 @@ struct DataTab: View {
     private func exportData() {
         guard let data = promptService.exportAllPromptsAsJSON() else { return }
         
-        let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.json]
-        savePanel.nameFieldStringValue = "promtier_backup_\(Int(Date().timeIntervalSince1970)).json"
-        savePanel.title = "Exportar Biblioteca"
-        
-        NSApp.activate(ignoringOtherApps: true)
-        
-        savePanel.begin { response in
-            if response == .OK, let url = savePanel.url {
-                do {
-                    try data.write(to: url)
-                    print("✅ Biblioteca exportada a \(url.path)")
-                } catch {
-                    print("❌ Error guardando archivo: \(error)")
+        // Ejecutar en el hilo principal con un pequeño margen
+        DispatchQueue.main.async {
+            let savePanel = NSSavePanel()
+            savePanel.allowedContentTypes = [.json]
+            savePanel.nameFieldStringValue = "promtier_backup_\(Int(Date().timeIntervalSince1970)).json"
+            savePanel.title = "Exportar Biblioteca"
+            
+            // Activar la app ANTES de mostrar el panel, pero sin forzar si falla
+            NSApp.activate(ignoringOtherApps: true)
+            
+            savePanel.begin { response in
+                if response == .OK, let url = savePanel.url {
+                    do {
+                        try data.write(to: url)
+                        print("✅ Biblioteca exportada a \(url.path)")
+                    } catch {
+                        print("❌ Error guardando archivo: \(error)")
+                    }
                 }
             }
         }
@@ -457,30 +461,34 @@ struct DataTab: View {
     
     /// Lógica de importación nativa
     private func importData() {
-        let openPanel = NSOpenPanel()
-        openPanel.allowedContentTypes = [.json]
-        openPanel.allowsMultipleSelection = false
-        openPanel.canChooseDirectories = false
-        openPanel.title = "Importar Biblioteca"
-        
-        NSApp.activate(ignoringOtherApps: true)
-        
-        openPanel.begin { response in
-            if response == .OK, let url = openPanel.url {
-                do {
-                    let data = try Data(contentsOf: url)
-                    let result = promptService.importPromptsFromData(data)
-                    
-                    withAnimation {
-                        importStatus = "Importados: \(result.success) | Omitidos: \(result.failed)"
+        DispatchQueue.main.async {
+            let openPanel = NSOpenPanel()
+            openPanel.allowedContentTypes = [.json]
+            openPanel.allowsMultipleSelection = false
+            openPanel.canChooseDirectories = false
+            openPanel.title = "Importar Biblioteca"
+            
+            NSApp.activate(ignoringOtherApps: true)
+            
+            openPanel.begin { response in
+                if response == .OK, let url = openPanel.url {
+                    do {
+                        let data = try Data(contentsOf: url)
+                        let result = self.promptService.importPromptsFromData(data)
+                        
+                        DispatchQueue.main.async {
+                            withAnimation {
+                                self.importStatus = "Importados: \(result.success) | Omitidos: \(result.failed)"
+                            }
+                        }
+                        
+                        // Limpiar status después de 5 segundos
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            self.importStatus = nil
+                        }
+                    } catch {
+                        print("❌ Error leyendo archivo: \(error)")
                     }
-                    
-                    // Limpiar status después de 5 segundos
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        importStatus = nil
-                    }
-                } catch {
-                    print("❌ Error leyendo archivo: \(error)")
                 }
             }
         }

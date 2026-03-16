@@ -47,20 +47,23 @@ class PromptService: ObservableObject {
     
     /// Carga todos los prompts desde Core Data
     func loadPrompts() {
-        isLoading = true
+        DispatchQueue.main.async { self.isLoading = true }
         
         let request = PromptEntity.fetchAll(in: dataController.viewContext)
         
         do {
             let entities = try dataController.viewContext.fetch(request)
-            prompts = entities.map { $0.toPrompt() }
-            filterPrompts(query: searchQuery)
+            let loadedPrompts = entities.map { $0.toPrompt() }
+            
+            DispatchQueue.main.async {
+                self.prompts = loadedPrompts
+                self.filterPrompts(query: self.searchQuery)
+                self.isLoading = false
+            }
         } catch {
-            // CONFIGURABLE: Manejo de error de carga
             print("Error cargando prompts: \(error)")
+            DispatchQueue.main.async { self.isLoading = false }
         }
-        
-        isLoading = false
     }
     
     /// Crea un nuevo prompt
