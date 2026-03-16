@@ -26,6 +26,7 @@ struct SearchViewSimple: View {
     
     @State private var viewState: ViewState = .main
     @FocusState private var isSearchFocused: Bool
+    @State private var localEventMonitor: Any?
     @State private var selectedPrompt: Prompt?
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
@@ -87,6 +88,19 @@ struct SearchViewSimple: View {
             // Asegurar foco en la ventana
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            }
+            
+            // Monitor local de eventos para atajos de gestión local
+            if localEventMonitor == nil {
+                localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    return handleLocalKeyEvent(event)
+                }
+            }
+        }
+        .onDisappear {
+            if let monitor = localEventMonitor {
+                NSEvent.removeMonitor(monitor)
+                localEventMonitor = nil
             }
         }
         .onChange(of: menuBarManager.activeViewState) { newState in
@@ -328,26 +342,37 @@ struct SearchViewSimple: View {
             }
             return .ignored
         }
-        .onKeyPress(.return) {
-            // Optimización: Manejo más eficiente del Enter
+    }
+    
+    /// Maneja eventos de teclado locales para Cmd+C, Enter y navegación
+    private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
+        // Solo manejar si estamos en la vista principal
+        guard case .main = viewState, fillingVariablesFor == nil else { return event }
+        
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let keyCode = event.keyCode
+        
+        // Enter (KeyCode 36) -> Editar
+        if keyCode == 36 {
             if let prompt = selectedPrompt {
-                withAnimation(.spring()) { viewState = .editPrompt(prompt) }
-                // Cerrar preview si está abierto
-                if showingPreview {
-                    showingPreview = false
+                DispatchQueue.main.async {
+                    withAnimation(.spring()) { viewState = .editPrompt(prompt) }
                 }
-                return .handled
+                return nil
             }
-            return .ignored
         }
-        .onKeyPress(characters: CharacterSet(charactersIn: "c"), phases: .down) { press in
-            // Cmd + C para copiar el prompt seleccionado
-            if press.modifiers.contains(.command), let prompt = selectedPrompt {
-                usePrompt(prompt)
-                return .handled
+        
+        // Cmd + C (KeyCode 8) -> Copiar
+        if modifiers == .command && keyCode == 8 {
+            if let prompt = selectedPrompt {
+                DispatchQueue.main.async {
+                    usePrompt(prompt)
+                }
+                return nil
             }
-            return .ignored
         }
+        
+        return event
     }
     
     // MARK: - Métodos
