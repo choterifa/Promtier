@@ -375,49 +375,82 @@ class PromptService: ObservableObject {
         return exportText
     }
     
-    /// Exporta todos los prompts en formato JSON (Copia de seguridad completa)
+    /// Exporta toda la base de datos (Prompts + Carpetas) en formato JSON
     func exportAllPromptsAsJSON() -> Data? {
         do {
+            let package = BackupPackage(
+                version: "2.1",
+                prompts: prompts,
+                folders: folders
+            )
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             encoder.dateEncodingStrategy = .iso8601
-            return try encoder.encode(prompts)
+            return try encoder.encode(package)
         } catch {
-            print("❌ Error codificando prompts a JSON: \(error)")
+            print("❌ Error codificando backup a JSON: \(error)")
             return nil
         }
     }
     
-    /// Importa prompts desde un archivo JSON
-    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int) {
+    /// Importa datos desde un archivo JSON (Soporta formato antiguo y nuevo BackupPackage)
+    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        var promptsToImport: [Prompt] = []
+        var foldersToImport: [Folder] = []
+        var foldersCreated = 0
+        
         do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let importedPrompts = try decoder.decode([Prompt].self, from: data)
-            
-            var successCount = 0
-            var failedCount = 0
-            
-            for prompt in importedPrompts {
-                // Comprobar si ya existe por ID para evitar duplicados exactos
-                if prompts.contains(where: { $0.id == prompt.id }) {
-                    failedCount += 1
-                    continue
-                }
-                
-                if createPrompt(prompt) {
-                    successCount += 1
-                } else {
-                    failedCount += 1
+            // Intentar decodificar como BackupPackage (Nuevo Formato)
+            let package = try decoder.decode(BackupPackage.self, from: data)
+            promptsToImport = package.prompts
+            foldersToImport = package.folders
+            print("📦 Detectado formato BackupPackage v\(package.version)")
+        } catch {
+            // Intentar decodificar como [Prompt] (Formato Antiguo)
+            do {
+                promptsToImport = try decoder.decode([Prompt].self, from: data)
+                print("📄 Detectado formato de lista de prompts (Legacy)")
+            } catch {
+                print("❌ Error decodificando archivo de importación: \(error)")
+                return (0, 0, 0)
+            }
+        }
+        
+        // 1. Importar Carpetas primero
+        let context = dataController.viewContext
+        for folder in foldersToImport {
+            // Evitar duplicados por nombre o ID
+            if !folders.contains(where: { $0.id == folder.id || $0.name == folder.name }) {
+                if createFolder(folder) {
+                    foldersCreated += 1
                 }
             }
-            
-            loadPrompts()
-            return (successCount, failedCount)
-        } catch {
-            print("❌ Error decodificando archivo de importación: \(error)")
-            return (0, 0)
         }
+        
+        // 2. Importar Prompts
+        var successCount = 0
+        var failedCount = 0
+        
+        for prompt in promptsToImport {
+            // Evitar duplicados exactos por ID
+            if prompts.contains(where: { $0.id == prompt.id }) {
+                failedCount += 1
+                continue
+            }
+            
+            if createPrompt(prompt) {
+                successCount += 1
+            } else {
+                failedCount += 1
+            }
+        }
+        
+        loadFolders()
+        loadPrompts()
+        return (successCount, failedCount, foldersCreated)
     }
     
     /// Restablece toda la base de datos (BORRADO TOTAL)
@@ -485,4 +518,13 @@ class PromptService: ObservableObject {
         
         return (total, favorites, totalUses)
     }
+}
+
+// MARK: - Estructuras de Soporte para Transferencia
+
+/// Paquete completo de copia de seguridad
+struct BackupPackage: Codable {
+    var version: String
+    var prompts: [Prompt]
+    var folders: [Folder]
 }

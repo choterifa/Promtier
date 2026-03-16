@@ -481,7 +481,7 @@ struct DataTab: View {
                         
                         DispatchQueue.main.async {
                             withAnimation {
-                                self.importStatus = "Importados: \(result.success) | Omitidos: \(result.failed)"
+                                self.importStatus = "Prompts: \(result.success) | Carpetas: \(result.foldersCreated) | Omitidos: \(result.failed)"
                             }
                         }
                         
