@@ -121,14 +121,6 @@ struct SearchViewSimple: View {
         .popover(isPresented: $showingPreview) {
             if let prompt = selectedPrompt {
                 PromptPreviewView(prompt: prompt)
-                    .onKeyPress(.space) {
-                        showingPreview = false
-                        return .handled
-                    }
-                    .onKeyPress(.escape) {
-                        showingPreview = false
-                        return .handled
-                    }
             }
         }
     }
@@ -305,18 +297,6 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        .onKeyPress(.space) {
-            // Optimización: Manejo más eficiente del espacio
-            if showingPreview {
-                showingPreview = false
-                return .handled
-            } else if selectedPrompt != nil {
-                // Solo mostrar preview si hay un prompt seleccionado
-                showingPreview = true
-                return .handled
-            }
-            return .ignored
-        }
         .onKeyPress(.upArrow) {
             // Optimización: Navegación más fluida
             guard !promptService.filteredPrompts.isEmpty else { return .ignored }
@@ -367,6 +347,17 @@ struct SearchViewSimple: View {
                 DispatchQueue.main.async {
                     withAnimation(.spring()) { viewState = .editPrompt(prompt) }
                 }
+                return nil
+            }
+        }
+        
+        // Espacio (KeyCode 49) -> Vista Previa (Quick Look)
+        if keyCode == 49 {
+            if showingPreview {
+                DispatchQueue.main.async { showingPreview = false }
+                return nil
+            } else if selectedPrompt != nil {
+                DispatchQueue.main.async { showingPreview = true }
                 return nil
             }
         }
