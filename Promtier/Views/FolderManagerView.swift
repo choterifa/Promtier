@@ -58,7 +58,7 @@ struct FolderManagerView: View {
                         .padding(.vertical, 12)
                     }
                 }
-                .frame(width: 250)
+                .frame(width: 280)
                 .background(Color.primary.opacity(0.02))
                 
                 Divider()
@@ -178,7 +178,7 @@ struct FolderManagerView: View {
                 .background(Color(NSColor.textBackgroundColor).opacity(0.3))
             }
         }
-        .frame(width: 700, height: 520)
+        .frame(width: 760, height: 520)
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
         }
@@ -242,6 +242,7 @@ struct CategoryRow: View {
                 .font(.system(size: 14, weight: isEditing ? .bold : .medium))
                 .foregroundColor(isEditing ? .primary : .primary.opacity(0.8))
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             
             Spacer()
             
