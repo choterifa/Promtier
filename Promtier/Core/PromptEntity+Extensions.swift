@@ -30,6 +30,7 @@ extension PromptEntity {
         prompt.modifiedAt = modifiedAt
         prompt.useCount = Int(useCount)
         prompt.lastUsedAt = lastUsedAt
+        prompt.icon = icon
         return prompt
     }
     
@@ -39,6 +40,7 @@ extension PromptEntity {
         title = prompt.title
         content = prompt.content
         folder = prompt.folder
+        icon = prompt.icon
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)
         modifiedAt = prompt.modifiedAt

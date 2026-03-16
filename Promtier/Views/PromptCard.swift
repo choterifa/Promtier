@@ -51,8 +51,18 @@ struct PromptCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Icono de categoría refinado
-            if let folder = prompt.folder,
+            // Icono de categoría o personalizado refinado
+            if let iconName = prompt.icon {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: iconName)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
+                }
+            } else if let folder = prompt.folder,
                let category = PredefinedCategory.fromString(folder) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)

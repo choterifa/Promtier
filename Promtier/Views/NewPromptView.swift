@@ -20,8 +20,10 @@ struct NewPromptView: View {
     @State private var content = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
+    @State private var selectedIcon: String?
     @State private var isSaving = false
     @State private var showingZenEditor = false
+    @State private var showingIconPicker = false
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -83,12 +85,32 @@ struct NewPromptView: View {
             VStack(spacing: 20) {
                 // Título y Editor integrados en una gran tarjeta "Content-First"
                 VStack(spacing: 0) {
-                    TextField("Título del prompt...", text: $title)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 12)
+                    HStack(alignment: .center, spacing: 16) {
+                        // Selector de Icono
+                        Button(action: { showingIconPicker.toggle() }) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill((selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue).opacity(0.1))
+                                    .frame(width: 44, height: 44)
+                                
+                                Image(systemName: selectedIcon ?? (selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.icon ?? "doc.text.fill" : "doc.text.fill"))
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
+                            IconPickerView(selectedIcon: $selectedIcon, color: selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
+                        }
+                        .help("Cambiar icono")
+                        
+                        TextField("Título del prompt...", text: $title)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
                     
                     Divider().padding(.horizontal, 20)
                     
@@ -254,6 +276,7 @@ struct NewPromptView: View {
                 content = prompt.content
                 selectedFolder = prompt.folder
                 isFavorite = prompt.isFavorite
+                selectedIcon = prompt.icon
             }
         }
     }
@@ -267,10 +290,11 @@ struct NewPromptView: View {
             updated.content = content
             updated.folder = selectedFolder
             updated.isFavorite = isFavorite
+            updated.icon = selectedIcon
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
-            var new = Prompt(title: title, content: content, folder: selectedFolder)
+            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon)
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
         }

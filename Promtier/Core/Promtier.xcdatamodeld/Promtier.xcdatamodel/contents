@@ -11,6 +11,7 @@
         <attribute name="promptDescription" optional="YES" attributeType="String"/>
         <attribute name="folder" optional="YES" attributeType="String"/>
         <attribute name="lastUsedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="icon" optional="YES" attributeType="String"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>

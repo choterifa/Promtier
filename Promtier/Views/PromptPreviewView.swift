@@ -17,8 +17,18 @@ struct PromptPreviewView: View {
         VStack(spacing: 0) {
             // Header Premium
             HStack(spacing: 15) {
-                // Icono de categoría
-                if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+                // Icono de categoría o personalizado
+                if let iconName = prompt.icon {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.15))
+                            .frame(width: 36, height: 36)
+                        
+                        Image(systemName: iconName)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
+                    }
+                } else if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(category.color.opacity(0.15))
