@@ -117,31 +117,31 @@ struct NewPromptView: View {
                         )
                 )
                 
-                // Organización compacta
-                HStack(spacing: 20) {
-                    // Favorito sutil
+                // Organización compacta con ScrollView funcional (Carrusel)
+                HStack(spacing: 12) {
+                    // Favorito sutil con botón instantáneo
                     Button(action: { isFavorite.toggle() }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             Image(systemName: isFavorite ? "star.fill" : "star")
                                 .foregroundColor(isFavorite ? .yellow : .secondary)
                             Text("Prioridad")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.primary.opacity(0.8))
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(isFavorite ? Color.yellow.opacity(0.1) : Color.primary.opacity(0.03))
+                                .fill(isFavorite ? Color.yellow.opacity(0.1) : Color.primary.opacity(0.04))
                         )
                     }
                     .buttonStyle(.plain)
                     
                     Divider().frame(height: 20)
                     
-                    // Categorías horizontales compactas
+                    // Categorías horizontales: Carrusel Real Corregido para Ventana de Nuevo Prompt
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 10) {
                             CategoryTag(title: "Sin categoría", icon: "folder", color: .gray, isSelected: selectedFolder == nil) {
                                 selectedFolder = nil
                             }
@@ -152,9 +152,16 @@ struct NewPromptView: View {
                                 }
                             }
                         }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 4)
+                        .fixedSize(horizontal: true, vertical: false) // FORZAR ANCHO PARA SCROLL
                     }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle()) // Área de interacción completa
                 }
                 .padding(.horizontal, 4)
+                .frame(height: 44) // Altura fija para asegurar estabilidad
+                .fixedSize(horizontal: false, vertical: true)
             }
             .padding(24)
         }
