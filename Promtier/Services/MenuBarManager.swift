@@ -93,12 +93,8 @@ class MenuBarManager: NSObject, ObservableObject {
         }
         
         // CONFIGURABLE: Efecto háptico al abrir
-        do {
-            if PreferencesManager.shared.hapticFeedback {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-            }
-        } catch {
-            print("Error al acceder a preferencias: \(error)")
+        if PreferencesManager.shared.hapticFeedback {
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         }
         
         popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)

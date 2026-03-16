@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct NewPromptView: View {
     @Environment(\.dismiss) private var dismiss
@@ -17,11 +18,8 @@ struct NewPromptView: View {
     @State private var title = ""
     @State private var content = ""
     @State private var description = ""
-    @State private var tags: [String] = []
-    @State private var tagInput = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
-    @State private var showingPreview = false
     
     // CONFIGURABLE: Modo edición
     @State private var editingPrompt: Prompt?
@@ -32,7 +30,7 @@ struct NewPromptView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header moderno con título y botón de cerrar
+            // Header moderno con título
             HStack(spacing: 20) {
                 Text(editingPrompt != nil ? "Editar Prompt" : "Nuevo Prompt")
                     .font(.title2)
@@ -40,22 +38,6 @@ struct NewPromptView: View {
                     .foregroundColor(.primary)
                 
                 Spacer()
-                
-                Button("Cancelar") {
-                    dismiss()
-                }
-                .keyboardShortcut(.escape)
-                .foregroundColor(.primary)
-                .frame(width: 36, height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                )
-                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
@@ -139,70 +121,6 @@ struct NewPromptView: View {
                             .foregroundColor(.primary)
                         
                         VStack(spacing: 16) {
-                            // Etiquetas
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Etiquetas")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.secondary)
-                                
-                                HStack(spacing: 12) {
-                                    TextField("Nueva etiqueta", text: $tagInput)
-                                        .textFieldStyle(PlainTextFieldStyle())
-                                        .font(.system(size: 16, weight: .medium))
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 12)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color(NSColor.controlBackgroundColor))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 12)
-                                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                                )
-                                        )
-                                    
-                                    Button("Agregar") {
-                                        addTag()
-                                    }
-                                    .disabled(tagInput.isEmpty)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(tagInput.isEmpty ? Color.gray : Color.blue)
-                                    )
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                
-                                // Tags existentes
-                                if !tags.isEmpty {
-                                    LazyVGrid(columns: [
-                                        GridItem(.adaptive(minimum: 100))
-                                    ], spacing: 10) {
-                                        ForEach(tags, id: \.self) { tag in
-                                            HStack(spacing: 8) {
-                                                Text(tag)
-                                                    .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(.blue)
-                                                Spacer()
-                                                Button(action: { removeTag(tag) }) {
-                                                    Image(systemName: "xmark.circle.fill")
-                                                        .foregroundColor(.red.opacity(0.8))
-                                                        .font(.system(size: 16))
-                                                }
-                                                .buttonStyle(PlainButtonStyle())
-                                            }
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(Color.blue.opacity(0.1))
-                                            .cornerRadius(8)
-                                        }
-                                    }
-                                }
-                            }
-                            
                             // Carpetas
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Carpeta")
@@ -240,43 +158,6 @@ struct NewPromptView: View {
                         }
                     }
                     .padding(.horizontal, 24)
-                    
-                    // Sección de vista previa
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Vista Previa")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        if !content.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Vista previa del contenido:")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                
-                                Text(content)
-                                    .padding(16)
-                                    .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(12)
-                                    .font(.system(size: 16))
-                                
-                                // Variables encontradas
-                                let variables = extractTemplateVariables()
-                                if !variables.isEmpty {
-                                    Text("Variables encontradas: \(variables.joined(separator: ", "))")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                        .padding(.top, 8)
-                                }
-                            }
-                        } else {
-                            Text("Agrega contenido para ver la vista previa")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 16))
-                                .padding(.vertical, 20)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 20)
                 }
             }
             
@@ -287,40 +168,24 @@ struct NewPromptView: View {
                 .padding(.horizontal, 24)
             
             // Footer moderno con botones
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 Button("Cancelar") {
                     dismiss()
                 }
                 .keyboardShortcut(.escape)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                )
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .tint(.primary)
                 
                 Spacer()
                 
-                Button(editingPrompt != nil ? "Guardar" : "Crear") {
+                Button(editingPrompt != nil ? "Guardar Cambios" : "Crear Prompt") {
                     savePrompt()
                 }
                 .disabled(title.isEmpty || content.isEmpty)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill((title.isEmpty || content.isEmpty) ? Color.gray : Color.blue)
-                )
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .tint(.blue)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
@@ -332,7 +197,6 @@ struct NewPromptView: View {
                 title = prompt.title
                 content = prompt.content
                 description = prompt.description ?? ""
-                tags = prompt.tags
                 selectedFolder = prompt.folder
                 isFavorite = prompt.isFavorite
             }
@@ -346,17 +210,16 @@ struct NewPromptView: View {
     private func savePrompt() {
         isSaving = true
         
-        let prompt = Prompt(
+        let newPrompt = Prompt(
             title: title,
             content: content,
             description: description.isEmpty ? nil : description,
-            tags: tags,
             folder: selectedFolder
         )
         
         if let editingPrompt = editingPrompt {
             // Actualizar prompt existente
-            var updatedPrompt = prompt
+            var updatedPrompt = newPrompt
             updatedPrompt.id = editingPrompt.id // Necesitamos poder asignar el ID
             updatedPrompt.createdAt = editingPrompt.createdAt
             updatedPrompt.modifiedAt = Date()
@@ -366,7 +229,7 @@ struct NewPromptView: View {
             _ = promptService.updatePrompt(updatedPrompt)
         } else {
             // Crear nuevo prompt
-            var newPrompt = prompt
+            var newPrompt = newPrompt
             newPrompt.isFavorite = isFavorite
             _ = promptService.createPrompt(newPrompt)
         }
@@ -374,36 +237,11 @@ struct NewPromptView: View {
         dismiss()
     }
     
-    private func addTag() {
-        let trimmedTag = tagInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedTag.isEmpty && !tags.contains(trimmedTag) {
-            tags.append(trimmedTag)
-            tagInput = ""
-        }
-    }
-    
-    private func removeTag(_ tag: String) {
-        tags.removeAll { $0 == tag }
-    }
-    
     private func getAvailableFolders() -> [String] {
-        // Obtener carpetas existentes de los prompts
-        let folders = Set(promptService.prompts.map { $0.folder }.compactMap { $0 })
-        return Array(folders).sorted()
-    }
-    
-    private func extractTemplateVariables() -> [String] {
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
-        let range = NSRange(location: 0, length: content.utf16.count)
-        
-        let matches = regex?.matches(in: content, options: [], range: range) ?? []
-        return matches.compactMap {
-            if let range = Range($0.range(at: 1), in: content) {
-                return String(content[range])
-            }
-            return nil
-        }
+        let allFolders = promptService.getAllPrompts()
+            .compactMap { $0.folder }
+        let uniqueFolders = Array(Set(allFolders))
+        return uniqueFolders.sorted()
     }
 }
 

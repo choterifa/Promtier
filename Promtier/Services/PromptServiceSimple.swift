@@ -45,21 +45,18 @@ class PromptServiceSimple: ObservableObject {
                 title: "Code Review",
                 content: "Por favor, revisa este código y proporciona feedback constructivo sobre:\n\n1. Calidad del código\n2. Buenas prácticas\n3. Posibles mejoras\n4. Seguridad\n\nCódigo:\n{{codigo}}",
                 description: "Plantilla para revisión de código",
-                tags: ["coding", "review", "feedback"],
                 folder: "Trabajo"
             ),
             Prompt(
                 title: "Blog Post Outline",
                 content: "Crea un esquema para un blog post sobre {{tema}} con:\n\n- Título atractivo\n- Introducción\n- Puntos principales (3-5)\n- Conclusión\n- Call to action\n\nPúblico objetivo: {{audiencia}}",
                 description: "Estructura para artículos de blog",
-                tags: ["writing", "blog", "content"],
                 folder: "Personal"
             ),
             Prompt(
                 title: "Email Profesional",
                 content: "Asunto: {{asunto}}\n\nEstimado/a {{nombre}},\n\n{{mensaje}}\n\nSaludos cordiales,\n{{firma}}",
                 description: "Plantilla para emails profesionales",
-                tags: ["email", "comunicacion", "trabajo"],
                 folder: "Trabajo"
             )
         ]
@@ -116,7 +113,6 @@ class PromptServiceSimple: ObservableObject {
         filteredPrompts = prompts.filter { prompt in
             prompt.title.lowercased().contains(lowercaseQuery) ||
             prompt.content.lowercased().contains(lowercaseQuery) ||
-            prompt.tags.joined(separator: " ").lowercased().contains(lowercaseQuery) ||
             (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
         }
         
@@ -130,6 +126,11 @@ class PromptServiceSimple: ObservableObject {
     func getFavoritePrompts() -> [Prompt] {
         return prompts.filter { $0.isFavorite }
             .sorted { $0.useCount > $1.useCount }
+    }
+    
+    /// Obtiene todos los prompts
+    func getAllPrompts() -> [Prompt] {
+        return prompts
     }
     
     /// Busca prompts por carpeta

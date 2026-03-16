@@ -10,7 +10,6 @@
         <attribute name="useCount" optional="NO" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="promptDescription" optional="YES" attributeType="String"/>
         <attribute name="folder" optional="YES" attributeType="String"/>
-        <attribute name="tags" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName="[String]"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>

@@ -21,7 +21,6 @@ extension PromptEntity {
             title: title,
             content: content,
             description: promptDescription,
-            tags: tags ?? [],
             folder: folder
         )
     }
@@ -31,7 +30,6 @@ extension PromptEntity {
         title = prompt.title
         content = prompt.content
         promptDescription = prompt.description
-        tags = prompt.tags
         folder = prompt.folder
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)
@@ -74,12 +72,10 @@ extension PromptEntity {
         // CONFIGURABLE: Búsqueda en múltiples campos
         let titlePredicate = NSPredicate(format: "title CONTAINS[cd] %@", query)
         let contentPredicate = NSPredicate(format: "content CONTAINS[cd] %@", query)
-        let tagsPredicate = NSPredicate(format: "ANY tags CONTAINS[cd] %@", query)
         
         request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
             titlePredicate,
-            contentPredicate,
-            tagsPredicate
+            contentPredicate
         ])
         
         request.sortDescriptors = [

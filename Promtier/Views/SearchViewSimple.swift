@@ -40,7 +40,7 @@ struct SearchViewSimple: View {
                             .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(NSColor.controlBackgroundColor))
+                                    .fill(Color.gray.opacity(0.05))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color.blue.opacity(0.3), lineWidth: 1)
@@ -88,7 +88,7 @@ struct SearchViewSimple: View {
                                 .frame(width: 36, height: 36)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color(NSColor.controlBackgroundColor))
+                                        .fill(Color.gray.opacity(0.05))
                                 )
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -97,11 +97,11 @@ struct SearchViewSimple: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
-            .background(Color(NSColor.windowBackgroundColor))
+            .background(Color.gray.opacity(0.15))
             
             // Separador moderno
             Rectangle()
-                .fill(Color.gray.opacity(0.2))
+                .fill(Color.gray.opacity(0.15))
                 .frame(height: 1)
                 .padding(.horizontal, 24)
             
@@ -112,6 +112,7 @@ struct SearchViewSimple: View {
                     
                     Image(systemName: "text.bubble")
                         .font(.system(size: 64))
+                        .foregroundColor(.secondary)
                         .foregroundColor(.secondary.opacity(0.6))
                     
                     VStack(spacing: 12) {
@@ -265,7 +266,7 @@ struct SearchViewSimple: View {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             }
         }
-        .onChange(of: searchText) { newValue in
+        .onChange(of: searchText) { _, newValue in
             // Optimización: Búsqueda con debounce para mejor rendimiento
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 if searchText == newValue {
@@ -324,7 +325,6 @@ struct SearchViewSimple: View {
                 if self.preferences.hapticFeedback {
                     NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
                 }
-                
                 // Sonido optimizado
                 if self.preferences.soundEnabled {
                     SoundService.shared.playCopySound()

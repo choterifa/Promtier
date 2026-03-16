@@ -30,6 +30,5 @@ extension PromptEntity {
     @NSManaged public var useCount: Int32
     @NSManaged public var promptDescription: String?
     @NSManaged public var folder: String?
-    @NSManaged public var tags: [String]?
     
 }

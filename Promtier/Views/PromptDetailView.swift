@@ -184,31 +184,6 @@ struct PromptDetailView: View {
                         .padding(.horizontal, 24)
                     }
                     
-                    // Etiquetas moderno
-                    if !prompt.tags.isEmpty {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Etiquetas")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            
-                            LazyVGrid(columns: [
-                                GridItem(.adaptive(minimum: 80))
-                            ], spacing: 8) {
-                                ForEach(prompt.tags, id: \.self) { tag in
-                                    Text(tag)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color.blue.opacity(0.1))
-                                        .foregroundColor(.blue)
-                                        .cornerRadius(16)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                    }
-                    
                     // Metadatos moderno
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Metadatos")
@@ -411,7 +386,6 @@ struct PromptDetailView: View {
         title: "Code Review",
         content: "Por favor, revisa este código: {{codigo}}",
         description: "Plantilla para revisión de código",
-        tags: ["coding", "review"],
         folder: "Trabajo"
     )
     

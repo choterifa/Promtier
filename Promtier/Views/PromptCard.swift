@@ -81,9 +81,9 @@ struct PromptCard: View {
         if isSelected {
             return Color.blue.opacity(0.12)
         } else if isHovered {
-            return Color(NSColor.controlBackgroundColor)
+            return Color.gray.opacity(0.08)
         } else {
-            return Color(NSColor.controlBackgroundColor).opacity(0.85)
+            return Color.gray.opacity(0.05)
         }
     }
     
@@ -103,9 +103,8 @@ struct PromptCard: View {
         PromptCard(
             prompt: Prompt(
                 title: "Code Review",
-                content: "Por favor, revisa este código y proporciona feedback constructivo sobre arquitectura y buenas prácticas.",
+                content: "Por favor, revisa este código y proporciona feedback constructivo sobre:\n\n1. Arquitectura y diseño\n2. Buenas prácticas\n3. Performance\n4. Seguridad\n\n{{codigo}}",
                 description: "Plantilla para revisión de código",
-                tags: ["coding", "review"],
                 folder: "Trabajo"
             ),
             isSelected: false,
@@ -120,7 +119,6 @@ struct PromptCard: View {
                 title: "Blog Post Outline",
                 content: "Crea un esquema para un blog post sobre {{tema}} con introducción, puntos clave y conclusión.",
                 description: "Plantilla para blog posts",
-                tags: ["writing", "blog"],
                 folder: "Contenido"
             ),
             isSelected: true,
@@ -135,7 +133,6 @@ struct PromptCard: View {
                 title: "Email Profesional",
                 content: "Asunto: {{asunto}}\n\nCuerpo del email profesional...",
                 description: "Plantilla de email",
-                tags: ["email", "profesional"],
                 folder: "Trabajo"
             ),
             isSelected: false,

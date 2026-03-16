@@ -127,7 +127,6 @@ class PromptService: ObservableObject {
         filteredPrompts = prompts.filter { prompt in
             prompt.title.lowercased().contains(lowercaseQuery) ||
             prompt.content.lowercased().contains(lowercaseQuery) ||
-            prompt.tags.joined(separator: " ").lowercased().contains(lowercaseQuery) ||
             (prompt.description?.lowercased().contains(lowercaseQuery) ?? false)
         }
         
