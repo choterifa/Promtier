@@ -22,6 +22,10 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @Published var isPopoverShown = false
     
+    // Servicios compartidos
+    private let promptService = PromptServiceSimple()
+    private let preferencesManager = PreferencesManager.shared
+    
     // CONFIGURABLE: Gestor de atajos (inicialización lazy)
     private var shortcutManager: ShortcutManager?
     
@@ -85,8 +89,8 @@ class MenuBarManager: NSObject, ObservableObject {
             
             // CONFIGURABLE: Vista principal SwiftUI
             let contentView = SearchViewSimple()
-                .environmentObject(PromptServiceSimple())
-                .environmentObject(PreferencesManager.shared)
+                .environmentObject(self.promptService)
+                .environmentObject(self.preferencesManager)
                 .environmentObject(self)
             
             popover?.contentViewController = NSHostingController(rootView: contentView)

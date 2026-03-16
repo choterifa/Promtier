@@ -81,14 +81,16 @@ struct PromptCard: View {
             x: 0,
             y: isHovered ? 2 : 1
         )
-        .onTapGesture {
-            // Optimización: Tap más responsivo
-            onTap()
-        }
-        .onTapGesture(count: 2) {
-            // Optimización: Double tap más eficiente
-            onDoubleTap()
-        }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                onTap()
+            }
+        )
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                onDoubleTap()
+            }
+        )
         .onHover { hovering in
             // Optimización: Hover más eficiente
             onHover(hovering)

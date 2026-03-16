@@ -15,7 +15,6 @@ struct SearchViewSimple: View {
     @EnvironmentObject var promptService: PromptServiceSimple
     @EnvironmentObject var preferences: PreferencesManager
     
-    @State private var searchText = ""
     @State private var selectedCategory: String?
     @State private var selectedPrompt: Prompt?
     @State private var showingPromptDetail = false
@@ -65,7 +64,7 @@ struct SearchViewSimple: View {
                         .foregroundColor(.blue)
                         .font(.title3)
                     
-                    TextField("Buscar prompts...", text: $searchText)
+                    TextField("Buscar prompts...", text: $promptService.searchQuery)
                         .textFieldStyle(PlainTextFieldStyle())
                         .font(.system(size: 16, weight: .medium))
                         .padding(.horizontal, 16)
@@ -129,16 +128,16 @@ struct SearchViewSimple: View {
                         .foregroundColor(.secondary.opacity(0.6))
                     
                     VStack(spacing: 12) {
-                        Text(searchText.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
+                        Text(promptService.searchQuery.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.primary)
                         
-                        Text(searchText.isEmpty ? "Crea tu primer prompt para comenzar" : "Intenta con otros términos de búsqueda")
+                        Text(promptService.searchQuery.isEmpty ? "Crea tu primer prompt para comenzar" : "Intenta con otros términos de búsqueda")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
                     
-                    if searchText.isEmpty {
+                    if promptService.searchQuery.isEmpty {
                         Button("Crear Primer Prompt") {
                             selectedPrompt = nil
                             showingNewPrompt = true
@@ -266,19 +265,10 @@ struct SearchViewSimple: View {
         }
         .onAppear {
             // Optimización: Inicialización más eficiente
-            promptService.searchQuery = searchText
             promptService.selectedCategory = selectedCategory
             // Asegurar foco en la ventana
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-            }
-        }
-        .onChange(of: searchText) { _, newValue in
-            // Optimización: Búsqueda con debounce para mejor rendimiento
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                if searchText == newValue {
-                    promptService.searchQuery = newValue
-                }
             }
         }
         .onChange(of: selectedCategory) { _, newValue in
@@ -327,52 +317,39 @@ struct SearchViewSimple: View {
     
     /// Usa un prompt (copia al clipboard) - Versión optimizada
     private func usePrompt(_ prompt: Prompt) {
-        // Usar cola de background para no bloquear UI
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.promptService.usePrompt(prompt)
-            
-            // Efectos de retroalimentación en cola principal
-            DispatchQueue.main.async {
-                // Efecto háptico optimizado
-                if self.preferences.hapticFeedback {
-                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
-                }
-                // Sonido optimizado
-                if self.preferences.soundEnabled {
-                    SoundService.shared.playCopySound()
-                }
-                
-                // Cerrar preview si está abierto
-                if self.showingPreview {
-                    self.showingPreview = false
-                }
-            }
+        self.promptService.usePrompt(prompt)
+        
+        // Efectos de retroalimentación
+        if self.preferences.hapticFeedback {
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+        }
+        
+        if self.preferences.soundEnabled {
+            SoundService.shared.playCopySound()
+        }
+        
+        // Cerrar preview si está abierto
+        if self.showingPreview {
+            self.showingPreview = false
         }
     }
     
     /// Cambia el estado de favorito de un prompt - Versión optimizada
     private func toggleFavorite(_ prompt: Prompt) {
-        // Preparar actualización en background
         var updatedPrompt = prompt
         updatedPrompt.isFavorite.toggle()
         
-        // Actualizar en cola principal para evitar threading issues
-        DispatchQueue.main.async {
-            _ = self.promptService.updatePrompt(updatedPrompt)
-            
-            // Sonido
-            if self.preferences.soundEnabled {
-                SoundService.shared.playInteractionSound()
-            }
+        _ = self.promptService.updatePrompt(updatedPrompt)
+        
+        // Sonido
+        if self.preferences.soundEnabled {
+            SoundService.shared.playInteractionSound()
         }
     }
     
     /// Elimina un prompt - Versión optimizada
     private func deletePrompt(_ prompt: Prompt) {
-        // Actualizar en cola principal para evitar threading issues
-        DispatchQueue.main.async {
-            _ = self.promptService.deletePrompt(prompt)
-        }
+        _ = self.promptService.deletePrompt(prompt)
     }
     
     /// Exporta todos los prompts a un archivo de texto
