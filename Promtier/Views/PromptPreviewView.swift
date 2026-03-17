@@ -10,97 +10,14 @@ import SwiftUI
 
 struct PromptPreviewView: View {
     let prompt: Prompt
+    @State private var showingFullScreenImage: Data? = nil
     @State private var isVisible = false
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header Premium
-            HStack(spacing: 15) {
-                // Icono de categoría o personalizado
-                if let iconName = prompt.icon {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        
-                        Image(systemName: iconName)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
-                    }
-                } else if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(category.color.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        
-                        Image(systemName: category.icon)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(category.color)
-                    }
-                } else {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.blue.opacity(0.8))
-                        .frame(width: 36, height: 36)
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(prompt.title)
-                        .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    if let folder = prompt.folder {
-                        Text(folder)
-                            .font(.system(size: 11 * preferences.fontSize.scale, weight: .medium))
-                            .foregroundColor(.secondary.opacity(0.7))
-                            .textCase(.uppercase)
-                    }
-                }
-                
-                Spacer()
-                
-                // Badge de variables si tiene
-                if prompt.hasTemplateVariables() {
-                    HStack(spacing: 4) {
-                        Image(systemName: "cube.transparent.fill")
-                            .font(.system(size: 10))
-                        Text("\(prompt.extractTemplateVariables().count)")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundColor(.blue)
-                    .cornerRadius(8)
-                }
-                
-                // Toggle para posición de imágenes (Flecha)
-                if !prompt.showcaseImages.isEmpty {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            preferences.previewImagesFirst.toggle()
-                        }
-                        HapticService.shared.playLight()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .bold))
-                            Image(systemName: "photo")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
-                    }
-                    .buttonStyle(.plain)
-                    .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 12)
+            // ... (rest of the body)
+            headerView
             
             // Separador sutil
             Rectangle()
@@ -109,30 +26,7 @@ struct PromptPreviewView: View {
                 .padding(.horizontal, 24)
             
             // Contenido Estilizado con Imágenes Prioritarias
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Galería al inicio si la preferencia es true
-                    if preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
-                        showcaseGallery
-                        Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
-                    }
-                    
-                    Text(highlightContent(prompt.content))
-                        .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
-                        .lineSpacing(6)
-                        .foregroundColor(.primary.opacity(0.9))
-                        .textSelection(.enabled)
-                    
-                    // Galería al final si la preferencia es false
-                    if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
-                        Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
-                        showcaseGallery
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            contentScrollView
         }
         .frame(width: 500, height: 400)
         .background(
@@ -141,11 +35,132 @@ struct PromptPreviewView: View {
                 Color(NSColor.windowBackgroundColor).opacity(0.4)
             }
         )
+        .sheet(item: Binding(
+            get: { showingFullScreenImage.map { IdentifiableData(value: $0) } },
+            set: { showingFullScreenImage = $0?.value }
+        )) { item in
+            FullScreenImageView(imageData: item.value)
+        }
         .onAppear {
             isVisible = true
         }
         .onDisappear {
             isVisible = false
+        }
+    }
+    
+    private var headerView: some View {
+        HStack(spacing: 15) {
+            // Icono de categoría o personalizado
+            if let iconName = prompt.icon {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: iconName)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
+                }
+            } else if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(category.color.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: category.icon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(category.color)
+                }
+            } else {
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.blue.opacity(0.8))
+                    .frame(width: 36, height: 36)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(prompt.title)
+                    .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                if let folder = prompt.folder {
+                    Text(folder)
+                        .font(.system(size: 11 * preferences.fontSize.scale, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .textCase(.uppercase)
+                }
+            }
+            
+            Spacer()
+            
+            // Badge de variables si tiene
+            if prompt.hasTemplateVariables() {
+                HStack(spacing: 4) {
+                    Image(systemName: "cube.transparent.fill")
+                        .font(.system(size: 10))
+                    Text("\(prompt.extractTemplateVariables().count)")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue.opacity(0.1))
+                .foregroundColor(.blue)
+                .cornerRadius(8)
+            }
+            
+            // Toggle para posición de imágenes (Flecha)
+            if !prompt.showcaseImages.isEmpty {
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        preferences.previewImagesFirst.toggle()
+                    }
+                    HapticService.shared.playLight()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .bold))
+                        Image(systemName: "photo")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+                }
+                .buttonStyle(.plain)
+                .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+    }
+    
+    private var contentScrollView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                // Galería al inicio si la preferencia es true
+                if preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                    showcaseGallery
+                    Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
+                }
+                
+                Text(highlightContent(prompt.content))
+                    .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
+                    .lineSpacing(6)
+                    .foregroundColor(.primary.opacity(0.9))
+                    .textSelection(.enabled)
+                
+                // Galería al final si la preferencia es false
+                if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                    Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
+                    showcaseGallery
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
     
@@ -169,7 +184,7 @@ struct PromptPreviewView: View {
                             Image(nsImage: nsImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 200, height: 140, alignment: .top)
+                                .frame(width: 280, height: 180, alignment: .top)
                                 .clipped()
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .overlay(
@@ -177,6 +192,9 @@ struct PromptPreviewView: View {
                                         .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                                 )
                                 .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+                                .onTapGesture {
+                                    showingFullScreenImage = imageData
+                                }
                         }
                     }
                 }

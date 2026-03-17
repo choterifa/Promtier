@@ -21,6 +21,7 @@ struct ZenEditorView: View {
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
     @Binding var triggerAppleIntelligence: Bool
+    @Binding var showingPremiumFor: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +33,13 @@ struct ZenEditorView: View {
                 
                 Spacer()
                 
-                Button(action: { insertionRequest = "{{variable}}" }) {
+                Button(action: { 
+                    if preferences.isPremiumActive {
+                        insertionRequest = "{{variable}}" 
+                    } else {
+                        showingPremiumFor = "Variables Dinámicas"
+                    }
+                }) {
                     HStack {
                         Image(systemName: "curlybraces")
                         Text("Añadir Variable")
@@ -83,7 +90,8 @@ struct ZenEditorView: View {
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    isPremium: preferences.isPremiumActive
                 )
                 .focused($isEditorFocused)
             }

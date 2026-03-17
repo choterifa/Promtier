@@ -27,6 +27,7 @@ struct NewPromptView: View {
     @State private var showingZenEditor = false
     @State private var showingIconPicker = false
     @State private var isDragging = false
+    @State private var showingFullScreenImage: Data? = nil
     
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
@@ -38,6 +39,7 @@ struct NewPromptView: View {
     @State private var triggerAppleIntelligence: Bool = false
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
+    @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
     
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
@@ -62,10 +64,12 @@ struct NewPromptView: View {
                 Divider()
                     .padding(.horizontal, 24)
                 
+                categoryPicker
+                
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
+                    VStack(spacing: 24) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.7, alignment: .top)
+                            .frame(height: geometry.size.height * 0.65, alignment: .top)
                         
                         imageGallery
                     }
@@ -75,6 +79,12 @@ struct NewPromptView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(backgroundView)
+        .sheet(item: Binding(
+            get: { showingFullScreenImage.map { IdentifiableData(value: $0) } },
+            set: { showingFullScreenImage = $0?.value }
+        )) { item in
+            FullScreenImageView(imageData: item.value)
+        }
         .overlay {
             if showingZenEditor {
                 ZenEditorView(
@@ -87,7 +97,8 @@ struct NewPromptView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
-                    triggerAppleIntelligence: $triggerAppleIntelligence
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    showingPremiumFor: $showingPremiumFor
                 )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -107,6 +118,12 @@ struct NewPromptView: View {
                     .allowsHitTesting(false)
                     .zIndex(300)
             }
+        }
+        .sheet(item: Binding(
+            get: { showingPremiumFor.map { IdentifiableString(value: $0) } },
+            set: { showingPremiumFor = $0?.value }
+        )) { item in
+            PremiumUpsellView(featureName: item.value)
         }
         .onAppear {
             if let prompt = prompt {
@@ -202,9 +219,13 @@ struct NewPromptView: View {
                     }
                 
                 HStack(spacing: 4) {
+                    // Botón Variables (Premium)
                     Button(action: { 
-                        insertionRequest = "{{variable}}"
-                        // Micro-interacción: trigger haptic or animation value could be added here
+                        if preferences.isPremiumActive {
+                            insertionRequest = "{{variable}}"
+                        } else {
+                            showingPremiumFor = "Variables Dinámicas"
+                        }
                     }) {
                         Image(systemName: "curlybraces")
                             .font(.system(size: 12, weight: .bold))
@@ -214,6 +235,27 @@ struct NewPromptView: View {
                     }
                     .buttonStyle(ScaleButtonStyle())
                     .help("Insertar Variable")
+                    
+                    // Botón Snippets '/' (Premium)
+                    Button(action: {
+                        if preferences.isPremiumActive {
+                            showSnippets = true
+                            snippetSearchQuery = ""
+                        } else {
+                            showingPremiumFor = "Snippets Reutilizables"
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(width: 28, height: 28)
+                            Text("/")
+                                .font(.system(size: 14, weight: .black, design: .monospaced))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .help("Insertar Snippet")
 
                     // Botón historial (solo en edición, solo Premium)
                     if prompt != nil && preferences.isPremiumActive && !(prompt?.versionHistory.isEmpty ?? true) {
@@ -242,19 +284,7 @@ struct NewPromptView: View {
                         }
                     }
 
-                    Button(action: { 
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            isFavorite.toggle()
-                        }
-                    }) {
-                        Image(systemName: isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(isFavorite ? .yellow : .secondary.opacity(0.5))
-                            .padding(8)
-                            .background(Circle().fill(isFavorite ? Color.yellow.opacity(0.1) : Color.clear))
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .help(isFavorite ? "Quitar de favoritos" : "Marcar como favorito")
+
 
                     // Botón Apple Intelligence (Único y rápido)
                     Button(action: {
@@ -289,64 +319,6 @@ struct NewPromptView: View {
             
             Divider().padding(.horizontal, 20)
             
-            // Chips de Categorías con Carrusel
-            HStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    HStack(spacing: 8) {
-                        Button(action: { navigateCategory(forward: false, proxy: proxy) }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 24, height: 24)
-                                .background(Circle().fill(Color.primary.opacity(0.05)))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.leading, 20)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                CategoryChip(title: "Sin categoría", icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
-                                    selectedFolder = nil
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        proxy.scrollTo("none", anchor: .center)
-                                    }
-                                }
-                                .id("none")
-                                
-                                ForEach(promptService.folders) { folder in
-                                    CategoryChip(
-                                        title: folder.name,
-                                        icon: folder.icon ?? "folder.fill",
-                                        color: Color(hex: folder.displayColor),
-                                        isSelected: selectedFolder == folder.name
-                                    ) {
-                                        selectedFolder = folder.name
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            proxy.scrollTo(folder.name, anchor: .center)
-                                        }
-                                    }
-                                    .id(folder.name)
-                                }
-                            }
-                        }
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: selectedFolder)
-                        
-                        Button(action: { navigateCategory(forward: true, proxy: proxy) }) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 24, height: 24)
-                                .background(Circle().fill(Color.primary.opacity(0.05)))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.trailing, 20)
-                    }
-                }
-            }
-            .padding(.vertical, 10)
-            
-            Divider().padding(.horizontal, 20)
-            
             // Área de Texto
             ZStack(alignment: .topLeading) {
                 if content.isEmpty {
@@ -366,7 +338,8 @@ struct NewPromptView: View {
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    isPremium: preferences.isPremiumActive
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -421,13 +394,16 @@ struct NewPromptView: View {
                                 Image(nsImage: nsImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 80, height: 60, alignment: .top)
+                                    .frame(width: 140, height: 100, alignment: .top)
                                     .clipped()
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
+                                        RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                                     )
+                                    .onTapGesture {
+                                        showingFullScreenImage = showcaseImages[index]
+                                    }
                                 
                                 Button(action: { showcaseImages.remove(at: index) }) {
                                     Image(systemName: "xmark.circle.fill")
@@ -636,6 +612,64 @@ struct NewPromptView: View {
             }
         }
     }
+    
+    private var categoryPicker: some View {
+        HStack(spacing: 0) {
+            ScrollViewReader { proxy in
+                HStack(spacing: 8) {
+                    Button(action: { navigateCategory(forward: false, proxy: proxy) }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .frame(width: 24, height: 24)
+                            .background(Circle().fill(Color.primary.opacity(0.05)))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, 24)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            CategoryChip(title: "Sin categoría", icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
+                                selectedFolder = nil
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    proxy.scrollTo("none", anchor: .center)
+                                }
+                            }
+                            .id("none")
+                            
+                            ForEach(promptService.folders) { folder in
+                                CategoryChip(
+                                    title: folder.name,
+                                    icon: folder.icon ?? "folder.fill",
+                                    color: Color(hex: folder.displayColor),
+                                    isSelected: selectedFolder == folder.name
+                                ) {
+                                    selectedFolder = folder.name
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        proxy.scrollTo(folder.name, anchor: .center)
+                                    }
+                                }
+                                .id(folder.name)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    
+                    Button(action: { navigateCategory(forward: true, proxy: proxy) }) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .frame(width: 24, height: 24)
+                            .background(Circle().fill(Color.primary.opacity(0.05)))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 24)
+                }
+            }
+        }
+        .background(Color.primary.opacity(0.02))
+        .overlay(Divider(), alignment: .bottom)
+    }
 }
 
 // MARK: - Components
@@ -680,4 +714,15 @@ struct CategoryChip: View {
     NewPromptView(onClose: {})
         .environmentObject(PromptService())
         .environmentObject(PreferencesManager.shared)
+}
+
+// Helper para convertir String a Identifiable para .sheet
+struct IdentifiableString: Identifiable {
+    let id = UUID()
+    let value: String
+}
+
+struct IdentifiableData: Identifiable {
+    let id = UUID()
+    let value: Data
 }

@@ -20,6 +20,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    var isPremium: Bool
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -194,7 +195,7 @@ struct HighlightedEditor: NSViewRepresentable {
         }
         
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
-            if replacementString == "/" {
+            if replacementString == "/" && self.parent.isPremium {
                 DispatchQueue.main.async {
                     self.parent.showSnippets = true
                     self.parent.snippetSearchQuery = ""
