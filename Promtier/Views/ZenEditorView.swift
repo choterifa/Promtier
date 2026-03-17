@@ -14,6 +14,7 @@ struct ZenEditorView: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @FocusState private var isEditorFocused: Bool
+    @State private var insertionRequest: String? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -24,6 +25,21 @@ struct ZenEditorView: View {
                     .textFieldStyle(.plain)
                 
                 Spacer()
+                
+                Button(action: { insertionRequest = "{{variable}}" }) {
+                    HStack {
+                        Image(systemName: "curlybraces")
+                        Text("Añadir Variable")
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 8)
                 
                 Button(action: onDone) {
                     HStack {
@@ -52,10 +68,12 @@ struct ZenEditorView: View {
                         .padding(.leading, 4)
                 }
                 
-                TextEditor(text: $content)
-                    .font(.system(size: 18 * preferences.fontSize.scale))
-                    .scrollContentBackground(.hidden)
-                    .focused($isEditorFocused)
+                HighlightedEditor(
+                    text: $content,
+                    insertionRequest: $insertionRequest,
+                    fontSize: 18 * preferences.fontSize.scale
+                )
+                .focused($isEditorFocused)
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 32)

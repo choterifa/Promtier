@@ -28,6 +28,8 @@ struct NewPromptView: View {
     @State private var showingIconPicker = false
     @State private var isDragging = false
     
+    @State private var insertionRequest: String? = nil
+    
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
@@ -44,7 +46,7 @@ struct NewPromptView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.7)
+                            .frame(height: geometry.size.height * 0.7, alignment: .top)
                         
                         imageGallery
                     }
@@ -149,14 +151,32 @@ struct NewPromptView: View {
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                 
                 HStack(spacing: 4) {
-                    Button(action: { isFavorite.toggle() }) {
+                    Button(action: { 
+                        insertionRequest = "{{variable}}"
+                        // Micro-interacción: trigger haptic or animation value could be added here
+                    }) {
+                        Image(systemName: "curlybraces")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Circle().fill(Color.blue.opacity(0.1)))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .help("Insertar Variable")
+
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            isFavorite.toggle()
+                        }
+                    }) {
                         Image(systemName: isFavorite ? "star.fill" : "star")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(isFavorite ? .yellow : .secondary.opacity(0.5))
                             .padding(8)
                             .background(Circle().fill(isFavorite ? Color.yellow.opacity(0.1) : Color.clear))
+                            .scaleEffect(isFavorite ? 1.2 : 1.0)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ScaleButtonStyle())
                     .help(isFavorite ? "Quitar de favoritos" : "Marcar como favorito")
 
                     Button(action: { showingZenEditor = true }) {
@@ -170,6 +190,7 @@ struct NewPromptView: View {
                     .help("Editor Zen")
                 }
             }
+            .frame(minHeight: 44) // Asegura que el título sea visible
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 10)
@@ -216,6 +237,7 @@ struct NewPromptView: View {
                                 }
                             }
                         }
+                        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: selectedFolder)
                         
                         Button(action: { navigateCategory(forward: true, proxy: proxy) }) {
                             Image(systemName: "chevron.right")
@@ -243,23 +265,25 @@ struct NewPromptView: View {
                         .font(.system(size: 15 * preferences.fontSize.scale))
                 }
                 
-                TextEditor(text: $content)
-                    .font(.system(size: 15 * preferences.fontSize.scale, design: .default))
-                    .scrollContentBackground(.hidden)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .frame(maxHeight: .infinity)
+                HighlightedEditor(
+                    text: $content,
+                    insertionRequest: $insertionRequest,
+                    fontSize: 15 * preferences.fontSize.scale
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
                 // Botón Zen removido de aquí (movido al título)
             }
             
             HStack {
+                Spacer()
                 Label("\(content.count) caracteres", systemImage: "character.cursor.ibeam")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.secondary.opacity(0.6))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
-                Spacer()
             }
         }
         .background(
@@ -445,6 +469,16 @@ struct NewPromptView: View {
             }
         }
         return found
+    }
+}
+
+// MARK: - Components
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
