@@ -27,6 +27,7 @@ struct NewPromptView: View {
     @State private var showingZenEditor = false
     @State private var showingIconPicker = false
     @State private var isDragging = false
+    @State private var draggedImageIndex: Int? = nil
     @State private var showingFullScreenImage: Data? = nil
     
     @State private var tags: [String] = []
@@ -478,29 +479,46 @@ struct NewPromptView: View {
                 ForEach(0..<3, id: \.self) { index in
                     ZStack(alignment: .topTrailing) {
                         if index < showcaseImages.count {
-                            if let nsImage = NSImage(data: showcaseImages[index]) {
-                                Image(nsImage: nsImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 140, height: 100, alignment: .top)
-                                    .clipped()
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                    )
-                                    .onTapGesture {
-                                        showingFullScreenImage = showcaseImages[index]
+                            Group {
+                                if let nsImage = NSImage(data: showcaseImages[index]) {
+                                    Image(nsImage: nsImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 140, height: 100, alignment: .top)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                        )
+                                        .onTapGesture {
+                                            showingFullScreenImage = showcaseImages[index]
+                                        }
+                                    
+                                    Button(action: { showcaseImages.remove(at: index) }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.red)
+                                            .background(Circle().fill(Color.white))
                                     }
-                                
-                                Button(action: { showcaseImages.remove(at: index) }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.red)
-                                        .background(Circle().fill(Color.white))
+                                    .buttonStyle(.plain)
+                                    .offset(x: 4, y: -4)
                                 }
-                                .buttonStyle(.plain)
-                                .offset(x: 4, y: -4)
+                            }
+                            .onDrag {
+                                self.draggedImageIndex = index
+                                return NSItemProvider(object: "\(index)" as NSString)
+                            }
+                            .onDrop(of: [.plainText], isTargeted: .constant(false)) { providers in
+                                if let draggedIndex = self.draggedImageIndex, draggedIndex != index {
+                                    withAnimation {
+                                        let image = showcaseImages.remove(at: draggedIndex)
+                                        showcaseImages.insert(image, at: index)
+                                    }
+                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                                }
+                                self.draggedImageIndex = nil
+                                return true
                             }
                         } else {
                             RoundedRectangle(cornerRadius: 12)

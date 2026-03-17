@@ -15,6 +15,10 @@ struct SearchViewSimple: View {
     @State private var hoveredPrompt: Prompt?
     @State private var fillingVariablesFor: Prompt?
     @State private var showParticles: Bool = false
+    @State private var isDraggingFile: Bool = false
+    @State private var importMessage: String? = nil
+    @State private var showingImportAlert: Bool = false
+    @State private var importData: Data? = nil
     
     var body: some View {
         ZStack {
@@ -120,6 +124,27 @@ struct SearchViewSimple: View {
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
+        .onDrop(of: [UTType.fileURL, UTType.json], isTargeted: $isDraggingFile) { providers in
+            handleFileDrop(providers: providers)
+            return true
+        }
+        .overlay {
+            importOverlays
+        }
+        .alert("Importar Datos", isPresented: $showingImportAlert) {
+            Button("Importar", role: .none) {
+                if let data = importData {
+                    let results = promptService.importPromptsFromData(data)
+                    importMessage = "Importación completada: \(results.success) prompts añadidos"
+                    HapticService.shared.playStrong()
+                    showParticles = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
+                }
+            }
+            Button("Cancelar", role: .cancel) { importData = nil }
+        } message: {
+            Text("¿Quieres importar los prompts de este archivo? Los actuales no se borrarán.")
+        }
         .onChange(of: preferences.windowWidth) { newWidth in
             let threshold: CGFloat = 565
             
@@ -627,6 +652,46 @@ struct SearchViewSimple: View {
                     alert.alertStyle = .critical
                     alert.addButton(withTitle: "OK")
                     alert.runModal()
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var importOverlays: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.blue.opacity(0.3), lineWidth: isDraggingFile ? 3 : 0)
+                .padding(4)
+                .allowsHitTesting(false)
+            
+            if let msg = importMessage {
+                VStack {
+                    Spacer()
+                    Text(msg)
+                        .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                        .padding(.bottom, 20)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+    
+    private func handleFileDrop(providers: [NSItemProvider]) {
+        for provider in providers {
+            provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url = url, url.pathExtension.lowercased() == "json" {
+                    if let data = try? Data(contentsOf: url) {
+                        DispatchQueue.main.async {
+                            self.importData = data
+                            self.showingImportAlert = true
+                        }
+                    }
                 }
             }
         }

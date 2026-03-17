@@ -205,10 +205,18 @@ struct PromptCard: View {
         .onHover { hovering in
             onHover(hovering)
         }
-        // SOPORTE DRAG AND DROP
+        // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
-            // Proveer el ID del prompt para mover entre categorías
-            NSItemProvider(object: prompt.id.uuidString as NSString)
+            // Proveer el ID para lógica interna y el contenido para apps externas
+            let provider = NSItemProvider(object: prompt.id.uuidString as NSString)
+            
+            // Añadir el contenido como representación de texto plano para apps externas
+            provider.registerDataRepresentation(forTypeIdentifier: UTType.plainText.identifier, visibility: .all) { completion in
+                completion(prompt.content.data(using: .utf8), nil)
+                return nil
+            }
+            
+            return provider
         }
         .onDrop(of: [.image, .fileURL], isTargeted: $isTargetedForDrop) { providers in
             // Lógica para añadir imágenes al prompt vía Drop

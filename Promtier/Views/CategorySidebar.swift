@@ -14,6 +14,7 @@ struct CategorySidebar: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var showingFolderManager = false
+    @State private var draggedFolder: Folder? = nil
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
@@ -131,10 +132,19 @@ struct CategorySidebar: View {
                             action: {
                                 promptService.selectedCategory = folder.name
                             },
-                            dropHandler: { promptId in
-                                movePrompt(id: promptId, to: folder.name)
+                            dropHandler: { id in
+                                // Diferenciar entre mover un prompt o reordenar carpetas
+                                if let uuid = UUID(uuidString: id), promptService.prompts.contains(where: { $0.id == uuid }) {
+                                    movePrompt(id: id, to: folder.name)
+                                } else if let dragged = self.draggedFolder, dragged.id.uuidString == id {
+                                    reorderFolder(dragged, to: folder)
+                                }
                             }
                         )
+                        .onDrag {
+                            self.draggedFolder = folder
+                            return NSItemProvider(object: folder.id.uuidString as NSString)
+                        }
                         .contextMenu {
                             Button {
                                 menuBarManager.folderToEdit = folder
@@ -187,6 +197,21 @@ struct CategorySidebar: View {
         updated.isFavorite = true
         _ = promptService.updatePrompt(updated)
         
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+    
+    private func reorderFolder(_ source: Folder, to destination: Folder) {
+        var folders = promptService.folders
+        guard let sourceIndex = folders.firstIndex(where: { $0.id == source.id }),
+              let destIndex = folders.firstIndex(where: { $0.id == destination.id }) else { return }
+        
+        withAnimation {
+            let folder = folders.remove(at: sourceIndex)
+            folders.insert(folder, at: destIndex)
+            promptService.reorderFolders(folders)
+        }
+        
+        self.draggedFolder = nil
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
 }

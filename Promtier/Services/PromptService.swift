@@ -118,19 +118,42 @@ class PromptService: ObservableObject {
         }
     }
     
-    /// Carga todas las carpetas desde Core Data
+    /// Carga todas las carpetas desde Core Data aplicando el orden guardado
     func loadFolders() {
         let request = FolderEntity.fetchAll(in: dataController.viewContext)
         
         do {
             let entities = try dataController.viewContext.fetch(request)
-            let loadedFolders = entities.map { $0.toFolder() }
+            var loadedFolders = entities.map { $0.toFolder() }
+            
+            // Aplicar orden personalizado guardado en UserDefaults
+            if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder") {
+                loadedFolders.sort { folder1, folder2 in
+                    let index1 = savedOrder.firstIndex(of: folder1.id.uuidString) ?? Int.max
+                    let index2 = savedOrder.firstIndex(of: folder2.id.uuidString) ?? Int.max
+                    
+                    if index1 != index2 {
+                        return index1 < index2
+                    }
+                    return folder1.name < folder2.name // Backup order
+                }
+            }
             
             DispatchQueue.main.async {
                 self.folders = loadedFolders
             }
         } catch {
             print("Error cargando carpetas: \(error)")
+        }
+    }
+    
+    /// Persiste un nuevo orden de carpetas
+    func reorderFolders(_ folders: [Folder]) {
+        let order = folders.map { $0.id.uuidString }
+        UserDefaults.standard.set(order, forKey: "folderSortOrder")
+        
+        DispatchQueue.main.async {
+            self.folders = folders
         }
     }
     
