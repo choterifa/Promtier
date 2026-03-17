@@ -228,6 +228,9 @@ struct FolderManagerView: View {
         }
         .opacity(isReady ? 1 : 0)
         .onAppear {
+            withAnimation {
+                preferences.showSidebar = true
+            }
             if let initialFolder = folderToEdit {
                 startEditing(initialFolder)
             }

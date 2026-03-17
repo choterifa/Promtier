@@ -307,25 +307,53 @@ class PromptService: ObservableObject {
             }
         }
         
-        // Filtrar por texto si hay consulta - Búsqueda Inteligente (Ponderada)
+        // Filtrar por texto si hay consulta - Búsqueda Inteligente (Ponderada y Validada)
         if !query.isEmpty {
-            let lowercaseQuery = query.lowercased()
+            // VALIDACIÓN: Limpiar espacios extra y normalizar para ignorar acentos/diacríticos
+            let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedQuery.isEmpty else { 
+                filteredPrompts = filtered
+                return 
+            }
+            
+            // Normalización para búsqueda robusta (ignora acentos: "canción" == "cancion")
+            let normalizedQuery = trimmedQuery.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            
+            // Dividir por palabras para permitir búsqueda no secuencial (ej: "email support" coincide con "Support for Email")
+            let keywords = normalizedQuery.components(separatedBy: .whitespaces)
+                .filter { !$0.isEmpty }
             
             // Asignar puntuaciones para ordenación inteligente
             let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
                 var score = 0
-                let title = prompt.title.lowercased()
-                let content = prompt.content.lowercased()
                 
-                if title == lowercaseQuery { score += 100 } // Coincidencia exacta título
-                else if title.hasPrefix(lowercaseQuery) { score += 70 } // Empieza por
-                else if title.contains(lowercaseQuery) { score += 50 } // Contiene
+                // Normalizar campos del prompt para comparar
+                let title = prompt.title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                let content = prompt.content.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+                let folder = (prompt.folder ?? "").folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 
-                if content.contains(lowercaseQuery) { score += 30 } // Contiene en cuerpo
+                // 1. PUNTUACIÓN POR COINCIDENCIA EXACTA (Fuerza bruta)
+                if title == normalizedQuery { score += 200 }
+                else if title.contains(normalizedQuery) { score += 100 }
                 
-                if let folder = prompt.folder?.lowercased(), folder.contains(lowercaseQuery) {
-                    score += 20 // Coincidencia en categoría
+                // 2. PUNTUACIÓN POR PALABRAS CLAVE (Flexibilidad)
+                var matchesAllKeywords = true
+                for keyword in keywords {
+                    let inTitle = title.contains(keyword)
+                    let inContent = content.contains(keyword)
+                    let inFolder = folder.contains(keyword)
+                    
+                    if inTitle || inContent || inFolder {
+                        if inTitle { score += 40 }
+                        if inContent { score += 15 }
+                        if inFolder { score += 10 }
+                    } else {
+                        matchesAllKeywords = false
+                    }
                 }
+                
+                // Bonus si todas las palabras buscadas están presentes
+                if matchesAllKeywords && keywords.count > 1 { score += 50 }
                 
                 return (prompt, score)
             }

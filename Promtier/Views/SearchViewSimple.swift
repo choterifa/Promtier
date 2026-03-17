@@ -123,6 +123,9 @@ struct SearchViewSimple: View {
         .onChange(of: preferences.windowWidth) { newWidth in
             let threshold: CGFloat = 565
             
+            // Solo auto-ocultar/mostrar en la vista principal
+            guard menuBarManager.activeViewState == .main else { return }
+            
             if newWidth < threshold && preferences.showSidebar {
                 // Auto-hide when shrinking past 565
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
