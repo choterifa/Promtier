@@ -41,6 +41,11 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.textColor = .labelColor
         textView.insertionPointColor = .controlAccentColor
         
+        // Activar Apple Intelligence Writing Tools (macOS 15.0+)
+        if #available(macOS 15.0, *) {
+            textView.writingToolsBehavior = .complete
+        }
+        
         // Optimizar para scrolling suave
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.widthTracksTextView = true

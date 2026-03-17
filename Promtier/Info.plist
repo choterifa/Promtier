@@ -45,5 +45,9 @@
 	</dict>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Promtier necesita controlar System Events para pegar automáticamente tus prompts en otras aplicaciones.</string>
+	<key>SUFeedURL</key>
+	<string>https://tu-web.com/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>cD30wQ4eylsKKXrzWUg+s+DJjSqTG+dB21hsBirtvUI=</string>
 </dict>
 </plist>

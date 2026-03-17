@@ -377,6 +377,16 @@ struct BehaviorTab: View {
                     Toggle("", isOn: $preferences.showInDock)
                         .toggleStyle(.switch)
                 }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Actualizaciones", subtitle: "Buscar nuevas versiones de Promtier", icon: "arrow.clockwise.circle", iconColor: .blue) {
+                    Button("Buscar ahora") {
+                        UpdateProvider.shared.checkForUpdates()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
             }
             
             SettingsSection(title: "Promtier Premium 💎", icon: "crown.fill") {
