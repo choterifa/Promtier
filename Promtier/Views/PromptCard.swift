@@ -102,13 +102,6 @@ struct PromptCard: View {
             
             // Indicadores de estado
             HStack(spacing: 12) {
-                if prompt.isFavorite {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                        .font(.system(size: 12))
-                        .shadow(color: .yellow.opacity(0.3), radius: 2)
-                }
-                
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
@@ -121,6 +114,13 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.primary.opacity(0.04))
                     .clipShape(Capsule())
+                }
+                
+                if prompt.isFavorite {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 12))
+                        .shadow(color: .yellow.opacity(0.3), radius: 2)
                 }
                 
                 if variableCount > 0 {

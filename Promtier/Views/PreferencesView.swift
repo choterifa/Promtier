@@ -68,6 +68,7 @@ struct PreferencesView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
+                        .contentShape(Rectangle()) // Asegurar que todo el padding es clickable
                         .background(
                             ZStack {
                                 if selectedTab == index {
@@ -228,6 +229,7 @@ struct SettingsRow<Content: View>: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+        .frame(maxWidth: .infinity) // Forzar que ocupe todo el ancho
         .contentShape(Rectangle())
     }
 }
