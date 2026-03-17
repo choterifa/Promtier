@@ -38,6 +38,16 @@ struct NewPromptView: View {
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     
+    private var currentCategoryColor: Color {
+        if let folderName = selectedFolder {
+            if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
+                return Color(hex: customFolder.displayColor)
+            }
+            return PredefinedCategory.fromString(folderName)?.color ?? .blue
+        }
+        return .blue
+    }
+    
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
@@ -82,10 +92,16 @@ struct NewPromptView: View {
             }
             if showSnippets {
                 snippetOverlay
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95, anchor: .bottom)
+                            .combined(with: .opacity)
+                            .combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
+                    .zIndex(200)
             }
             if showParticles {
-                ParticleSystemView(accentColor: .green)
+                ParticleSystemView(accentColor: currentCategoryColor)
                     .allowsHitTesting(false)
                     .zIndex(300)
             }

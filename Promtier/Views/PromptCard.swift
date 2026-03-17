@@ -137,6 +137,21 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
+                // Indicador de Versiones (Premium)
+                if !prompt.versionHistory.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 8))
+                        Text("\(prompt.versionHistory.count)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.purple.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.primary.opacity(0.2))

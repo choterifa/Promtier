@@ -107,8 +107,12 @@ struct ParticleSystemView: View {
 
     private func emit(in size: CGSize) {
         var batch: [Confetto] = []
-        let colors = Self.palette  // ignoramos accentColor — usamos la paleta fija
-        _ = accentColor            // evitar warning de unused
+        
+        // Mezclar paleta estándar con el color de acento para personalización
+        var colors = Self.palette
+        if accentColor != .blue { // si no es el azul por defecto, añadirlo varias veces para que domine
+            colors.append(contentsOf: Array(repeating: accentColor, count: 4))
+        }
 
         for _ in 0..<Self.count {
             let shape = ConfettiShape.allCases.randomElement()!
