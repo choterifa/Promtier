@@ -133,7 +133,7 @@ private struct SnippetManagerListItem: View {
                 // Acciones
                 HStack(spacing: 12) {
                     Button(action: { editingSnippet = snippet }) {
-                        Image(systemName: "pencil")
+                        Image(systemName: "square.and.pencil")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }

@@ -197,6 +197,11 @@ struct HighlightedEditor: NSViewRepresentable {
             }
         }
         
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            applyHighlighting(textView) // Re-aplicar para actualizar el bracket matching
+        }
+        
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if self.parent.showSnippets {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
@@ -350,34 +355,114 @@ struct HighlightedEditor: NSViewRepresentable {
                 let fullRange = NSRange(location: 0, length: textStorage.length)
                 if fullRange.length == 0 { return }
                 
+                let cursorLocation = textView.selectedRange().location
+                
                 // Ejecutar regex en segundo plano para no bloquear el hilo principal
                 DispatchQueue.global(qos: .userInteractive).async {
-                    let pattern = "\\{\\{([^}]+)\\}\\}"
-                    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return }
-                    let matches = regex.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text))
+                    // 1. Regex para variables {{...}}
+                    let varPattern = "\\{\\{([^}]+)\\}\\}"
+                    let varRegex = try? NSRegularExpression(pattern: varPattern, options: [])
+                    let varMatches = varRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    
+                    // 2. Regex para Brackets/Llaves individuales
+                    let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
+                    let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: [])
+                    let bracketMatches = bracketRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    
+                    // 3. Encontrar pareja de brackets si el cursor está en uno
+                    var matchingBracketRange: NSRange? = nil
+                    var currentBracketRange: NSRange? = nil
+                    
+                    if cursorLocation > 0 && cursorLocation <= text.count {
+                        let charRange = NSRange(location: cursorLocation - 1, length: 1)
+                        let char = (text as NSString).substring(with: charRange)
+                        if "{}[]()".contains(char) {
+                            currentBracketRange = charRange
+                            if let partner = self.findMatchingBracket(in: text, for: char, at: cursorLocation - 1) {
+                                matchingBracketRange = NSRange(location: partner, length: 1)
+                            }
+                        }
+                    }
                     
                     // Aplicar cambios en el hilo principal
                     DispatchQueue.main.async {
-                        // Solo resetear si hay texto
+                        // VALIDACIÓN CRÍTICA: Si el texto cambió mientras calculábamos, abortar para evitar crash
+                        let currentLength = textStorage.length
+                        if currentLength == 0 { return }
+                        
                         textStorage.beginEditing()
                         
-                        // Resetear estilos base eficientemente (solo si es necesario o por tramos)
-                        // Para optimizar, podríamos solo resetear los rangos que tenían highlight antes
+                        // Resetear estilos base
                         textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
                         textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize), range: fullRange)
                         textStorage.removeAttribute(.backgroundColor, range: fullRange)
+                        textStorage.removeAttribute(.underlineStyle, range: fullRange)
                         
-                        for match in matches {
+                        // Función helper interna para aplicar atributos de forma segura
+                        func safeAddAttribute(_ name: NSAttributedString.Key, value: Any, range: NSRange) {
+                            if range.location + range.length <= textStorage.length {
+                                textStorage.addAttribute(name, value: value, range: range)
+                            }
+                        }
+                        
+                        // Aplicar resaltado de brackets individuales
+                        for match in bracketMatches {
+                            safeAddAttribute(.foregroundColor, value: NSColor.systemOrange.withAlphaComponent(0.8), range: match.range)
+                        }
+                        
+                        // Aplicar resaltado de variables {{...}}
+                        for match in varMatches {
                             let range = match.range
-                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
-                            textStorage.addAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
-                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize, weight: .bold), range: range)
+                            safeAddAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
+                            safeAddAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize, weight: .bold), range: range)
+                        }
+                        
+                        // Aplicar resaltado de Bracket Matching (VS Code style)
+                        if let current = currentBracketRange {
+                            safeAddAttribute(.backgroundColor, value: NSColor.systemGray.withAlphaComponent(0.3), range: current)
+                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: current)
+                        }
+                        if let matching = matchingBracketRange {
+                            safeAddAttribute(.backgroundColor, value: NSColor.systemGray.withAlphaComponent(0.3), range: matching)
+                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: matching)
                         }
                         
                         textStorage.endEditing()
                     }
                 }
             }
+        }
+        
+        /// Algoritmo para encontrar el bracket correspondiente
+        private func findMatchingBracket(in text: String, for bracket: String, at location: Int) -> Int? {
+            let nsText = text as NSString
+            let pairs: [String: String] = ["{": "}", "}": "{", "[": "]", "]": "[", "(": ")", ")": "("]
+            guard let target = pairs[bracket] else { return nil }
+            
+            let isOpen = "{[(".contains(bracket)
+            var stack = 0
+            
+            if isOpen {
+                for i in (location + 1)..<nsText.length {
+                    let char = nsText.substring(with: NSRange(location: i, length: 1))
+                    if char == bracket { stack += 1 }
+                    else if char == target {
+                        if stack == 0 { return i }
+                        stack -= 1
+                    }
+                }
+            } else {
+                for i in (0..<location).reversed() {
+                    let char = nsText.substring(with: NSRange(location: i, length: 1))
+                    if char == bracket { stack += 1 }
+                    else if char == target {
+                        if stack == 0 { return i }
+                        stack -= 1
+                    }
+                }
+            }
+            return nil
         }
         
         // MARK: - Writing Tools (macOS 15+)

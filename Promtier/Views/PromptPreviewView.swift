@@ -23,7 +23,13 @@ struct PromptPreviewView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // ... (rest of the body)
+            // Barra de color temática superior
+            if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+                Rectangle()
+                    .fill(category.color.opacity(0.8))
+                    .frame(height: 3)
+            }
+            
             headerView
             
             // Separador sutil
@@ -229,6 +235,20 @@ struct PromptPreviewView: View {
     
     private func highlightContent(_ text: String) -> AttributedString {
         var attrString = AttributedString(text)
+        
+        // 1. Resaltado de Brackets (Estilo VS Code - Naranja)
+        let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
+        if let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: []) {
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            let matches = bracketRegex.matches(in: text, options: [], range: range)
+            for match in matches {
+                if let range = Range(match.range, in: attrString) {
+                    attrString[range].foregroundColor = .orange.opacity(0.8)
+                }
+            }
+        }
+        
+        // 2. Resaltado de Variables (Estilo Promtier - Azul)
         let pattern = "\\{\\{([^}]+)\\}\\}"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
