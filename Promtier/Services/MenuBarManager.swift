@@ -279,7 +279,7 @@ class MenuBarManager: NSObject, ObservableObject {
     // MARK: - Gestión de Ghost Window (Guía Visual Externa)
     
     private func showGhostWindow() {
-        guard let button = statusItem?.button, let window = button.window else { return }
+        guard let button = statusItem?.button, let _ = button.window else { return }
         
         if ghostWindow == nil {
             let panel = NSPanel(

@@ -423,8 +423,7 @@ class PromptService: ObservableObject {
             }
         }
         
-        // 1. Importar Carpetas primero
-        let context = dataController.viewContext
+        // Detectar Carpetas
         for folder in foldersToImport {
             // Evitar duplicados por nombre o ID
             if !folders.contains(where: { $0.id == folder.id || $0.name == folder.name }) {

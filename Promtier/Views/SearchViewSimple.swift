@@ -361,7 +361,7 @@ struct SearchViewSimple: View {
         
         // Enter (KeyCode 36) -> Editar
         if keyCode == 36 {
-            if let prompt = selectedPrompt {
+            if selectedPrompt != nil {
                 DispatchQueue.main.async {
                     withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 }

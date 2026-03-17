@@ -133,7 +133,7 @@ struct CategorySidebar: View {
                             }
                             
                             Button(role: .destructive) {
-                                promptService.deleteFolder(folder)
+                                _ = promptService.deleteFolder(folder)
                             } label: {
                                 Label("Eliminar", systemImage: "trash")
                             }
