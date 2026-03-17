@@ -264,8 +264,14 @@ struct SearchViewSimple: View {
                                         onTap: {
                                             // Optimización: Actualizar estado de forma síncrona
                                             selectedPrompt = prompt
-                                            // Forzar foco a la ventana principal
-                                            NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+                                        
+                                        // Sonido si la vista previa está abierta
+                                        if showingPreview && preferences.soundEnabled {
+                                            SoundService.shared.playInteractionSound()
+                                        }
+                                        
+                                        // Forzar foco a la ventana principal
+                                        NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                                         },
                                         onDoubleTap: {
                                             selectedPrompt = prompt
@@ -331,10 +337,7 @@ struct SearchViewSimple: View {
                                     proxy.scrollTo(id, anchor: .center)
                                 }
                                 
-                                // Sonido si la vista previa está activa durante la navegación
-                                if showingPreview && preferences.soundEnabled {
-                                    SoundService.shared.playInteractionSound()
-                                }
+                                // Sonido eliminado de aquí por ser demasiado lento/insuficiente
                             }
                         }
                     }
@@ -407,6 +410,11 @@ struct SearchViewSimple: View {
                    let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex > 0 {
                         selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                        
+                        // Sonido forzado para navegación por teclado
+                        if showingPreview && preferences.soundEnabled {
+                            SoundService.shared.playInteractionSound()
+                        }
                     }
                 } else {
                     selectedPrompt = promptService.filteredPrompts.first
@@ -423,6 +431,11 @@ struct SearchViewSimple: View {
                    let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex < promptService.filteredPrompts.count - 1 {
                         selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                        
+                        // Sonido forzado para navegación por teclado
+                        if showingPreview && preferences.soundEnabled {
+                            SoundService.shared.playInteractionSound()
+                        }
                     }
                 } else {
                     selectedPrompt = promptService.filteredPrompts.first

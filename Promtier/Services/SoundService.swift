@@ -40,6 +40,9 @@ class SoundService {
     /// Reproduce un sonido sutil de interacción
     func playInteractionSound() {
         if let sound = NSSound(named: "Pop") {
+            if sound.isPlaying {
+                sound.stop()
+            }
             sound.volume = 0.2
             sound.play()
         }
