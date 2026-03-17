@@ -29,6 +29,10 @@ struct NewPromptView: View {
     @State private var isDragging = false
     @State private var showingFullScreenImage: Data? = nil
     
+    @State private var tags: [String] = []
+    @State private var newTag: String = ""
+    @State private var showingTagEditor: Bool = false
+    
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
     @State private var showSnippets: Bool = false
@@ -135,6 +139,7 @@ struct NewPromptView: View {
                 isFavorite = prompt.isFavorite
                 selectedIcon = prompt.icon
                 showcaseImages = prompt.showcaseImages
+                tags = prompt.tags
             } else if let activeCategory = promptService.selectedCategory {
                 // Autoseleccionar la categoría activa al crear uno nuevo
                 selectedFolder = activeCategory
@@ -220,44 +225,116 @@ struct NewPromptView: View {
                         }
                     }
                 
-                HStack(spacing: 4) {
-                    // Botón Variables (Premium)
-                    Button(action: { 
-                        if preferences.isPremiumActive {
-                            insertionRequest = "{{variable}}"
-                        } else {
-                            showingPremiumFor = "Variables Dinámicas"
+                HStack(spacing: 8) {
+                    // Grupo Premium: Variables y Snippets agrupados
+                    HStack(spacing: 0) {
+                        Button(action: { 
+                            if preferences.isPremiumActive {
+                                insertionRequest = "{{variable}}"
+                            } else {
+                                showingPremiumFor = "Variables Dinámicas"
+                            }
+                        }) {
+                            Image(systemName: "curlybraces")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
                         }
-                    }) {
-                        Image(systemName: "curlybraces")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.blue)
-                            .padding(8)
-                            .background(Circle().fill(Color.blue.opacity(0.1)))
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .help("Insertar Variable")
-                    
-                    // Botón Snippets '/' (Premium)
-                    Button(action: {
-                        if preferences.isPremiumActive {
-                            showSnippets = true
-                            snippetSearchQuery = ""
-                        } else {
-                            showingPremiumFor = "Snippets Reutilizables"
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.1))
-                                .frame(width: 28, height: 28)
+                        .buttonStyle(ScaleButtonStyle())
+                        .help("Insertar Variable (Premium)")
+                        
+                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
+                        
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            } else {
+                                showingPremiumFor = "Snippets Reutilizables"
+                            }
+                        }) {
                             Text("/")
                                 .font(.system(size: 14, weight: .black, design: .monospaced))
                                 .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
                         }
+                        .buttonStyle(ScaleButtonStyle())
+                        .help("Insertar Snippet (Premium)")
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                    )
+                    
+                    // Botón Etiquetas (Premium)
+                    Button(action: { 
+                        if preferences.isPremiumActive {
+                            showingTagEditor.toggle() 
+                        } else {
+                            showingPremiumFor = "Etiquetas Organizadas"
+                        }
+                    }) {
+                        Image(systemName: tags.isEmpty ? "tag" : "tag.fill")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(tags.isEmpty ? .secondary : .blue)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill((tags.isEmpty ? Color.primary : Color.blue).opacity(0.08)))
                     }
                     .buttonStyle(ScaleButtonStyle())
-                    .help("Insertar Snippet")
+                    .help("Etiquetas del prompt")
+                    .popover(isPresented: $showingTagEditor) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Etiquetas")
+                                .font(.headline)
+                            
+                            HStack {
+                                TextField("Nueva etiqueta...", text: $newTag)
+                                    .textFieldStyle(.roundedBorder)
+                                    .onSubmit {
+                                        let trimmed = newTag.trimmingCharacters(in: .whitespaces)
+                                        if !trimmed.isEmpty && !tags.contains(trimmed) {
+                                            tags.append(trimmed)
+                                            newTag = ""
+                                        }
+                                    }
+                                
+                                Button(action: {
+                                    let trimmed = newTag.trimmingCharacters(in: .whitespaces)
+                                    if !trimmed.isEmpty && !tags.contains(trimmed) {
+                                        tags.append(trimmed)
+                                        newTag = ""
+                                    }
+                                }) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            
+                            FlowLayout(spacing: 6) {
+                                ForEach(tags, id: \.self) { tag in
+                                    HStack(spacing: 4) {
+                                        Text(tag)
+                                            .font(.system(size: 10, weight: .bold))
+                                        Button(action: { tags.removeAll { $0 == tag } }) {
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 8, weight: .black))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(Color.blue.opacity(0.1)))
+                                    .foregroundColor(.blue)
+                                }
+                            }
+                            .frame(minWidth: 200, maxWidth: 300)
+                        }
+                        .padding()
+                    }
 
                     // Botón historial (solo en edición, solo Premium)
                     if prompt != nil && preferences.isPremiumActive && !(prompt?.versionHistory.isEmpty ?? true) {
@@ -265,7 +342,7 @@ struct NewPromptView: View {
                             Image(systemName: "clock.arrow.circlepath")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.blue)
-                                .padding(8)
+                                .frame(width: 32, height: 32)
                                 .background(Circle().fill(Color.blue.opacity(0.1)))
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -286,9 +363,7 @@ struct NewPromptView: View {
                         }
                     }
 
-
-
-                    // Botón Apple Intelligence (Único y rápido)
+                    // Botón Apple Intelligence
                     if preferences.appleIntelligenceEnabled {
                         Button(action: {
                             triggerAppleIntelligence = true
@@ -299,18 +374,18 @@ struct NewPromptView: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
                                 .foregroundColor(isAIActive ? .blue : .primary)
-                                .padding(8)
+                                .frame(width: 32, height: 32)
                                 .background(Circle().fill(isAIActive ? Color.blue.opacity(0.15) : Color.primary.opacity(0.05)))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("Apple Intelligence (Editar con IA)")
+                        .help("Apple Intelligence")
                     }
 
                     Button(action: { showingZenEditor = true }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.blue)
-                            .padding(8)
+                            .frame(width: 32, height: 32)
                             .background(Circle().fill(Color.blue.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
@@ -506,10 +581,11 @@ struct NewPromptView: View {
             updated.isFavorite = isFavorite
             updated.icon = selectedIcon
             updated.showcaseImages = showcaseImages
+            updated.tags = tags
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
-            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages)
+            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages, tags: tags)
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
         }
@@ -738,4 +814,51 @@ struct IdentifiableString: Identifiable {
 struct IdentifiableData: Identifiable {
     let id = UUID()
     let value: Data
+}
+
+struct FlowLayout: View {
+    var spacing: CGFloat
+    var children: [AnyView]
+
+    init<Data: Collection, ID: Hashable, Content: View>(
+        _ data: Data,
+        id: KeyPath<Data.Element, ID>,
+        spacing: CGFloat,
+        @ViewBuilder content: @escaping (Data.Element) -> Content
+    ) {
+        self.spacing = spacing
+        self.children = data.map { AnyView(content($0)) }
+    }
+    
+    // Simplificado para el ForEach usual
+    init(spacing: CGFloat, @ViewBuilder content: () -> AnyView) {
+        self.spacing = spacing
+        self.children = [content()]
+    }
+    
+    init<Content: View>(spacing: CGFloat, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        // Esto es un hack para prototipar rápido, idealmente usaríamos Layout protocol en iOS 16+
+        self.children = [AnyView(content())]
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            var width = CGFloat.zero
+            var height = CGFloat.zero
+            
+            Color.clear
+                .frame(height: height) // placeholder
+            
+            // Nota: En macOS/SwiftUI esto es mejor con un View que calcule geometrías.
+            // Para mantenerlo simple y compatible:
+            HStack(spacing: spacing) {
+                // Aquí usamos un HStack simple para este caso, pero el nombre FlowLayout se queda para expansión
+                // En este caso como son pocas etiquetas, un HStack con Wrap (si existiera nativo) sería ideal.
+                ForEach(0..<children.count, id: \.self) { i in
+                    children[i]
+                }
+            }
+        }
+    }
 }

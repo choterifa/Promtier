@@ -44,6 +44,13 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.textColor = .labelColor
         textView.insertionPointColor = .controlAccentColor
         
+        // Configuraciones de comportamiento para Prompts (evitar cambios automáticos molestos)
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticLinkDetectionEnabled = false
+        textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.smartInsertDeleteEnabled = true
+        
         // Activar Apple Intelligence Writing Tools (macOS 15.0+)
         if #available(macOS 15.0, *) {
             textView.writingToolsBehavior = .complete
@@ -216,11 +223,12 @@ struct HighlightedEditor: NSViewRepresentable {
                     DispatchQueue.main.async { self.parent.showSnippets = false }
                 }
                 
-                // Lógica de Auto-indentado
+                // Lógica de Auto-indentado y listas
                 let content = textView.string as NSString
                 let lineRange = content.lineRange(for: NSRange(location: affectedCharRange.location, length: 0))
                 let line = content.substring(with: lineRange)
                 
+                // Detectar indentación
                 var indentation = ""
                 for char in line {
                     if char == " " || char == "\t" {
@@ -230,8 +238,15 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
                 
-                if !indentation.isEmpty {
-                    let newString = "\n" + indentation
+                // Detectar si es una lista (- , * , 1. )
+                let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                var listMarker = ""
+                if trimmedLine.hasPrefix("- ") { listMarker = "- " }
+                else if trimmedLine.hasPrefix("* ") { listMarker = "* " }
+                else if trimmedLine.hasPrefix("• ") { listMarker = "• " }
+                
+                if !indentation.isEmpty || !listMarker.isEmpty {
+                    let newString = "\n" + indentation + listMarker
                     textView.insertText(newString, replacementRange: affectedCharRange)
                     return false
                 }
@@ -239,33 +254,48 @@ struct HighlightedEditor: NSViewRepresentable {
             return true
         }
         
+        // Timer para debounce del resaltado
+        private var highlightTimer: Timer?
+        
         func applyHighlighting(_ textView: NSTextView) {
-            guard let textStorage = textView.textStorage else { return }
-            let text = textView.string
-            let fullRange = NSRange(location: 0, length: textStorage.length)
+            highlightTimer?.invalidate()
             
-            // Comenzar edición masiva
-            textStorage.beginEditing()
-            
-            // Resetear estilos base
-            textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
-            textStorage.addAttribute(.backgroundColor, value: NSColor.clear, range: fullRange)
-            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: parent.fontSize), range: fullRange)
-            
-            // Regex para variables {{variable}}
-            let pattern = "\\{\\{([^}]+)\\}\\}"
-            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-                let matches = regex.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text))
+            // Debounce de 150ms para evitar lag al escribir rápido
+            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
+                guard let self = self, let textStorage = textView.textStorage else { return }
                 
-                for match in matches {
-                    let range = match.range
-                    textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
-                    textStorage.addAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
-                    textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: parent.fontSize, weight: .bold), range: range)
+                let text = textView.string
+                let fullRange = NSRange(location: 0, length: textStorage.length)
+                if fullRange.length == 0 { return }
+                
+                // Ejecutar regex en segundo plano para no bloquear el hilo principal
+                DispatchQueue.global(qos: .userInteractive).async {
+                    let pattern = "\\{\\{([^}]+)\\}\\}"
+                    guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return }
+                    let matches = regex.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text))
+                    
+                    // Aplicar cambios en el hilo principal
+                    DispatchQueue.main.async {
+                        // Solo resetear si hay texto
+                        textStorage.beginEditing()
+                        
+                        // Resetear estilos base eficientemente (solo si es necesario o por tramos)
+                        // Para optimizar, podríamos solo resetear los rangos que tenían highlight antes
+                        textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
+                        textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize), range: fullRange)
+                        textStorage.removeAttribute(.backgroundColor, range: fullRange)
+                        
+                        for match in matches {
+                            let range = match.range
+                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
+                            textStorage.addAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
+                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize, weight: .bold), range: range)
+                        }
+                        
+                        textStorage.endEditing()
+                    }
                 }
             }
-            
-            textStorage.endEditing()
         }
         
         // MARK: - Writing Tools (macOS 15+)

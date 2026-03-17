@@ -22,15 +22,17 @@ struct Prompt: Identifiable, Codable {
     var icon: String?                // Icono personalizado (SFSymbol)
     var showcaseImages: [Data] = []  // Imágenes de resultados (max 3)
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
+    var tags: [String] = []          // Etiquetas (Premium)
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = []) {
+    init(title: String, content: String, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = []) {
         self.id = UUID()
         self.title = title
         self.content = content
         self.folder = folder
         self.icon = icon
         self.showcaseImages = showcaseImages
+        self.tags = tags
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()
