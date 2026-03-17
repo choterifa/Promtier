@@ -116,6 +116,9 @@ struct NewPromptView: View {
                 isFavorite = prompt.isFavorite
                 selectedIcon = prompt.icon
                 showcaseImages = prompt.showcaseImages
+            } else if let activeCategory = promptService.selectedCategory {
+                // Autoseleccionar la categoría activa al crear uno nuevo
+                selectedFolder = activeCategory
             }
         }
     }

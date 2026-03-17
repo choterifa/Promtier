@@ -137,19 +137,6 @@ struct PromptPreviewView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            // Footer con contadores y atajos sutiles
-            HStack {
-                HStack(spacing: 12) {
-                    Label("\(prompt.content.count) caracteres", systemImage: "textformat")
-                    Label("\(prompt.content.split { $0.isWhitespace }.count) palabras", systemImage: "text.word.spacing")
-                }
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary.opacity(0.7))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 20)
         }
         .frame(width: 500, height: 400)
         .background(
