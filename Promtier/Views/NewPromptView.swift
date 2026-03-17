@@ -71,7 +71,7 @@ struct NewPromptView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.72, alignment: .top)
+                            .frame(height: geometry.size.height * 0.75, alignment: .top)
                         
                         imageGallery
                         
