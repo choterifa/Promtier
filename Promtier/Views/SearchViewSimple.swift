@@ -394,6 +394,16 @@ struct SearchViewSimple: View {
                                         Label("Editar", systemImage: "pencil")
                                     }
                                     
+                                    Button(action: { 
+                                        selectedPrompt = prompt
+                                        showingPreview = true
+                                        if preferences.soundEnabled {
+                                            SoundService.shared.playInteractionSound()
+                                        }
+                                    }) {
+                                        Label("Vista previa", systemImage: "eye")
+                                    }
+                                    
                                     Button(action: { toggleFavorite(prompt) }) {
                                         Label(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos", 
                                               systemImage: prompt.isFavorite ? "star.slash" : "star.fill")

@@ -46,6 +46,7 @@ class PromptService: ObservableObject {
             .store(in: &cancellables)
         
         seedDefaultFolders() // Crear categorías de sistema si no existen
+        seedDefaultPrompts() // Crear prompts de ejemplo iniciales
         loadFolders()
         loadPrompts()
     }
@@ -93,6 +94,46 @@ class PromptService: ObservableObject {
         } catch {
             print("Error sembrando categorías: \(error)")
         }
+    }
+    
+    /// Crea prompts de ejemplo para guiar al usuario
+    private func seedDefaultPrompts() {
+        let context = dataController.viewContext
+        let seedKey = "hasSeededInitialPromptsV21"
+        if UserDefaults.standard.bool(forKey: seedKey) { return }
+        
+        print("🌱 Sembrando prompts de ejemplo...")
+        
+        // 1. Prompt Normal (Email)
+        let emailPrompt = Prompt(
+            title: "Resumen de Proyecto",
+            content: "Hola,\n\nTe adjunto el resumen de los avances de esta semana. Hemos superado los objetivos principales y estamos dentro del cronograma.\n\nSaludos,",
+            folder: "Trabajo",
+            icon: "briefcase.fill"
+        )
+        _ = PromptEntity.create(from: emailPrompt, in: context)
+        
+        // 2. Prompt con Variables (Programación)
+        let codingPrompt = Prompt(
+            title: "Revisión de Código (Ejemplo Variable)",
+            content: "Actúa como un programador senior. Revisa este código escrito en {{lenguaje}} y optimízalo para mejorar la {{objetivo: rendimiento o legibilidad}}:\n\n```\n{{codigo}}\n```",
+            folder: "Código",
+            icon: "terminal.fill"
+        )
+        _ = PromptEntity.create(from: codingPrompt, in: context)
+        
+        // 3. Prompt de Diseño (Creativo)
+        let creativePrompt = Prompt(
+            title: "Generador Paisaje (Ejemplo Showcase)",
+            content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
+            folder: "Creativo",
+            icon: "sparkles"
+        )
+        _ = PromptEntity.create(from: creativePrompt, in: context)
+        
+        dataController.save()
+        UserDefaults.standard.set(true, forKey: seedKey)
+        print("✅ Prompts de ejemplo añadidos.")
     }
     
     // MARK: - Operaciones CRUD
