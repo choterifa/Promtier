@@ -75,13 +75,6 @@ struct PromptPreviewView: View {
                     .cornerRadius(8)
                 }
 
-                // Keyboard Shortcut UI (Espacio)
-                Text("Espacio")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)

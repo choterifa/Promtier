@@ -137,6 +137,21 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
+                // Indicador de Imagen
+                if !prompt.showcaseImages.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 8))
+                        Text("\(prompt.showcaseImages.count)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.cyan.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.cyan.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                
                 // Indicador de Versiones (Premium)
                 if !prompt.versionHistory.isEmpty {
                     HStack(spacing: 3) {
