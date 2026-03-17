@@ -13,22 +13,25 @@ struct Prompt: Identifiable, Codable {
     var id: UUID                    // Identificador único
     var title: String               // Título del prompt
     var content: String             // Contenido del prompt
+    var promptDescription: String?  // Descripción breve opcional
     var folder: String?             // Carpeta de organización
     var isFavorite: Bool            // Marcar como favorito
-    var createdAt: Date              // Fecha de creación
+    var createdAt: Date             // Fecha de creación
     var modifiedAt: Date            // Fecha de modificación
     var useCount: Int               // Contador de uso
     var lastUsedAt: Date?           // Última vez que se copió
-    var icon: String?                // Icono personalizado (SFSymbol)
-    var showcaseImages: [Data] = []  // Imágenes de resultados (max 3)
+    var icon: String?               // Icono personalizado (SFSymbol)
+    var showcaseImages: [Data] = [] // Imágenes de resultados (max 3)
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
-    var tags: [String] = []          // Etiquetas (Premium)
+    var tags: [String] = []         // Etiquetas (Premium)
+    var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = []) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = []) {
         self.id = UUID()
         self.title = title
         self.content = content
+        self.promptDescription = promptDescription
         self.folder = folder
         self.icon = icon
         self.showcaseImages = showcaseImages
@@ -37,6 +40,7 @@ struct Prompt: Identifiable, Codable {
         self.createdAt = Date()
         self.modifiedAt = Date()
         self.useCount = 0
+        self.deletedAt = nil
     }
     
     // MARK: - Métodos de ayuda
@@ -74,6 +78,15 @@ struct Prompt: Identifiable, Codable {
             }
         }
         return variables
+    }
+    
+    /// True si está en la papelera
+    var isInTrash: Bool { deletedAt != nil }
+    
+    /// True si fue eliminado hace menos de 7 días (aún recuperable)
+    var canRestore: Bool {
+        guard let d = deletedAt else { return false }
+        return Date().timeIntervalSince(d) < 7 * 86400
     }
 }
 

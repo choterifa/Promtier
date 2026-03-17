@@ -31,6 +31,8 @@ extension PromptEntity {
         prompt.useCount = Int(useCount)
         prompt.lastUsedAt = lastUsedAt
         prompt.icon = icon
+        prompt.promptDescription = promptDescription
+        prompt.deletedAt = deletedAt
         
         var images: [Data] = []
         if let img1 = image1 { images.append(img1) }
@@ -53,6 +55,8 @@ extension PromptEntity {
         content = prompt.content
         folder = prompt.folder
         icon = prompt.icon
+        promptDescription = prompt.promptDescription
+        deletedAt = prompt.deletedAt
         
         // Limpiar y reasignar imágenes
         image1 = prompt.showcaseImages.indices.contains(0) ? prompt.showcaseImages[0] : nil

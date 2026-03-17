@@ -35,6 +35,7 @@ class MenuBarManager: NSObject, ObservableObject {
         case newPrompt
         case preferences
         case folderManager
+        case trash
     }
     
     private var cancellables = Set<AnyCancellable>()

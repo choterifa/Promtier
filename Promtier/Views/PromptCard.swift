@@ -96,10 +96,17 @@ struct PromptCard: View {
                     .foregroundColor(isSelected ? .blue : .primary)
                     .lineLimit(1)
                 
+                if let desc = prompt.promptDescription, !desc.isEmpty {
+                    Text(desc)
+                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.65))
+                        .lineLimit(1)
+                }
+                
                 Text(highlightedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.8))
-                    .lineLimit(3)
+                    .lineLimit(prompt.promptDescription != nil ? 2 : 3)
             }
             
             Spacer()

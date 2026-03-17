@@ -56,6 +56,12 @@ struct SearchViewSimple: View {
                 .environmentObject(promptService)
                 .environmentObject(preferences)
                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
+            case .trash:
+                TrashView()
+                    .environmentObject(promptService)
+                    .environmentObject(preferences)
+                    .environmentObject(menuBarManager)
+                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
             }
             
             // Overlay de Variables Dinámicas
@@ -299,6 +305,38 @@ struct SearchViewSimple: View {
                             }
                             .buttonStyle(.plain)
                             .help("Configuración (Cmd+,)")
+                            
+                            // Botón Papelera
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .trash
+                                }
+                            }) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(promptService.trashedPrompts.isEmpty ? .secondary.opacity(0.5) : .red.opacity(0.75))
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(promptService.trashedPrompts.isEmpty ? Color.primary.opacity(0.04) : Color.red.opacity(0.06))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(promptService.trashedPrompts.isEmpty ? Color.primary.opacity(0.06) : Color.red.opacity(0.15), lineWidth: 1)
+                                                )
+                                        )
+                                    if !promptService.trashedPrompts.isEmpty {
+                                        Text("\(promptService.trashedPrompts.count)")
+                                            .font(.system(size: 8, weight: .black))
+                                            .foregroundColor(.white)
+                                            .padding(3)
+                                            .background(Circle().fill(Color.red))
+                                            .offset(x: 4, y: -4)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .help("Papelera")
                         }
                     }
                     .padding(.horizontal, 24)
@@ -426,8 +464,8 @@ struct SearchViewSimple: View {
                                     }
                                     
                                     Button(role: .destructive, action: { deletePrompt(prompt) }) {
-                                        Label("Eliminar", systemImage: "trash")
-                                    }
+                                         Label("Mover a la papelera", systemImage: "trash.fill")
+                                     }
                                 }
                             }
                         }

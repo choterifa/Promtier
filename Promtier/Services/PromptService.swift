@@ -18,6 +18,7 @@ class PromptService: ObservableObject {
     // CONFIGURABLE: Publicación de cambios para UI reactiva
     @Published var prompts: [Prompt] = []
     @Published var filteredPrompts: [Prompt] = []
+    @Published var trashedPrompts: [Prompt] = []
     @Published var folders: [Folder] = []
     @Published var searchQuery: String = ""
     @Published var selectedCategory: String? = nil
@@ -47,6 +48,7 @@ class PromptService: ObservableObject {
         
         seedDefaultFolders() // Crear categorías de sistema si no existen
         seedDefaultPrompts() // Crear prompts de ejemplo iniciales
+        purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
         loadFolders()
         loadPrompts()
     }
@@ -146,7 +148,7 @@ class PromptService: ObservableObject {
     
     // MARK: - Operaciones CRUD
     
-    /// Carga todos los prompts desde Core Data
+    /// Carga todos los prompts desde Core Data (excluye los de la papelera)
     func loadPrompts() {
         DispatchQueue.main.async { self.isLoading = true }
         
@@ -154,10 +156,14 @@ class PromptService: ObservableObject {
         
         do {
             let entities = try dataController.viewContext.fetch(request)
-            let loadedPrompts = entities.map { $0.toPrompt() }
+            let allPrompts = entities.map { $0.toPrompt() }
             
             DispatchQueue.main.async {
-                self.prompts = loadedPrompts
+                // Separar prompts activos de los eliminados
+                self.prompts = allPrompts.filter { !$0.isInTrash }
+                self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
+                    ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
+                }
                 self.filterPrompts(query: self.searchQuery)
                 self.isLoading = false
             }
@@ -238,8 +244,24 @@ class PromptService: ObservableObject {
         return false
     }
     
-    /// Elimina un prompt
+    // MARK: - Papelera (Soft Delete)
+    
+    /// Mueve prompt a la papelera (soft delete)
     func deletePrompt(_ prompt: Prompt) -> Bool {
+        var trashed = prompt
+        trashed.deletedAt = Date()
+        return updatePrompt(trashed)
+    }
+    
+    /// Restaura un prompt desde la papelera
+    func restorePrompt(_ prompt: Prompt) -> Bool {
+        var restored = prompt
+        restored.deletedAt = nil
+        return updatePrompt(restored)
+    }
+    
+    /// Elimina un prompt permanentemente de CoreData
+    func permanentlyDeletePrompt(_ prompt: Prompt) -> Bool {
         let context = dataController.viewContext
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", prompt.id as CVarArg)
@@ -247,16 +269,52 @@ class PromptService: ObservableObject {
         do {
             let entities = try context.fetch(request)
             if let entity = entities.first {
+                // Limpiar también el UserDefaults del trash
+                var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+                dict.removeValue(forKey: prompt.id.uuidString)
+                UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+                
                 context.delete(entity)
                 dataController.save()
                 loadPrompts()
                 return true
             }
         } catch {
-            print("Error eliminando prompt: \(error)")
+            print("Error eliminando prompt permanentemente: \(error)")
         }
-        
         return false
+    }
+    
+    /// Elimina todos los prompts de la papelera de forma permanente
+    func emptyTrash() {
+        for prompt in trashedPrompts {
+            _ = permanentlyDeletePrompt(prompt)
+        }
+    }
+    
+    /// Elimina automáticamente los prompts con más de 7 días de eliminación
+    private func purgeExpiredTrash() {
+        let context = dataController.viewContext
+        let request = PromptEntity.fetchAll(in: context)
+        
+        guard let entities = try? context.fetch(request) else { return }
+        let cutoff = Date().addingTimeInterval(-7 * 86400)
+        
+        var purgedCount = 0
+        for entity in entities {
+            if let deletedAt = entity.deletedAt, deletedAt < cutoff {
+                // Limpiar UserDefaults
+                var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+                dict.removeValue(forKey: entity.id.uuidString)
+                UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+                context.delete(entity)
+                purgedCount += 1
+            }
+        }
+        if purgedCount > 0 {
+            dataController.save()
+            print("🗑️ Purgados \(purgedCount) prompts expirados de la papelera.")
+        }
     }
     
     // MARK: - Operaciones de Carpetas

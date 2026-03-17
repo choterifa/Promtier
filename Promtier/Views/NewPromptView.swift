@@ -19,6 +19,7 @@ struct NewPromptView: View {
     
     @State private var title = ""
     @State private var content = ""
+    @State private var promptDescription = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
     @State private var selectedIcon: String?
@@ -136,6 +137,7 @@ struct NewPromptView: View {
             if let prompt = prompt {
                 title = prompt.title
                 content = prompt.content
+                promptDescription = prompt.promptDescription ?? ""
                 selectedFolder = prompt.folder
                 isFavorite = prompt.isFavorite
                 selectedIcon = prompt.icon
@@ -396,7 +398,45 @@ struct NewPromptView: View {
             .frame(minHeight: 44) // Asegura que el título sea visible
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .padding(.bottom, 10)
+            .padding(.bottom, 6)
+            
+            // Descripción breve
+            HStack(spacing: 8) {
+                TextField("Descripción breve (opcional)...", text: $promptDescription)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .onChange(of: promptDescription) { _, newValue in
+                        if newValue.count > 100 {
+                            promptDescription = String(newValue.prefix(100))
+                        }
+                    }
+                
+                // Auto-generar descripción desde el contenido
+                if !content.isEmpty && promptDescription.isEmpty {
+                    Button(action: { generateDescription() }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("Auto")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(Color.blue.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Generar descripción automática")
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+                
+                Text("\(promptDescription.count)/100")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.4))
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 6)
             
             Divider().padding(.horizontal, 20)
             
@@ -600,6 +640,7 @@ struct NewPromptView: View {
             // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
             let basicChanges = existingPrompt.title != title ||
                              existingPrompt.content != content ||
+                             existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
                              existingPrompt.folder != selectedFolder ||
                              existingPrompt.isFavorite != isFavorite ||
                              existingPrompt.icon != selectedIcon ||
@@ -631,6 +672,7 @@ struct NewPromptView: View {
             
             updated.title = title
             updated.content = content
+            updated.promptDescription = promptDescription.isEmpty ? nil : promptDescription
             updated.folder = selectedFolder
             updated.isFavorite = isFavorite
             updated.icon = selectedIcon
@@ -639,7 +681,7 @@ struct NewPromptView: View {
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
-            var new = Prompt(title: title, content: content, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages, tags: tags)
+            var new = Prompt(title: title, content: content, promptDescription: promptDescription.isEmpty ? nil : promptDescription, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages, tags: tags)
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
         }
@@ -651,6 +693,28 @@ struct NewPromptView: View {
             }
         } else {
             onClose()
+        }
+    }
+    
+    /// Genera una descripción breve automática a partir del contenido
+    private func generateDescription() {
+        let cleaned = content
+            .replacingOccurrences(of: "\\{\\{[^}]+\\}\\}", with: "...", options: .regularExpression)
+            .replacingOccurrences(of: "```[\\s\\S]*?```", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Tomar la primera oración significativa
+        let separators = CharacterSet(charactersIn: ".!?\n")
+        let sentences = cleaned.components(separatedBy: separators)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { $0.count > 5 }
+        
+        if let first = sentences.first {
+            let desc = String(first.prefix(97))
+            withAnimation(.spring(response: 0.25)) {
+                promptDescription = desc.count == first.count ? desc : desc + "..."
+            }
+            HapticService.shared.playLight()
         }
     }
     

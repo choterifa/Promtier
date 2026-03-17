@@ -9,6 +9,25 @@ import CoreData
 @objc(PromptEntity)
 public class PromptEntity: NSManagedObject {
     
+    // MARK: - Soft Delete (Papelera)
+    // Guardado en UserDefaults para evitar migración del schema
+    static let trashKey = "promptTrashDates"
+    
+    var deletedAt: Date? {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: Self.trashKey) as? [String: Date] ?? [:]
+            return dict[id.uuidString]
+        }
+        set {
+            var dict = UserDefaults.standard.dictionary(forKey: Self.trashKey) as? [String: Date] ?? [:]
+            if let date = newValue {
+                dict[id.uuidString] = date
+            } else {
+                dict.removeValue(forKey: id.uuidString)
+            }
+            UserDefaults.standard.set(dict, forKey: Self.trashKey)
+        }
+    }
 }
 
 extension PromptEntity {
