@@ -69,15 +69,16 @@ struct NewPromptView: View {
                 header
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.65, alignment: .top)
+                            .frame(height: geometry.size.height * 0.72, alignment: .top)
                         
                         imageGallery
                         
                         categorySection
                     }
-                    .padding(24)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -192,8 +193,8 @@ struct NewPromptView: View {
             .disabled(title.isEmpty || content.isEmpty)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
     
     private var editorCard: some View {
@@ -327,8 +328,8 @@ struct NewPromptView: View {
             }
             .frame(minHeight: 44) // Asegura que el título sea visible
             .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 6)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
             
             // Descripción breve
             HStack(spacing: 8) {
@@ -431,7 +432,7 @@ struct NewPromptView: View {
                                     Image(nsImage: nsImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: 140, height: 100, alignment: .top)
+                                        .frame(width: 150, height: 110, alignment: .top)
                                         .clipped()
                                         .clipShape(RoundedRectangle(cornerRadius: 12))
                                         .overlay(
@@ -470,7 +471,7 @@ struct NewPromptView: View {
                         } else {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.primary.opacity(0.04))
-                                .frame(width: 140, height: 100)
+                                .frame(width: 150, height: 110)
                                 .overlay(
                                     Image(systemName: "photo")
                                         .font(.system(size: 20))
