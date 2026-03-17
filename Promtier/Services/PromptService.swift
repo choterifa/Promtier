@@ -99,15 +99,15 @@ class PromptService: ObservableObject {
     /// Crea prompts de ejemplo para guiar al usuario
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV21"
+        let seedKey = "hasSeededInitialPromptsV22" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
-        print("🌱 Sembrando prompts de ejemplo...")
+        print("🌱 Sembrando prompts de ejemplo (V22)...")
         
-        // 1. Prompt Normal (Email)
+        // 1. Prompt Normal (Email) con Snippet de firma
         let emailPrompt = Prompt(
             title: "Resumen de Proyecto",
-            content: "Hola,\n\nTe adjunto el resumen de los avances de esta semana. Hemos superado los objetivos principales y estamos dentro del cronograma.\n\nSaludos,",
+            content: "Hola,\n\nTe adjunto el resumen de los avances de esta semana. Hemos superado los objetivos principales y estamos dentro del cronograma.\n\n/firma",
             folder: "Trabajo",
             icon: "briefcase.fill"
         )
@@ -122,18 +122,26 @@ class PromptService: ObservableObject {
         )
         _ = PromptEntity.create(from: codingPrompt, in: context)
         
-        // 3. Prompt de Diseño (Creativo)
+        // 3. Prompt de Diseño (Creativo) con IMAGEN
+        let imagePath = "/Users/valencia/.gemini/antigravity/brain/834ebcad-97e6-4d5e-a810-2da61e58cece/cyberpunk_example_result_1773778750439.png"
+        var showcaseImages: [Data] = []
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) {
+            showcaseImages.append(data)
+        }
+        
         let creativePrompt = Prompt(
-            title: "Generador Paisaje (Ejemplo Showcase)",
+            title: "Showcase: Paisaje Cyberpunk",
             content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
             folder: "Creativo",
-            icon: "sparkles"
+            icon: "sparkles",
+            showcaseImages: showcaseImages
         )
         _ = PromptEntity.create(from: creativePrompt, in: context)
         
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
-        print("✅ Prompts de ejemplo añadidos.")
+        self.loadPrompts() // Recargar para que aparezcan inmediatamente
+        print("✅ Prompts de ejemplo actualizados.")
     }
     
     // MARK: - Operaciones CRUD
