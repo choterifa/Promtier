@@ -516,7 +516,7 @@ struct NewPromptView: View {
                 }
                 
                 if showcaseImages.isEmpty {
-                    Text("Añadir ejemplos del prompt")
+                    Text("Añadir resultados del prompt")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary.opacity(0.4))
                 }

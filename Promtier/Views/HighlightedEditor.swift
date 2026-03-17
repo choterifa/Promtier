@@ -82,12 +82,27 @@ struct HighlightedEditor: NSViewRepresentable {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
             
+            var actualInsert = toInsert
+            var shiftFocus = 0
+            
+            // Asegurar espacio antes si es una variable {{...}}
+            if toInsert.hasPrefix("{{") {
+                if selectedRange.location > 0 {
+                    let prevCharRange = NSRange(location: selectedRange.location - 1, length: 1)
+                    let prevChar = nsString.substring(with: prevCharRange)
+                    if prevChar != " " && prevChar != "\n" {
+                        actualInsert = " " + toInsert
+                        shiftFocus = 1
+                    }
+                }
+            }
+            
             // Insertar el texto
-            textView.insertText(toInsert, replacementRange: selectedRange)
+            textView.insertText(actualInsert, replacementRange: selectedRange)
             
             // Si insertamos una variable {{variable}}, posicionar el cursor adentro
             if toInsert == "{{variable}}" {
-                let newLocation = selectedRange.location + 2 // Mover 2 posiciones (después de {{)
+                let newLocation = selectedRange.location + 2 + shiftFocus
                 let newRange = NSRange(location: newLocation, length: 8) // Seleccionar "variable"
                 textView.setSelectedRange(newRange)
             }
@@ -151,6 +166,8 @@ struct HighlightedEditor: NSViewRepresentable {
         }
     }
     
+    // MARK: - Coordinator
+    
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: HighlightedEditor
         
@@ -207,10 +224,78 @@ struct HighlightedEditor: NSViewRepresentable {
                     return true
                 }
             }
+            
+            // Lógica para saltar fuera de variables {{...}} con TAB o ENTER
+            if commandSelector == #selector(NSResponder.insertTab(_:)) ||
+                commandSelector == #selector(NSResponder.insertNewline(_:)) ||
+                commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)) {
+                
+                if let varRange = isInsideVariable(textView) {
+                    let targetLoc = varRange.location + varRange.length
+                    textView.setSelectedRange(NSRange(location: targetLoc, length: 0))
+                    textView.insertText(" ", replacementRange: NSRange(location: targetLoc, length: 0))
+                    return true
+                }
+            }
+            
             return false
         }
         
+        // Helper para detectar si estamos dentro de una variable
+        private func isInsideVariable(_ textView: NSTextView) -> NSRange? {
+            let text = textView.string as NSString
+            let sel = textView.selectedRange()
+            let lineRange = text.lineRange(for: sel)
+            let line = text.substring(with: lineRange) as NSString
+            let relLoc = sel.location - lineRange.location
+            
+            // Buscar hacia atrás el {{
+            var startLocInLine = -1
+            if relLoc >= 2 {
+                for i in (0...(relLoc - 2)).reversed() {
+                    if i + 2 <= line.length && line.substring(with: NSRange(location: i, length: 2)) == "{{" {
+                        startLocInLine = i
+                        break
+                    }
+                    // Si encontramos }} antes de {{, estamos fuera
+                    if i + 2 <= line.length && line.substring(with: NSRange(location: i, length: 2)) == "}}" {
+                        break
+                    }
+                }
+            }
+            
+            if startLocInLine == -1 { return nil }
+            
+            // Buscar hacia adelante el }}
+            var endLocInLine = -1
+            if relLoc < line.length {
+                for i in relLoc...(line.length - 2) {
+                    if line.substring(with: NSRange(location: i, length: 2)) == "}}" {
+                        endLocInLine = i + 2
+                        break
+                    }
+                    // Si encontramos otro {{ antes de }}, cancelamos
+                    if line.substring(with: NSRange(location: i, length: 2)) == "{{" {
+                        break
+                    }
+                }
+            }
+            
+            if endLocInLine == -1 { return nil }
+            
+            return NSRange(location: lineRange.location + startLocInLine, length: endLocInLine - startLocInLine)
+        }
+        
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+            // Lógica para saltar fuera con ESPACIO
+            if replacementString == " " {
+                if let varRange = isInsideVariable(textView) {
+                    let targetLoc = varRange.location + varRange.length
+                    textView.setSelectedRange(NSRange(location: targetLoc, length: 0))
+                    textView.insertText(" ", replacementRange: NSRange(location: targetLoc, length: 0))
+                    return false
+                }
+            }
             if replacementString == "/" && self.parent.isPremium {
                 DispatchQueue.main.async {
                     self.parent.showSnippets = true
