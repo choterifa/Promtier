@@ -116,13 +116,6 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
-                if prompt.isFavorite {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                        .font(.system(size: 12))
-                        .shadow(color: .yellow.opacity(0.3), radius: 2)
-                }
-                
                 if variableCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "cube.transparent.fill")
@@ -165,6 +158,13 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.purple.opacity(0.1))
                     .clipShape(Capsule())
+                }
+
+                if prompt.isFavorite {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 12))
+                        .shadow(color: .yellow.opacity(0.3), radius: 2)
                 }
                 
                 Image(systemName: "chevron.right")

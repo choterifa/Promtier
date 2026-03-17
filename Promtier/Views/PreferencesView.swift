@@ -286,7 +286,7 @@ struct AppearanceTab: View {
                 if preferences.isPremiumActive {
                     Divider().padding(.leading, 20)
                     
-                    SettingsRow("Vibras Visuales ✨", subtitle: "Efectos especiales al copiar y guardar prompts") {
+                    SettingsRow("Efectos Visuales", subtitle: "Efectos especiales al copiar y guardar prompts") {
                         Toggle("", isOn: $preferences.visualEffectsEnabled)
                             .toggleStyle(.switch)
                     }
