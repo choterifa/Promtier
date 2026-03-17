@@ -296,6 +296,10 @@ class PromptService: ObservableObject {
                 }
                 filtered.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
                 
+            case "Favoritos":
+                filtered = filtered.filter { $0.isFavorite }
+                filtered.sort { $0.useCount > $1.useCount }
+                
             case "Sin categoría":
                 filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
             default:

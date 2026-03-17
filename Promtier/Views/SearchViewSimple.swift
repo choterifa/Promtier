@@ -309,7 +309,7 @@ struct SearchViewSimple: View {
                                         if preferences.soundEnabled {
                                             SoundService.shared.playInteractionSound()
                                         }
-                                        exportPromptsToFile() 
+                                        exportPromptsToFile(prompt) 
                                     }) {
                                         Label("Exportar a texto plano", systemImage: "square.and.arrow.up")
                                     }
@@ -362,7 +362,12 @@ struct SearchViewSimple: View {
                 DispatchQueue.main.async { showingPreview = false }
                 return nil
             } else if selectedPrompt != nil {
-                DispatchQueue.main.async { showingPreview = true }
+                DispatchQueue.main.async { 
+                    if preferences.soundEnabled {
+                        SoundService.shared.playInteractionSound()
+                    }
+                    showingPreview = true 
+                }
                 return nil
             }
         }
@@ -458,14 +463,11 @@ struct SearchViewSimple: View {
         }
     }
     
-    /// Exporta todos los prompts a un archivo de texto
-    private func exportPromptsToFile() {
-        let exportContent = promptService.exportAllPrompts()
+    /// Exporta un prompt específico a un archivo de texto
+    private func exportPromptsToFile(_ prompt: Prompt) {
+        let exportContent = "Título: \(prompt.title)\n\n\(prompt.content)"
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
-        let timestamp = dateFormatter.string(from: Date())
-        let fileName = "prompts_export_\(timestamp).txt"
+        let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).txt"
         
         // Crear el diálogo de guardar nativo de macOS
         let savePanel = NSSavePanel()
@@ -483,13 +485,10 @@ struct SearchViewSimple: View {
                 do {
                     try exportContent.write(to: url, atomically: true, encoding: .utf8)
                     
-                    // Mostrar notificación de éxito
-                    let alert = NSAlert()
-                    alert.messageText = "Exportación completada"
-                    alert.informativeText = "Los prompts han sido exportados a:\n\(url.lastPathComponent)"
-                    alert.alertStyle = .informational
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
+                    // Cerrar la app tras exportar con éxito
+                    DispatchQueue.main.async {
+                        self.menuBarManager.closePopover()
+                    }
                     
                 } catch {
                     let alert = NSAlert()

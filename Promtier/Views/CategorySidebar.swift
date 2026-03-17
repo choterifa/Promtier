@@ -79,7 +79,16 @@ struct CategorySidebar: View {
                     promptService.selectedCategory = "Recientes"
                 }
                 
-                // Botón "Favoritos" (Nuevo?) - No, mantengamos lo que hay pero mejorado
+                // Botón "Favoritos"
+                SidebarItem(
+                    title: "Favoritos",
+                    icon: "star.fill",
+                    color: .yellow,
+                    count: promptService.prompts.filter { $0.isFavorite }.count,
+                    isSelected: promptService.selectedCategory == "Favoritos"
+                ) {
+                    promptService.selectedCategory = "Favoritos"
+                }
                 
                 // Botón "Sin categoría"
                 SidebarItem(
