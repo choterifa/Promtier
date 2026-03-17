@@ -31,7 +31,7 @@ struct SearchViewSimple: View {
                 })
                 .environmentObject(promptService)
                 .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
             case .preferences:
                 PreferencesView(onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -39,7 +39,7 @@ struct SearchViewSimple: View {
                     }
                 })
                 .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             case .folderManager:
                 FolderManagerView(folderToEdit: menuBarManager.folderToEdit, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -48,7 +48,7 @@ struct SearchViewSimple: View {
                     }
                 })
                 .environmentObject(promptService)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             }
             
             // Overlay de Variables Dinámicas
