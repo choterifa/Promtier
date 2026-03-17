@@ -503,17 +503,25 @@ struct NewPromptView: View {
                                 .offset(x: 4, y: -4)
                             }
                         } else {
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.primary.opacity(0.04))
-                                .frame(width: 80, height: 60)
+                                .frame(width: 140, height: 100)
                                 .overlay(
                                     Image(systemName: "photo")
-                                        .font(.system(size: 14))
+                                        .font(.system(size: 20))
                                         .foregroundColor(.secondary.opacity(0.1))
                                 )
                         }
                     }
                 }
+                .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
+                    handleGalleryDrop(providers: providers)
+                    return true
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue, lineWidth: isDragging ? 2 : 0)
+                )
                 
                 if showcaseImages.isEmpty {
                     Text("Añadir resultados del prompt")
@@ -526,6 +534,34 @@ struct NewPromptView: View {
         }
         .padding(.horizontal, 4)
         .padding(.top, 8)
+    }
+    
+    private func handleGalleryDrop(providers: [NSItemProvider]) {
+        for provider in providers {
+            if provider.canLoadObject(ofClass: URL.self) {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    if let url = url, let data = try? Data(contentsOf: url) {
+                        DispatchQueue.main.async {
+                            if showcaseImages.count < 3 {
+                                showcaseImages.append(data)
+                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                            }
+                        }
+                    }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                    if let data = data {
+                        DispatchQueue.main.async {
+                            if showcaseImages.count < 3 {
+                                showcaseImages.append(data)
+                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private var backgroundView: some View {
