@@ -140,6 +140,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var suppressAccessibilityWarning: Bool {
+        didSet {
+            userDefaults.set(suppressAccessibilityWarning, forKey: "suppressAccessibilityWarning")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -169,6 +175,7 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
+        self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
         
         // Aplicar configuración inicial
         applyAppearance()
@@ -252,6 +259,7 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
+        self.suppressAccessibilityWarning = false
         
         applyAppearance()
     }

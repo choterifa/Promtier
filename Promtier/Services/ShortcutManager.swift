@@ -14,6 +14,7 @@ class ShortcutManager: ObservableObject {
     static let shared = ShortcutManager()
     
     @Published var isEnabled = true
+    @Published var isAccessibilityGranted = false
     
     // Eliminamos la dependencia circular
     // private let menuBarManager = MenuBarManager.shared
@@ -117,26 +118,48 @@ class ShortcutManager: ObservableObject {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
         let isTrusted = AXIsProcessTrustedWithOptions(options)
         
+        // Actualizar propiedad publicada
+        DispatchQueue.main.async {
+            if self.isAccessibilityGranted != isTrusted {
+                self.isAccessibilityGranted = isTrusted
+            }
+        }
+        
         print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
         
         if !isTrusted && forceDialog {
+            // Solo mostrar diálogo si NO está suprimido en preferencias
+            guard !PreferencesManager.shared.suppressAccessibilityWarning else { 
+                print("ℹ️ Aviso de accesibilidad suprimido por el usuario.")
+                return isTrusted 
+            }
+            
             DispatchQueue.main.async {
                 // Verificar UNA VEZ MÁS antes de mostrar el diálogo por si acaso
-                if AXIsProcessTrustedWithOptions(options) { return }
+                if AXIsProcessTrustedWithOptions(options) { 
+                    self.isAccessibilityGranted = true
+                    return 
+                }
                 
                 let alert = NSAlert()
                 alert.messageText = "Acceso de Accesibilidad Requerido"
-                alert.informativeText = "Para que Promtier funcione correctamente (pestañas inteligentes y pegado automático), activa el acceso en los Ajustes de Sistema.\n\nSi ya lo tienes activado, desactívalo y vuelve a activarlo para que macOS reconozca la nueva versión."
+                alert.informativeText = "Promtier necesita accesibilidad para que el pegado automático (⌘V) y los atajos globales funcionen correctamente.\n\nSi ya lo activaste y sigue saliendo este aviso, puedes ignorarlo o reactivarlo en Ajustes del Sistema."
                 alert.alertStyle = .warning
                 alert.addButton(withTitle: "Abrir Ajustes")
-                alert.addButton(withTitle: "Ya lo hice / Ahora no")
+                alert.addButton(withTitle: "Entendido")
+                alert.addButton(withTitle: "No volver a mostrar")
                 
                 NSApp.activate(ignoringOtherApps: true)
-                if alert.runModal() == .alertFirstButtonReturn {
+                let response = alert.runModal()
+                
+                if response == .alertFirstButtonReturn {
                     let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
                     if let url = url {
                         NSWorkspace.shared.open(url)
                     }
+                } else if response == .alertThirdButtonReturn {
+                    // El usuario quiere silenciar el aviso
+                    PreferencesManager.shared.suppressAccessibilityWarning = true
                 }
             }
         }
