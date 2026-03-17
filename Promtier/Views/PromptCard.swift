@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PromptCard: View {
     let prompt: Prompt
@@ -17,6 +18,9 @@ struct PromptCard: View {
     let onHover: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
+    
+    @State private var isTargetedForDrop = false
     
     private var highlightedContent: AttributedString {
         var attrString = AttributedString(prompt.content)
@@ -200,6 +204,50 @@ struct PromptCard: View {
         )
         .onHover { hovering in
             onHover(hovering)
+        }
+        // SOPORTE DRAG AND DROP
+        .onDrag {
+            // Proveer el ID del prompt para mover entre categorías
+            NSItemProvider(object: prompt.id.uuidString as NSString)
+        }
+        .onDrop(of: [.image, .fileURL], isTargeted: $isTargetedForDrop) { providers in
+            // Lógica para añadir imágenes al prompt vía Drop
+            handleImageDrop(providers: providers)
+            return true
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.blue, lineWidth: isTargetedForDrop ? 2 : 0)
+        )
+    }
+    
+    private func handleImageDrop(providers: [NSItemProvider]) {
+        for provider in providers {
+            if provider.canLoadObject(ofClass: URL.self) {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    if let url = url, let data = try? Data(contentsOf: url) {
+                        DispatchQueue.main.async {
+                            var updated = prompt
+                            updated.showcaseImages.append(data)
+                            _ = promptService.updatePrompt(updated)
+                            
+                            // Feedback háptico
+                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                        }
+                    }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                    if let data = data {
+                        DispatchQueue.main.async {
+                            var updated = prompt
+                            updated.showcaseImages.append(data)
+                            _ = promptService.updatePrompt(updated)
+                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                        }
+                    }
+                }
+            }
         }
     }
     

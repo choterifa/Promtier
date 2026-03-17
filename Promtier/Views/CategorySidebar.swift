@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
@@ -85,10 +86,14 @@ struct CategorySidebar: View {
                     icon: "star.fill",
                     color: .yellow,
                     count: promptService.prompts.filter { $0.isFavorite }.count,
-                    isSelected: promptService.selectedCategory == "Favoritos"
-                ) {
-                    promptService.selectedCategory = "Favoritos"
-                }
+                    isSelected: promptService.selectedCategory == "Favoritos",
+                    action: {
+                        promptService.selectedCategory = "Favoritos"
+                    },
+                    dropHandler: { promptId in
+                        markAsFavorite(id: promptId)
+                    }
+                )
                 
                 // Botón "Sin categoría"
                 SidebarItem(
@@ -96,10 +101,14 @@ struct CategorySidebar: View {
                     icon: "folder.fill",
                     color: .gray,
                     count: categoryCounts["Sin categoría"] ?? 0,
-                    isSelected: promptService.selectedCategory == "Sin categoría"
-                ) {
-                    promptService.selectedCategory = "Sin categoría"
-                }
+                    isSelected: promptService.selectedCategory == "Sin categoría",
+                    action: {
+                        promptService.selectedCategory = "Sin categoría"
+                    },
+                    dropHandler: { promptId in
+                        movePrompt(id: promptId, to: nil)
+                    }
+                )
             }
             .padding(.horizontal, 12)
             
@@ -118,10 +127,14 @@ struct CategorySidebar: View {
                             icon: folder.icon ?? "folder.fill",
                             color: Color(hex: folder.displayColor),
                             count: count,
-                            isSelected: promptService.selectedCategory == folder.name
-                        ) {
-                            promptService.selectedCategory = folder.name
-                        }
+                            isSelected: promptService.selectedCategory == folder.name,
+                            action: {
+                                promptService.selectedCategory = folder.name
+                            },
+                            dropHandler: { promptId in
+                                movePrompt(id: promptId, to: folder.name)
+                            }
+                        )
                         .contextMenu {
                             Button {
                                 menuBarManager.folderToEdit = folder
@@ -152,6 +165,30 @@ struct CategorySidebar: View {
             }
         )
     }
+    
+    // MARK: - Helpers de Drag & Drop
+    
+    private func movePrompt(id: String, to folderName: String?) {
+        guard let uuid = UUID(uuidString: id),
+              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
+        
+        var updated = prompt
+        updated.folder = folderName
+        _ = promptService.updatePrompt(updated)
+        
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+    
+    private func markAsFavorite(id: String) {
+        guard let uuid = UUID(uuidString: id),
+              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
+        
+        var updated = prompt
+        updated.isFavorite = true
+        _ = promptService.updatePrompt(updated)
+        
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
 }
 
 struct SidebarItem: View {
@@ -161,6 +198,10 @@ struct SidebarItem: View {
     let count: Int
     let isSelected: Bool
     let action: () -> Void
+    
+    // Configuración opcional para Drop
+    var dropAllowed: Bool = true
+    var dropHandler: ((String) -> Void)? = nil
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
@@ -205,6 +246,20 @@ struct SidebarItem: View {
         }
         .onHover { hovering in
             isHovered = hovering
+        }
+        .onDrop(of: [.plainText], isTargeted: $isHovered) { providers in
+            guard dropAllowed, let handler = dropHandler else { return false }
+            
+            for provider in providers {
+                provider.loadObject(ofClass: NSString.self) { result, _ in
+                    if let promptId = result as? String {
+                        DispatchQueue.main.async {
+                            handler(promptId)
+                        }
+                    }
+                }
+            }
+            return true
         }
     }
 }
