@@ -29,7 +29,8 @@ struct PreferencesView: View {
         (title: "General", icon: "gearshape.fill"),
         (title: "Atajos", icon: "keyboard.fill"),
         (title: "Snippets", icon: "text.quote"),
-        (title: "Datos", icon: "externaldrive.fill")
+        (title: "Datos", icon: "externaldrive.fill"),
+        (title: "Soporte", icon: "questionmark.circle.fill")
     ]
     
     var body: some View {
@@ -112,6 +113,7 @@ struct PreferencesView: View {
                         showingResetAlert: $showingResetAlert,
                         onClose: onClose
                     )
+                    case 5: SupportTab()
                     default: EmptyView()
                     }
                 }
@@ -905,6 +907,89 @@ struct ImportView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 770, height: 260)
+    }
+}
+
+// MARK: - Soporte y Legal
+
+struct SupportTab: View {
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            SettingsSection(title: "Contacto y Ayuda", icon: "envelope.fill") {
+                Button(action: { openLink("mailto:soporte@promtier.app?subject=Consulta Promtier") }) {
+                    SettingsRow("Soporte por Email", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Divider().padding(.leading, 60)
+                
+                Button(action: { openLink("mailto:soporte@promtier.app?subject=Reporte de Error - Promtier") }) {
+                    SettingsRow("Reportar un Problema", subtitle: "Envíanos detalles sobre un error", icon: "ant.fill", iconColor: .orange) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            
+            SettingsSection(title: "Legal y Privacidad", icon: "doc.text.fill") {
+                Button(action: { openLink("https://promtier.app/privacy") }) {
+                    SettingsRow("Política de Privacidad", subtitle: "Cómo manejamos tus datos", icon: "hand.raised.fill", iconColor: .green) {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Divider().padding(.leading, 60)
+                
+                Button(action: { openLink("https://promtier.app/terms") }) {
+                    SettingsRow("Términos de Servicio", subtitle: "Condiciones de uso de la app", icon: "list.bullet.rectangle.portrait.fill", iconColor: .purple) {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            
+            VStack(spacing: 8) {
+                Image("AppIconPlaceholder") // O el logo de la app si está disponible
+                    .resizable()
+                    .frame(width: 64, height: 64)
+                    .cornerRadius(14)
+                    .opacity(0.8)
+                
+                Text("Promtier v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
+                    .font(.system(size: 14, weight: .bold))
+                
+                Text("Creado con pasión por Valencia")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                
+                Button("Visitar Sitio Web") {
+                    openLink("https://promtier.app")
+                }
+                .buttonStyle(.link)
+                .font(.system(size: 12))
+                .padding(.top, 4)
+            }
+            .padding(.top, 16)
+        }
+    }
+    
+    private func openLink(_ urlString: String) {
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
 
