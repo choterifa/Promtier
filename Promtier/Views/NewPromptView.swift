@@ -476,19 +476,36 @@ struct NewPromptView: View {
         isSaving = true
         
         if let existingPrompt = prompt {
+            // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
+            let basicChanges = existingPrompt.title != title ||
+                             existingPrompt.content != content ||
+                             existingPrompt.folder != selectedFolder ||
+                             existingPrompt.isFavorite != isFavorite ||
+                             existingPrompt.icon != selectedIcon ||
+                             existingPrompt.showcaseImages != showcaseImages
+            
+            if !basicChanges {
+                onClose()
+                return
+            }
+
             var updated = existingPrompt
             
-            // ✅ Auto-snapshot antes de sobreescribir (Premium, máx 20 versiones)
+            // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
             if preferences.isPremiumActive {
-                let snapshot = PromptSnapshot(
-                    title:     existingPrompt.title,
-                    content:   existingPrompt.content,
-                    timestamp: Date()
-                )
-                var history = existingPrompt.versionHistory
-                history.insert(snapshot, at: 0)        // más reciente primero
-                if history.count > 20 { history = Array(history.prefix(20)) }
-                updated.versionHistory = history
+                let coreChanges = existingPrompt.title != title || existingPrompt.content != content
+                
+                if coreChanges {
+                    let snapshot = PromptSnapshot(
+                        title:     existingPrompt.title,
+                        content:   existingPrompt.content,
+                        timestamp: Date()
+                    )
+                    var history = existingPrompt.versionHistory
+                    history.insert(snapshot, at: 0)
+                    if history.count > 20 { history = Array(history.prefix(20)) }
+                    updated.versionHistory = history
+                }
             }
             
             updated.title = title
