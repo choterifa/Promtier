@@ -322,7 +322,7 @@ struct NewPromptView: View {
                                 Image(nsImage: nsImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 80, height: 60)
+                                    .frame(width: 80, height: 60, alignment: .top)
                                     .clipped()
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                     .overlay(

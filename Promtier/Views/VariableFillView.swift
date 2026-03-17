@@ -45,78 +45,98 @@ struct VariableFillView: View {
                     Text("Rellenar Variables")
                         .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                     Text(prompt.title)
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 11 * preferences.fontSize.scale))
+                        .foregroundColor(.secondary.opacity(0.8))
                 }
                 Spacer()
                 Button(action: onCancel) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundColor(.secondary.opacity(0.3))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(24)
+            .padding(.horizontal, 28)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
             
             Divider().padding(.horizontal, 24)
             
             // Lista de campos
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     ForEach(variables, id: \.self) { variable in
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(variable.uppercased())
-                                .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                                .foregroundColor(.blue)
-                                .tracking(1)
+                            HStack {
+                                Text(variable.uppercased())
+                                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                                    .foregroundColor(.blue)
+                                    .tracking(1.2)
+                                
+                                Spacer()
+                                
+                                if focusedField == variable {
+                                    Text("Escribiendo...")
+                                        .font(.system(size: 9, weight: .medium))
+                                        .foregroundColor(.blue.opacity(0.6))
+                                }
+                            }
                             
-                            TextField("Ingresa el valor para \(variable)...", text: Binding(
+                            TextField("Valor para \(variable)...", text: Binding(
                                 get: { variableValues[variable, default: ""] },
                                 set: { variableValues[variable] = $0 }
                             ))
                             .textFieldStyle(.plain)
-                            .padding(12)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
                             .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.primary.opacity(0.04))
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(focusedField == variable ? Color.blue.opacity(0.04) : Color.primary.opacity(0.03))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(focusedField == variable ? Color.blue.opacity(0.5) : Color.primary.opacity(0.06), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(focusedField == variable ? Color.blue.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1.5)
                                     )
                             )
                             .focused($focusedField, equals: variable)
+                            .onSubmit {
+                                handleSubmission(for: variable)
+                            }
                         }
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
                 }
-                .padding(24)
+                .padding(28)
             }
             
-            // Sección de Previsualización en Tiempo Real
-            VStack(alignment: .leading, spacing: 10) {
+            // Sección de Previsualización
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("VISTA PREVIA")
+                    Label("VISTA PREVIA", systemImage: "eye.fill")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.secondary.opacity(0.8))
                     Spacer()
-                    Image(systemName: "eye.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary.opacity(0.5))
                 }
                 
                 ScrollView {
-                    Text(processedContent)
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.primary.opacity(0.7))
+                    Text(processedContent.isEmpty ? "La vista previa aparecerá aquí..." : processedContent)
+                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                        .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.8))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
+                        .padding(12)
                 }
-                .frame(height: 80)
-                .padding(12)
-                .background(Color.primary.opacity(0.02))
-                .cornerRadius(8)
+                .frame(maxHeight: 120)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primary.opacity(0.02))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                        )
+                )
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 28)
+            .padding(.bottom, 24)
             
             Divider().padding(.horizontal, 24)
             
@@ -125,40 +145,62 @@ struct VariableFillView: View {
                 Button(action: onCancel) {
                     Text("Cancelar")
                         .font(.system(size: 13, weight: .medium))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ScaleButtonStyle())
                 
                 Button(action: {
                     onCopy(processedContent)
                 }) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "doc.on.doc.fill")
                         Text("Copiar Prompt Final")
                     }
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(variableValues.values.contains { !$0.isEmpty } ? Color.blue : Color.gray.opacity(0.3))
-                            .shadow(color: variableValues.values.contains { !$0.isEmpty } ? .blue.opacity(0.3) : .clear, radius: 4, y: 2)
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(canCopy ? Color.blue : Color.gray.opacity(0.3))
+                            .shadow(color: canCopy ? .blue.opacity(0.3) : .clear, radius: 8, y: 4)
                     )
                 }
-                .buttonStyle(.plain)
-                .disabled(variableValues.isEmpty || variableValues.values.allSatisfy { $0.isEmpty })
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(!canCopy)
             }
-            .padding(24)
+            .padding(28)
         }
-        .frame(width: 450)
+        .frame(width: 480)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(20)
+        .cornerRadius(24)
         .onAppear {
-            if let firstVar = variables.first {
-                focusedField = firstVar
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if let firstVar = variables.first {
+                    focusedField = firstVar
+                }
+            }
+        }
+    }
+    
+    private var canCopy: Bool {
+        !variableValues.isEmpty && !variableValues.values.allSatisfy { $0.isEmpty }
+    }
+    
+    private func handleSubmission(for currentVariable: String) {
+        let allVars = variables
+        if let currentIndex = allVars.firstIndex(of: currentVariable) {
+            if currentIndex < allVars.count - 1 {
+                // Saltar al siguiente campo
+                focusedField = allVars[currentIndex + 1]
+            } else {
+                // Es el último: copiar y cerrar si hay contenido
+                if canCopy {
+                    onCopy(processedContent)
+                }
             }
         }
     }
