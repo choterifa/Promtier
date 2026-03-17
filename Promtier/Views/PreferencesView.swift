@@ -300,6 +300,28 @@ struct AppearanceTab: View {
                     })
                     .frame(width: 150)
                 }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Restablecer tamaño", subtitle: "Volver al tamaño por defecto (690 × 540)") {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            preferences.previewWidth  = 690
+                            preferences.previewHeight = 540
+                            preferences.windowWidth   = 690
+                            preferences.windowHeight  = 540
+                        }
+                    }) {
+                        Label("Resetear", systemImage: "arrow.counterclockwise")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }
