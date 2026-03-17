@@ -10,6 +10,7 @@ import SwiftUI
 
 struct FolderManagerView: View {
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var preferences: PreferencesManager
     var folderToEdit: Folder? = nil
     var onClose: () -> Void
     
@@ -26,12 +27,30 @@ struct FolderManagerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
+            HStack(spacing: 16) {
+                // Botón Colapsar Sidebar
+                Button(action: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        preferences.showSidebar.toggle()
+                    }
+                }) {
+                    Image(systemName: preferences.showSidebar ? "sidebar.left" : "sidebar.right")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(preferences.showSidebar ? .blue : .secondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(preferences.showSidebar ? "Ocultar Categorías" : "Mostrar Categorías")
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Gestionar Categorías")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 20 * preferences.fontSize.scale, weight: .bold))
                     Text("Personaliza tu flujo de trabajo")
-                        .font(.subheadline)
+                        .font(.system(size: 13 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
                 }
                 Spacer()
@@ -46,33 +65,36 @@ struct FolderManagerView: View {
             Divider()
             
             HStack(alignment: .top, spacing: 0) {
-                // Lista de categorías - Ajustado para vista unificada
-                VStack(alignment: .leading, spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 2) {
-                            ForEach(Array(promptService.folders.enumerated()), id: \.offset) { index, folder in
-                                CategoryRow(
-                                    folder: folder,
-                                    isEditing: editingFolder?.id == folder.id,
-                                    onEdit: { startEditing(folder) },
-                                    onDelete: { _ = promptService.deleteFolder(folder) }
-                                )
-                                .scaleEffect(isReady ? 1.0 : 0.95)
-                                .opacity(isReady ? 1 : 0)
-                                .animation(
-                                    .spring(response: 0.4, dampingFraction: 0.7)
-                                    .delay(Double(index) * 0.04),
-                                    value: isReady
-                                )
+                if preferences.showSidebar {
+                    // Lista de categorías - Ajustado para vista unificada
+                    VStack(alignment: .leading, spacing: 0) {
+                        ScrollView {
+                            VStack(spacing: 2) {
+                                ForEach(Array(promptService.folders.enumerated()), id: \.offset) { index, folder in
+                                    CategoryRow(
+                                        folder: folder,
+                                        isEditing: editingFolder?.id == folder.id,
+                                        onEdit: { startEditing(folder) },
+                                        onDelete: { _ = promptService.deleteFolder(folder) }
+                                    )
+                                    .scaleEffect(isReady ? 1.0 : 0.95)
+                                    .opacity(isReady ? 1 : 0)
+                                    .animation(
+                                        .spring(response: 0.4, dampingFraction: 0.7)
+                                        .delay(Double(index) * 0.04),
+                                        value: isReady
+                                    )
+                                }
                             }
+                            .padding(.vertical, 12)
                         }
-                        .padding(.vertical, 12)
                     }
+                    .frame(width: max(160, min(280, preferences.windowWidth * 0.35)))
+                    .background(Color.primary.opacity(0.01))
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                    
+                    Divider()
                 }
-                .frame(width: 280)
-                .background(Color.primary.opacity(0.01))
-                
-                Divider()
                 
                 // Formulario de edición refinado
                 VStack(alignment: .leading, spacing: 20) {
@@ -260,6 +282,7 @@ struct CategoryRow: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
     
     var body: some View {
@@ -275,7 +298,7 @@ struct CategoryRow: View {
             }
             
             Text(folder.name)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 15 * preferences.fontSize.scale, weight: .semibold))
                 .foregroundColor(isEditing ? .primary : .primary.opacity(0.9))
                 .lineLimit(1)
             
@@ -325,4 +348,5 @@ struct CategoryRow: View {
 #Preview {
     FolderManagerView(folderToEdit: nil, onClose: {})
         .environmentObject(PromptService())
+        .environmentObject(PreferencesManager.shared)
 }

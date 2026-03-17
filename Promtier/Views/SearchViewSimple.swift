@@ -48,6 +48,7 @@ struct SearchViewSimple: View {
                     }
                 })
                 .environmentObject(promptService)
+                .environmentObject(preferences)
                 .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
             }
             
