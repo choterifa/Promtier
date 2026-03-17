@@ -13,6 +13,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
     @Binding var triggerAppleIntelligence: Bool
+    @Binding var isAIActive: Bool
     var fontSize: CGFloat
     
     // Autocompletado (Snippets)
@@ -117,10 +118,18 @@ struct HighlightedEditor: NSViewRepresentable {
         // Manejar petición de Inteligencia de Apple
         if triggerAppleIntelligence {
             if #available(macOS 15.0, *) {
-                if textView.selectedRange().length == 0 {
-                    textView.selectAll(nil)
+                if isAIActive {
+                    // Simular ESC para cerrar herramientas de IA
+                    NSApp.sendAction(#selector(NSResponder.cancelOperation(_:)), to: nil, from: nil)
+                    self.isAIActive = false
+                } else {
+                    if textView.selectedRange().length == 0 {
+                        textView.selectAll(nil)
+                    }
+                    textView.showWritingTools(nil)
+                    // Fallback inmediato
+                    self.isAIActive = true
                 }
-                textView.showWritingTools(nil)
             }
             
             DispatchQueue.main.async {
@@ -258,5 +267,33 @@ struct HighlightedEditor: NSViewRepresentable {
             
             textStorage.endEditing()
         }
+        
+        // MARK: - Writing Tools (macOS 15+)
+        
+        // Usamos Any para que compile en versiones anteriores del SDK, pero selectors de macOS 15
+        @objc(textView:writingToolsWillBeginSession:)
+        func writingToolsWillBegin(_ textView: NSTextView, session: Any) {
+            DispatchQueue.main.async {
+                self.parent.isAIActive = true
+            }
+        }
+        
+        @objc(textView:writingToolsDidEndSession:)
+        func writingToolsDidEnd(_ textView: NSTextView, session: Any) {
+            DispatchQueue.main.async {
+                self.parent.isAIActive = false
+            }
+        }
+        
+        // Variante alternativa de selector
+        @objc(textView:writingToolsWillBegin:)
+        func writingToolsWillBeginAlt(_ textView: NSTextView, session: Any) {
+            DispatchQueue.main.async {
+                self.parent.isAIActive = true
+            }
+        }
+
+
+
     }
 }

@@ -21,6 +21,7 @@ struct ZenEditorView: View {
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
     @Binding var triggerAppleIntelligence: Bool
+    @Binding var isAIActive: Bool
     @Binding var showingPremiumFor: String?
     
     var body: some View {
@@ -86,6 +87,7 @@ struct ZenEditorView: View {
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
                     triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

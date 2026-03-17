@@ -37,6 +37,7 @@ struct NewPromptView: View {
     @State private var triggerSnippetSelection: Bool = false
     
     @State private var triggerAppleIntelligence: Bool = false
+    @State private var isAIActive: Bool = false
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
@@ -98,6 +99,7 @@ struct NewPromptView: View {
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
                     triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
                     showingPremiumFor: $showingPremiumFor
                 )
                 .environmentObject(preferences)
@@ -287,19 +289,22 @@ struct NewPromptView: View {
 
 
                     // Botón Apple Intelligence (Único y rápido)
-                    Button(action: {
-                        triggerAppleIntelligence = true
-                        let haptic = NSHapticFeedbackManager.defaultPerformer
-                        haptic.perform(.generic, performanceTime: .now)
-                    }) {
-                        Image(systemName: "apple.intelligence")
-                            .font(.system(size: 14, weight: .bold))
-                            .symbolRenderingMode(.multicolor)
-                            .padding(8)
-                            .background(Circle().fill(Color.primary.opacity(0.05)))
+                    if preferences.appleIntelligenceEnabled {
+                        Button(action: {
+                            triggerAppleIntelligence = true
+                            let haptic = NSHapticFeedbackManager.defaultPerformer
+                            haptic.perform(.generic, performanceTime: .now)
+                        }) {
+                            Image(systemName: "apple.intelligence")
+                                .font(.system(size: 14, weight: .bold))
+                                .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
+                                .foregroundColor(isAIActive ? .blue : .primary)
+                                .padding(8)
+                                .background(Circle().fill(isAIActive ? Color.blue.opacity(0.15) : Color.primary.opacity(0.05)))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .help("Apple Intelligence (Editar con IA)")
                     }
-                    .buttonStyle(ScaleButtonStyle())
-                    .help("Apple Intelligence (Editar con IA)")
 
                     Button(action: { showingZenEditor = true }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -334,6 +339,7 @@ struct NewPromptView: View {
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
                     triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
                     fontSize: 15 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

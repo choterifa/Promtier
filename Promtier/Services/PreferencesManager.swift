@@ -169,6 +169,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var appleIntelligenceEnabled: Bool {
+        didSet {
+            userDefaults.set(appleIntelligenceEnabled, forKey: "appleIntelligenceEnabled")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -210,6 +216,9 @@ class PreferencesManager: ObservableObject {
         
         // Imágenes primero por defecto
         self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
+        
+        // Apple Intelligence por defecto en true
+        self.appleIntelligenceEnabled = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
@@ -307,6 +316,8 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = false
         self.suppressAccessibilityWarning = false
         self.isPremiumActive = false
+        self.appleIntelligenceEnabled = true
+        self.previewImagesFirst = true
         
         applyAppearance()
     }

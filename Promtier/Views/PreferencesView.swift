@@ -283,6 +283,17 @@ struct AppearanceTab: View {
                     .frame(width: 120)
                 }
                 
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Prioridad en Preview", subtitle: "Orden de elementos en la vista rápida") {
+                    Picker("", selection: $preferences.previewImagesFirst) {
+                        Text("Imágenes Primero").tag(true)
+                        Text("Texto Primero").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 240)
+                }
+                
                 if preferences.isPremiumActive {
                     Divider().padding(.leading, 20)
                     
@@ -410,16 +421,16 @@ struct BehaviorTab: View {
                     .padding(.vertical, 10)
             }
             
+            SettingsSection(title: "Inteligencia", icon: "sparkles") {
+                SettingsRow("Apple Intelligence", subtitle: "Mostrar herramientas de IA (Writing Tools) en el editor") {
+                    Toggle("", isOn: $preferences.appleIntelligenceEnabled)
+                        .toggleStyle(.switch)
+                }
+            }
+            
             SettingsSection(title: "Sistema", icon: "macwindow") {
                 SettingsRow("Inicio Automático", subtitle: "Abrir Promtier al iniciar sesión") {
                     Toggle("", isOn: $preferences.launchAtLogin)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Mostrar en el Dock", subtitle: "Icono visible en la barra de apps") {
-                    Toggle("", isOn: $preferences.showInDock)
                         .toggleStyle(.switch)
                 }
                 
