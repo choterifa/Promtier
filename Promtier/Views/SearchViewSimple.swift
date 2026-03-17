@@ -461,6 +461,7 @@ struct SearchViewSimple: View {
         
         self.promptService.usePrompt(prompt)
         
+        // Lógica de Post-Copia: Sonido, Cerrar y Preview
         if self.preferences.soundEnabled {
             SoundService.shared.playCopySound()
         }
@@ -468,6 +469,11 @@ struct SearchViewSimple: View {
         // Cerrar preview si está abierto
         if self.showingPreview {
             self.showingPreview = false
+        }
+        
+        // CERRAR VENTANA: Si la preferencia está activa
+        if self.preferences.closeOnCopy {
+            self.menuBarManager.closePopover()
         }
     }
     

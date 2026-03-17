@@ -48,9 +48,9 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var closeOnOutsideClick: Bool {
+    @Published var closeOnCopy: Bool {
         didSet {
-            userDefaults.set(closeOnOutsideClick, forKey: "closeOnOutsideClick")
+            userDefaults.set(closeOnCopy, forKey: "closeOnCopy")
         }
     }
     
@@ -147,7 +147,7 @@ class PreferencesManager: ObservableObject {
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         // Sidebar visible por defecto
         self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
-        self.closeOnOutsideClick = userDefaults.bool(forKey: "closeOnOutsideClick")
+        self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         
@@ -237,7 +237,7 @@ class PreferencesManager: ObservableObject {
         self.fontSize = .medium
         self.launchAtLogin = false
         self.showSidebar = true
-        self.closeOnOutsideClick = true
+        self.closeOnCopy = true
         self.soundEnabled = true
         self.globalShortcutEnabled = true
         self.hotkeyCode = 35
@@ -267,7 +267,7 @@ class PreferencesManager: ObservableObject {
             "showSidebar": showSidebar,
             "windowWidth": Double(windowWidth),
             "windowHeight": Double(windowHeight),
-            "closeOnOutsideClick": closeOnOutsideClick,
+            "closeOnCopy": closeOnCopy,
             "soundEnabled": soundEnabled,
             "globalShortcutEnabled": globalShortcutEnabled,
             "language": language.rawValue,
@@ -295,8 +295,8 @@ class PreferencesManager: ObservableObject {
                 self.launchAtLogin = launchAtLogin
             }
             
-            if let closeOnOutsideClick = config["closeOnOutsideClick"] as? Bool {
-                self.closeOnOutsideClick = closeOnOutsideClick
+            if let closeOnCopy = config["closeOnCopy"] as? Bool {
+                self.closeOnCopy = closeOnCopy
             }
             
             if let soundEnabled = config["soundEnabled"] as? Bool {

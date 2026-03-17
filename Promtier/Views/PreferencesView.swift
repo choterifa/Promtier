@@ -306,7 +306,7 @@ struct BehaviorTab: View {
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("Cerrar al copiar", subtitle: "Cierra la ventana automáticamente", icon: "xmark.square.fill", iconColor: .red) {
-                    Toggle("", isOn: $preferences.closeOnOutsideClick)
+                    Toggle("", isOn: $preferences.closeOnCopy)
                         .toggleStyle(.switch)
                 }
                 
