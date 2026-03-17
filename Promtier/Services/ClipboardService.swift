@@ -51,36 +51,43 @@ class ClipboardService: ObservableObject {
                 MenuBarManager.shared.closePopover()
             }
             
-            // Esperar a que el foco regrese a la app anterior (0.3s suele ser suficiente)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // Esperar a que el foco regrese a la app anterior (0.4s para mayor seguridad)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 let source = CGEventSource(stateID: .combinedSessionState)
                 
-                // Definir códigos de tecla para Cmd y V
-                let vCode: CGKeyCode = 9 // Código para 'V' en Mac
+                // Definir códigos de tecla nativos (Virtual Key Codes de Carbon)
+                let kVK_Command: CGKeyCode = 55
+                let kVK_ANSI_V: CGKeyCode = 9
                 
                 // 1. Command Down
-                let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true)
-                cmdDown?.flags = .maskCommand
+                let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
                 
-                // 2. V Down
-                let vDown = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: true)
+                // 2. V Down (con bandera Command activa)
+                let vDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: true)
                 vDown?.flags = .maskCommand
                 
                 // 3. V Up
-                let vUp = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: false)
+                let vUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: false)
                 vUp?.flags = .maskCommand
                 
                 // 4. Command Up
-                let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
-                cmdUp?.flags = []
+                let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
                 
-                // Ejecutar secuencia
+                // Ejecutar secuencia con micro-retrasos para imitar el ritmo humano
                 cmdDown?.post(tap: .cghidEventTap)
-                vDown?.post(tap: .cghidEventTap)
-                vUp?.post(tap: .cghidEventTap)
-                cmdUp?.post(tap: .cghidEventTap)
                 
-                print("✅ Auto-Paste (CGEvent) ejecutado")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    vDown?.post(tap: .cghidEventTap)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        vUp?.post(tap: .cghidEventTap)
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            cmdUp?.post(tap: .cghidEventTap)
+                            print("✅ Auto-Paste (Humanized CGEvent) ejecutado")
+                        }
+                    }
+                }
             }
         }
     }

@@ -17,6 +17,8 @@ struct PreferencesView: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var menuBarManager: MenuBarManager
     
+    @StateObject private var shortcutManager = ShortcutManager.shared
+    
     @State private var selectedTab: Int = 0
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
@@ -294,6 +296,7 @@ struct AppearanceTab: View {
 
 struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
+    @ObservedObject private var shortcutManager = ShortcutManager.shared
     
     var body: some View {
         VStack(spacing: 32) {
@@ -315,6 +318,17 @@ struct BehaviorTab: View {
                 SettingsRow("Pegado Instantáneo", subtitle: "Pega automáticamente el prompt en la aplicación activa después de copiarlo.", icon: "wand.and.stars", iconColor: .orange) {
                     Toggle("", isOn: $preferences.autoPaste)
                         .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("Accesibilidad", subtitle: shortcutManager.isAccessibilityGranted ? "Permisos concedidos ✅" : "Permisos requeridos ⚠️", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
+                    Button(shortcutManager.isAccessibilityGranted ? "Verificado" : "Configurar") {
+                        shortcutManager.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(shortcutManager.isAccessibilityGranted)
                 }
             }
             

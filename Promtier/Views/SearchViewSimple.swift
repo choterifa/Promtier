@@ -639,7 +639,7 @@ struct AccessibilityBanner: View {
             
             HStack(spacing: 8) {
                 Button("Configurar") {
-                    ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
+                    ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)

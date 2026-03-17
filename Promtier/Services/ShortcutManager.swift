@@ -113,12 +113,12 @@ class ShortcutManager: ObservableObject {
     // MARK: - Accesibilidad
     
     @discardableResult
-    func checkAccessibilityPermissions(forceDialog: Bool = false) -> Bool {
-        // Usar opciones explícitas para evitar que AXIsProcessTrusted() devuelva un estado erróneo
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
-        let isTrusted = AXIsProcessTrustedWithOptions(options)
+    func checkAccessibilityPermissions(forceDialog: Bool = false, ignoreSuppression: Bool = false) -> Bool {
+        // 1. Comprobación silenciosa para actualizar el estado interno
+        let silentOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
+        let isTrusted = AXIsProcessTrustedWithOptions(silentOptions)
         
-        // Actualizar propiedad publicada
+        // Actualizar propiedad publicada para la UI
         DispatchQueue.main.async {
             if self.isAccessibilityGranted != isTrusted {
                 self.isAccessibilityGranted = isTrusted
@@ -127,42 +127,19 @@ class ShortcutManager: ObservableObject {
         
         print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
         
+        // 2. Si no es confiable y se solicita diálogo (respetando la supresión a menos que se ignore)
         if !isTrusted && forceDialog {
-            // Solo mostrar diálogo si NO está suprimido en preferencias
-            guard !PreferencesManager.shared.suppressAccessibilityWarning else { 
+            if !PreferencesManager.shared.suppressAccessibilityWarning || ignoreSuppression {
+                print("🏛️ Invocando diálogo de accesibilidad nativo de macOS")
+                
+                // Esta llamada disparará el diálogo del sistema si el proceso no es confiable
+                let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+                AXIsProcessTrustedWithOptions(promptOptions)
+            } else {
                 print("ℹ️ Aviso de accesibilidad suprimido por el usuario.")
-                return isTrusted 
-            }
-            
-            DispatchQueue.main.async {
-                // Verificar UNA VEZ MÁS antes de mostrar el diálogo por si acaso
-                if AXIsProcessTrustedWithOptions(options) { 
-                    self.isAccessibilityGranted = true
-                    return 
-                }
-                
-                let alert = NSAlert()
-                alert.messageText = "Acceso de Accesibilidad Requerido"
-                alert.informativeText = "Promtier necesita accesibilidad para que el pegado automático (⌘V) y los atajos globales funcionen correctamente.\n\nSi ya lo activaste y sigue saliendo este aviso, puedes ignorarlo o reactivarlo en Ajustes del Sistema."
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "Abrir Ajustes")
-                alert.addButton(withTitle: "Entendido")
-                alert.addButton(withTitle: "No volver a mostrar")
-                
-                NSApp.activate(ignoringOtherApps: true)
-                let response = alert.runModal()
-                
-                if response == .alertFirstButtonReturn {
-                    let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-                    if let url = url {
-                        NSWorkspace.shared.open(url)
-                    }
-                } else if response == .alertThirdButtonReturn {
-                    // El usuario quiere silenciar el aviso
-                    PreferencesManager.shared.suppressAccessibilityWarning = true
-                }
             }
         }
+        
         return isTrusted
     }
     
