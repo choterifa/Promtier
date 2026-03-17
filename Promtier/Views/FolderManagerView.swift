@@ -55,7 +55,7 @@ struct FolderManagerView: View {
                                     folder: folder,
                                     isEditing: editingFolder?.id == folder.id,
                                     onEdit: { startEditing(folder) },
-                                    onDelete: { promptService.deleteFolder(folder) }
+                                    onDelete: { _ = promptService.deleteFolder(folder) }
                                 )
                                 .scaleEffect(isReady ? 1.0 : 0.95)
                                 .opacity(isReady ? 1 : 0)

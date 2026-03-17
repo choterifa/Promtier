@@ -157,12 +157,12 @@ class PreferencesManager: ObservableObject {
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
-        // Dimensiones de ventana (Defaults: 560x480)
+        // Dimensiones de ventana (Defaults: 690x540)
         let savedWidth = userDefaults.double(forKey: "windowWidth")
-        self.windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 560
+        self.windowWidth = savedWidth > 0 ? CGFloat(savedWidth) : 690
         
         let savedHeight = userDefaults.double(forKey: "windowHeight")
-        self.windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 480
+        self.windowHeight = savedHeight > 0 ? CGFloat(savedHeight) : 540
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
@@ -244,8 +244,8 @@ class PreferencesManager: ObservableObject {
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .spanish
         self.autoPaste = false
-        self.windowWidth = 560
-        self.windowHeight = 480
+        self.windowWidth = 690
+        self.windowHeight = 540
         
         // Nuevas propiedades por defecto
         self.showInDock = false

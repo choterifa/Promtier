@@ -331,7 +331,7 @@ struct SearchViewSimple: View {
                         }
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
-                        .onChange(of: selectedPrompt?.id) { newId in
+                        .onChange(of: selectedPrompt?.id) { _, newId in
                             if let id = newId {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     proxy.scrollTo(id, anchor: .center)
@@ -341,7 +341,7 @@ struct SearchViewSimple: View {
                             }
                         }
                     }
-                    .onChange(of: showingPreview) { isShowing in
+                    .onChange(of: showingPreview) { _, isShowing in
                         if isShowing && preferences.soundEnabled {
                             SoundService.shared.playInteractionSound()
                         }
