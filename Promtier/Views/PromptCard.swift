@@ -62,15 +62,43 @@ struct PromptCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Icono de categoría o personalizado grande restaurado
+            if let iconName = prompt.icon {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill((prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue).opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: iconName)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue)
+                }
+            } else if let folder = prompt.folder {
+                let color = getFolderColor(for: folder)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(color)
+                }
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.primary.opacity(0.05))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
             // Texto detallado
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 8) {
-                    if let iconName = prompt.icon {
-                        Image(systemName: iconName)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(isSelected ? .blue : .primary)
-                    }
-                    
                     Text(prompt.title)
                         .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .blue : .primary)
