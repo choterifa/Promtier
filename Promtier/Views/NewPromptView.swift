@@ -384,11 +384,18 @@ struct NewPromptView: View {
                 
                 if showcaseImages.count < 3 {
                     Button(action: selectImages) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue.opacity(0.8))
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Añadir Imagen")
+                                .font(.system(size: 11, weight: .bold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ScaleButtonStyle())
                 }
             }
             
@@ -434,7 +441,7 @@ struct NewPromptView: View {
                 }
                 
                 if showcaseImages.isEmpty {
-                    Text("Añade ejemplos visuales arrastrando aquí")
+                    Text("Añadir ejemplos del prompt")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary.opacity(0.4))
                 }
