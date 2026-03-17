@@ -20,6 +20,7 @@ struct ZenEditorView: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    @Binding var triggerAppleIntelligence: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -77,6 +78,7 @@ struct ZenEditorView: View {
                     text: $content,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

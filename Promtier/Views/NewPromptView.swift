@@ -35,6 +35,7 @@ struct NewPromptView: View {
     @State private var snippetSelectedIndex: Int = 0
     @State private var triggerSnippetSelection: Bool = false
     
+    @State private var triggerAppleIntelligence: Bool = false
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     
@@ -85,7 +86,8 @@ struct NewPromptView: View {
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    triggerAppleIntelligence: $triggerAppleIntelligence
                 )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -246,6 +248,21 @@ struct NewPromptView: View {
                     .buttonStyle(ScaleButtonStyle())
                     .help(isFavorite ? "Quitar de favoritos" : "Marcar como favorito")
 
+                    // Botón Apple Intelligence (Único y rápido)
+                    Button(action: {
+                        triggerAppleIntelligence = true
+                        let haptic = NSHapticFeedbackManager.defaultPerformer
+                        haptic.perform(.generic, performanceTime: .now)
+                    }) {
+                        Image(systemName: "apple.intelligence")
+                            .font(.system(size: 14, weight: .bold))
+                            .symbolRenderingMode(.multicolor)
+                            .padding(8)
+                            .background(Circle().fill(Color.primary.opacity(0.05)))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .help("Apple Intelligence (Editar con IA)")
+
                     Button(action: { showingZenEditor = true }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 12, weight: .bold))
@@ -336,6 +353,7 @@ struct NewPromptView: View {
                     text: $content,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
                     fontSize: 15 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

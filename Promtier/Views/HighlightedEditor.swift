@@ -12,6 +12,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
+    @Binding var triggerAppleIntelligence: Bool
     var fontSize: CGFloat
     
     // Autocompletado (Snippets)
@@ -109,6 +110,20 @@ struct HighlightedEditor: NSViewRepresentable {
                 self.text = textView.string
                 self.replaceSnippetRequest = nil
                 self.showSnippets = false
+            }
+        }
+        
+        // Manejar petición de Inteligencia de Apple
+        if triggerAppleIntelligence {
+            if #available(macOS 15.0, *) {
+                if textView.selectedRange().length == 0 {
+                    textView.selectAll(nil)
+                }
+                textView.showWritingTools(nil)
+            }
+            
+            DispatchQueue.main.async {
+                self.triggerAppleIntelligence = false
             }
         }
         
