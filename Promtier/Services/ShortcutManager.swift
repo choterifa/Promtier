@@ -49,12 +49,43 @@ class ShortcutManager: ObservableObject {
     
     private var hotKeyRef: EventHotKeyRef?
     private var localMonitor: Any?
+    private var permissionTimer: Timer?
     
     private init() {
         print("✅ ShortcutManager inicializado")
         checkAccessibilityPermissions()
         setupMonitors()
         setupCarbonHotKey()
+        startPermissionPolling()
+        setupLifecycleObservers()
+    }
+    
+    // MARK: - Sincronización Automática
+    
+    private func startPermissionPolling() {
+        // Solo iniciar polling si aún no tenemos permisos
+        guard !isAccessibilityGranted else { return }
+        
+        permissionTimer?.invalidate()
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Si ya se concedió, detener el timer
+            if self.checkAccessibilityPermissions(forceDialog: false) {
+                print("✨ Permisos detectados automáticamente. Deteniendo polling.")
+                self.permissionTimer?.invalidate()
+                self.permissionTimer = nil
+            }
+        }
+    }
+    
+    private func setupLifecycleObservers() {
+        // También verificar cuando la app vuelve al primer plano
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.checkAccessibilityPermissions(forceDialog: false)
+            // Reiniciar polling si sigue sin permisos
+            self?.startPermissionPolling()
+        }
     }
     
     // MARK: - Carbon HotKey (Detección Global Real)
