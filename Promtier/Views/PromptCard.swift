@@ -207,10 +207,15 @@ struct PromptCard: View {
         }
         // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
-            // Proveer el ID para lógica interna y el contenido para apps externas
-            let provider = NSItemProvider(object: prompt.id.uuidString as NSString)
+            let provider = NSItemProvider()
             
-            // Añadir el contenido como representación de texto plano para apps externas
+            // 1. ID interno con UTI personalizada (para que apps externas no lo vean)
+            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier, visibility: .all) { completion in
+                completion(prompt.id.uuidString.data(using: .utf8), nil)
+                return nil
+            }
+            
+            // 2. Contenido para apps externas (Texto plano)
             provider.registerDataRepresentation(forTypeIdentifier: UTType.plainText.identifier, visibility: .all) { completion in
                 completion(prompt.content.data(using: .utf8), nil)
                 return nil

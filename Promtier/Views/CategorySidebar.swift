@@ -15,6 +15,7 @@ struct CategorySidebar: View {
     
     @State private var showingFolderManager = false
     @State private var draggedFolder: Folder? = nil
+    @State private var dropTargetFolderId: UUID? = nil
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
@@ -95,6 +96,9 @@ struct CategorySidebar: View {
                         markAsFavorite(id: promptId)
                     }
                 )
+                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: nil) { providers in
+                    handleQuickDrop(providers: providers, to: "Favoritos")
+                }
                 
                 // Botón "Sin categoría"
                 SidebarItem(
@@ -110,6 +114,9 @@ struct CategorySidebar: View {
                         movePrompt(id: promptId, to: nil)
                     }
                 )
+                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: nil) { providers in
+                    handleQuickDrop(providers: providers, to: nil)
+                }
             }
             .padding(.horizontal, 12)
             
@@ -131,20 +138,40 @@ struct CategorySidebar: View {
                             isSelected: promptService.selectedCategory == folder.name,
                             action: {
                                 promptService.selectedCategory = folder.name
-                            },
-                            dropHandler: { id in
-                                // Diferenciar entre mover un prompt o reordenar carpetas
-                                if let uuid = UUID(uuidString: id), promptService.prompts.contains(where: { $0.id == uuid }) {
-                                    movePrompt(id: id, to: folder.name)
-                                } else if let dragged = self.draggedFolder, dragged.id.uuidString == id {
-                                    reorderFolder(dragged, to: folder)
-                                }
                             }
+                        )
+                        .overlay(
+                            VStack {
+                                if dropTargetFolderId == folder.id && draggedFolder != nil {
+                                    Rectangle()
+                                        .fill(Color.blue)
+                                        .frame(height: 2)
+                                        .transition(.scale.combined(with: .opacity))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .offset(y: -2)
                         )
                         .onDrag {
                             self.draggedFolder = folder
-                            return NSItemProvider(object: folder.id.uuidString as NSString)
+                            menuBarManager.isModalActive = true // Evitar cierre automático
+                            let provider = NSItemProvider()
+                            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierFolderId.identifier, visibility: .all) { completion in
+                                completion(folder.id.uuidString.data(using: .utf8), nil)
+                                return nil
+                            }
+                            return provider
                         }
+                        .onDrop(of: [.promtierFolderId, .promtierPromptId, .plainText], delegate: FolderDropDelegate(
+                            folder: folder,
+                            promptService: promptService,
+                            menuBarManager: menuBarManager,
+                            draggedFolder: $draggedFolder,
+                            dropTargetFolderId: $dropTargetFolderId,
+                            onMove: { source, dest in reorderFolder(source, to: dest) },
+                            onPromptMove: { pId, fName in movePrompt(id: pId, to: fName) }
+                        ))
                         .contextMenu {
                             Button {
                                 menuBarManager.folderToEdit = folder
@@ -205,14 +232,104 @@ struct CategorySidebar: View {
         guard let sourceIndex = folders.firstIndex(where: { $0.id == source.id }),
               let destIndex = folders.firstIndex(where: { $0.id == destination.id }) else { return }
         
-        withAnimation {
+        if sourceIndex == destIndex { return }
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             let folder = folders.remove(at: sourceIndex)
             folders.insert(folder, at: destIndex)
             promptService.reorderFolders(folders)
+            
+            // Forzar actualización de UI
+            promptService.loadFolders()
         }
         
         self.draggedFolder = nil
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+    
+    // Helper para los botones superiores de drop
+    private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
+        for provider in providers {
+            // Primero intentar con el ID interno
+            if provider.hasItemConformingToTypeIdentifier(UTType.promtierPromptId.identifier) {
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
+                    if let data = data, let id = String(data: data, encoding: .utf8) {
+                        DispatchQueue.main.async {
+                            if category == "Favoritos" {
+                                markAsFavorite(id: id)
+                            } else {
+                                movePrompt(id: id, to: category)
+                            }
+                        }
+                    }
+                }
+                return true
+            }
+        }
+        return false
+    }
+}
+
+// MARK: - DropDelegate especializado para Carpeta
+struct FolderDropDelegate: DropDelegate {
+    let folder: Folder
+    let promptService: PromptService
+    let menuBarManager: MenuBarManager
+    @Binding var draggedFolder: Folder?
+    @Binding var dropTargetFolderId: UUID?
+    
+    var onMove: (Folder, Folder) -> Void
+    var onPromptMove: (String, String) -> Void
+    
+    func dropEntered(info: DropInfo) {
+        if draggedFolder != nil {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = folder.id
+            }
+        }
+    }
+    
+    func dropExited(info: DropInfo) {
+        if dropTargetFolderId == folder.id {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = nil
+            }
+        }
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+    
+    func validateDrop(info: DropInfo) -> Bool {
+        return info.hasItemsConforming(to: [.promtierFolderId, .promtierPromptId, .plainText])
+    }
+    
+    func performDrop(info: DropInfo) -> Bool {
+        dropTargetFolderId = nil
+        menuBarManager.isModalActive = false // Ya se puede cerrar
+        
+        // 1. Manejar reordenado de Carpeta
+        if let dragged = draggedFolder {
+            onMove(dragged, folder)
+            draggedFolder = nil
+            return true
+        }
+        
+        // 2. Manejar movimiento de Prompt
+        for provider in info.itemProviders(for: [.promtierPromptId, .plainText]) {
+            let internalId = UTType.promtierPromptId.identifier
+            if provider.hasItemConformingToTypeIdentifier(internalId) {
+                provider.loadDataRepresentation(forTypeIdentifier: internalId) { data, _ in
+                    if let data = data, let id = String(data: data, encoding: .utf8) {
+                        DispatchQueue.main.async { onPromptMove(id, folder.name) }
+                    }
+                }
+                return true
+            }
+        }
+        
+        return false
     }
 }
 
@@ -271,20 +388,6 @@ struct SidebarItem: View {
         }
         .onHover { hovering in
             isHovered = hovering
-        }
-        .onDrop(of: [.plainText], isTargeted: $isHovered) { providers in
-            guard dropAllowed, let handler = dropHandler else { return false }
-            
-            for provider in providers {
-                provider.loadObject(ofClass: NSString.self) { result, _ in
-                    if let promptId = result as? String {
-                        DispatchQueue.main.async {
-                            handler(promptId)
-                        }
-                    }
-                }
-            }
-            return true
         }
     }
 }
