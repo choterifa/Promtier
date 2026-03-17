@@ -39,7 +39,6 @@ struct VariableFillView: View {
                 return TemplateVariable(id: raw, name: raw, type: .text)
             }
             
-            // Lógica Premium: Detective de tipos
             if raw.lowercased() == "date" || raw.lowercased() == "fecha" {
                 return TemplateVariable(id: raw, name: raw, type: .date)
             }
@@ -57,6 +56,14 @@ struct VariableFillView: View {
             }
             
             return TemplateVariable(id: raw, name: raw, type: .text)
+        }
+    }
+    
+    private var hasPremiumVariables: Bool {
+        let rawVars = prompt.extractTemplateVariables()
+        return rawVars.contains { raw in
+            let lower = raw.lowercased()
+            return lower == "date" || lower == "fecha" || lower == "time" || lower == "hora" || (raw.contains(":") && raw.contains("|"))
         }
     }
     
@@ -79,140 +86,147 @@ struct VariableFillView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Rellenar Variables")
-                        .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
-                    Text(prompt.title)
-                        .font(.system(size: 11 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary.opacity(0.8))
-                }
-                Spacer()
-                Button(action: onCancel) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary.opacity(0.3))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 28)
-            .padding(.top, 28)
-            .padding(.bottom, 20)
-            
-            Divider().padding(.horizontal, 24)
-            
-            // Lista de campos
-            ScrollView {
-                VStack(spacing: 24) {
-                    ForEach(variables) { variable in
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(variable.name.uppercased())
-                                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                                    .foregroundColor(.blue)
-                                    .tracking(1.2)
-                                
-                                Spacer()
-                                
-                                if focusedField == variable.id {
-                                    Text(statusText(for: variable.type))
-                                        .font(.system(size: 9, weight: .medium))
-                                        .foregroundColor(.blue.opacity(0.6))
+        Group {
+            if hasPremiumVariables && !preferences.isPremiumActive {
+                PremiumUpsellView(featureName: "Variables Avanzadas", onCancel: onCancel)
+                    .cornerRadius(24)
+            } else {
+                VStack(spacing: 0) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Rellenar Variables")
+                                .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
+                            Text(prompt.title)
+                                .font(.system(size: 11 * preferences.fontSize.scale))
+                                .foregroundColor(.secondary.opacity(0.8))
+                        }
+                        Spacer()
+                        Button(action: onCancel) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.secondary.opacity(0.3))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 28)
+                    .padding(.bottom, 20)
+                    
+                    Divider().padding(.horizontal, 24)
+                    
+                    // Lista de campos
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            ForEach(variables) { variable in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(variable.name.uppercased())
+                                            .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                                            .foregroundColor(.blue)
+                                            .tracking(1.2)
+                                        
+                                        Spacer()
+                                        
+                                        if focusedField == variable.id {
+                                            Text(statusText(for: variable.type))
+                                                .font(.system(size: 9, weight: .medium))
+                                                .foregroundColor(.blue.opacity(0.6))
+                                        }
+                                    }
+                                    
+                                    inputField(for: variable)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(focusedField == variable.id ? Color.blue.opacity(0.02) : Color.primary.opacity(0.03))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(focusedField == variable.id ? Color.blue.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1.5)
+                                    )
                                 }
+                                .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
                             }
-                            
-                            inputField(for: variable)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
+                        }
+                        .padding(28)
+                    }
+                    
+                    // Sección de Previsualización
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Label("VISTA PREVIA", systemImage: "eye.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary.opacity(0.8))
+                            Spacer()
+                        }
+                        
+                        ScrollView {
+                            Text(processedContent.isEmpty ? "La vista previa aparecerá aquí..." : processedContent)
+                                .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                                .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.8))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .multilineTextAlignment(.leading)
+                                .padding(12)
+                        }
+                        .frame(maxHeight: 120)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.primary.opacity(0.02))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 24)
+                    
+                    Divider().padding(.horizontal, 24)
+                    
+                    // Footer
+                    HStack(spacing: 16) {
+                        Button(action: onCancel) {
+                            Text("Cancelar")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Button(action: {
+                            onCopy(processedContent)
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.on.doc.fill")
+                                Text("Copiar Prompt Final")
+                            }
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(focusedField == variable.id ? Color.blue.opacity(0.02) : Color.primary.opacity(0.03))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(focusedField == variable.id ? Color.blue.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1.5)
+                                    .fill(canCopy ? Color.blue : Color.gray.opacity(0.3))
+                                    .shadow(color: canCopy ? .blue.opacity(0.3) : .clear, radius: 8, y: 4)
                             )
                         }
-                        .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
+                        .buttonStyle(ScaleButtonStyle())
+                        .disabled(!canCopy)
+                    }
+                    .padding(28)
+                }
+                .frame(width: 480)
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(24)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        focusedField = variables.first?.id
                     }
                 }
-                .padding(28)
-            }
-            
-            // Sección de Previsualización
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label("VISTA PREVIA", systemImage: "eye.fill")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary.opacity(0.8))
-                    Spacer()
-                }
-                
-                ScrollView {
-                    Text(processedContent.isEmpty ? "La vista previa aparecerá aquí..." : processedContent)
-                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                        .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.8))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .multilineTextAlignment(.leading)
-                        .padding(12)
-                }
-                .frame(maxHeight: 120)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.primary.opacity(0.02))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                        )
-                )
-            }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 24)
-            
-            Divider().padding(.horizontal, 24)
-            
-            // Footer
-            HStack(spacing: 16) {
-                Button(action: onCancel) {
-                    Text("Cancelar")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-                }
-                .buttonStyle(ScaleButtonStyle())
-                
-                Button(action: {
-                    onCopy(processedContent)
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "doc.on.doc.fill")
-                        Text("Copiar Prompt Final")
-                    }
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(canCopy ? Color.blue : Color.gray.opacity(0.3))
-                            .shadow(color: canCopy ? .blue.opacity(0.3) : .clear, radius: 8, y: 4)
-                    )
-                }
-                .buttonStyle(ScaleButtonStyle())
-                .disabled(!canCopy)
-            }
-            .padding(28)
-        }
-        .frame(width: 480)
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(24)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                focusedField = variables.first?.id
             }
         }
     }

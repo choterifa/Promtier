@@ -29,6 +29,9 @@ struct NewPromptView: View {
     @State private var isDragging = false
     
     @State private var insertionRequest: String? = nil
+    @State private var replaceSnippetRequest: String? = nil
+    @State private var showSnippets: Bool = false
+    @State private var snippetSearchQuery: String = ""
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -63,6 +66,9 @@ struct NewPromptView: View {
                 }
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if showSnippets {
+                snippetOverlay
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
         .onAppear {
@@ -267,7 +273,10 @@ struct NewPromptView: View {
                 HighlightedEditor(
                     text: $content,
                     insertionRequest: $insertionRequest,
-                    fontSize: 15 * preferences.fontSize.scale
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    fontSize: 15 * preferences.fontSize.scale,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -468,6 +477,34 @@ struct NewPromptView: View {
             }
         }
         return found
+    }
+    
+    private var snippetOverlay: some View {
+        VStack {
+            Spacer()
+            if !preferences.isPremiumActive {
+                PremiumUpsellView(
+                    featureName: "Snippets Rápidos",
+                    onCancel: {
+                        withAnimation { showSnippets = false }
+                    }
+                )
+                .cornerRadius(24)
+                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
+                .padding(.bottom, 24)
+            } else {
+                SnippetsPopupList(
+                    query: snippetSearchQuery,
+                    onSelect: { snippet in
+                        replaceSnippetRequest = snippet.content
+                    },
+                    onDismiss: {
+                        withAnimation { showSnippets = false }
+                    }
+                )
+                .padding(.bottom, 24)
+            }
+        }
     }
 }
 

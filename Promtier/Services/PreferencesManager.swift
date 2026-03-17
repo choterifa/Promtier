@@ -152,6 +152,14 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var snippets: [Snippet] = [] {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(snippets) {
+                userDefaults.set(encoded, forKey: "savedSnippets")
+            }
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -183,6 +191,18 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
+        
+        if let data = userDefaults.data(forKey: "savedSnippets"),
+           let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
+            self.snippets = decoded
+        } else {
+            // Snippets de ejemplo
+            self.snippets = [
+                Snippet(title: "Firma Profesional", content: "Saludos cordiales,\nEquipo Promtier", shortcut: "firma"),
+                Snippet(title: "Plantilla Bug", content: "**Descripción:**\n**Pasos a reproducir:**\n1. \n2. \n**Resultado esperado:**", shortcut: "bug"),
+                Snippet(title: "Revisión Rápida", content: "Por favor revisa este código y optimízalo para SwiftUI:", shortcut: "revisar")
+            ]
+        }
         
         // Aplicar configuración inicial
         applyAppearance()

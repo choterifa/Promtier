@@ -11,7 +11,12 @@ import AppKit
 struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var insertionRequest: String?
+    @Binding var replaceSnippetRequest: String?
     var fontSize: CGFloat
+    
+    // Autocompletado (Snippets)
+    @Binding var showSnippets: Bool
+    @Binding var snippetSearchQuery: String
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -77,6 +82,29 @@ struct HighlightedEditor: NSViewRepresentable {
             }
         }
         
+        // Manejar petición de reemplazar snippet
+        if let snippetText = replaceSnippetRequest {
+            let nsString = textView.string as NSString
+            let selectedRange = textView.selectedRange()
+            
+            // Buscar la última "/" antes del cursor
+            let textBeforeCursor = nsString.substring(to: selectedRange.location)
+            if let lastSlashIndex = textBeforeCursor.lastIndex(of: "/") {
+                let distance = textBeforeCursor.distance(from: textBeforeCursor.startIndex, to: lastSlashIndex)
+                let replacementRange = NSRange(location: distance, length: selectedRange.location - distance)
+                
+                textView.insertText(snippetText, replacementRange: replacementRange)
+            } else {
+                textView.insertText(snippetText, replacementRange: selectedRange) // fallback
+            }
+            
+            DispatchQueue.main.async {
+                self.text = textView.string
+                self.replaceSnippetRequest = nil
+                self.showSnippets = false
+            }
+        }
+        
         // Actualizar fuente si cambió
         if textView.font?.pointSize != fontSize {
             textView.font = .systemFont(ofSize: fontSize)
@@ -95,10 +123,40 @@ struct HighlightedEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             self.parent.text = textView.string
             applyHighlighting(textView)
+            
+            // Actualizar búsqueda de snippets si está activo
+            if self.parent.showSnippets {
+                let text = textView.string
+                let selectedRange = textView.selectedRange()
+                let index = text.index(text.startIndex, offsetBy: selectedRange.location)
+                let textBeforeCursor = text[..<index]
+                
+                if let lastSlashIndex = textBeforeCursor.lastIndex(of: "/") {
+                    let query = textBeforeCursor[text.index(after: lastSlashIndex)...]
+                    if !query.contains(" ") && !query.contains("\n") {
+                        self.parent.snippetSearchQuery = String(query)
+                    } else {
+                        self.parent.showSnippets = false
+                    }
+                } else {
+                    self.parent.showSnippets = false
+                }
+            }
         }
         
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+            if replacementString == "/" {
+                DispatchQueue.main.async {
+                    self.parent.showSnippets = true
+                    self.parent.snippetSearchQuery = ""
+                }
+            }
+            
             if replacementString == "\n" {
+                if self.parent.showSnippets {
+                    DispatchQueue.main.async { self.parent.showSnippets = false }
+                }
+                
                 // Lógica de Auto-indentado
                 let content = textView.string as NSString
                 let lineRange = content.lineRange(for: NSRange(location: affectedCharRange.location, length: 0))

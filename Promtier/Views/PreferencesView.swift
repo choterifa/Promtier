@@ -28,6 +28,7 @@ struct PreferencesView: View {
         (title: "Apariencia", icon: "paintbrush.fill"),
         (title: "General", icon: "gearshape.fill"),
         (title: "Atajos", icon: "keyboard.fill"),
+        (title: "Snippets", icon: "text.quote"),
         (title: "Datos", icon: "externaldrive.fill")
     ]
     
@@ -106,7 +107,8 @@ struct PreferencesView: View {
                     case 0: AppearanceTab()
                     case 1: BehaviorTab()
                     case 2: ShortcutsTab()
-                    case 3: DataTab(
+                    case 3: SnippetsManagerTab()
+                    case 4: DataTab(
                         showingResetAlert: $showingResetAlert,
                         onClose: onClose
                     )

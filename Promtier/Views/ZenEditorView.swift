@@ -15,6 +15,9 @@ struct ZenEditorView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @FocusState private var isEditorFocused: Bool
     @State private var insertionRequest: String? = nil
+    @State private var replaceSnippetRequest: String? = nil
+    @State private var showSnippets: Bool = false
+    @State private var snippetSearchQuery: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -71,7 +74,10 @@ struct ZenEditorView: View {
                 HighlightedEditor(
                     text: $content,
                     insertionRequest: $insertionRequest,
-                    fontSize: 18 * preferences.fontSize.scale
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    fontSize: 18 * preferences.fontSize.scale,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery
                 )
                 .focused($isEditorFocused)
             }
