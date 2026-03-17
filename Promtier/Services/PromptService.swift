@@ -30,7 +30,11 @@ class PromptService: ObservableObject {
         $searchQuery
             .debounce(for: .milliseconds(150), scheduler: RunLoop.main) // CONFIGURABLE: Debounce de búsqueda
             .sink { [weak self] query in
-                self?.filterPrompts(query: query)
+                // VALIDACIÓN: Limitar a 40 caracteres
+                if query.count > 40 {
+                    self?.searchQuery = String(query.prefix(40))
+                }
+                self?.filterPrompts(query: self?.searchQuery ?? "")
             }
             .store(in: &cancellables)
             
@@ -307,53 +311,92 @@ class PromptService: ObservableObject {
             }
         }
         
-        // Filtrar por texto si hay consulta - Búsqueda Inteligente (Ponderada y Validada)
+        // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO (Fuzzy + Phrasal + Weighted)
         if !query.isEmpty {
-            // VALIDACIÓN: Limpiar espacios extra y normalizar para ignorar acentos/diacríticos
-            let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedQuery.isEmpty else { 
+            let originalQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !originalQuery.isEmpty else { 
                 filteredPrompts = filtered
                 return 
             }
             
-            // Normalización para búsqueda robusta (ignora acentos: "canción" == "cancion")
-            let normalizedQuery = trimmedQuery.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            // 1. EXTRAER FRASES EXACTAS (entre comillas)
+            var phrasalQueries: [String] = []
+            var remainingQuery = originalQuery
             
-            // Dividir por palabras para permitir búsqueda no secuencial (ej: "email support" coincide con "Support for Email")
-            let keywords = normalizedQuery.components(separatedBy: .whitespaces)
-                .filter { !$0.isEmpty }
+            let regex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
+            if let matches = regex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
+                for match in matches.reversed() { // Reversa para no corromper índices al remover
+                    if let range = Range(match.range(at: 1), in: originalQuery) {
+                        phrasalQueries.append(originalQuery[range].lowercased())
+                    }
+                    if let fullRange = Range(match.range(at: 0), in: originalQuery) {
+                        remainingQuery.removeSubrange(fullRange)
+                    }
+                }
+            }
             
-            // Asignar puntuaciones para ordenación inteligente
+            // 2. NORMALIZACIÓN Y KEYWORDS RESTANTES
+            let normalizedRemaining = remainingQuery.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            let keywords = normalizedRemaining.components(separatedBy: .whitespaces)
+                .filter { $0.count >= 2 } // Ignorar conectores de 1 letra
+            
+            // 3. SCORING AVANZADO
             let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
                 var score = 0
-                
-                // Normalizar campos del prompt para comparar
                 let title = prompt.title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let content = prompt.content.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 let folder = (prompt.folder ?? "").folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 
-                // 1. PUNTUACIÓN POR COINCIDENCIA EXACTA (Fuerza bruta)
-                if title == normalizedQuery { score += 200 }
-                else if title.contains(normalizedQuery) { score += 100 }
-                
-                // 2. PUNTUACIÓN POR PALABRAS CLAVE (Flexibilidad)
-                var matchesAllKeywords = true
-                for keyword in keywords {
-                    let inTitle = title.contains(keyword)
-                    let inContent = content.contains(keyword)
-                    let inFolder = folder.contains(keyword)
-                    
-                    if inTitle || inContent || inFolder {
-                        if inTitle { score += 40 }
-                        if inContent { score += 15 }
-                        if inFolder { score += 10 }
-                    } else {
-                        matchesAllKeywords = false
-                    }
+                // --- A. VALIDACIÓN DE FRASES COINCIDENTES ("Exact Match") ---
+                for phrase in phrasalQueries {
+                    if title.contains(phrase) { score += 500 }
+                    else if content.contains(phrase) { score += 200 }
+                    else { return (prompt, 0) } // Si pidió frase exacta y no está, descartar
                 }
                 
-                // Bonus si todas las palabras buscadas están presentes
-                if matchesAllKeywords && keywords.count > 1 { score += 50 }
+                // --- B. VALIDACIÓN DE KEYWORDS (Lógica AND Flexible + FUZZY) ---
+                for kw in keywords {
+                    var kwFound = false
+                    
+                    // B1. COINCIDENCIA POR PREFIJO (Muy relevante: Escribes "mar" y sale "Marketing")
+                    if title.hasPrefix(kw) { score += 150; kwFound = true }
+                    else if title.contains(" " + kw) { score += 100; kwFound = true } // Inicio de cualquier palabra en título
+                    
+                    // B2. FUZZY MATCHING (Tolerancia a 1 error en palabras > 4 letras)
+                    if !kwFound && kw.count > 4 {
+                        // Comprobamos si hay una coincidencia aproximada (simple fuzzy)
+                        // Si la palabra está casi bien escrita en el título
+                        let titleWords = title.components(separatedBy: .whitespaces)
+                        for word in titleWords where word.count > 3 {
+                            if word.commonPrefix(with: kw).count >= kw.count - 1 {
+                                score += 60 // Casi coincide
+                                kwFound = true
+                                break
+                            }
+                        }
+                    }
+                    
+                    // B3. BÚSQUEDA EN CONTENIDO
+                    if !kwFound && content.contains(kw) { 
+                        score += 30
+                        kwFound = true
+                    }
+                    
+                    // B4. BÚSQUEDA EN CATEGORÍA
+                    if !kwFound && folder.contains(kw) {
+                        score += 20
+                        kwFound = true
+                    }
+                    
+                    // Si el usuario escribió una palabra y no está NI PARECIDA, penalizamos o descartamos
+                    if !kwFound { score -= 20 }
+                }
+                
+                // --- C. BONUS POR RECIENCIA Y USO ---
+                if score > 0 {
+                    score += Int(prompt.useCount) / 2
+                    if prompt.isFavorite { score += 40 }
+                }
                 
                 return (prompt, score)
             }

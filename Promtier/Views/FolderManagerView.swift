@@ -126,6 +126,11 @@ struct FolderManagerView: View {
                                 RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                             )
+                            .onChange(of: newFolderName) { _, newValue in
+                                if newValue.count > 40 {
+                                    newFolderName = String(newValue.prefix(40))
+                                }
+                            }
                     }
                     .scaleEffect(isReady ? 1.0 : 0.9)
                     .opacity(isReady ? 1 : 0)

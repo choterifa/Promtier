@@ -49,7 +49,7 @@ struct SearchViewSimple: View {
                 })
                 .environmentObject(promptService)
                 .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
             }
             
             // Overlay de Variables Dinámicas
@@ -206,6 +206,11 @@ struct SearchViewSimple: View {
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
                                 .focused($isSearchFocused)
+                                .onChange(of: promptService.searchQuery) { _, newValue in
+                                    if newValue.count > 40 {
+                                        promptService.searchQuery = String(newValue.prefix(40))
+                                    }
+                                }
                             
                             if !promptService.searchQuery.isEmpty {
                                 Button(action: { promptService.searchQuery = "" }) {

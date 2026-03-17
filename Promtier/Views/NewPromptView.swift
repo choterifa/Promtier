@@ -192,6 +192,11 @@ struct NewPromptView: View {
                 TextField("Título del prompt...", text: $title)
                     .textFieldStyle(.plain)
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
+                    .onChange(of: title) { _, newValue in
+                        if newValue.count > 40 {
+                            title = String(newValue.prefix(40))
+                        }
+                    }
                 
                 HStack(spacing: 4) {
                     Button(action: { 
