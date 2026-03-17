@@ -479,22 +479,23 @@ struct NewPromptView: View {
                         }
                     }
                 }
-                .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
-                    handleGalleryDrop(providers: providers)
-                    return true
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue, lineWidth: isDragging ? 2 : 0)
-                )
-                
-                if showcaseImages.isEmpty {
-                    Text("Añadir resultados del prompt")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary.opacity(0.4))
-                }
                 
                 Spacer()
+            }
+            .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
+                handleGalleryDrop(providers: providers)
+                return true
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.blue, lineWidth: isDragging ? 2 : 0)
+            )
+            
+            if showcaseImages.isEmpty {
+                Text("Añadir resultados del prompt")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary.opacity(0.4))
+                    .padding(.top, 4)
             }
         }
         .padding(.horizontal, 4)
@@ -740,17 +741,21 @@ struct CategoryChip: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 11, weight: .semibold))
                 Text(title)
                     .font(.system(size: 11, weight: .medium))
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(
-                Capsule()
-                    .fill(isSelected ? color : color.opacity(0.08))
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? color : color.opacity(0.06))
             )
-            .foregroundColor(isSelected ? .white : color.opacity(0.8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isSelected ? color : color.opacity(0.15), lineWidth: 1)
+            )
+            .foregroundColor(isSelected ? .white : color.opacity(0.9))
         }
         .buttonStyle(.plain)
     }
