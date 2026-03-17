@@ -146,6 +146,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var isPremiumActive: Bool {
+        didSet {
+            userDefaults.set(isPremiumActive, forKey: "isPremiumActive")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -176,6 +182,7 @@ class PreferencesManager: ObservableObject {
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
+        self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
         
         // Aplicar configuración inicial
         applyAppearance()
@@ -260,6 +267,7 @@ class PreferencesManager: ObservableObject {
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
         self.suppressAccessibilityWarning = false
+        self.isPremiumActive = false
         
         applyAppearance()
     }

@@ -345,6 +345,13 @@ struct BehaviorTab: View {
                         .toggleStyle(.switch)
                 }
             }
+            
+            SettingsSection(title: "Promtier Premium 💎", icon: "crown.fill") {
+                SettingsRow("Activar Funciones Premium", subtitle: "Simular estado Premium para pruebas del creador", icon: "sparkles", iconColor: .purple) {
+                    Toggle("", isOn: $preferences.isPremiumActive)
+                        .toggleStyle(.switch)
+                }
+            }
         }
     }
 }

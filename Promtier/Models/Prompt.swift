@@ -21,6 +21,7 @@ struct Prompt: Identifiable, Codable {
     var lastUsedAt: Date?           // Última vez que se copió
     var icon: String?                // Icono personalizado (SFSymbol)
     var showcaseImages: [Data] = []  // Imágenes de resultados (max 3)
+    var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
     
     // Inicializador con valores por defecto
     init(title: String, content: String, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = []) {
@@ -72,4 +73,11 @@ struct Prompt: Identifiable, Codable {
         }
         return variables
     }
+}
+
+/// Representa una versión guardada de un prompt (Premium)
+struct PromptSnapshot: Codable, Identifiable {
+    var id: UUID = UUID()
+    let content: String
+    let timestamp: Date
 }
