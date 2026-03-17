@@ -119,6 +119,21 @@ struct SearchViewSimple: View {
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
+        .onChange(of: preferences.windowWidth) { newWidth in
+            let threshold: CGFloat = 565
+            
+            if newWidth < threshold && preferences.showSidebar {
+                // Auto-hide when shrinking past 565
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    preferences.showSidebar = false
+                }
+            } else if newWidth > threshold && !preferences.showSidebar {
+                // Auto-show when expanding past 565
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    preferences.showSidebar = true
+                }
+            }
+        }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)

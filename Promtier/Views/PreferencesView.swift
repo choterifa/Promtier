@@ -33,6 +33,44 @@ struct PreferencesView: View {
         (title: "Soporte", icon: "questionmark.circle.fill")
     ]
     
+    private var tabsContent: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<tabs.count, id: \.self) { index in
+                Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: tabs[index].icon)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: .semibold))
+                        Text(tabs[index].title)
+                            .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                    .background(
+                        ZStack {
+                            if selectedTab == index {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue)
+                                    .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
+                            } else {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.clear)
+                            }
+                        }
+                    )
+                    .foregroundColor(selectedTab == index ? .white : .primary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.primary.opacity(0.05))
+        )
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header Premium
@@ -61,40 +99,15 @@ struct PreferencesView: View {
             .padding(.bottom, 24)
             
             // Selector de pestañas personalizado (Segmented Premium)
-            HStack(spacing: 4) {
-                ForEach(0..<tabs.count, id: \.self) { index in
-                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: tabs[index].icon)
-                                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                            Text(tabs[index].title)
-                                .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .contentShape(Rectangle()) // Asegurar que todo el padding es clickable
-                        .background(
-                            ZStack {
-                                if selectedTab == index {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.blue)
-                                        .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
-                                } else {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.clear)
-                                }
-                            }
-                        )
-                        .foregroundColor(selectedTab == index ? .white : .primary)
-                    }
-                    .buttonStyle(.plain)
+            // Selector de pestañas personalizado (Segmented Premium)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    tabsContent
+                    Spacer(minLength: 0)
                 }
+                .frame(minWidth: max(0, preferences.windowWidth - 64))
             }
-            .padding(6)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.primary.opacity(0.05))
-            )
             .padding(.horizontal, 32)
             .padding(.bottom, 24)
             
