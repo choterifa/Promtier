@@ -397,6 +397,40 @@ class PromptService: ObservableObject {
         }
     }
     
+    /// Exporta todos los prompts en formato CSV (RFC 4180)
+    /// Columnas: id, title, content, folder, icon, isFavorite, useCount, createdAt, modifiedAt
+    func exportAllPromptsAsCSV() -> Data? {
+        let iso = ISO8601DateFormatter()
+        
+        // Función helper: envuelve el valor en comillas y escapa las comillas internas
+        func csv(_ value: String) -> String {
+            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\""
+        }
+        
+        var rows: [String] = []
+        // Cabecera
+        rows.append("id,title,content,folder,icon,isFavorite,useCount,createdAt,modifiedAt")
+        
+        for p in prompts {
+            let row = [
+                csv(p.id.uuidString),
+                csv(p.title),
+                csv(p.content),
+                csv(p.folder ?? ""),
+                csv(p.icon ?? ""),
+                p.isFavorite ? "true" : "false",
+                "\(p.useCount)",
+                csv(iso.string(from: p.createdAt)),
+                csv(iso.string(from: p.modifiedAt))
+            ].joined(separator: ",")
+            rows.append(row)
+        }
+        
+        let csvString = rows.joined(separator: "\n")
+        return csvString.data(using: .utf8)
+    }
+    
     /// Importa datos desde un archivo JSON (Soporta formato antiguo y nuevo BackupPackage)
     func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
         let decoder = JSONDecoder()

@@ -497,30 +497,59 @@ struct DataTab: View {
     var onClose: () -> Void
     
     @State private var importStatus: String?
+    @State private var exportFormat: ExportFormat = .json
+    
+    enum ExportFormat: String, CaseIterable, Identifiable {
+        case json = "JSON"
+        case csv  = "CSV"
+        var id: String { rawValue }
+        var icon: String { self == .json ? "doc.text" : "tablecells" }
+        var subtitle: String {
+            self == .json
+                ? "Backup completo con carpetas (recomendado)"
+                : "Solo prompts — compatible con Excel / Sheets"
+        }
+    }
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Transferencia", icon: "arrow.left.arrow.right") {
-                Button(action: { 
+            SettingsSection(title: "Exportar", icon: "square.and.arrow.up") {
+                // Selector de formato
+                SettingsRow("Formato", subtitle: "Elige el formato de exportación") {
+                    Picker("", selection: $exportFormat) {
+                        ForEach(ExportFormat.allCases) { fmt in
+                            Text(fmt.rawValue).tag(fmt)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 130)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                Button(action: {
                     onClose()
                     menuBarManager.closePopover()
-                    exportData() 
+                    exportData(as: exportFormat)
                 }) {
-                    SettingsRow("Exportar Biblioteca", subtitle: "Crea una copia de seguridad en JSON") {
+                    SettingsRow(exportFormat.subtitle,
+                                subtitle: "Guardar archivo .\(exportFormat.rawValue.lowercased())",
+                                icon: exportFormat.icon,
+                                iconColor: .blue) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16))
                             .foregroundColor(.blue)
                     }
                 }.buttonStyle(.plain)
-                
-                Divider().padding(.leading, 20)
-                
-                Button(action: { 
+            }
+            
+            SettingsSection(title: "Importar", icon: "square.and.arrow.down") {
+                Button(action: {
                     onClose()
                     menuBarManager.closePopover()
-                    importData() 
+                    importData()
                 }) {
-                    SettingsRow("Importar Biblioteca", subtitle: "Carga prompts desde un archivo JSON") {
+                    SettingsRow("Importar Biblioteca", subtitle: "Carga desde un archivo JSON (formato Promtier)") {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 16))
                             .foregroundColor(.blue)
@@ -564,27 +593,41 @@ struct DataTab: View {
         }
     }
     
-    /// Lógica de exportación nativa
-    private func exportData() {
-        guard let data = promptService.exportAllPromptsAsJSON() else { return }
+    /// Lógica de exportación nativa — soporta JSON y CSV
+    private func exportData(as format: ExportFormat) {
+        let data: Data?
+        let filename: String
+        let contentType: UTType
+        let timestamp = Int(Date().timeIntervalSince1970)
         
-        // Ejecutar en el hilo principal con un pequeño margen
+        switch format {
+        case .json:
+            data = promptService.exportAllPromptsAsJSON()
+            filename = "promtier_backup_\(timestamp).json"
+            contentType = .json
+        case .csv:
+            data = promptService.exportAllPromptsAsCSV()
+            filename = "promtier_prompts_\(timestamp).csv"
+            contentType = .commaSeparatedText
+        }
+        
+        guard let exportData = data else { return }
+        
         DispatchQueue.main.async {
             let savePanel = NSSavePanel()
-            savePanel.allowedContentTypes = [.json]
-            savePanel.nameFieldStringValue = "promtier_backup_\(Int(Date().timeIntervalSince1970)).json"
+            savePanel.allowedContentTypes = [contentType]
+            savePanel.nameFieldStringValue = filename
             savePanel.title = "Exportar Biblioteca"
             
-            // Activar la app ANTES de mostrar el panel, pero sin forzar si falla
             NSApp.activate(ignoringOtherApps: true)
             
             savePanel.begin { response in
                 if response == .OK, let url = savePanel.url {
                     do {
-                        try data.write(to: url)
-                        print("✅ Biblioteca exportada a \(url.path)")
+                        try exportData.write(to: url)
+                        print("✅ Exportado: \(url.path)")
                     } catch {
-                        print("❌ Error guardando archivo: \(error)")
+                        print("❌ Error guardando: \(error)")
                     }
                 }
             }
