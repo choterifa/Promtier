@@ -139,10 +139,13 @@ class MenuBarManager: NSObject, ObservableObject {
         }
         
     
-        // Hacer la aplicación activa para evitar requerir doble clic
-        NSApp.activate(ignoringOtherApps: true)
-        
         popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        
+        // Asegurar foco inmediato para evitar el "doble click"
+        if let window = popover?.contentViewController?.view.window {
+            window.makeKey()
+        }
+        NSApp.activate(ignoringOtherApps: true)
         
         // Cambiar icono
         statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
