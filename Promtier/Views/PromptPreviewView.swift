@@ -13,6 +13,13 @@ struct PromptPreviewView: View {
     @State private var showingFullScreenImage: Data? = nil
     @State private var isVisible = false
     @EnvironmentObject var preferences: PreferencesManager
+    /// Binding para notificar al padre cuando una hoja secundaria está abierta
+    @Binding var isFullScreenImageOpen: Bool
+    
+    init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false)) {
+        self.prompt = prompt
+        self._isFullScreenImageOpen = isFullScreenImageOpen
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -40,6 +47,9 @@ struct PromptPreviewView: View {
             set: { showingFullScreenImage = $0?.value }
         )) { item in
             FullScreenImageView(imageData: item.value)
+        }
+        .onChange(of: showingFullScreenImage != nil) { _, isOpen in
+            isFullScreenImageOpen = isOpen
         }
         .onAppear {
             isVisible = true

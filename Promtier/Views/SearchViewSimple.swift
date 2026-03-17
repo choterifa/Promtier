@@ -19,6 +19,8 @@ struct SearchViewSimple: View {
     @State private var importMessage: String? = nil
     @State private var showingImportAlert: Bool = false
     @State private var importData: Data? = nil
+    /// Bloquea atajos de teclado cuando hay una hoja/modal secundaria abierta
+    @State private var isFullScreenImageOpen: Bool = false
     
     var body: some View {
         ZStack {
@@ -373,11 +375,14 @@ struct SearchViewSimple: View {
                                         }
                                     )
                                     .id(prompt.id)
-                                    .popover(isPresented: Binding(
+                                     .popover(isPresented: Binding(
                                         get: { showingPreview && selectedPrompt?.id == prompt.id },
                                         set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
                                     ), arrowEdge: .top) {
-                                        PromptPreviewView(prompt: prompt)
+                                        PromptPreviewView(
+                                            prompt: prompt,
+                                            isFullScreenImageOpen: $isFullScreenImageOpen
+                                        )
                                     }
                                     .contextMenu {
                                     Button(action: { usePrompt(prompt) }) {
@@ -461,8 +466,11 @@ struct SearchViewSimple: View {
             }
         }
         
-        // Solo manejar el resto si estamos en la vista principal Y sin overlay
-        guard case .main = menuBarManager.activeViewState, fillingVariablesFor == nil else { return event }
+        // GUARDIA PRINCIPAL: solo actuar en vista principal, sin overlays ni modales abiertos
+        guard case .main = menuBarManager.activeViewState,
+              fillingVariablesFor == nil,
+              !isFullScreenImageOpen,
+              !menuBarManager.isModalActive else { return event }
         
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         
