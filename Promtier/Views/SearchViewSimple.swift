@@ -491,9 +491,11 @@ struct SearchViewSimple: View {
                         if showingPreview && preferences.soundEnabled {
                             SoundService.shared.playInteractionSound()
                         }
+                        HapticService.shared.playLight()
                     }
                 } else {
                     selectedPrompt = promptService.filteredPrompts.first
+                    HapticService.shared.playLight()
                 }
             }
             return nil
@@ -512,9 +514,11 @@ struct SearchViewSimple: View {
                         if showingPreview && preferences.soundEnabled {
                             SoundService.shared.playInteractionSound()
                         }
+                        HapticService.shared.playLight()
                     }
                 } else {
                     selectedPrompt = promptService.filteredPrompts.first
+                    HapticService.shared.playLight()
                 }
             }
             return nil
@@ -537,10 +541,11 @@ struct SearchViewSimple: View {
         
         self.promptService.usePrompt(prompt)
         
-        // Lógica de Post-Copia: Sonido, Cerrar y Preview
+        // Lógica de Post-Copia: Sonido, Háptica, Cerrar y Preview
         if self.preferences.soundEnabled {
             SoundService.shared.playCopySound()
         }
+        HapticService.shared.playAlignment()
         
         // Efectos Visuales
         if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
@@ -575,10 +580,11 @@ struct SearchViewSimple: View {
         
         _ = self.promptService.updatePrompt(updatedPrompt)
         
-        // Sonido
+        // Sonido y Háptica
         if self.preferences.soundEnabled {
             SoundService.shared.playFavoriteSound()
         }
+        HapticService.shared.playImpact()
     }
     
     /// Elimina un prompt - Versión optimizada

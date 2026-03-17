@@ -186,12 +186,12 @@ class PreferencesManager: ObservableObject {
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
-        // Dimensiones de ventana (Defaults: 690x540, Min: 500x450)
+        // Dimensiones de ventana (Defaults: 690x540, Max: 900x750, Min: 500x450)
         let savedWidth = userDefaults.double(forKey: "windowWidth")
-        self.windowWidth = savedWidth > 0 ? max(500, CGFloat(savedWidth)) : 690
+        self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 690
         
         let savedHeight = userDefaults.double(forKey: "windowHeight")
-        self.windowHeight = savedHeight > 0 ? max(450, CGFloat(savedHeight)) : 540
+        self.windowHeight = savedHeight > 0 ? min(750, max(450, CGFloat(savedHeight))) : 540
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")

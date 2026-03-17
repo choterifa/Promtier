@@ -81,6 +81,7 @@ struct PromptPreviewView: View {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             preferences.previewImagesFirst.toggle()
                         }
+                        HapticService.shared.playLight()
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")

@@ -295,7 +295,7 @@ struct AppearanceTab: View {
             
             SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {
                 SettingsRow("Ancho", subtitle: "\(Int(preferences.previewWidth))px") {
-                    Slider(value: $preferences.previewWidth, in: 500...1000, step: 10, onEditingChanged: { editing in
+                    Slider(value: $preferences.previewWidth, in: 500...900, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowWidth = preferences.previewWidth
@@ -307,7 +307,7 @@ struct AppearanceTab: View {
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("Alto", subtitle: "\(Int(preferences.previewHeight))px") {
-                    Slider(value: $preferences.previewHeight, in: 450...800, step: 10, onEditingChanged: { editing in
+                    Slider(value: $preferences.previewHeight, in: 450...750, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowHeight = preferences.previewHeight
@@ -378,6 +378,36 @@ struct BehaviorTab: View {
                     .controlSize(.small)
                     .disabled(shortcutManager.isAccessibilityGranted)
                 }
+            }
+            
+            SettingsSection(title: "Haptic Feedback (Trackpad) 🫨", icon: "hand.tap.fill") {
+                SettingsRow("Probar Vibración", subtitle: "Haz clic en los botones para probar el trackpad") {
+                    HStack(spacing: 12) {
+                        Button("Suave") {
+                            HapticService.shared.playLight()
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Medio") {
+                            HapticService.shared.playAlignment()
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Fuerte 🪄") {
+                            HapticService.shared.playStrong()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .controlSize(.small)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                Text("Nota: Requiere un MacBook con Force Touch o Magic Trackpad. Revisa en Ajustes del Sistema > Trackpad que la retroalimentación esté activada.")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
             }
             
             SettingsSection(title: "Sistema", icon: "macwindow") {

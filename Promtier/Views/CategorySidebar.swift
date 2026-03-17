@@ -200,6 +200,7 @@ struct SidebarItem: View {
         )
         .contentShape(Rectangle())
         .onTapGesture {
+            HapticService.shared.playLight()
             action()
         }
         .onHover { hovering in

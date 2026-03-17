@@ -198,6 +198,7 @@ struct VariableFillView: View {
                         .buttonStyle(ScaleButtonStyle())
                         
                         Button(action: {
+                            HapticService.shared.playImpact()
                             onCopy(processedContent)
                         }) {
                             HStack(spacing: 8) {
@@ -283,6 +284,7 @@ struct VariableFillView: View {
                 }
             } else {
                 if canCopy {
+                    HapticService.shared.playImpact()
                     onCopy(processedContent)
                 }
             }

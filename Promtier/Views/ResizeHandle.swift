@@ -30,10 +30,21 @@ struct ResizeHandle: View {
                     .onChanged { value in
                         if initialSize == .zero {
                             initialSize = CGSize(width: preferences.windowWidth, height: preferences.windowHeight)
+                            HapticService.shared.playLight()
                         }
                         
-                        let newWidth = max(500, initialSize.width + value.translation.width)
-                        let newHeight = max(450, initialSize.height + value.translation.height)
+                        let newWidth = min(900, max(500, initialSize.width + value.translation.width))
+                        let newHeight = min(750, max(450, initialSize.height + value.translation.height))
+                        
+                        // Retroalimentación táctica cada 20px
+                        let oldW = Int(preferences.windowWidth / 20)
+                        let newW = Int(newWidth / 20)
+                        let oldH = Int(preferences.windowHeight / 20)
+                        let newH = Int(newHeight / 20)
+                        
+                        if oldW != newW || oldH != newH {
+                            HapticService.shared.playImpact()
+                        }
                         
                         preferences.windowWidth = newWidth
                         preferences.windowHeight = newHeight
@@ -41,6 +52,7 @@ struct ResizeHandle: View {
                     .onEnded { _ in
                         initialSize = .zero
                         preferences.saveWindowDimensions()
+                        HapticService.shared.playAlignment()
                     }
             )
         }
