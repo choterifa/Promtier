@@ -74,7 +74,28 @@ struct PromptPreviewView: View {
                     .foregroundColor(.blue)
                     .cornerRadius(8)
                 }
-
+                
+                // Toggle para posición de imágenes (Flecha)
+                if !prompt.showcaseImages.isEmpty {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            preferences.previewImagesFirst.toggle()
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                            Image(systemName: "photo")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+                    }
+                    .buttonStyle(.plain)
+                    .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -89,8 +110,8 @@ struct PromptPreviewView: View {
             // Contenido Estilizado con Imágenes Prioritarias
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Galería de Resultados (Showcase) - PRIORIDAD: Primero
-                    if !prompt.showcaseImages.isEmpty {
+                    // Galería al inicio si la preferencia es true
+                    if preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
                         showcaseGallery
                     }
                     
@@ -99,6 +120,11 @@ struct PromptPreviewView: View {
                         .lineSpacing(6)
                         .foregroundColor(.primary.opacity(0.9))
                         .textSelection(.enabled)
+                    
+                    // Galería al final si la preferencia es false
+                    if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                        showcaseGallery
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)

@@ -163,6 +163,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var previewImagesFirst: Bool {
+        didSet {
+            userDefaults.set(previewImagesFirst, forKey: "previewImagesFirst")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -201,6 +207,9 @@ class PreferencesManager: ObservableObject {
         } else {
             self.visualEffectsEnabled = true
         }
+        
+        // Imágenes primero por defecto
+        self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
