@@ -73,6 +73,7 @@ struct ShortcutRecorderView: View {
         }
     }
     
+    
     private var shortcutString: String {
         return ShortcutFormatter.format(keyCode: preferences.hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(preferences.hotkeyModifiers)))
     }

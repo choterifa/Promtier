@@ -43,7 +43,7 @@ class ClipboardService: ObservableObject {
         }
     }
     
-    /// Ejecuta el pegado automático mediante AppleScript
+    /// Ejecuta el pegado automático mediante CoreGraphics (Simulación de Teclado)
     private func performAutoPaste() {
         // Asegurar que el popover se cierre para devolver el foco a la aplicación anterior
         DispatchQueue.main.async {
@@ -53,22 +53,34 @@ class ClipboardService: ObservableObject {
             
             // Esperar a que el foco regrese a la app anterior (0.3s suele ser suficiente)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                let scriptSource = """
-                tell application "System Events"
-                    keystroke "v" using {command down}
-                end tell
-                """
+                let source = CGEventSource(stateID: .combinedSessionState)
                 
-                var error: NSDictionary?
-                if let script = NSAppleScript(source: scriptSource) {
-                    script.executeAndReturnError(&error)
-                }
+                // Definir códigos de tecla para Cmd y V
+                let vCode: CGKeyCode = 9 // Código para 'V' en Mac
                 
-                if let err = error {
-                    print("⚠️ Error en Auto-Paste: \(err)")
-                } else {
-                    print("✅ Auto-Paste ejecutado con éxito")
-                }
+                // 1. Command Down
+                let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true)
+                cmdDown?.flags = .maskCommand
+                
+                // 2. V Down
+                let vDown = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: true)
+                vDown?.flags = .maskCommand
+                
+                // 3. V Up
+                let vUp = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: false)
+                vUp?.flags = .maskCommand
+                
+                // 4. Command Up
+                let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false)
+                cmdUp?.flags = []
+                
+                // Ejecutar secuencia
+                cmdDown?.post(tap: .cghidEventTap)
+                vDown?.post(tap: .cghidEventTap)
+                vUp?.post(tap: .cghidEventTap)
+                cmdUp?.post(tap: .cghidEventTap)
+                
+                print("✅ Auto-Paste (CGEvent) ejecutado")
             }
         }
     }
