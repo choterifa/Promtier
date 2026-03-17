@@ -113,6 +113,7 @@ struct PromptPreviewView: View {
                     // Galería al inicio si la preferencia es true
                     if preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
                         showcaseGallery
+                        Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
                     }
                     
                     Text(highlightContent(prompt.content))
@@ -123,6 +124,7 @@ struct PromptPreviewView: View {
                     
                     // Galería al final si la preferencia es false
                     if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                        Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
                         showcaseGallery
                     }
                 }
@@ -180,10 +182,7 @@ struct PromptPreviewView: View {
                 .padding(.vertical, 8)
                 .padding(.horizontal, 2)
             }
-            
-            Divider().padding(.top, 8).padding(.bottom, 16)
         }
-        .padding(.bottom, 8)
     }
     
     // MARK: - Helpers
