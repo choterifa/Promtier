@@ -31,5 +31,6 @@ extension PromptEntity {
     @NSManaged public var image1: Data?
     @NSManaged public var image2: Data?
     @NSManaged public var image3: Data?
+    @NSManaged public var versionHistoryData: Data?
 
 }

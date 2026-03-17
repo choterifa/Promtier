@@ -38,6 +38,11 @@ extension PromptEntity {
         if let img3 = image3 { images.append(img3) }
         prompt.showcaseImages = images
         
+        if let historyData = versionHistoryData,
+           let history = try? JSONDecoder().decode([PromptSnapshot].self, from: historyData) {
+            prompt.versionHistory = history
+        }
+        
         return prompt
     }
     
@@ -58,6 +63,10 @@ extension PromptEntity {
         useCount = Int32(prompt.useCount)
         modifiedAt = prompt.modifiedAt
         lastUsedAt = prompt.lastUsedAt
+        
+        if let historyData = try? JSONEncoder().encode(prompt.versionHistory) {
+            versionHistoryData = historyData
+        }
     }
     
     /// Crea nueva entidad desde modelo Swift

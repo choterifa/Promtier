@@ -78,6 +78,7 @@ struct Prompt: Identifiable, Codable {
 /// Representa una versión guardada de un prompt (Premium)
 struct PromptSnapshot: Codable, Identifiable {
     var id: UUID = UUID()
+    let title: String
     let content: String
     let timestamp: Date
 }

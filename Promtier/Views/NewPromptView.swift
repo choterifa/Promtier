@@ -36,6 +36,7 @@ struct NewPromptView: View {
     @State private var triggerSnippetSelection: Bool = false
     
     @State private var showParticles: Bool = false
+    @State private var showingVersionHistory: Bool = false
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -187,6 +188,33 @@ struct NewPromptView: View {
                     }
                     .buttonStyle(ScaleButtonStyle())
                     .help("Insertar Variable")
+
+                    // Botón historial (solo en edición, solo Premium)
+                    if prompt != nil && preferences.isPremiumActive && !(prompt?.versionHistory.isEmpty ?? true) {
+                        Button(action: { showingVersionHistory = true }) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(8)
+                                .background(Circle().fill(Color.blue.opacity(0.1)))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .help("Historial de versiones")
+                        .sheet(isPresented: $showingVersionHistory) {
+                            if let existingPrompt = prompt {
+                                VersionHistoryView(
+                                    snapshots: existingPrompt.versionHistory,
+                                    currentContent: content,
+                                    onRestore: { snapshot in
+                                        content = snapshot.content
+                                        title   = snapshot.title
+                                        showingVersionHistory = false
+                                    }
+                                )
+                                .environmentObject(preferences)
+                            }
+                        }
+                    }
 
                     Button(action: { 
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -410,6 +438,20 @@ struct NewPromptView: View {
         
         if let existingPrompt = prompt {
             var updated = existingPrompt
+            
+            // ✅ Auto-snapshot antes de sobreescribir (Premium, máx 20 versiones)
+            if preferences.isPremiumActive {
+                let snapshot = PromptSnapshot(
+                    title:     existingPrompt.title,
+                    content:   existingPrompt.content,
+                    timestamp: Date()
+                )
+                var history = existingPrompt.versionHistory
+                history.insert(snapshot, at: 0)        // más reciente primero
+                if history.count > 20 { history = Array(history.prefix(20)) }
+                updated.versionHistory = history
+            }
+            
             updated.title = title
             updated.content = content
             updated.folder = selectedFolder
