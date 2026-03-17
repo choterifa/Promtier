@@ -267,6 +267,15 @@ struct AppearanceTab: View {
                     .pickerStyle(.segmented)
                     .frame(width: 120)
                 }
+                
+                if preferences.isPremiumActive {
+                    Divider().padding(.leading, 20)
+                    
+                    SettingsRow("Vibras Visuales ✨", subtitle: "Efectos especiales al copiar y guardar prompts") {
+                        Toggle("", isOn: $preferences.visualEffectsEnabled)
+                            .toggleStyle(.switch)
+                    }
+                }
             }
             
             SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {

@@ -35,6 +35,8 @@ struct NewPromptView: View {
     @State private var snippetSelectedIndex: Int = 0
     @State private var triggerSnippetSelection: Bool = false
     
+    @State private var showParticles: Bool = false
+    
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
@@ -80,6 +82,11 @@ struct NewPromptView: View {
             if showSnippets {
                 snippetOverlay
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+            if showParticles {
+                ParticleSystemView(accentColor: .green)
+                    .allowsHitTesting(false)
+                    .zIndex(300)
             }
         }
         .onAppear {
@@ -417,7 +424,14 @@ struct NewPromptView: View {
             _ = promptService.createPrompt(new)
         }
         
-        onClose()
+        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+            showParticles = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                onClose()
+            }
+        } else {
+            onClose()
+        }
     }
     
     private func navigateCategory(forward: Bool, proxy: ScrollViewProxy? = nil) {

@@ -14,6 +14,7 @@ struct SearchViewSimple: View {
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
     @State private var fillingVariablesFor: Prompt?
+    @State private var showParticles: Bool = false
     
     var body: some View {
         ZStack {
@@ -67,6 +68,23 @@ struct SearchViewSimple: View {
                         if preferences.soundEnabled {
                             SoundService.shared.playCopySound()
                         }
+                        
+                        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+                            showParticles = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                showParticles = true
+                            }
+                        }
+                        
+                        if preferences.closeOnCopy {
+                            if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                    menuBarManager.closePopover()
+                                }
+                            } else {
+                                menuBarManager.closePopover()
+                            }
+                        }
                     }, onCancel: {
                         withAnimation { fillingVariablesFor = nil }
                     })
@@ -82,6 +100,13 @@ struct SearchViewSimple: View {
                 ResizingGuideView()
                     .zIndex(200)
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+            
+            // Efectos Visuales
+            if showParticles {
+                ParticleSystemView(accentColor: .blue)
+                    .allowsHitTesting(false)
+                    .zIndex(300)
             }
         }
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
@@ -473,6 +498,14 @@ struct SearchViewSimple: View {
             SoundService.shared.playCopySound()
         }
         
+        // Efectos Visuales
+        if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
+            self.showParticles = false // Reset
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                self.showParticles = true
+            }
+        }
+        
         // Cerrar preview si está abierto
         if self.showingPreview {
             self.showingPreview = false
@@ -480,7 +513,14 @@ struct SearchViewSimple: View {
         
         // CERRAR VENTANA: Si la preferencia está activa
         if self.preferences.closeOnCopy {
-            self.menuBarManager.closePopover()
+            if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
+                // Dar tiempo para ver las partículas
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    self.menuBarManager.closePopover()
+                }
+            } else {
+                self.menuBarManager.closePopover()
+            }
         }
     }
     

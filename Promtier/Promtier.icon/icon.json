@@ -1,15 +1,21 @@
 {
-  "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
-  },
+  "fill" : "automatic",
   "groups" : [
     {
       "layers" : [
         {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "none"
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
           "image-name" : "Gemini_Generated_Image_p3mzhip3mzhip3mz.png",
-          "name" : "Gemini_Generated_Image_p3mzhip3mzhip3mz",
+          "name" : "Promtier",
           "position" : {
-            "scale" : 0.59,
+            "scale" : 0.54,
             "translation-in-points" : [
               0,
               0

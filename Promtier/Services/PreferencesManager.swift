@@ -160,6 +160,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var visualEffectsEnabled: Bool {
+        didSet {
+            userDefaults.set(visualEffectsEnabled, forKey: "visualEffectsEnabled")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -191,6 +197,13 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
+        
+        // Efectos visuales por defecto en true
+        if userDefaults.object(forKey: "visualEffectsEnabled") != nil {
+            self.visualEffectsEnabled = userDefaults.bool(forKey: "visualEffectsEnabled")
+        } else {
+            self.visualEffectsEnabled = true
+        }
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
