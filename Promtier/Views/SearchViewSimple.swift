@@ -111,6 +111,10 @@ struct SearchViewSimple: View {
                     .allowsHitTesting(false)
                     .zIndex(300)
             }
+            
+            // Handle de Redimensionado Manual (Esquina Inferior Derecha)
+            ResizeHandle()
+                .zIndex(400)
         }
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))

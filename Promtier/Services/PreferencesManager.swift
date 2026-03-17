@@ -60,16 +60,13 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var windowWidth: CGFloat {
-        didSet {
-            userDefaults.set(Double(windowWidth), forKey: "windowWidth")
-        }
-    }
+    @Published var windowWidth: CGFloat
+    @Published var windowHeight: CGFloat
     
-    @Published var windowHeight: CGFloat {
-        didSet {
-            userDefaults.set(Double(windowHeight), forKey: "windowHeight")
-        }
+    /// Guarda las dimensiones en UserDefaults (llamar al terminar de redimensionar)
+    func saveWindowDimensions() {
+        userDefaults.set(Double(windowWidth), forKey: "windowWidth")
+        userDefaults.set(Double(windowHeight), forKey: "windowHeight")
     }
     
     // MARK: - Estado de Redimensionado (No persistente)
