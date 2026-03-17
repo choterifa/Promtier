@@ -68,17 +68,14 @@ struct NewPromptView: View {
             VStack(spacing: 0) {
                 header
                 
-                Divider()
-                    .padding(.horizontal, 24)
-                
-                categoryPicker
-                
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         editorCard
                             .frame(height: geometry.size.height * 0.65, alignment: .top)
                         
                         imageGallery
+                        
+                        categorySection
                     }
                     .padding(24)
                 }
@@ -272,73 +269,6 @@ struct NewPromptView: View {
                             .stroke(Color.blue.opacity(0.2), lineWidth: 1)
                     )
                     
-                    // Botón Etiquetas (Premium)
-                    Button(action: { 
-                        if preferences.isPremiumActive {
-                            showingTagEditor.toggle() 
-                        } else {
-                            showingPremiumFor = "Etiquetas Organizadas"
-                        }
-                    }) {
-                        Image(systemName: tags.isEmpty ? "tag" : "tag.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(tags.isEmpty ? .secondary : .blue)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill((tags.isEmpty ? Color.primary : Color.blue).opacity(0.08)))
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .help("Etiquetas del prompt")
-                    .popover(isPresented: $showingTagEditor) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Etiquetas")
-                                .font(.headline)
-                            
-                            HStack {
-                                TextField("Nueva etiqueta...", text: $newTag)
-                                    .textFieldStyle(.roundedBorder)
-                                    .onSubmit {
-                                        let trimmed = newTag.trimmingCharacters(in: .whitespaces)
-                                        if !trimmed.isEmpty && !tags.contains(trimmed) {
-                                            tags.append(trimmed)
-                                            newTag = ""
-                                        }
-                                    }
-                                
-                                Button(action: {
-                                    let trimmed = newTag.trimmingCharacters(in: .whitespaces)
-                                    if !trimmed.isEmpty && !tags.contains(trimmed) {
-                                        tags.append(trimmed)
-                                        newTag = ""
-                                    }
-                                }) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .foregroundColor(.blue)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            
-                            FlowLayout(spacing: 6) {
-                                ForEach(tags, id: \.self) { tag in
-                                    HStack(spacing: 4) {
-                                        Text(tag)
-                                            .font(.system(size: 10, weight: .bold))
-                                        Button(action: { tags.removeAll { $0 == tag } }) {
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 8, weight: .black))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Capsule().fill(Color.blue.opacity(0.1)))
-                                    .foregroundColor(.blue)
-                                }
-                            }
-                            .frame(minWidth: 200, maxWidth: 300)
-                        }
-                        .padding()
-                    }
-
                     // Botón historial (solo en edición, solo Premium)
                     if prompt != nil && preferences.isPremiumActive && !(prompt?.versionHistory.isEmpty ?? true) {
                         Button(action: { showingVersionHistory = true }) {
@@ -411,29 +341,6 @@ struct NewPromptView: View {
                             promptDescription = String(newValue.prefix(100))
                         }
                     }
-                
-                // Auto-generar descripción desde el contenido
-                if !content.isEmpty && promptDescription.isEmpty {
-                    Button(action: { generateDescription() }) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("Auto")
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(Color.blue.opacity(0.1)))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Generar descripción automática")
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                }
-                
-                Text("\(promptDescription.count)/100")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.4))
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 6)
@@ -696,49 +603,6 @@ struct NewPromptView: View {
         }
     }
     
-    /// Genera una descripción breve automática a partir del contenido
-    private func generateDescription() {
-        let cleaned = content
-            .replacingOccurrences(of: "\\{\\{[^}]+\\}\\}", with: "...", options: .regularExpression)
-            .replacingOccurrences(of: "```[\\s\\S]*?```", with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Tomar la primera oración significativa
-        let separators = CharacterSet(charactersIn: ".!?\n")
-        let sentences = cleaned.components(separatedBy: separators)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { $0.count > 5 }
-        
-        if let first = sentences.first {
-            let desc = String(first.prefix(97))
-            withAnimation(.spring(response: 0.25)) {
-                promptDescription = desc.count == first.count ? desc : desc + "..."
-            }
-            HapticService.shared.playLight()
-        }
-    }
-    
-    private func navigateCategory(forward: Bool, proxy: ScrollViewProxy? = nil) {
-        let allCategories = [nil] + promptService.folders.map { $0.name }
-        guard let currentIndex = allCategories.firstIndex(of: selectedFolder) else { return }
-        
-        let nextIndex: Int 
-        if forward {
-            nextIndex = (currentIndex + 1) % allCategories.count
-        } else {
-            nextIndex = (currentIndex - 1 + allCategories.count) % allCategories.count
-        }
-        
-        let newSelection = allCategories[nextIndex]
-        selectedFolder = newSelection
-        
-        if let proxy = proxy {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                proxy.scrollTo(newSelection ?? "none", anchor: .center)
-            }
-        }
-    }
-    
     private func selectImages() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
@@ -820,62 +684,38 @@ struct NewPromptView: View {
         }
     }
     
-    private var categoryPicker: some View {
-        HStack(spacing: 0) {
-            ScrollViewReader { proxy in
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Categoría", systemImage: "folder.fill")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    Button(action: { navigateCategory(forward: false, proxy: proxy) }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 24, height: 24)
-                            .background(Circle().fill(Color.primary.opacity(0.05)))
+                    CategoryChip(title: "Sin categoría", icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
+                        withAnimation(.spring()) {
+                            selectedFolder = nil
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .padding(.leading, 24)
                     
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            CategoryChip(title: "Sin categoría", icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
-                                selectedFolder = nil
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    proxy.scrollTo("none", anchor: .center)
-                                }
-                            }
-                            .id("none")
-                            
-                            ForEach(promptService.folders) { folder in
-                                CategoryChip(
-                                    title: folder.name,
-                                    icon: folder.icon ?? "folder.fill",
-                                    color: Color(hex: folder.displayColor),
-                                    isSelected: selectedFolder == folder.name
-                                ) {
-                                    selectedFolder = folder.name
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        proxy.scrollTo(folder.name, anchor: .center)
-                                    }
-                                }
-                                .id(folder.name)
+                    ForEach(promptService.folders) { folder in
+                        CategoryChip(
+                            title: folder.name,
+                            icon: folder.icon ?? "folder.fill",
+                            color: Color(hex: folder.displayColor),
+                            isSelected: selectedFolder == folder.name
+                        ) {
+                            withAnimation(.spring()) {
+                                selectedFolder = folder.name
                             }
                         }
-                        .padding(.vertical, 8)
                     }
-                    
-                    Button(action: { navigateCategory(forward: true, proxy: proxy) }) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 24, height: 24)
-                            .background(Circle().fill(Color.primary.opacity(0.05)))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 24)
                 }
+                .padding(.vertical, 4)
             }
         }
-        .background(Color.primary.opacity(0.02))
-        .overlay(Divider(), alignment: .bottom)
+        .padding(.top, 8)
     }
 }
 

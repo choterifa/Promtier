@@ -82,6 +82,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var hapticFeedbackEnabled: Bool {
+        didSet {
+            userDefaults.set(hapticFeedbackEnabled, forKey: "hapticFeedbackEnabled")
+        }
+    }
+    
     // MARK: - Atajos de Teclado
     
     @Published var globalShortcutEnabled: Bool {
@@ -184,6 +190,14 @@ class PreferencesManager: ObservableObject {
         self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
+        
+        // Háptica por defecto en true
+        if userDefaults.object(forKey: "hapticFeedbackEnabled") != nil {
+            self.hapticFeedbackEnabled = userDefaults.bool(forKey: "hapticFeedbackEnabled")
+        } else {
+            self.hapticFeedbackEnabled = true
+        }
+        
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
         
         // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
@@ -301,6 +315,7 @@ class PreferencesManager: ObservableObject {
         self.showSidebar = true
         self.closeOnCopy = true
         self.soundEnabled = true
+        self.hapticFeedbackEnabled = true
         self.globalShortcutEnabled = true
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)

@@ -141,16 +141,13 @@ struct HighlightedEditor: NSViewRepresentable {
         if triggerAppleIntelligence {
             if #available(macOS 15.0, *) {
                 if isAIActive {
-                    // Simular ESC para cerrar herramientas de IA
-                    NSApp.sendAction(#selector(NSResponder.cancelOperation(_:)), to: nil, from: nil)
-                    self.isAIActive = false
+                    // Si ya está activa, intentamos cerrarla enviando cancelOperation al textView específicamente
+                    textView.doCommand(by: #selector(NSResponder.cancelOperation(_:)))
                 } else {
                     if textView.selectedRange().length == 0 {
                         textView.selectAll(nil)
                     }
                     textView.showWritingTools(nil)
-                    // Fallback inmediato
-                    self.isAIActive = true
                 }
             }
             

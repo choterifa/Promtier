@@ -14,6 +14,7 @@ class HapticService {
     
     /// Genera un "click" genérico suave (para botones, toggles)
     func playLight() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
         DispatchQueue.main.async {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
@@ -21,6 +22,7 @@ class HapticService {
     
     /// Genera un feedback de alineación (para resizing o cuando algo 'encaja')
     func playAlignment() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
         DispatchQueue.main.async {
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         }
@@ -28,6 +30,7 @@ class HapticService {
     
     /// Genera un feedback de nivel (para cambios de tamaño o incrementos continuos)
     func playImpact() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
         DispatchQueue.main.async {
             NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
         }
@@ -35,6 +38,7 @@ class HapticService {
     
     /// Genera un feedback fuerte (para pruebas o errores críticos)
     func playStrong() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
         DispatchQueue.main.async {
             let performer = NSHapticFeedbackManager.defaultPerformer
             performer.perform(.alignment, performanceTime: .now)

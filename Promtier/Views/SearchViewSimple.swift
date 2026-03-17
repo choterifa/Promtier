@@ -434,7 +434,7 @@ struct SearchViewSimple: View {
                                         }
                                         withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
                                     }) {
-                                        Label("Editar", systemImage: "pencil")
+                                        Label("Editar", systemImage: "square.and.pencil")
                                     }
                                     
                                     Button(action: { 

@@ -117,17 +117,23 @@ struct PreferencesView: View {
             // Contenido de la pestaña
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    switch selectedTab {
-                    case 0: AppearanceTab()
-                    case 1: BehaviorTab()
-                    case 2: ShortcutsTab()
-                    case 3: SnippetsManagerTab()
-                    case 4: DataTab(
-                        showingResetAlert: $showingResetAlert,
-                        onClose: onClose
-                    )
-                    case 5: SupportTab()
-                    default: EmptyView()
+                    if selectedTab == 3 && !preferences.isPremiumActive {
+                        PremiumUpsellView(featureName: "Snippets Reutilizables")
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 40)
+                    } else {
+                        switch selectedTab {
+                        case 0: AppearanceTab()
+                        case 1: BehaviorTab()
+                        case 2: ShortcutsTab()
+                        case 3: SnippetsManagerTab()
+                        case 4: DataTab(
+                            showingResetAlert: $showingResetAlert,
+                            onClose: onClose
+                        )
+                        case 5: SupportTab()
+                        default: EmptyView()
+                        }
                     }
                 }
                 .padding(.horizontal, 32)
@@ -392,6 +398,13 @@ struct BehaviorTab: View {
             }
             
             SettingsSection(title: "Haptic Feedback (Trackpad) 🫨", icon: "hand.tap.fill") {
+                SettingsRow("Haptic Feedback", subtitle: "Retroalimentación táctil en el trackpad") {
+                    Toggle("", isOn: $preferences.hapticFeedbackEnabled)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
                 SettingsRow("Probar Vibración", subtitle: "Haz clic en los botones para probar el trackpad") {
                     HStack(spacing: 12) {
                         Button("Suave") {

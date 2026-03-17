@@ -179,7 +179,7 @@ struct CategorySidebar: View {
                                     menuBarManager.activeViewState = .folderManager
                                 }
                             } label: {
-                                Label("Editar", systemImage: "pencil")
+                                Label("Editar", systemImage: "square.and.pencil")
                             }
                             
                             Button(role: .destructive) {
