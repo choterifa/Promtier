@@ -181,6 +181,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var ghostTipsEnabled: Bool {
+        didSet {
+            userDefaults.set(ghostTipsEnabled, forKey: "ghostTipsEnabled")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -233,6 +239,13 @@ class PreferencesManager: ObservableObject {
         
         // Apple Intelligence por defecto en true
         self.appleIntelligenceEnabled = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true
+        
+        // Consejos Ghost por defecto en true
+        if userDefaults.object(forKey: "ghostTipsEnabled") != nil {
+            self.ghostTipsEnabled = userDefaults.bool(forKey: "ghostTipsEnabled")
+        } else {
+            self.ghostTipsEnabled = true
+        }
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
@@ -332,6 +345,7 @@ class PreferencesManager: ObservableObject {
         self.suppressAccessibilityWarning = false
         self.isPremiumActive = false
         self.appleIntelligenceEnabled = true
+        self.ghostTipsEnabled = true
         self.previewImagesFirst = true
         
         applyAppearance()

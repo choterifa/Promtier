@@ -22,6 +22,16 @@ struct SearchViewSimple: View {
     /// Bloquea atajos de teclado cuando hay una hoja/modal secundaria abierta
     @State private var isFullScreenImageOpen: Bool = false
     
+    // Ghost Tips logic
+    @State private var currentGhostTip: GhostTip? = nil
+    private let ghostTips = [
+        GhostTip(title: "Vista Previa", icon: "eye", shortcut: "Barra Espaciadora"),
+        GhostTip(title: "Copiar Rápido", icon: "doc.on.doc", shortcut: "Cmd + C"),
+        GhostTip(title: "Nuevo Prompt", icon: "plus", shortcut: "Cmd + N"),
+        GhostTip(title: "Configuración", icon: "gearshape", shortcut: "Cmd + ,"),
+        GhostTip(title: "Ocultar Sidebar", icon: "sidebar.left", shortcut: "Cmd + B")
+    ]
+    
     var body: some View {
         ZStack {
             switch menuBarManager.activeViewState {
@@ -128,6 +138,20 @@ struct SearchViewSimple: View {
             // Handle de Redimensionado Manual (Esquina Inferior Derecha)
             ResizeHandle()
                 .zIndex(400)
+            
+            // Overlay de Ghost Tips
+            if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main {
+                GhostTipView(tip: tip) {
+                    currentGhostTip = nil
+                }
+                .padding(.bottom, 24)
+                .padding(.trailing, 24)
+                .zIndex(500)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+            }
         }
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))
@@ -174,6 +198,11 @@ struct SearchViewSimple: View {
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            }
+            
+            // Programar primer Ghost Tip si están activados
+            if preferences.ghostTipsEnabled {
+                scheduleNextGhostTip()
             }
             
             if localEventMonitor == nil {
@@ -750,6 +779,26 @@ struct SearchViewSimple: View {
                     }
                 }
             }
+        }
+    }
+    
+    /// Programa la aparición de un Ghost Tip aleatorio
+    private func scheduleNextGhostTip() {
+        guard preferences.ghostTipsEnabled else { return }
+        
+        // Esperar entre 45 y 90 segundos para el próximo tip
+        let delay = Double.random(in: 45...90)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            // Solo mostrar si seguimos en la pantalla principal y están activados
+            if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
+                withAnimation {
+                    self.currentGhostTip = self.ghostTips.randomElement()
+                }
+            }
+            
+            // Programar el siguiente (bucle infinito mientras la app esté abierta)
+            self.scheduleNextGhostTip()
         }
     }
 }

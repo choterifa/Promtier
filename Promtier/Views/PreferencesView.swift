@@ -373,6 +373,13 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
+                SettingsRow("Consejos Visuales", subtitle: "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)", icon: "sparkles", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.ghostTipsEnabled)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
                 SettingsRow("Cerrar al copiar", subtitle: "Cierra la ventana automáticamente", icon: "xmark.square.fill", iconColor: .red) {
                     Toggle("", isOn: $preferences.closeOnCopy)
                         .toggleStyle(.switch)
