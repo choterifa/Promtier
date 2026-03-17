@@ -372,7 +372,8 @@ struct ShortcutsTab: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Atajos Globales", icon: "command") {
+            // Atajo global configurable
+            SettingsSection(title: "Atajo Global", icon: "command") {
                 SettingsRow("Atajos Globales", subtitle: "Habilitar combinaciones en todo el sistema") {
                     Toggle("", isOn: $preferences.globalShortcutEnabled)
                         .toggleStyle(.switch)
@@ -380,60 +381,90 @@ struct ShortcutsTab: View {
                 
                 if preferences.globalShortcutEnabled {
                     Divider().padding(.leading, 20)
-                    
-                    VStack(spacing: 16) {
+                    VStack(spacing: 12) {
                         ShortcutRecorderView()
-                        
-                        Divider().padding(.horizontal, 10)
-                        
-                        ShortcutItem(label: "Búsqueda Rápida", shortcut: "⌘K")
-                        ShortcutItem(label: "Nuevo Prompt", shortcut: "⌘N")
                     }
                     .padding(20)
                 }
             }
             
-            SettingsSection(title: "Gestión Local", icon: "keyboard") {
-                SettingsRow("Copiar Seleccionado", subtitle: "Atajo dentro de la app") {
-                    Text("⌘C").font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1)).cornerRadius(6)
-                }
-                
+            // Lista principal
+            SettingsSection(title: "Navegación de Lista", icon: "list.bullet") {
+                ShortcutRow(label: "Mover selección arriba",     shortcut: "↑")
                 Divider().padding(.leading, 20)
-                
-                SettingsRow("Editar Seleccionado", subtitle: "Abrir editor rápidamente") {
-                    Text("Enter").font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1)).cornerRadius(6)
-                }
+                ShortcutRow(label: "Mover selección abajo",      shortcut: "↓")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Abrir Vista Previa",         shortcut: "Espacio")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Copiar prompt seleccionado", shortcut: "⌘C")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Editar prompt seleccionado", shortcut: "↩ Enter")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Mostrar/Ocultar Sidebar",    shortcut: "⌘B")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Nuevo Prompt",               shortcut: "⌘N")
+            }
+            
+            // Editor de prompt
+            SettingsSection(title: "Editor de Prompt", icon: "square.and.pencil") {
+                ShortcutRow(label: "Guardar prompt",                  shortcut: "⌘S")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Apertura de Snippets (/)",        shortcut: "/")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Navegar snippet arriba",          shortcut: "↑")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Navegar snippet abajo",           shortcut: "↓")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Insertar snippet / Cerrar menú", shortcut: "↩ / Esc")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Insertar variable",               shortcut: "⌥V")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Modo Zen (pantalla completa)",    shortcut: "⌘⇧Z")
+            }
+            
+            // Variables
+            SettingsSection(title: "Rellenar Variables", icon: "curlybraces") {
+                ShortcutRow(label: "Avanzar al siguiente campo",  shortcut: "↩ Enter")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Copiar prompt final",         shortcut: "⌘↩")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Cancelar / Cerrar panel",     shortcut: "Esc")
+            }
+            
+            // Ventana
+            SettingsSection(title: "Ventana", icon: "macwindow") {
+                ShortcutRow(label: "Abrir / Cerrar Promtier",  shortcut: "Atajo Global")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "Cerrar ventana",           shortcut: "Esc")
             }
         }
     }
 }
 
-struct ShortcutItem: View {
+private struct ShortcutRow: View {
     let label: String
     let shortcut: String
-    
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text(label)
                 .font(.system(size: 13 * preferences.fontSize.scale))
-                .foregroundColor(.secondary)
+                .foregroundColor(.primary)
             Spacer()
             Text(shortcut)
-                .font(.system(size: 13 * preferences.fontSize.scale, weight: .bold, design: .monospaced))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold, design: .monospaced))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
                 .background(Color.blue.opacity(0.1))
                 .foregroundColor(.blue)
-                .cornerRadius(6)
+                .cornerRadius(7)
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 }
+
 
 struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager

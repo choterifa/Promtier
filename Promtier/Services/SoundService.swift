@@ -2,84 +2,72 @@
 //  SoundService.swift
 //  Promtier
 //
-//  SERVICIO: Gestión de efectos de sonido personalizados
-//  Created by Carlos on 15/03/26.
+//  SERVICIO: Efectos de sonido del sistema — versión refinada
+//  macOS System sounds reference: Basso, Blow, Bottle, Frog, Funk, Glass, Hero,
+//  Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink
 //
 
 import Foundation
 import AppKit
+import AVFoundation
 
 class SoundService {
     static let shared = SoundService()
     
+    private var player: AVAudioPlayer?
     private init() {}
     
-    /// Reproduce un sonido de copia satisfactorio
+    // MARK: - Copiar un prompt
+    // "Glass" → campanita cristalina, satisfactoria y corta ✅
     func playCopySound() {
-        // Usar un sonido del sistema más moderno que NSSound.beep()
-        // NSSound(named: "Morse") es un sonido corto y satisfactorio
-        if let sound = NSSound(named: "Morse") {
-            sound.volume = 0.3
-            sound.play()
-        } else {
-            // Fallback a beep si no encuentra el sonido
-            NSSound.beep()
-        }
+        playSystem("Glass", volume: 0.45)
     }
     
-    /// Reproduce un sonido de éxito
-    func playSuccessSound() {
-        if let sound = NSSound(named: "Glass") {
-            sound.volume = 0.25
-            sound.play()
-        } else {
-            playCopySound() // Fallback
-        }
+    // MARK: - Vista previa (preview abierto/cerrado)
+    // "Pop" → pop suave, sutil ✅
+    func playPreviewSound() {
+        playSystem("Pop", volume: 0.3)
     }
     
-    /// Reproduce un sonido sutil de interacción
-    func playInteractionSound() {
-        if let sound = NSSound(named: "Pop") {
-            if sound.isPlaying {
-                sound.stop()
-            }
-            sound.volume = 0.2
-            sound.play()
-        }
-    }
-    
-    /// Reproduce un sonido de error (si es necesario)
-    func playErrorSound() {
-        if let sound = NSSound(named: "Basso") {
-            sound.volume = 0.3
-            sound.play()
-        } else {
-            NSSound.beep()
-        }
-    }
-    
-    /// Reproduce un sonido "mágico" para edición
-    func playMagicSound() {
-        if let sound = NSSound(named: "Hero") {
-            sound.volume = 0.3
-            sound.play()
-        } else {
-            playSuccessSound()
-        }
-    }
-    
-    /// Reproduce un sonido de papelera/eliminación
+    // MARK: - Eliminar prompt
+    // "Funk" → grave y directo, comunica "eliminado" ✅
     func playDeleteSound() {
-        if let sound = NSSound(named: "Basso") {
-            sound.volume = 0.3
-            sound.play()
-        }
+        playSystem("Funk", volume: 0.38)
     }
     
-    /// Reproduce un sonido de estrella/favorito
+    // MARK: - Éxito (guardar, crear)
+    // "Ping" → corto y positivo ✅
+    func playSuccessSound() {
+        playSystem("Ping", volume: 0.4)
+    }
+    
+    // MARK: - Favorito marcado/desmarcado
+    // "Tink" → muy sutil, metálico ✅
     func playFavoriteSound() {
-        if let sound = NSSound(named: "Pop") {
-            sound.volume = 0.4
+        playSystem("Tink", volume: 0.5)
+    }
+    
+    // MARK: - Interacción / selección con teclado
+    // "Purr" queda bien para nav de lista (imperceptible si el usuario va rápido)
+    func playInteractionSound() {
+        playSystem("Pop", volume: 0.15)
+    }
+    
+    // MARK: - Error
+    func playErrorSound() {
+        playSystem("Basso", volume: 0.35)
+    }
+    
+    // MARK: - Mágico / snippet insertado
+    func playMagicSound() {
+        playSystem("Hero", volume: 0.3)
+    }
+    
+    // MARK: - Interno: reproducir sonido del sistema por nombre
+    private func playSystem(_ name: String, volume: Float) {
+        if let sound = NSSound(named: name) {
+            if sound.isPlaying { sound.stop() }
+            sound.volume = volume
             sound.play()
         }
     }

@@ -53,43 +53,46 @@ struct SearchViewSimple: View {
             
             // Overlay de Variables Dinámicas
             if let prompt = fillingVariablesFor {
-                ZStack {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture { 
-                            withAnimation { fillingVariablesFor = nil }
-                        }
-                    
-                    VariableFillView(prompt: prompt, onCopy: { finalContent in
-                        ClipboardService.shared.copyToClipboard(finalContent)
-                        promptService.recordPromptUse(prompt)
-                        withAnimation { fillingVariablesFor = nil }
-                        
-                        if preferences.soundEnabled {
-                            SoundService.shared.playCopySound()
-                        }
-                        
-                        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
-                            showParticles = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                showParticles = true
+                GeometryReader { geo in
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .edgesIgnoringSafeArea(.all)
+                            .onTapGesture {
+                                withAnimation { fillingVariablesFor = nil }
                             }
-                        }
                         
-                        if preferences.closeOnCopy {
+                        VariableFillView(prompt: prompt, onCopy: { finalContent in
+                            ClipboardService.shared.copyToClipboard(finalContent)
+                            promptService.recordPromptUse(prompt)
+                            withAnimation { fillingVariablesFor = nil }
+                            
+                            if preferences.soundEnabled {
+                                SoundService.shared.playCopySound()
+                            }
+                            
                             if preferences.isPremiumActive && preferences.visualEffectsEnabled {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                showParticles = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    showParticles = true
+                                }
+                            }
+                            
+                            if preferences.closeOnCopy {
+                                if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                        menuBarManager.closePopover()
+                                    }
+                                } else {
                                     menuBarManager.closePopover()
                                 }
-                            } else {
-                                menuBarManager.closePopover()
                             }
-                        }
-                    }, onCancel: {
-                        withAnimation { fillingVariablesFor = nil }
-                    })
-                    .transition(.scale.combined(with: .opacity))
-                    .environmentObject(preferences)
+                        }, onCancel: {
+                            withAnimation { fillingVariablesFor = nil }
+                        })
+                        .frame(maxHeight: geo.size.height * 0.80)
+                        .transition(.scale.combined(with: .opacity))
+                        .environmentObject(preferences)
+                    }
                 }
                 .zIndex(100)
                 .transition(.opacity)
@@ -385,11 +388,20 @@ struct SearchViewSimple: View {
     
     /// Maneja eventos de teclado locales para Cmd+C, Enter y navegación
     private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
-        // Solo manejar si estamos en la vista principal
+        let keyCode = event.keyCode
+        
+        // ESC (KeyCode 53): cerrar solo el overlay de Variables si está abierto
+        if keyCode == 53 {
+            if fillingVariablesFor != nil {
+                DispatchQueue.main.async { withAnimation { fillingVariablesFor = nil } }
+                return nil  // consumir el evento — no cerrar la app
+            }
+        }
+        
+        // Solo manejar el resto si estamos en la vista principal Y sin overlay
         guard case .main = menuBarManager.activeViewState, fillingVariablesFor == nil else { return event }
         
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let keyCode = event.keyCode
         
         // Enter (KeyCode 36) -> Editar
         if keyCode == 36 {
@@ -414,11 +426,15 @@ struct SearchViewSimple: View {
         // Espacio (KeyCode 49) -> Vista Previa (Quick Look)
         if keyCode == 49 {
             if showingPreview {
-                DispatchQueue.main.async { showingPreview = false }
+                DispatchQueue.main.async {
+                    showingPreview = false
+                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                }
                 return nil
             } else if selectedPrompt != nil {
-                DispatchQueue.main.async { 
-                    showingPreview = true 
+                DispatchQueue.main.async {
+                    showingPreview = true
+                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
                 }
                 return nil
             }
