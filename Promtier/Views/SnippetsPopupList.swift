@@ -9,11 +9,12 @@ import SwiftUI
 
 struct SnippetsPopupList: View {
     let query: String
+    @Binding var selectedIndex: Int
+    @Binding var triggerSelection: Bool
     let onSelect: (Snippet) -> Void
     let onDismiss: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
-    @State private var selectedIndex: Int = 0
     
     var filteredSnippets: [Snippet] {
         if query.isEmpty {
@@ -89,6 +90,21 @@ struct SnippetsPopupList: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
+        // Add implicit animation to the row when selection state changes
+        .onChange(of: selectedIndex) { newIndex in
+            if newIndex >= filteredSnippets.count && !filteredSnippets.isEmpty {
+                selectedIndex = filteredSnippets.count - 1
+            }
+        }
+        .onChange(of: triggerSelection) { triggered in
+            if triggered {
+                if !filteredSnippets.isEmpty {
+                    let clampedIndex = min(max(0, selectedIndex), filteredSnippets.count - 1)
+                    onSelect(filteredSnippets[clampedIndex])
+                }
+                triggerSelection = false
+            }
+        }
         // KeyEvent handler local para navegación de flechas
         .onAppear {
             self.selectedIndex = 0

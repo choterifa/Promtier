@@ -32,6 +32,8 @@ struct NewPromptView: View {
     @State private var replaceSnippetRequest: String? = nil
     @State private var showSnippets: Bool = false
     @State private var snippetSearchQuery: String = ""
+    @State private var snippetSelectedIndex: Int = 0
+    @State private var triggerSnippetSelection: Bool = false
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
@@ -61,12 +63,21 @@ struct NewPromptView: View {
         .background(backgroundView)
         .overlay {
             if showingZenEditor {
-                ZenEditorView(title: $title, content: $content) {
-                    showingZenEditor = false
-                }
+                ZenEditorView(
+                    title: $title,
+                    content: $content,
+                    onDone: { showingZenEditor = false },
+                    insertionRequest: $insertionRequest,
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection
+                )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if showSnippets {
+            }
+            if showSnippets {
                 snippetOverlay
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
@@ -276,7 +287,9 @@ struct NewPromptView: View {
                     replaceSnippetRequest: $replaceSnippetRequest,
                     fontSize: 15 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
-                    snippetSearchQuery: $snippetSearchQuery
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -495,6 +508,8 @@ struct NewPromptView: View {
             } else {
                 SnippetsPopupList(
                     query: snippetSearchQuery,
+                    selectedIndex: $snippetSelectedIndex,
+                    triggerSelection: $triggerSnippetSelection,
                     onSelect: { snippet in
                         replaceSnippetRequest = snippet.content
                     },

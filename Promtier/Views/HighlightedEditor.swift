@@ -17,6 +17,8 @@ struct HighlightedEditor: NSViewRepresentable {
     // Autocompletado (Snippets)
     @Binding var showSnippets: Bool
     @Binding var snippetSearchQuery: String
+    @Binding var snippetSelectedIndex: Int
+    @Binding var triggerSnippetSelection: Bool
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -142,6 +144,33 @@ struct HighlightedEditor: NSViewRepresentable {
                     self.parent.showSnippets = false
                 }
             }
+        }
+        
+        func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if self.parent.showSnippets {
+                if commandSelector == #selector(NSResponder.moveUp(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.snippetSelectedIndex = max(0, self.parent.snippetSelectedIndex - 1)
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.snippetSelectedIndex += 1
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.insertNewline(_:)) || commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.triggerSnippetSelection = true
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) { // ESC
+                    DispatchQueue.main.async {
+                        self.parent.showSnippets = false
+                    }
+                    return true
+                }
+            }
+            return false
         }
         
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
