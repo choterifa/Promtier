@@ -808,8 +808,7 @@ struct FlowLayout: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            var width = CGFloat.zero
-            var height = CGFloat.zero
+            let height = CGFloat.zero
             
             Color.clear
                 .frame(height: height) // placeholder

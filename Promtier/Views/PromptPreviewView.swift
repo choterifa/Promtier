@@ -110,42 +110,72 @@ struct PromptPreviewView: View {
             
             Spacer()
             
-            // Badge de variables si tiene
-            if prompt.hasTemplateVariables() {
-                HStack(spacing: 4) {
-                    Image(systemName: "cube.transparent.fill")
-                        .font(.system(size: 10))
-                    Text("\(prompt.extractTemplateVariables().count)")
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.blue.opacity(0.1))
-                .foregroundColor(.blue)
-                .cornerRadius(8)
-            }
-            
-            // Toggle para posición de imágenes (Flecha)
-            if !prompt.showcaseImages.isEmpty {
-                Button(action: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        preferences.previewImagesFirst.toggle()
-                    }
-                    HapticService.shared.playLight()
-                }) {
+            // Acciones a la derecha
+            HStack(spacing: 8) {
+                // Badge de variables si tiene
+                if prompt.hasTemplateVariables() {
                     HStack(spacing: 4) {
-                        Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10, weight: .bold))
-                        Image(systemName: "photo")
+                        Image(systemName: "cube.transparent.fill")
                             .font(.system(size: 10))
+                        Text("\(prompt.extractTemplateVariables().count)")
+                            .font(.system(size: 11, weight: .bold))
                     }
-                    .foregroundColor(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(8)
+                }
+                
+                // Toggle para posición de imágenes (Flecha)
+                if !prompt.showcaseImages.isEmpty {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            preferences.previewImagesFirst.toggle()
+                        }
+                        HapticService.shared.playLight()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: preferences.previewImagesFirst ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                            Image(systemName: "photo")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+                    }
+                    .buttonStyle(.plain)
+                    .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
+                }
+                
+                // Botón Copiar
+                Button(action: {
+                    ClipboardService.shared.copyToClipboard(prompt.content)
+                    
+                    if preferences.soundEnabled {
+                        SoundService.shared.playCopySound()
+                    }
+                    HapticService.shared.playAlignment()
+                    
+                    // Si en preferencias está configurado cerrar al copiar, cerramos la vista previa
+                    if preferences.closeOnCopy {
+                        // Enviar una notificación o simular escape para cerrar el popover (gestionado por el padre idealmente)
+                        // Por simplicidad en este contexto aislado, forzamos un cierre
+                        isFullScreenImageOpen = false
+                        NSApp.sendAction(#selector(NSPopover.performClose(_:)), to: nil, from: nil)
+                    }
+                }) {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.blue.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
-                .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
+                .help("Copiar prompt al portapapeles")
             }
         }
         .padding(.horizontal, 24)

@@ -177,7 +177,7 @@ struct SearchViewSimple: View {
         } message: {
             Text("¿Quieres importar los prompts de este archivo? Los actuales no se borrarán.")
         }
-        .onChange(of: preferences.windowWidth) { newWidth in
+        .onChange(of: preferences.windowWidth) { oldWidth, newWidth in
             let threshold: CGFloat = 565
             
             // Solo auto-ocultar/mostrar en la vista principal
@@ -769,7 +769,7 @@ struct SearchViewSimple: View {
     
     private func handleFileDrop(providers: [NSItemProvider]) {
         for provider in providers {
-            provider.loadObject(ofClass: URL.self) { url, _ in
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
                 if let url = url, url.pathExtension.lowercased() == "json" {
                     if let data = try? Data(contentsOf: url) {
                         DispatchQueue.main.async {

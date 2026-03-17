@@ -252,7 +252,7 @@ struct CategorySidebar: View {
         for provider in providers {
             // Primero intentar con el ID interno
             if provider.hasItemConformingToTypeIdentifier(UTType.promtierPromptId.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
+                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
                     if let data = data, let id = String(data: data, encoding: .utf8) {
                         DispatchQueue.main.async {
                             if category == "Favoritos" {
@@ -320,7 +320,7 @@ struct FolderDropDelegate: DropDelegate {
         for provider in info.itemProviders(for: [.promtierPromptId, .plainText]) {
             let internalId = UTType.promtierPromptId.identifier
             if provider.hasItemConformingToTypeIdentifier(internalId) {
-                provider.loadDataRepresentation(forTypeIdentifier: internalId) { data, _ in
+                _ = provider.loadDataRepresentation(forTypeIdentifier: internalId) { data, _ in
                     if let data = data, let id = String(data: data, encoding: .utf8) {
                         DispatchQueue.main.async { onPromptMove(id, folder.name) }
                     }

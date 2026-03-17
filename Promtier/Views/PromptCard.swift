@@ -277,7 +277,7 @@ struct PromptCard: View {
                     }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                     if let data = data {
                         DispatchQueue.main.async {
                             var updated = prompt
