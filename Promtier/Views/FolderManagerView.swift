@@ -20,7 +20,7 @@ struct FolderManagerView: View {
     @State private var selectedIcon: String? = "folder.fill"
     @State private var showingIconPicker = false
     @State private var editingFolder: Folder?
-    @State private var isReady = false
+    @State private var animateColors = false
     
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
@@ -77,13 +77,6 @@ struct FolderManagerView: View {
                                         onEdit: { startEditing(folder) },
                                         onDelete: { _ = promptService.deleteFolder(folder) }
                                     )
-                                    .scaleEffect(isReady ? 1.0 : 0.95)
-                                    .opacity(isReady ? 1 : 0)
-                                    .animation(
-                                        .spring(response: 0.4, dampingFraction: 0.7)
-                                        .delay(Double(index) * 0.04),
-                                        value: isReady
-                                    )
                                 }
                             }
                             .padding(.vertical, 12)
@@ -106,9 +99,6 @@ struct FolderManagerView: View {
                             .font(.headline)
                             .fontWeight(.bold)
                     }
-                    .scaleEffect(isReady ? 1.0 : 0.9)
-                    .opacity(isReady ? 1 : 0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.08), value: isReady)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Nombre")
@@ -132,9 +122,6 @@ struct FolderManagerView: View {
                                 }
                             }
                     }
-                    .scaleEffect(isReady ? 1.0 : 0.9)
-                    .opacity(isReady ? 1 : 0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.12), value: isReady)
                     
                     HStack(alignment: .top, spacing: 24) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -158,9 +145,6 @@ struct FolderManagerView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .scaleEffect(isReady ? 1.0 : 0.9)
-                        .opacity(isReady ? 1 : 0)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.15), value: isReady)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Color")
@@ -177,15 +161,18 @@ struct FolderManagerView: View {
                                                 .stroke(Color.white, lineWidth: selectedColor == color ? 2.5 : 0)
                                                 .shadow(radius: 1)
                                         )
-                                        .scaleEffect(selectedColor == color ? 1.15 : (isReady ? 1.0 : 0.5))
-                                        .opacity(isReady ? 1 : 0)
+                                        .scaleEffect(selectedColor == color ? 1.15 : (animateColors ? 1.0 : 0.6))
+                                        .opacity(animateColors ? 1 : 0)
+                                        .offset(x: animateColors ? 0 : -10)
                                         .animation(
-                                            .spring(response: 0.4, dampingFraction: 0.6)
-                                            .delay(Double(index) * 0.03),
-                                            value: isReady
+                                            .spring(response: 0.4, dampingFraction: 0.7)
+                                            .delay(Double(index) * 0.04),
+                                            value: animateColors
                                         )
                                         .onTapGesture {
-                                            selectedColor = color
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                selectedColor = color
+                                            }
                                         }
                                 }
                             }
@@ -231,7 +218,6 @@ struct FolderManagerView: View {
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
         }
-        .opacity(isReady ? 1 : 0)
         .onAppear {
             withAnimation {
                 preferences.showSidebar = true
@@ -240,12 +226,9 @@ struct FolderManagerView: View {
                 startEditing(initialFolder)
             }
             
-            // Sincronización fina: Esperamos a que la ventana se mueva un poco
-            // antes de empezar el desvanecimiento y la cascada de elementos.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    isReady = true
-                }
+            // Animación de entrada para los colores (cascada de izq a dcha)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                animateColors = true
             }
         }
     }
