@@ -74,6 +74,14 @@ struct PromptPreviewView: View {
                     .foregroundColor(.blue)
                     .cornerRadius(8)
                 }
+
+                // Keyboard Shortcut UI (Espacio)
+                Text("Espacio")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -136,14 +144,17 @@ struct PromptPreviewView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            // Footer con atajos de ayuda
+            // Footer con contadores y atajos sutiles
             HStack {
-                Text("Presiona **Espacio** para cerrar")
+                HStack(spacing: 12) {
+                    Label("\(prompt.content.count) caracteres", systemImage: "textformat")
+                    Label("\(prompt.content.split { $0.isWhitespace }.count) palabras", systemImage: "text.word.spacing")
+                }
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary.opacity(0.7))
+                
                 Spacer()
-                Text("**Esc** también funciona")
             }
-            .font(.system(size: 11))
-            .foregroundColor(.secondary.opacity(0.5))
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
         }

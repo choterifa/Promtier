@@ -298,19 +298,8 @@ struct CategoryRow: View {
             
             Spacer()
             
-            // Contenedor de acciones con ancho fijo para evitar saltos
+            // Contenedor de acciones
             HStack(spacing: 8) {
-                Button(action: onEdit) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 11, weight: .black))
-                        .foregroundColor(.blue.opacity(0.8))
-                        .frame(width: 26, height: 26)
-                        .background(Color.blue.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-                .buttonStyle(.plain)
-                .help("Editar categoría")
-                
                 Button(action: onDelete) {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 11, weight: .bold))
@@ -322,9 +311,6 @@ struct CategoryRow: View {
                 .buttonStyle(.plain)
                 .help("Eliminar categoría")
             }
-            .opacity(isHovered || isEditing ? 1 : 0)
-            .scaleEffect(isHovered || isEditing ? 1 : 0.9)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered || isEditing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
