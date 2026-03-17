@@ -295,7 +295,7 @@ struct AppearanceTab: View {
             
             SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {
                 SettingsRow("Ancho", subtitle: "\(Int(preferences.previewWidth))px") {
-                    Slider(value: $preferences.previewWidth, in: 450...1000, step: 10, onEditingChanged: { editing in
+                    Slider(value: $preferences.previewWidth, in: 500...1000, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowWidth = preferences.previewWidth
@@ -307,7 +307,7 @@ struct AppearanceTab: View {
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("Alto", subtitle: "\(Int(preferences.previewHeight))px") {
-                    Slider(value: $preferences.previewHeight, in: 400...900, step: 10, onEditingChanged: { editing in
+                    Slider(value: $preferences.previewHeight, in: 450...800, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowHeight = preferences.previewHeight

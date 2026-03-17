@@ -286,21 +286,24 @@ struct CategoryRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(hex: folder.displayColor).opacity(0.1))
-                    .frame(width: 32, height: 32)
-                
-                Image(systemName: folder.icon ?? "folder.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: folder.displayColor))
+        HStack(spacing: preferences.windowWidth >= 620 ? 12 : 0) {
+            if preferences.windowWidth >= 620 {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: folder.displayColor).opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: folder.icon ?? "folder.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: folder.displayColor))
+                }
             }
             
             Text(folder.name)
                 .font(.system(size: 15 * preferences.fontSize.scale, weight: .semibold))
                 .foregroundColor(isEditing ? .primary : .primary.opacity(0.9))
                 .lineLimit(1)
+                .minimumScaleFactor(0.7)
             
             Spacer()
             
@@ -332,12 +335,12 @@ struct CategoryRow: View {
             .scaleEffect(isHovered || isEditing ? 1 : 0.9)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered || isEditing)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isEditing ? Color.blue.opacity(0.08) : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 8)
         )
         .onHover { h in withAnimation(.easeInOut(duration: 0.2)) { isHovered = h } }
         .contentShape(Rectangle())

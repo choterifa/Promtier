@@ -32,8 +32,8 @@ struct ResizeHandle: View {
                             initialSize = CGSize(width: preferences.windowWidth, height: preferences.windowHeight)
                         }
                         
-                        let newWidth = max(450, initialSize.width + value.translation.width)
-                        let newHeight = max(350, initialSize.height + value.translation.height)
+                        let newWidth = max(500, initialSize.width + value.translation.width)
+                        let newHeight = max(450, initialSize.height + value.translation.height)
                         
                         preferences.windowWidth = newWidth
                         preferences.windowHeight = newHeight
