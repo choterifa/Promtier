@@ -165,7 +165,7 @@ struct NewPromptView: View {
                     .help("Insertar Variable")
 
                     Button(action: { 
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             isFavorite.toggle()
                         }
                     }) {
@@ -174,7 +174,6 @@ struct NewPromptView: View {
                             .foregroundColor(isFavorite ? .yellow : .secondary.opacity(0.5))
                             .padding(8)
                             .background(Circle().fill(isFavorite ? Color.yellow.opacity(0.1) : Color.clear))
-                            .scaleEffect(isFavorite ? 1.2 : 1.0)
                     }
                     .buttonStyle(ScaleButtonStyle())
                     .help(isFavorite ? "Quitar de favoritos" : "Marcar como favorito")
