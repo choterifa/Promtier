@@ -78,7 +78,7 @@ struct PromptPreviewView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
-            .padding(.bottom, 16)
+            .padding(.bottom, 12)
             
             // Separador sutil
             Rectangle()
@@ -86,57 +86,24 @@ struct PromptPreviewView: View {
                 .frame(height: 1)
                 .padding(.horizontal, 24)
             
-            // Contenido Estilizado
+            // Contenido Estilizado con Imágenes Prioritarias
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(highlightedContent)
+                    // Galería de Resultados (Showcase) - PRIORIDAD: Primero
+                    if !prompt.showcaseImages.isEmpty {
+                        showcaseGallery
+                    }
+                    
+                    Text(highlightContent(prompt.content))
                         .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
                         .lineSpacing(6)
                         .foregroundColor(.primary.opacity(0.9))
                         .textSelection(.enabled)
-                    
-                    // Galería de Resultados (Showcase)
-                    if !prompt.showcaseImages.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Divider().padding(.vertical, 8)
-                            
-                            HStack(spacing: 8) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .foregroundColor(.blue)
-                                Text("RESULTADOS DEL PROMPT")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(prompt.showcaseImages, id: \.self) { imageData in
-                                        if let nsImage = NSImage(data: imageData) {
-                                            Image(nsImage: nsImage)
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(width: 200, height: 140, alignment: .top)
-                                                .clipped()
-                                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 12)
-                                                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                                )
-                                                .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 2)
-                            }
-                        }
-                        .padding(.top, 8)
-                    }
                 }
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            
         }
         .frame(width: 500, height: 400)
         .background(
@@ -153,17 +120,69 @@ struct PromptPreviewView: View {
         }
     }
     
-    // Contenido resaltado similar a PromptCard
-    private var highlightedContent: AttributedString {
-        var attrString = AttributedString(prompt.content)
+    // MARK: - Subviews
+    
+    private var showcaseGallery: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            
+            HStack(spacing: 8) {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .foregroundColor(.blue)
+                Text("RESULTADOS DEL PROMPT")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(prompt.showcaseImages, id: \.self) { imageData in
+                        if let nsImage = NSImage(data: imageData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 200, height: 140, alignment: .top)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 2)
+            }
+            
+            Divider().padding(.top, 8).padding(.bottom, 16)
+        }
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Helpers
+    
+    private func splitContent(_ content: String) -> (firstBlock: String, secondBlock: String) {
+        let paragraphs = content.components(separatedBy: "\n\n")
+        if paragraphs.count <= 2 {
+            return (content, "")
+        }
+        
+        let firstBlock = paragraphs.prefix(2).joined(separator: "\n\n")
+        let secondBlock = paragraphs.dropFirst(2).joined(separator: "\n\n")
+        return (firstBlock, secondBlock)
+    }
+    
+    private func highlightContent(_ text: String) -> AttributedString {
+        var attrString = AttributedString(text)
         let pattern = "\\{\\{([^}]+)\\}\\}"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
             return attrString
         }
         
-        let range = NSRange(prompt.content.startIndex..<prompt.content.endIndex, in: prompt.content)
-        let matches = regex.matches(in: prompt.content, options: [], range: range)
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        let matches = regex.matches(in: text, options: [], range: range)
         
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
