@@ -72,23 +72,49 @@ enum AppAppearance: String, CaseIterable {
 // MARK: - FontSize Enum
 
 enum FontSize: String, CaseIterable {
+    case xSmall = "xSmall"
     case small = "small"
     case medium = "medium"
     case large = "large"
+    case xLarge = "xLarge"
     
     var displayName: String {
         switch self {
+        case .xSmall: return "Muy Pequeña"
         case .small: return "Pequeña"
         case .medium: return "Mediana"
         case .large: return "Grande"
+        case .xLarge: return "Muy Grande"
         }
     }
     
     var scale: CGFloat {
         switch self {
-        case .small: return 0.8 // 15px -> 12px
+        case .xSmall: return 0.75
+        case .small: return 0.85
         case .medium: return 1.0
-        case .large: return 1.3 // 15px -> 19.5px
+        case .large: return 1.2
+        case .xLarge: return 1.4
+        }
+    }
+    
+    func bigger() -> FontSize {
+        switch self {
+        case .xSmall: return .small
+        case .small: return .medium
+        case .medium: return .large
+        case .large: return .xLarge
+        case .xLarge: return .xLarge
+        }
+    }
+    
+    func smaller() -> FontSize {
+        switch self {
+        case .xSmall: return .xSmall
+        case .small: return .xSmall
+        case .medium: return .small
+        case .large: return .medium
+        case .xLarge: return .large
         }
     }
 }
