@@ -253,37 +253,39 @@ struct SearchViewSimple: View {
                     .padding(.horizontal, 24)
                 } else {
                     // Lista moderna de prompts
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                PromptCard(
-                                    prompt: prompt,
-                                    isSelected: selectedPrompt?.id == prompt.id,
-                                    isHovered: hoveredPrompt?.id == prompt.id,
-                                    onTap: {
-                                        // Optimización: Actualizar estado de forma síncrona
-                                        selectedPrompt = prompt
-                                        // Forzar foco a la ventana principal
-                                        NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-                                    },
-                                    onDoubleTap: {
-                                        selectedPrompt = prompt
-                                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                                    },
-                                    onHover: { isHovering in
-                                        // Optimización: Reducir actualizaciones de hover
-                                        DispatchQueue.main.async {
-                                            hoveredPrompt = isHovering ? prompt : nil
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                    PromptCard(
+                                        prompt: prompt,
+                                        isSelected: selectedPrompt?.id == prompt.id,
+                                        isHovered: hoveredPrompt?.id == prompt.id,
+                                        onTap: {
+                                            // Optimización: Actualizar estado de forma síncrona
+                                            selectedPrompt = prompt
+                                            // Forzar foco a la ventana principal
+                                            NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+                                        },
+                                        onDoubleTap: {
+                                            selectedPrompt = prompt
+                                            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                                        },
+                                        onHover: { isHovering in
+                                            // Optimización: Reducir actualizaciones de hover
+                                            DispatchQueue.main.async {
+                                                hoveredPrompt = isHovering ? prompt : nil
+                                            }
                                         }
+                                    )
+                                    .id(prompt.id)
+                                    .popover(isPresented: Binding(
+                                        get: { showingPreview && selectedPrompt?.id == prompt.id },
+                                        set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
+                                    ), arrowEdge: .top) {
+                                        PromptPreviewView(prompt: prompt)
                                     }
-                                )
-                                .popover(isPresented: Binding(
-                                    get: { showingPreview && selectedPrompt?.id == prompt.id },
-                                    set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
-                                ), arrowEdge: .top) {
-                                    PromptPreviewView(prompt: prompt)
-                                }
-                                .contextMenu {
+                                    .contextMenu {
                                     Button(action: { usePrompt(prompt) }) {
                                         Label("Copiar", systemImage: "doc.on.doc")
                                     }
@@ -320,8 +322,26 @@ struct SearchViewSimple: View {
                                 }
                             }
                         }
+                        }
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
+                        .onChange(of: selectedPrompt?.id) { newId in
+                            if let id = newId {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
+                                
+                                // Sonido si la vista previa está activa durante la navegación
+                                if showingPreview && preferences.soundEnabled {
+                                    SoundService.shared.playInteractionSound()
+                                }
+                            }
+                        }
+                    }
+                    .onChange(of: showingPreview) { isShowing in
+                        if isShowing && preferences.soundEnabled {
+                            SoundService.shared.playInteractionSound()
+                        }
                     }
                 }
             }
@@ -363,9 +383,6 @@ struct SearchViewSimple: View {
                 return nil
             } else if selectedPrompt != nil {
                 DispatchQueue.main.async { 
-                    if preferences.soundEnabled {
-                        SoundService.shared.playInteractionSound()
-                    }
                     showingPreview = true 
                 }
                 return nil
@@ -479,17 +496,14 @@ struct SearchViewSimple: View {
         // Hacer la app activa para evitar errores de ViewBridge y paneles en background
         NSApp.activate(ignoringOtherApps: true)
         
+        // Cerrar el popover inmediatamente para que solo quede el diálogo del Finder
+        self.menuBarManager.closePopover()
+        
         // Mostrar el diálogo y esperar respuesta del usuario
         savePanel.begin { response in
             if response == .OK, let url = savePanel.url {
                 do {
                     try exportContent.write(to: url, atomically: true, encoding: .utf8)
-                    
-                    // Cerrar la app tras exportar con éxito
-                    DispatchQueue.main.async {
-                        self.menuBarManager.closePopover()
-                    }
-                    
                 } catch {
                     let alert = NSAlert()
                     alert.messageText = "Error al exportar"
