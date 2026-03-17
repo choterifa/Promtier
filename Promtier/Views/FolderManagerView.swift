@@ -69,8 +69,8 @@ struct FolderManagerView: View {
                         .padding(.vertical, 12)
                     }
                 }
-                .frame(width: 240)
-                .background(Color.primary.opacity(0.02))
+                .frame(width: 280)
+                .background(Color.primary.opacity(0.01))
                 
                 Divider()
                 
@@ -119,14 +119,14 @@ struct FolderManagerView: View {
                                 showingIconPicker = true
                             } label: {
                                 Image(systemName: selectedIcon ?? "folder.fill")
-                                    .font(.system(size: 18))
-                                    .frame(width: 44, height: 44)
+                                    .font(.system(size: 20))
+                                    .frame(width: 52, height: 52)
                                     .background(selectedColor.opacity(0.12))
                                     .foregroundColor(selectedColor)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(selectedColor.opacity(0.2), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(selectedColor.opacity(0.2), lineWidth: 1.5)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -140,11 +140,11 @@ struct FolderManagerView: View {
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.primary.opacity(0.7))
                             
-                            LazyVGrid(columns: [GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22)), GridItem(.fixed(22))], spacing: 8) {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 24))], spacing: 12) {
                                 ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
                                     Circle()
                                         .fill(color)
-                                        .frame(width: 20, height: 20)
+                                        .frame(width: 24, height: 24)
                                         .overlay(
                                             Circle()
                                                 .stroke(Color.white, lineWidth: selectedColor == color ? 2.5 : 0)
@@ -275,10 +275,9 @@ struct CategoryRow: View {
             }
             
             Text(folder.name)
-                .font(.system(size: 14, weight: isEditing ? .bold : .medium))
-                .foregroundColor(isEditing ? .primary : .primary.opacity(0.8))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(isEditing ? .primary : .primary.opacity(0.9))
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
             
             Spacer()
             
