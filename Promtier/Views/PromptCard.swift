@@ -53,48 +53,40 @@ struct PromptCard: View {
         "\(variableCount)"
     }
     
+    private func getFolderColor(for folderName: String) -> Color {
+        if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
+            return Color(hex: customFolder.displayColor)
+        }
+        return PredefinedCategory.fromString(folderName)?.color ?? .blue
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
-            // Icono de categoría o personalizado refinado
-            if let iconName = prompt.icon {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.1))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: iconName)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
-                }
-            } else if let folder = prompt.folder,
-               let category = PredefinedCategory.fromString(folder) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(category.color.opacity(0.1))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: category.icon)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(category.color)
-                }
-            } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.05))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
             // Texto detallado
             VStack(alignment: .leading, spacing: 4) {
-                Text(prompt.title)
-                    .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(isSelected ? .blue : .primary)
-                    .lineLimit(1)
+                HStack(alignment: .center, spacing: 8) {
+                    if let iconName = prompt.icon {
+                        Image(systemName: iconName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(isSelected ? .blue : .primary)
+                    }
+                    
+                    Text(prompt.title)
+                        .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
+                        .foregroundColor(isSelected ? .blue : .primary)
+                        .lineLimit(1)
+                    
+                    if let folder = prompt.folder, !folder.isEmpty {
+                        let color = getFolderColor(for: folder)
+                        Text(folder)
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(color)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(color.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
                 
                 if let desc = prompt.promptDescription, !desc.isEmpty {
                     Text(desc)

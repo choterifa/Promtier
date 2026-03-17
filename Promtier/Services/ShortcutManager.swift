@@ -67,7 +67,7 @@ class ShortcutManager: ObservableObject {
         guard !isAccessibilityGranted else { return }
         
         permissionTimer?.invalidate()
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             
             // Si ya se concedió, detener el timer
@@ -80,11 +80,10 @@ class ShortcutManager: ObservableObject {
     }
     
     private func setupLifecycleObservers() {
-        // También verificar cuando la app vuelve al primer plano
+        // Verificar solo cuando el popover se va a mostrar (vía notificación personalizada o evento)
+        // Por ahora mantenemos didBecomeActive pero con control de frecuencia
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             self?.checkAccessibilityPermissions(forceDialog: false)
-            // Reiniciar polling si sigue sin permisos
-            self?.startPermissionPolling()
         }
     }
     
@@ -143,8 +142,17 @@ class ShortcutManager: ObservableObject {
     
     // MARK: - Accesibilidad
     
+    private var lastPermissionCheck: Date = Date.distantPast
+    
     @discardableResult
     func checkAccessibilityPermissions(forceDialog: Bool = false, ignoreSuppression: Bool = false) -> Bool {
+        // Evitar spam al sistema: si no es forzado, solo comprobar cada 60 segundos
+        if !forceDialog && Date().timeIntervalSince(lastPermissionCheck) < 60 {
+            return isAccessibilityGranted
+        }
+        
+        lastPermissionCheck = Date()
+        
         // 1. Comprobación silenciosa para actualizar el estado interno
         let silentOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
         let isTrusted = AXIsProcessTrustedWithOptions(silentOptions)
