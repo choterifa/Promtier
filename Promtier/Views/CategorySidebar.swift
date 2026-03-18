@@ -9,9 +9,16 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+private struct PromtierDragPayload: Codable {
+    let kind: String
+    let ids: [String]?
+    let id: String?
+}
+
 struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var batchService: BatchOperationsService
     
     @State private var showingFolderManager = false
     @State private var draggedFolder: Folder? = nil
@@ -99,7 +106,7 @@ struct CategorySidebar: View {
                         markAsFavorite(id: promptId)
                     }
                 )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedFavoritos) { providers in
+                .onDrop(of: [.json, .plainText], isTargeted: $isTargetedFavoritos) { providers in
                     handleQuickDrop(providers: providers, to: "favorites")
                 }
                 
@@ -118,7 +125,7 @@ struct CategorySidebar: View {
                         movePrompt(id: promptId, to: nil)
                     }
                 )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
+                .onDrop(of: [.json, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
                     handleQuickDrop(providers: providers, to: nil)
                 }
             }
@@ -162,20 +169,23 @@ struct CategorySidebar: View {
                             self.draggedFolder = folder
                             menuBarManager.isModalActive = true // Evitar cierre automático
                             let provider = NSItemProvider()
-                            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierFolderId.identifier, visibility: .all) { completion in
-                                completion(folder.id.uuidString.data(using: .utf8), nil)
-                                return nil
+                            let payload = PromtierDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
+                            if let data = try? JSONEncoder().encode(payload) {
+                                provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
+                                    completion(data, nil)
+                                    return nil
+                                }
                             }
                             return provider
                         }
-                        .onDrop(of: [.promtierFolderId, .promtierPromptId, .plainText], delegate: FolderDropDelegate(
+                        .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
                             folder: folder,
                             promptService: promptService,
                             menuBarManager: menuBarManager,
                             draggedFolder: $draggedFolder,
                             dropTargetFolderId: $dropTargetFolderId,
                             onMove: { source, dest in reorderFolder(source, to: dest) },
-                            onPromptMove: { pId, fName in movePrompt(id: pId, to: fName) }
+                            onPromptMove: { pIds, fName in movePrompts(ids: pIds, to: fName) }
                         ))
                         .contextMenu {
                             Button {
@@ -230,25 +240,46 @@ struct CategorySidebar: View {
     // MARK: - Helpers de Drag & Drop
     
     private func movePrompt(id: String, to folderName: String?) {
-        guard let uuid = UUID(uuidString: id),
-              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
-        
-        var updated = prompt
-        updated.folder = folderName
-        _ = promptService.updatePrompt(updated)
-        
+        guard let uuid = UUID(uuidString: id) else { return }
+        movePrompts(ids: [uuid.uuidString], to: folderName)
+    }
+
+    private func movePrompts(ids: [String], to folderName: String?) {
+        let uuids = ids.compactMap(UUID.init(uuidString:))
+        guard !uuids.isEmpty else { return }
+        _ = promptService.movePrompts(withIds: uuids, toFolder: folderName)
+        if batchService.isSelectionModeActive, ids.count > 1 {
+            batchService.clearSelection()
+        }
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
     
     private func markAsFavorite(id: String) {
-        guard let uuid = UUID(uuidString: id),
-              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
-        
-        var updated = prompt
-        updated.isFavorite = true
-        _ = promptService.updatePrompt(updated)
-        
+        markAsFavorite(ids: [id])
+    }
+
+    private func markAsFavorite(ids: [String]) {
+        let uuids = ids.compactMap(UUID.init(uuidString:))
+        guard !uuids.isEmpty else { return }
+        _ = promptService.markPromptsFavorite(withIds: uuids)
+        if batchService.isSelectionModeActive, ids.count > 1 {
+            batchService.clearSelection()
+        }
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+
+    private func decodeDraggedPromptIds(from provider: NSItemProvider, completion: @escaping ([String]) -> Void) -> Bool {
+        let jsonType = UTType.json.identifier
+        guard provider.hasItemConformingToTypeIdentifier(jsonType) else { return false }
+        _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
+            guard let data,
+                  let payload = try? JSONDecoder().decode(PromtierDragPayload.self, from: data),
+                  payload.kind == "promtier.prompt.ids",
+                  let ids = payload.ids,
+                  !ids.isEmpty else { return }
+            completion(ids)
+        }
+        return true
     }
     
     private func reorderFolder(_ source: Folder, to destination: Folder) {
@@ -274,19 +305,15 @@ struct CategorySidebar: View {
     // Helper para los botones superiores de drop
     private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
         for provider in providers {
-            // Primero intentar con el ID interno
-            if provider.hasItemConformingToTypeIdentifier(UTType.promtierPromptId.identifier) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
-                    if let data = data, let id = String(data: data, encoding: .utf8) {
-                        DispatchQueue.main.async {
-                            if category == "favorites" {
-                                markAsFavorite(id: id)
-                            } else {
-                                movePrompt(id: id, to: category)
-                            }
-                        }
+            if decodeDraggedPromptIds(from: provider, completion: { ids in
+                DispatchQueue.main.async {
+                    if category == "favorites" {
+                        markAsFavorite(ids: ids)
+                    } else {
+                        movePrompts(ids: ids, to: category)
                     }
                 }
+            }) {
                 return true
             }
         }
@@ -303,7 +330,7 @@ struct FolderDropDelegate: DropDelegate {
     @Binding var dropTargetFolderId: UUID?
     
     var onMove: (Folder, Folder) -> Void
-    var onPromptMove: (String, String) -> Void
+    var onPromptMove: ([String], String) -> Void
     
     func dropEntered(info: DropInfo) {
         withAnimation(.easeInOut(duration: 0.2)) {
@@ -329,7 +356,8 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func validateDrop(info: DropInfo) -> Bool {
-        return info.hasItemsConforming(to: [.promtierFolderId, .promtierPromptId, .plainText])
+        if draggedFolder != nil { return true }
+        return info.hasItemsConforming(to: [.json, .plainText])
     }
     
     func performDrop(info: DropInfo) -> Bool {
@@ -343,14 +371,17 @@ struct FolderDropDelegate: DropDelegate {
             return true
         }
         
-        // 2. Manejar movimiento de Prompt
-        for provider in info.itemProviders(for: [.promtierPromptId, .plainText]) {
-            let internalId = UTType.promtierPromptId.identifier
-            if provider.hasItemConformingToTypeIdentifier(internalId) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: internalId) { data, _ in
-                    if let data = data, let id = String(data: data, encoding: .utf8) {
-                        DispatchQueue.main.async { onPromptMove(id, folder.name) }
-                    }
+        // 2. Manejar movimiento de Prompt (JSON)
+        let jsonType = UTType.json.identifier
+        for provider in info.itemProviders(for: [.json, .plainText]) {
+            if provider.hasItemConformingToTypeIdentifier(jsonType) {
+                _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
+                    guard let data,
+                          let payload = try? JSONDecoder().decode(PromtierDragPayload.self, from: data),
+                          payload.kind == "promtier.prompt.ids",
+                          let ids = payload.ids,
+                          !ids.isEmpty else { return }
+                    DispatchQueue.main.async { onPromptMove(ids, folder.name) }
                 }
                 return true
             }

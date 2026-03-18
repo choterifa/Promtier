@@ -49,5 +49,38 @@
 	<string>https://tu-web.com/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>cD30wQ4eylsKKXrzWUg+s+DJjSqTG+dB21hsBirtvUI=</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.promtier.prompt.id</string>
+			<key>UTTypeDescription</key>
+			<string>Promtier Prompt Identifier</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.promtier.prompt.ids</string>
+			<key>UTTypeDescription</key>
+			<string>Promtier Prompt Identifiers</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.promtier.folder.id</string>
+			<key>UTTypeDescription</key>
+			<string>Promtier Folder Identifier</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

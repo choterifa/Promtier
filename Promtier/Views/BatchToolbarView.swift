@@ -98,23 +98,13 @@ struct BatchToolbarView: View {
     }
     
     private func moveSelected(to folderName: String?) {
-        for id in batchService.selectedPromptIds {
-            if let prompt = promptService.prompts.first(where: { $0.id == id }) {
-                var updated = prompt
-                updated.folder = folderName
-                _ = promptService.updatePrompt(updated)
-            }
-        }
+        _ = promptService.movePrompts(withIds: Array(batchService.selectedPromptIds), toFolder: folderName)
         batchService.clearSelection()
         HapticService.shared.playSuccess()
     }
     
     private func deleteSelected() {
-        for id in batchService.selectedPromptIds {
-            if let prompt = promptService.prompts.first(where: { $0.id == id }) {
-                _ = promptService.deletePrompt(prompt)
-            }
-        }
+        _ = promptService.deletePrompts(withIds: Array(batchService.selectedPromptIds))
         batchService.clearSelection()
         HapticService.shared.playSuccess()
     }

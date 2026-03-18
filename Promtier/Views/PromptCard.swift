@@ -9,6 +9,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+private struct PromtierDragPayload: Codable {
+    let kind: String
+    let ids: [String]
+}
+
 struct PromptCard: View {
     let prompt: Prompt
     let isSelected: Bool
@@ -299,11 +304,24 @@ struct PromptCard: View {
         // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
             let provider = NSItemProvider()
-            
-            // 1. ID interno con UTI personalizada (para que apps externas no lo vean)
-            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier, visibility: .all) { completion in
-                completion(prompt.id.uuidString.data(using: .utf8), nil)
-                return nil
+
+            let selectedIds = batchService.selectedPromptIds
+            let draggedIds: [UUID]
+            if batchService.isSelectionModeActive,
+               selectedIds.contains(prompt.id),
+               selectedIds.count > 1 {
+                draggedIds = selectedIds.sorted { $0.uuidString < $1.uuidString }
+            } else {
+                draggedIds = [prompt.id]
+            }
+
+            // Payload interno (SwiftUI Drop estable): JSON con ids (1..N)
+            let payload = PromtierDragPayload(kind: "promtier.prompt.ids", ids: draggedIds.map { $0.uuidString })
+            if let data = try? JSONEncoder().encode(payload) {
+                provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
+                    completion(data, nil)
+                    return nil
+                }
             }
             
             // 2. Contenido para apps externas (Texto plano)

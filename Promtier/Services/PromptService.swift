@@ -253,6 +253,81 @@ class PromptService: ObservableObject {
         trashed.deletedAt = Date()
         return updatePrompt(trashed)
     }
+
+    /// Mueve múltiples prompts a la papelera en una sola operación (evita recargar por cada item)
+    func deletePrompts(withIds ids: [UUID]) -> Bool {
+        guard !ids.isEmpty else { return false }
+        let context = dataController.viewContext
+        let nsuuids = ids.map { $0 as NSUUID }
+
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", nsuuids)
+
+        do {
+            let entities = try context.fetch(request)
+            let now = Date()
+            for entity in entities {
+                entity.deletedAt = now
+                entity.modifiedAt = now
+            }
+            dataController.save()
+            loadPrompts()
+            return true
+        } catch {
+            print("Error eliminando prompts en lote: \(error)")
+            return false
+        }
+    }
+
+    /// Mueve múltiples prompts a una carpeta/categoría en una sola operación
+    func movePrompts(withIds ids: [UUID], toFolder folderName: String?) -> Bool {
+        guard !ids.isEmpty else { return false }
+        let context = dataController.viewContext
+        let nsuuids = ids.map { $0 as NSUUID }
+
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", nsuuids)
+
+        do {
+            let entities = try context.fetch(request)
+            let now = Date()
+            for entity in entities {
+                entity.folder = folderName
+                entity.modifiedAt = now
+            }
+            dataController.save()
+            loadPrompts()
+            return true
+        } catch {
+            print("Error moviendo prompts en lote: \(error)")
+            return false
+        }
+    }
+
+    /// Marca múltiples prompts como favoritos en una sola operación
+    func markPromptsFavorite(withIds ids: [UUID]) -> Bool {
+        guard !ids.isEmpty else { return false }
+        let context = dataController.viewContext
+        let nsuuids = ids.map { $0 as NSUUID }
+
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", nsuuids)
+
+        do {
+            let entities = try context.fetch(request)
+            let now = Date()
+            for entity in entities {
+                entity.isFavorite = true
+                entity.modifiedAt = now
+            }
+            dataController.save()
+            loadPrompts()
+            return true
+        } catch {
+            print("Error marcando favoritos en lote: \(error)")
+            return false
+        }
+    }
     
     /// Restaura un prompt desde la papelera
     func restorePrompt(_ prompt: Prompt) -> Bool {

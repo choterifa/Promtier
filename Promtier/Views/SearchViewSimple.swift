@@ -441,6 +441,15 @@ struct SearchViewSimple: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            if batchService.isSelectionModeActive && !batchService.selectedPromptIds.isEmpty {
+                BatchToolbarView()
+                    .padding(.bottom, 14)
+                    .padding(.horizontal, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(60)
+            }
+        }
     }
 
     @ViewBuilder
@@ -746,7 +755,19 @@ struct SearchViewSimple: View {
     
     /// Elimina un prompt - Versión optimizada
     private func deletePrompt(_ prompt: Prompt) {
-        _ = self.promptService.deletePrompt(prompt)
+        if batchService.isSelectionModeActive,
+           batchService.selectedPromptIds.contains(prompt.id),
+           batchService.selectedPromptIds.count > 1 {
+            _ = promptService.deletePrompts(withIds: Array(batchService.selectedPromptIds))
+            withAnimation(.spring()) {
+                batchService.clearSelection()
+            }
+        } else {
+            _ = self.promptService.deletePrompt(prompt)
+            if batchService.isSelectionModeActive {
+                batchService.selectedPromptIds.remove(prompt.id)
+            }
+        }
         
         if self.preferences.soundEnabled {
             SoundService.shared.playDeleteSound()

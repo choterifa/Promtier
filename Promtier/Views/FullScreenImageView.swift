@@ -7,6 +7,7 @@ struct FullScreenImageView: View {
 
     @State private var decodedImage: NSImage? = nil
     @State private var isEntering: Bool = false
+    @State private var scrimOpacity: Double = 0.0
     
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -56,8 +57,51 @@ struct FullScreenImageView: View {
     
     var body: some View {
         ZStack {
-            Color.black.edgesIgnoringSafeArea(.all)
-            
+            // Base background (match popover/window to avoid white/black flash)
+            Color(NSColor.windowBackgroundColor)
+                .ignoresSafeArea()
+
+            // Black scrim fades in after presentation to avoid a light-mode flash
+            Color.black
+                .opacity(scrimOpacity)
+                .ignoresSafeArea()
+
+            contentLayer
+        }
+        .frame(minWidth: 700, minHeight: 500)
+        .onHover { isHovering in
+            if isHovering {
+                bumpToolbar()
+            } else {
+                scheduleHide()
+            }
+        }
+        .onAppear {
+            if decodedImage == nil {
+                decodedImage = NSImage(data: imageData)
+            }
+            if preferences.disableImageAnimations {
+                scrimOpacity = 1.0
+                isEntering = true
+            } else {
+                withAnimation(.easeOut(duration: 0.18)) {
+                    scrimOpacity = 1.0
+                }
+                presentWithAnimation {
+                    isEntering = true
+                }
+            }
+            scheduleHide()
+            showGesturesHint()
+        }
+        .onDisappear {
+            isEntering = false
+            scrimOpacity = 0.0
+        }
+    }
+
+    private var contentLayer: some View {
+        ZStack {
             // IMAGE LAYER (Isolated to prevent layout shifts)
             ZStack {
                 if let nsImage = decodedImage {
@@ -123,7 +167,7 @@ struct FullScreenImageView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(nil) // PREVENIR CUALQUIER ANIMACIÓN DE LAYOUT EN ESTE ZSTACK
+            .transaction { $0.animation = nil } // PREVENIR CUALQUIER ANIMACIÓN DE LAYOUT EN ESTE ZSTACK
             
             // UI CONTROLS LAYER
             VStack {
@@ -156,7 +200,6 @@ struct FullScreenImageView: View {
                 ZStack {
                     if activeHint == .doubleTap {
                         ZStack {
-                            // Pulse ring
                             Circle()
                                 .stroke(Color.white.opacity(0.8), lineWidth: 2)
                                 .frame(width: 80, height: 80)
@@ -168,9 +211,7 @@ struct FullScreenImageView: View {
                                 .shadow(radius: 10)
                         }
                     } else {
-                        // PINCH HINT UI (Diagonal animation)
                         ZStack {
-                            // Two circles moving apart diagonally
                             ZStack {
                                 Circle()
                                     .fill(Color.white.opacity(0.8))
@@ -194,29 +235,8 @@ struct FullScreenImageView: View {
                 }
                 .opacity(hintOpacity)
                 .scaleEffect(hintScale)
-                .allowsHitTesting(false) // Never block clicks
+                .allowsHitTesting(false)
             }
-        }
-        .frame(minWidth: 700, minHeight: 500)
-        .onHover { isHovering in
-            if isHovering {
-                bumpToolbar()
-            } else {
-                scheduleHide()
-            }
-        }
-        .onAppear {
-            if decodedImage == nil {
-                decodedImage = NSImage(data: imageData)
-            }
-            presentWithAnimation {
-                isEntering = true
-            }
-            scheduleHide()
-            showGesturesHint()
-        }
-        .onDisappear {
-            isEntering = false
         }
     }
     
