@@ -135,7 +135,7 @@ class MenuBarManager: NSObject, ObservableObject {
                 .environmentObject(self.preferencesManager)
                 .environmentObject(self.batchService)
                 .environmentObject(self)
-            
+                .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
             popover?.contentViewController = NSHostingController(rootView: contentView)
             
@@ -239,6 +239,27 @@ class MenuBarManager: NSObject, ObservableObject {
                 self?.updatePopoverAppearance()
             }
             .store(in: &cancellables)
+            
+        // Observar cambio de idioma para refrescar la UI
+        preferencesManager.$language
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.refreshPopoverRootView()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func refreshPopoverRootView() {
+        guard let popover = popover else { return }
+        
+        let contentView = SearchViewSimple()
+            .environmentObject(self.promptService)
+            .environmentObject(self.preferencesManager)
+            .environmentObject(self.batchService)
+            .environmentObject(self)
+            .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
+            
+        popover.contentViewController = NSHostingController(rootView: contentView)
     }
     
     private func updatePopoverAppearance() {

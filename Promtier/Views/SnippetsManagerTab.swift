@@ -15,14 +15,14 @@ struct SnippetsManagerTab: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Snippets Rápidos", icon: "text.quote") {
+            SettingsSection(title: "quick_snippets", icon: "text.quote") {
                 VStack(spacing: 0) {
                     // Header de la sección
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Mis Snippets")
+                            Text("my_snippets")
                                 .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                            Text("Los snippets te permiten insertar texto frecuente usando el comando /")
+                            Text("snippets_desc")
                                 .font(.system(size: 12 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
@@ -32,7 +32,7 @@ struct SnippetsManagerTab: View {
                         Button(action: { showingAddSheet = true }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
-                                Text("Añadir")
+                                Text("add")
                             }
                             .font(.system(size: 12 * preferences.fontSize.scale, weight: .bold))
                             .foregroundColor(.white)
@@ -56,7 +56,7 @@ struct SnippetsManagerTab: View {
                             Image(systemName: "text.badge.xmark")
                                 .font(.system(size: 32))
                                 .foregroundColor(.secondary.opacity(0.3))
-                            Text("No tienes snippets configurados")
+                            Text("no_snippets_configured")
                                 .font(.system(size: 13 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
@@ -138,7 +138,7 @@ private struct SnippetManagerListItem: View {
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Editar")
+                    .help(NSLocalizedString("edit_action", comment: ""))
                     
                     Button(action: {
                         withAnimation {
@@ -152,7 +152,7 @@ private struct SnippetManagerListItem: View {
                             .foregroundColor(.red.opacity(0.8))
                     }
                     .buttonStyle(.plain)
-                    .help("Eliminar")
+                    .help(NSLocalizedString("delete_action", comment: ""))
                 }
             }
             .padding(.horizontal, 20)
@@ -181,7 +181,7 @@ private struct SnippetEditorSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text(snippet == nil ? "Nuevo Snippet" : "Editar Snippet")
+                Text(snippet == nil ? NSLocalizedString("new_snippet", comment: "") : NSLocalizedString("edit_snippet", comment: ""))
                     .font(.system(size: 16, weight: .bold))
                 Spacer()
                 Button(action: onCancel) {
@@ -199,36 +199,36 @@ private struct SnippetEditorSheet: View {
             // Formulario
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Título")
+                    Text(NSLocalizedString("title_label", comment: ""))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
-                    TextField("Ej: Firma corporativa", text: $title)
+                    TextField(NSLocalizedString("title_placeholder", comment: ""), text: $title)
                         .textFieldStyle(.plain)
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.1)))
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Comando (Shortcut)")
+                    Text(NSLocalizedString("command_shortcut", comment: ""))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     HStack {
                         Text("/")
                             .font(.system(size: 13, weight: .bold, design: .monospaced))
                             .foregroundColor(.secondary)
-                        TextField("Ej: firma", text: $shortcut)
+                        TextField(NSLocalizedString("command_placeholder", comment: ""), text: $shortcut)
                             .textFieldStyle(.plain)
                     }
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.1)))
                     
-                    Text("Debe ser una sola palabra sin espacios.")
+                    Text(NSLocalizedString("command_rule", comment: ""))
                         .font(.system(size: 10))
                         .foregroundColor(.secondary.opacity(0.7))
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Contenido")
+                    Text(NSLocalizedString("content_label", comment: ""))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     TextEditor(text: $content)
@@ -246,7 +246,7 @@ private struct SnippetEditorSheet: View {
             HStack {
                 Spacer()
                 Button(action: onCancel) {
-                    Text("Cancelar")
+                    Text(NSLocalizedString("cancel", comment: ""))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 16)
@@ -263,7 +263,7 @@ private struct SnippetEditorSheet: View {
                     }
                     onSave(finalSnippet)
                 }) {
-                    Text("Guardar")
+                    Text(NSLocalizedString("save", comment: ""))
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)

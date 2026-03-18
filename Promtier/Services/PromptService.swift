@@ -108,18 +108,18 @@ class PromptService: ObservableObject {
         
         // 1. Prompt Normal (Email) con Snippet de firma
         let emailPrompt = Prompt(
-            title: "Resumen de Proyecto",
-            content: "Hola,\n\nTe adjunto el resumen de los avances de esta semana. Hemos superado los objetivos principales y estamos dentro del cronograma.\n\n/firma",
-            folder: "Trabajo",
+            title: NSLocalizedString("default_prompt_email_title", comment: ""),
+            content: NSLocalizedString("default_prompt_email_content", comment: ""),
+            folder: PredefinedCategory.work.displayName,
             icon: "briefcase.fill"
         )
         _ = PromptEntity.create(from: emailPrompt, in: context)
         
         // 2. Prompt con Variables (Programación)
         let codingPrompt = Prompt(
-            title: "Revisión de Código (Ejemplo Variable)",
-            content: "Actúa como un programador senior. Revisa este código escrito en {{lenguaje}} y optimízalo para mejorar la {{objetivo: rendimiento o legibilidad}}:\n\n```\n{{codigo}}\n```",
-            folder: "Código",
+            title: NSLocalizedString("default_prompt_coding_title", comment: ""),
+            content: NSLocalizedString("default_prompt_coding_content", comment: ""),
+            folder: PredefinedCategory.code.displayName,
             icon: "terminal.fill"
         )
         _ = PromptEntity.create(from: codingPrompt, in: context)
@@ -132,9 +132,9 @@ class PromptService: ObservableObject {
         }
         
         let creativePrompt = Prompt(
-            title: "Showcase: Paisaje Cyberpunk",
+            title: NSLocalizedString("default_prompt_creative_title", comment: ""),
             content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
-            folder: "Creativo",
+            folder: PredefinedCategory.creative.displayName,
             icon: "sparkles",
             showcaseImages: showcaseImages
         )

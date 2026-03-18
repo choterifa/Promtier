@@ -253,9 +253,9 @@ class PreferencesManager: ObservableObject {
         } else {
             // Snippets de ejemplo
             self.snippets = [
-                Snippet(title: "Firma Profesional", content: "Saludos cordiales,\nEquipo Promtier", shortcut: "firma"),
-                Snippet(title: "Plantilla Bug", content: "**Descripción:**\n**Pasos a reproducir:**\n1. \n2. \n**Resultado esperado:**", shortcut: "bug"),
-                Snippet(title: "Revisión Rápida", content: "Por favor revisa este código y optimízalo para SwiftUI:", shortcut: "revisar")
+                Snippet(title: NSLocalizedString("snippet_signature_title", comment: ""), content: NSLocalizedString("snippet_signature_content", comment: ""), shortcut: NSLocalizedString("snippet_signature_shortcut", comment: "")),
+                Snippet(title: NSLocalizedString("snippet_bug_title", comment: ""), content: NSLocalizedString("snippet_bug_content", comment: ""), shortcut: NSLocalizedString("snippet_bug_shortcut", comment: "")),
+                Snippet(title: NSLocalizedString("snippet_review_title", comment: ""), content: NSLocalizedString("snippet_review_content", comment: ""), shortcut: NSLocalizedString("snippet_review_shortcut", comment: ""))
             ]
         }
         

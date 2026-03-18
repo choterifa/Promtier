@@ -1,0 +1,237 @@
+/* General */
+"search_placeholder" = "Buscar tus prompts...";
+"new_prompt" = "Nuevo Prompt";
+"settings" = "Configuración";
+"trash" = "Papelera";
+"no_prompts" = "No hay prompts aún";
+"no_results" = "No se encontraron resultados";
+"create_first_prompt" = "Crea tu primer prompt para comenzar";
+"try_other_terms" = "Intenta con otros términos de búsqueda";
+"copy" = "Copiar";
+"edit" = "Editar";
+"preview" = "Vista previa";
+"add_favorite" = "Añadir a favoritos";
+"remove_favorite" = "Quitar de favoritos";
+"delete" = "Mover a la papelera";
+"close" = "Cerrar";
+"done" = "Hecho";
+"cancel" = "Cancelar";
+"save" = "Guardar";
+"create" = "Crear";
+"add" = "Añadir";
+
+/* Tabs */
+"appearance_tab" = "Apariencia";
+"general_tab" = "General";
+"shortcuts_tab" = "Atajos";
+"snippets_tab" = "Snippets";
+"data_tab" = "Datos";
+"support_tab" = "Soporte";
+
+/* Appearance Tab */
+"appearance" = "Apariencia";
+"language" = "Idioma";
+"language_subtitle" = "Selecciona el idioma de la aplicación";
+"appearance_subtitle" = "Selecciona el modo visual de la app";
+"light" = "Claro";
+"dark" = "Oscuro";
+"system" = "Sistema";
+"font_size" = "Tamaño de fuente";
+"font_size_subtitle" = "Ajusta el texto de tus prompts";
+"preview_priority" = "Prioridad en Preview";
+"preview_priority_subtitle" = "Orden de elementos en la vista rápida";
+"images_first" = "Imágenes primero";
+"text_first" = "Texto primero";
+"visual_effects" = "Efectos visuales";
+"visual_effects_subtitle" = "Efectos especiales al copiar y guardar prompts";
+"window" = "Ventana";
+"width" = "Ancho";
+"height" = "Alto";
+"reset_size" = "Restablecer tamaño";
+"reset_size_subtitle" = "Volver al tamaño por defecto (690 × 540)";
+"reset" = "Resetear";
+
+/* Behavior Tab */
+"interaction" = "Interacción";
+"sounds" = "Sonidos";
+"sounds_subtitle" = "Feedback auditivo al copiar";
+"ghost_tips" = "Consejos visuales";
+"ghost_tips_subtitle" = "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)";
+"close_on_copy" = "Cerrar al copiar";
+"close_on_copy_subtitle" = "Cierra la ventana automáticamente al copiar";
+"auto_paste" = "Pegado instantáneo";
+"auto_paste_subtitle" = "Pega automáticamente el prompt en la aplicación activa";
+"accessibility" = "Accesibilidad";
+"accessibility_granted" = "Permisos concedidos ✅";
+"accessibility_required" = "Permisos requeridos ⚠️";
+"accessibility_verified" = "Verificado";
+"accessibility_configure" = "Configurar";
+"haptic_feedback" = "Feedback háptico";
+"haptic_feedback_subtitle" = "Retroalimentación táctil en el trackpad";
+"test_vibration" = "Probar Vibración";
+"test_vibration_subtitle" = "Haz clic en los botones para probar el trackpad";
+"haptic_light" = "Suave";
+"haptic_medium" = "Medio";
+"haptic_strong" = "Fuerte 🪄";
+"haptic_note" = "Nota: Requiere Force Touch o Magic Trackpad.";
+"apple_intelligence" = "Apple Intelligence";
+"apple_intelligence_subtitle" = "Mostrar herramientas de IA en el editor";
+"launch_at_login" = "Inicio automático";
+"launch_at_login_subtitle" = "Abrir Promtier al iniciar sesión";
+"updates" = "Actualizaciones";
+"updates_subtitle" = "Buscar nuevas versiones de Promtier";
+"check_now" = "Buscar ahora";
+"premium" = "Promtier Premium 💎";
+"activate_premium" = "Activar Funciones Premium";
+"activate_premium_subtitle" = "Simular estado Premium para pruebas";
+
+/* Shortcuts Tab */
+"global_shortcuts" = "Atajo Global";
+"global_shortcuts_subtitle" = "Habilitar combinaciones en todo el sistema";
+"list_navigation" = "Navegación de Lista";
+"move_up" = "Mover selección arriba";
+"move_down" = "Mover selección abajo";
+"toggle_sidebar" = "Mostrar/Ocultar Sidebar";
+"prompt_editor" = "Editor de Prompt";
+"save_prompt" = "Guardar prompt";
+"open_snippets" = "Apertura de Snippets (/)";
+"snippet_up" = "Navegar snippet arriba";
+"snippet_down" = "Navegar snippet abajo";
+"insert_snippet" = "Insertar snippet / Cerrar menú";
+"insert_variable" = "Insertar variable";
+"zen_mode" = "Modo Zen (pantalla completa)";
+"fill_variables" = "Rellenar Variables";
+"next_field" = "Avanzar al siguiente campo";
+"copy_final_prompt" = "Copiar prompt final";
+"cancel_close" = "Cancelar / Cerrar panel";
+"toggle_promtier" = "Abrir / Cerrar Promtier";
+"close_window" = "Cerrar ventana";
+
+/* Data Tab */
+"export" = "Exportar";
+"import" = "Importar";
+"format" = "Formato";
+"export_format_subtitle" = "Elige el formato de exportación";
+"save_as_file" = "Guardar como archivo";
+"import_library" = "Importar Biblioteca";
+"import_subtitle" = "Carga desde un archivo JSON";
+"icloud_sync" = "Sincronización iCloud";
+"sync_macs" = "Sincroniza entre tus Macs";
+"reset_all" = "Restablecer todo";
+"reset_factory" = "Restablecer a fábrica";
+"reset_message" = "Se perderán permanentemente todos tus ajustes y prompts.";
+
+/* Support Tab */
+"contact_help" = "Contacto y Ayuda";
+"email_support" = "Soporte por Email";
+"report_problem" = "Reportar un Problema";
+"report_details" = "Envíanos detalles sobre un error";
+"legal_privacy" = "Legal y Privacidad";
+"privacy_policy" = "Política de Privacidad";
+"how_data_handled" = "Cómo manejamos tus datos";
+"terms_service" = "Términos de Servicio";
+"app_conditions" = "Condiciones de uso de la app";
+"created_with_passion" = "Creado con pasión por Valencia";
+"visit_website" = "Visitar Sitio Web";
+
+/* Categories */
+"explore" = "Explorar";
+"all" = "Todas";
+"recent" = "Recientes";
+"favorites" = "Favoritos";
+"uncategorized" = "Sin categoría";
+"manage_categories" = "Gestionar Categorías";
+"customize_workflow" = "Personaliza tu flujo de trabajo";
+"show_categories" = "Mostrar Categorías";
+"hide_categories" = "Ocultar Categorías";
+"new_category" = "Nueva Categoría";
+"edit_category" = "Editar Categoría";
+"name" = "Nombre";
+"name_placeholder" = "Ej: Marketing...";
+"icon" = "Icono";
+"color" = "Color";
+"create_category" = "Crear Categoría";
+"save_changes" = "Guardar Cambios";
+
+/* Variable Fill */
+"fill_variables_title" = "Rellenar Variables";
+"value_for" = "Valor para %@...";
+"typing" = "Escribiendo...";
+"selecting" = "Seleccionando...";
+"choosing" = "Eligiendo...";
+
+/* Snippets Manager */
+"quick_snippets" = "Snippets Rápidos";
+"my_snippets" = "Mis Snippets";
+"snippets_desc" = "Inserta texto frecuente usando /";
+"no_snippets_configured" = "No tienes snippets configurados";
+"new_snippet" = "Nuevo Snippet";
+"edit_snippet" = "Editar Snippet";
+"title_label" = "Título";
+"title_placeholder" = "Ej: Firma";
+"command_shortcut" = "Shortcut";
+"command_placeholder" = "Ej: firma";
+"command_rule" = "Una palabra, sin espacios.";
+"content_label" = "Contenido";
+"edit_action" = "Editar";
+"delete_action" = "Eliminar";
+
+/* Ghost Tips */
+"gt_preview" = "Vista Previa";
+"gt_spacebar" = "Barra Espaciadora";
+"gt_quick_copy" = "Copiar Rápido";
+"gt_new_prompt" = "Nuevo Prompt";
+"gt_settings" = "Configuración";
+"gt_hide_sidebar" = "Ocultar Sidebar";
+"gt_move_categories" = "Mover a Categorías";
+"gt_multi_select" = "Multi-selección";
+"gt_batch_mode" = "Modo Lote";
+"gt_auto_delete" = "Auto-borrado 7d";
+"gt_backup_prompts" = "Respaldar Prompts";
+
+/* Default Data */
+"snippet_signature_title" = "Firma Profesional";
+"snippet_signature_content" = "Saludos cordiales,\nEquipo Promtier";
+"snippet_signature_shortcut" = "firma";
+"snippet_bug_title" = "Plantilla Bug";
+"snippet_bug_content" = "**Descripción:**\n**Pasos:**\n1. \n**Resultado:**";
+"snippet_bug_shortcut" = "bug";
+"snippet_review_title" = "Revisión Rápida";
+"snippet_review_content" = "Por favor revisa este código:";
+"snippet_review_shortcut" = "revisar";
+
+"default_prompt_email_title" = "Resumen de Proyecto";
+"default_prompt_email_content" = "Hola,\n\nTe adjunto el resumen de los avances. Hemos superado los objetivos.\n\n/firma";
+"default_prompt_coding_title" = "Revisión de Código (Ejemplo Variable)";
+"default_prompt_coding_content" = "Actúa como senior. Revisa este código {{lenguaje}}:\n\n```\n{{codigo}}\n```";
+"default_prompt_creative_title" = "Showcase: Paisaje Cyberpunk";
+
+"cat_work" = "Trabajo";
+"cat_code" = "Código";
+"cat_creative" = "Creativo";
+"cat_personal" = "Personal";
+"cat_study" = "Estudio";
+"cat_ai" = "IA/Modelos";
+
+/* New Prompt */
+"edit_prompt" = "Editar Prompt";
+"update_details" = "Actualiza los detalles";
+"create_tool" = "Crea una herramienta";
+"prompt_title_placeholder" = "Título del prompt...";
+"insert_variable_hint" = "Insertar Variable (Premium)";
+"insert_snippet_hint" = "Insertar Snippet (Premium)";
+"version_history" = "Historial de versiones";
+"dynamic_variables" = "Variables Dinámicas";
+"reusable_snippets" = "Snippets Reutilizables";
+"zen_editor" = "Editor Zen";
+"short_desc_placeholder" = "Descripción breve (opcional)...";
+"prompt_content_placeholder" = "Escribe aquí el contenido de tu prompt...";
+"characters" = "%d caracteres";
+"reference_images" = "Imágenes de Referencia";
+"add_image" = "Añadir Imagen";
+"add_prompt_results" = "Añadir resultados del prompt";
+"category" = "Categoría";
+"prompt_results" = "RESULTADOS DEL PROMPT";
+"export_plain_text" = "Exportar a texto plano";
+"spanish" = "Español";
+"english" = "Inglés";

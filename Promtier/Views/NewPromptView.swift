@@ -153,7 +153,7 @@ struct NewPromptView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button(action: onClose) {
-                Text("Cancelar")
+                Text(NSLocalizedString("cancel", comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
@@ -168,9 +168,9 @@ struct NewPromptView: View {
             Spacer()
             
             VStack(spacing: 2) {
-                Text(prompt != nil ? "Editar Prompt" : "Nuevo Prompt")
+                Text(prompt != nil ? NSLocalizedString("edit_prompt", comment: "") : NSLocalizedString("new_prompt", comment: ""))
                     .font(.system(size: 15, weight: .bold))
-                Text(prompt != nil ? "Actualiza los detalles" : "Crea una herramienta")
+                Text(prompt != nil ? NSLocalizedString("update_details", comment: "") : NSLocalizedString("create_tool", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
@@ -178,7 +178,7 @@ struct NewPromptView: View {
             Spacer()
             
             Button(action: savePrompt) {
-                Text(prompt != nil ? "Guardar" : "Crear")
+                Text(prompt != nil ? NSLocalizedString("save", comment: "") : NSLocalizedString("create", comment: ""))
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -217,7 +217,7 @@ struct NewPromptView: View {
                     IconPickerView(selectedIcon: $selectedIcon, color: selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
                 }
                 
-                TextField("Título del prompt...", text: $title)
+                TextField(NSLocalizedString("prompt_title_placeholder", comment: ""), text: $title)
                     .textFieldStyle(.plain)
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                     .onChange(of: title) { _, newValue in
@@ -233,7 +233,7 @@ struct NewPromptView: View {
                             if preferences.isPremiumActive {
                                 insertionRequest = "{{variable}}"
                             } else {
-                                showingPremiumFor = "Variables Dinámicas"
+                                showingPremiumFor = NSLocalizedString("dynamic_variables", comment: "")
                             }
                         }) {
                             Image(systemName: "curlybraces")
@@ -243,7 +243,7 @@ struct NewPromptView: View {
                                 .background(Color.blue.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("Insertar Variable (Premium)")
+                        .help(NSLocalizedString("insert_variable_hint", comment: ""))
                         
                         Divider().frame(height: 18).background(Color.blue.opacity(0.2))
                         
@@ -252,7 +252,7 @@ struct NewPromptView: View {
                                 showSnippets = true
                                 snippetSearchQuery = ""
                             } else {
-                                showingPremiumFor = "Snippets Reutilizables"
+                                showingPremiumFor = NSLocalizedString("reusable_snippets", comment: "")
                             }
                         }) {
                             Text("/")
@@ -262,7 +262,7 @@ struct NewPromptView: View {
                                 .background(Color.blue.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("Insertar Snippet (Premium)")
+                        .help(NSLocalizedString("insert_snippet_hint", comment: ""))
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
@@ -280,7 +280,7 @@ struct NewPromptView: View {
                                 .background(Circle().fill(Color.blue.opacity(0.1)))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("Historial de versiones")
+                        .help(NSLocalizedString("version_history", comment: ""))
                         .sheet(isPresented: $showingVersionHistory) {
                             if let existingPrompt = prompt {
                                 VersionHistoryView(
@@ -323,7 +323,7 @@ struct NewPromptView: View {
                             .background(Circle().fill(Color.blue.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
-                    .help("Editor Zen")
+                    .help(NSLocalizedString("zen_editor", comment: ""))
                 }
             }
             .frame(minHeight: 44) // Asegura que el título sea visible
@@ -333,7 +333,7 @@ struct NewPromptView: View {
             
             // Descripción breve
             HStack(spacing: 8) {
-                TextField("Descripción breve (opcional)...", text: $promptDescription)
+                TextField(NSLocalizedString("short_desc_placeholder", comment: ""), text: $promptDescription)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
                     .foregroundColor(.secondary)
@@ -351,7 +351,7 @@ struct NewPromptView: View {
             // Área de Texto
             ZStack(alignment: .topLeading) {
                 if content.isEmpty {
-                    Text("Escribe aquí el contenido de tu prompt...")
+                    Text(NSLocalizedString("prompt_content_placeholder", comment: ""))
                         .foregroundColor(.secondary.opacity(0.4))
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
@@ -380,7 +380,7 @@ struct NewPromptView: View {
             
             HStack {
                 Spacer()
-                Label("\(content.count) caracteres", systemImage: "character.cursor.ibeam")
+                Label(String(format: NSLocalizedString("characters", comment: ""), content.count), systemImage: "character.cursor.ibeam")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.secondary.opacity(0.6))
                     .padding(.horizontal, 20)
@@ -400,7 +400,7 @@ struct NewPromptView: View {
     private var imageGallery: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("Imágenes de Referencia", systemImage: "photo.on.rectangle")
+                Label(NSLocalizedString("reference_images", comment: ""), systemImage: "photo.on.rectangle")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.secondary)
                 
@@ -410,7 +410,7 @@ struct NewPromptView: View {
                     Button(action: selectImages) {
                         HStack(spacing: 4) {
                             Image(systemName: "plus.circle.fill")
-                            Text("Añadir Imagen")
+                            Text(NSLocalizedString("add_image", comment: ""))
                                 .font(.system(size: 11, weight: .bold))
                         }
                         .padding(.horizontal, 10)
@@ -493,7 +493,7 @@ struct NewPromptView: View {
             )
             
             if showcaseImages.isEmpty {
-                Text("Añadir resultados del prompt")
+                Text(NSLocalizedString("add_prompt_results", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary.opacity(0.4))
                     .padding(.top, 4)
@@ -688,14 +688,14 @@ struct NewPromptView: View {
     
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Categoría", systemImage: "folder.fill")
+            Label(NSLocalizedString("category", comment: ""), systemImage: "folder.fill")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    CategoryChip(title: "Sin categoría", icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
+                    CategoryChip(title: NSLocalizedString("uncategorized", comment: ""), icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
                         withAnimation(.spring()) {
                             selectedFolder = nil
                         }
@@ -743,7 +743,7 @@ struct CategoryChip: View {
             HStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .semibold))
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.system(size: 11, weight: .medium))
             }
             .padding(.horizontal, 8)

@@ -218,7 +218,7 @@ struct PromptPreviewView: View {
             HStack(spacing: 8) {
                 Image(systemName: "photo.on.rectangle.angled")
                     .foregroundColor(.blue)
-                Text("RESULTADOS DEL PROMPT")
+                Text("prompt_results")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
             }

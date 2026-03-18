@@ -1,0 +1,237 @@
+/* General */
+"search_placeholder" = "Search your prompts...";
+"new_prompt" = "New Prompt";
+"settings" = "Settings";
+"trash" = "Trash";
+"no_prompts" = "No prompts yet";
+"no_results" = "No results found";
+"create_first_prompt" = "Create your first prompt to get started";
+"try_other_terms" = "Try other search terms";
+"copy" = "Copy";
+"edit" = "Edit";
+"preview" = "Preview";
+"add_favorite" = "Add to favorites";
+"remove_favorite" = "Remove from favorites";
+"delete" = "Move to trash";
+"close" = "Close";
+"done" = "Done";
+"cancel" = "Cancel";
+"save" = "Save";
+"create" = "Create";
+"add" = "Add";
+
+/* Tabs */
+"appearance_tab" = "Appearance";
+"general_tab" = "General";
+"shortcuts_tab" = "Shortcuts";
+"snippets_tab" = "Snippets";
+"data_tab" = "Data";
+"support_tab" = "Support";
+
+/* Appearance Tab */
+"appearance" = "Appearance";
+"language" = "Language";
+"language_subtitle" = "Select the application language";
+"appearance_subtitle" = "Select the app's visual mode";
+"light" = "Light";
+"dark" = "Dark";
+"system" = "System";
+"font_size" = "Font Size";
+"font_size_subtitle" = "Adjust the text size of your prompts";
+"preview_priority" = "Preview Priority";
+"preview_priority_subtitle" = "Order of elements in quick view";
+"images_first" = "Images First";
+"text_first" = "Text First";
+"visual_effects" = "Visual Effects";
+"visual_effects_subtitle" = "Special effects when copying and saving prompts";
+"window" = "Window";
+"width" = "Width";
+"height" = "Height";
+"reset_size" = "Reset Size";
+"reset_size_subtitle" = "Return to default size (690 × 540)";
+"reset" = "Reset";
+
+/* Behavior Tab */
+"interaction" = "Interaction";
+"sounds" = "Sounds";
+"sounds_subtitle" = "Auditory feedback when copying";
+"ghost_tips" = "Visual Tips";
+"ghost_tips_subtitle" = "Occasionally shows shortcut tips (Ghost Tips)";
+"close_on_copy" = "Close on Copy";
+"close_on_copy_subtitle" = "Close the window automatically after copying";
+"auto_paste" = "Instant Paste";
+"auto_paste_subtitle" = "Automatically paste the prompt in the active app";
+"accessibility" = "Accessibility";
+"accessibility_granted" = "Permissions granted ✅";
+"accessibility_required" = "Permissions required ⚠️";
+"accessibility_verified" = "Verified";
+"accessibility_configure" = "Configure";
+"haptic_feedback" = "Haptic Feedback";
+"haptic_feedback_subtitle" = "Tactile feedback on the trackpad";
+"test_vibration" = "Test Vibration";
+"test_vibration_subtitle" = "Click buttons to test the trackpad";
+"haptic_light" = "Light";
+"haptic_medium" = "Medium";
+"haptic_strong" = "Strong 🪄";
+"haptic_note" = "Note: Requires Force Touch or Magic Trackpad.";
+"apple_intelligence" = "Apple Intelligence";
+"apple_intelligence_subtitle" = "Show AI tools (Writing Tools) in editor";
+"launch_at_login" = "Launch at Login";
+"launch_at_login_subtitle" = "Open Promtier when you log in";
+"updates" = "Updates";
+"updates_subtitle" = "Check for new versions of Promtier";
+"check_now" = "Check now";
+"premium" = "Promtier Premium 💎";
+"activate_premium" = "Activate Premium Features";
+"activate_premium_subtitle" = "Simulate Premium state for testing";
+
+/* Shortcuts Tab */
+"global_shortcuts" = "Global Shortcut";
+"global_shortcuts_subtitle" = "Enable system-wide combinations";
+"list_navigation" = "List Navigation";
+"move_up" = "Move selection up";
+"move_down" = "Move selection down";
+"toggle_sidebar" = "Show/Hide Sidebar";
+"prompt_editor" = "Prompt Editor";
+"save_prompt" = "Save prompt";
+"open_snippets" = "Open Snippets (/)";
+"snippet_up" = "Navigate snippet up";
+"snippet_down" = "Navigate snippet down";
+"insert_snippet" = "Insert snippet / Close menu";
+"insert_variable" = "Insert variable";
+"zen_mode" = "Zen Mode (full screen)";
+"fill_variables" = "Fill Variables";
+"next_field" = "Advance to next field";
+"copy_final_prompt" = "Copy final prompt";
+"cancel_close" = "Cancel / Close panel";
+"toggle_promtier" = "Open / Close Promtier";
+"close_window" = "Close window";
+
+/* Data Tab */
+"export" = "Export";
+"import" = "Import";
+"format" = "Format";
+"export_format_subtitle" = "Choose export format";
+"save_as_file" = "Save as file";
+"import_library" = "Import Library";
+"import_subtitle" = "Load from a JSON file";
+"icloud_sync" = "iCloud Sync";
+"sync_macs" = "Sync between your Macs";
+"reset_all" = "Reset Everything";
+"reset_factory" = "Factory Reset";
+"reset_message" = "All your settings and prompts will be permanently lost.";
+
+/* Support Tab */
+"contact_help" = "Contact and Help";
+"email_support" = "Email Support";
+"report_problem" = "Report a Problem";
+"report_details" = "Send us details about an error";
+"legal_privacy" = "Legal and Privacy";
+"privacy_policy" = "Privacy Policy";
+"how_data_handled" = "How we handle your data";
+"terms_service" = "Terms of Service";
+"app_conditions" = "App usage conditions";
+"created_with_passion" = "Created with passion by Valencia";
+"visit_website" = "Visit Website";
+
+/* Categories */
+"explore" = "Explore";
+"all" = "All";
+"recent" = "Recent";
+"favorites" = "Favorites";
+"uncategorized" = "Uncategorized";
+"manage_categories" = "Manage Categories";
+"customize_workflow" = "Customize your workflow";
+"show_categories" = "Show Categories";
+"hide_categories" = "Hide Categories";
+"new_category" = "New Category";
+"edit_category" = "Edit Category";
+"name" = "Name";
+"name_placeholder" = "Ex: Marketing...";
+"icon" = "Icon";
+"color" = "Color";
+"create_category" = "Create Category";
+"save_changes" = "Save Changes";
+
+/* Variable Fill */
+"fill_variables_title" = "Fill Variables";
+"value_for" = "Value for %@...";
+"typing" = "Typing...";
+"selecting" = "Selecting...";
+"choosing" = "Choosing...";
+
+/* Snippets Manager */
+"quick_snippets" = "Quick Snippets";
+"my_snippets" = "My Snippets";
+"snippets_desc" = "Insert frequent text using /";
+"no_snippets_configured" = "No snippets configured";
+"new_snippet" = "New Snippet";
+"edit_snippet" = "Edit Snippet";
+"title_label" = "Title";
+"title_placeholder" = "Ex: Signature";
+"command_shortcut" = "Shortcut";
+"command_placeholder" = "Ex: sign";
+"command_rule" = "One word, no spaces.";
+"content_label" = "Content";
+"edit_action" = "Edit";
+"delete_action" = "Delete";
+
+/* Ghost Tips */
+"gt_preview" = "Preview";
+"gt_spacebar" = "Spacebar";
+"gt_quick_copy" = "Quick Copy";
+"gt_new_prompt" = "New Prompt";
+"gt_settings" = "Settings";
+"gt_hide_sidebar" = "Hide Sidebar";
+"gt_move_categories" = "Move to Categories";
+"gt_multi_select" = "Multi-select";
+"gt_batch_mode" = "Batch Mode";
+"gt_auto_delete" = "Auto-delete 7d";
+"gt_backup_prompts" = "Backup Prompts";
+
+/* Default Data */
+"snippet_signature_title" = "Professional Signature";
+"snippet_signature_content" = "Best regards,\nPromtier Team";
+"snippet_signature_shortcut" = "signature";
+"snippet_bug_title" = "Bug Template";
+"snippet_bug_content" = "**Description:**\n**Steps:**\n1. \n**Expected:**";
+"snippet_bug_shortcut" = "bug";
+"snippet_review_title" = "Quick Review";
+"snippet_review_content" = "Please review this code:";
+"snippet_review_shortcut" = "review";
+
+"default_prompt_email_title" = "Project Summary";
+"default_prompt_email_content" = "Hi,\n\nAttached is the summary of this week's progress.\n\n/signature";
+"default_prompt_coding_title" = "Code Review (Variable Example)";
+"default_prompt_coding_content" = "Act as a senior dev. Review this {{language}} code:\n\n```\n{{code}}\n```";
+"default_prompt_creative_title" = "Showcase: Cyberpunk Landscape";
+
+"cat_work" = "Work";
+"cat_code" = "Code";
+"cat_creative" = "Creative";
+"cat_personal" = "Personal";
+"cat_study" = "Study";
+"cat_ai" = "AI Models";
+
+/* New Prompt */
+"edit_prompt" = "Edit Prompt";
+"update_details" = "Update the details";
+"create_tool" = "Create a tool";
+"prompt_title_placeholder" = "Prompt title...";
+"insert_variable_hint" = "Insert Variable (Premium)";
+"insert_snippet_hint" = "Insert Snippet (Premium)";
+"version_history" = "Version History";
+"dynamic_variables" = "Dynamic Variables";
+"reusable_snippets" = "Reusable Snippets";
+"zen_editor" = "Zen Editor";
+"short_desc_placeholder" = "Short description (optional)...";
+"prompt_content_placeholder" = "Write your prompt content here...";
+"characters" = "%d characters";
+"reference_images" = "Reference Images";
+"add_image" = "Add Image";
+"add_prompt_results" = "Add prompt results";
+"category" = "Category";
+"prompt_results" = "PROMPT RESULTS";
+"export_plain_text" = "Export as plain text";
+"spanish" = "Spanish";
+"english" = "English";

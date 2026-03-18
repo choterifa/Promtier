@@ -26,17 +26,19 @@ struct SearchViewSimple: View {
     // Ghost Tips logic
     @State private var currentGhostTip: GhostTip? = nil
     @State private var nextTipIndex: Int = 0
-    private let ghostTips = [
-        GhostTip(title: "Vista Previa", icon: "eye", shortcut: "Barra Espaciadora"),
-        GhostTip(title: "Copiar Rápido", icon: "doc.on.doc", shortcut: "Cmd + C"),
-        GhostTip(title: "Nuevo Prompt", icon: "plus", shortcut: "Cmd + N"),
-        GhostTip(title: "Configuración", icon: "gearshape", shortcut: "Cmd + ,"),
-        GhostTip(title: "Ocultar Sidebar", icon: "sidebar.left", shortcut: "Cmd + B"),
-        GhostTip(title: "Drag & Drop", icon: "hand.tap", shortcut: "Mover a Categorías"),
-        GhostTip(title: "Multi-selección", icon: "checkmark.circle", shortcut: "Modo Lote"),
-        GhostTip(title: "Papelera", icon: "trash", shortcut: "Auto-borrado 7d"),
-        GhostTip(title: "Exportar", icon: "square.and.arrow.up", shortcut: "Respaldar Prompts")
-    ]
+    private var ghostTips: [GhostTip] {
+        [
+            GhostTip(title: NSLocalizedString("gt_preview", comment: ""), icon: "eye", shortcut: NSLocalizedString("gt_spacebar", comment: "")),
+            GhostTip(title: NSLocalizedString("gt_quick_copy", comment: ""), icon: "doc.on.doc", shortcut: "Cmd + C"),
+            GhostTip(title: NSLocalizedString("gt_new_prompt", comment: ""), icon: "plus", shortcut: "Cmd + N"),
+            GhostTip(title: NSLocalizedString("gt_settings", comment: ""), icon: "gearshape", shortcut: "Cmd + ,"),
+            GhostTip(title: NSLocalizedString("gt_hide_sidebar", comment: ""), icon: "sidebar.left", shortcut: "Cmd + B"),
+            GhostTip(title: "Drag & Drop", icon: "hand.tap", shortcut: NSLocalizedString("gt_move_categories", comment: "")),
+            GhostTip(title: NSLocalizedString("gt_multi_select", comment: ""), icon: "checkmark.circle", shortcut: NSLocalizedString("gt_batch_mode", comment: "")),
+            GhostTip(title: NSLocalizedString("trash", comment: ""), icon: "trash", shortcut: NSLocalizedString("gt_auto_delete", comment: "")),
+            GhostTip(title: NSLocalizedString("export", comment: ""), icon: "square.and.arrow.up", shortcut: NSLocalizedString("gt_backup_prompts", comment: ""))
+        ]
+    }
     
     var body: some View {
         ZStack {
@@ -171,19 +173,19 @@ struct SearchViewSimple: View {
         .overlay {
             importOverlays
         }
-        .alert("Importar Datos", isPresented: $showingImportAlert) {
-            Button("Importar", role: .none) {
+        .alert(NSLocalizedString("import_data_alert_title", comment: ""), isPresented: $showingImportAlert) {
+            Button(NSLocalizedString("import_button", comment: ""), role: .none) {
                 if let data = importData {
                     let results = promptService.importPromptsFromData(data)
-                    importMessage = "Importación completada: \(results.success) prompts añadidos"
+                    importMessage = String(format: NSLocalizedString("import_completed_message", comment: ""), results.success)
                     HapticService.shared.playStrong()
                     showParticles = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
                 }
             }
-            Button("Cancelar", role: .cancel) { importData = nil }
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { importData = nil }
         } message: {
-            Text("¿Quieres importar los prompts de este archivo? Los actuales no se borrarán.")
+            Text(NSLocalizedString("import_confirmation_message", comment: ""))
         }
         .onChange(of: preferences.windowWidth) { oldWidth, newWidth in
             let threshold: CGFloat = 565
@@ -264,7 +266,7 @@ struct SearchViewSimple: View {
                                 )
                         }
                         .buttonStyle(.plain)
-                        .help(preferences.showSidebar ? "Ocultar Sidebar" : "Mostrar Sidebar")
+                        .help(preferences.showSidebar ? NSLocalizedString("hide_sidebar_help", comment: "") : NSLocalizedString("show_sidebar_help", comment: ""))
                         
                         // Buscador Estilizado
                         HStack(spacing: 12) {
@@ -272,7 +274,7 @@ struct SearchViewSimple: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.blue)
                             
-                            TextField("Buscar tus prompts...", text: $promptService.searchQuery)
+                            TextField(NSLocalizedString("search_placeholder", comment: ""), text: $promptService.searchQuery)
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
                                 .focused($isSearchFocused)
@@ -320,7 +322,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help("Nuevo Prompt (N)")
+                            .help(NSLocalizedString("new_prompt", comment: "") + " (N)")
                             
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -341,7 +343,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help("Configuración (Cmd+,)")
+                            .help(NSLocalizedString("settings", comment: "") + " (Cmd+,)")
                             
                             // Botón Papelera
                             Button(action: {
@@ -373,7 +375,7 @@ struct SearchViewSimple: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .help("Papelera")
+                            .help(NSLocalizedString("trash", comment: ""))
                             
                             // Botón de Selección en Lote
                             Button(action: {
@@ -399,7 +401,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help(batchService.isSelectionModeActive ? "Cancelar Selección" : "Selección en Lote")
+                            .help(batchService.isSelectionModeActive ? NSLocalizedString("cancel_selection_help", comment: "") : NSLocalizedString("batch_selection_help", comment: ""))
                         }
                     }
                     .padding(.horizontal, 24)
@@ -420,17 +422,17 @@ struct SearchViewSimple: View {
                             .foregroundColor(.secondary.opacity(0.6))
                         
                         VStack(spacing: 12) {
-                            Text(promptService.searchQuery.isEmpty ? "No hay prompts aún" : "No se encontraron resultados")
+                            Text(promptService.searchQuery.isEmpty ? NSLocalizedString("no_prompts", comment: "") : NSLocalizedString("no_results", comment: ""))
                                 .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
                                 .foregroundColor(.primary)
                             
-                            Text(promptService.searchQuery.isEmpty ? "Crea tu primer prompt para comenzar" : "Intenta con otros términos de búsqueda")
+                            Text(promptService.searchQuery.isEmpty ? NSLocalizedString("create_first_prompt", comment: "") : NSLocalizedString("try_other_terms", comment: ""))
                                 .font(.system(size: 14 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
                         
                         if promptService.searchQuery.isEmpty {
-                            Button("Crear Primer Prompt") {
+                            Button(NSLocalizedString("create_first_prompt", comment: "")) {
                                 selectedPrompt = nil
                                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                             }
@@ -487,7 +489,7 @@ struct SearchViewSimple: View {
                                     }
                                     .contextMenu {
                                     Button(action: { usePrompt(prompt) }) {
-                                        Label("Copiar", systemImage: "doc.on.doc")
+                                        Label(NSLocalizedString("copy", comment: ""), systemImage: "doc.on.doc")
                                     }
                                     
                                     Button(action: { 
@@ -497,7 +499,7 @@ struct SearchViewSimple: View {
                                         }
                                         withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
                                     }) {
-                                        Label("Editar", systemImage: "square.and.pencil")
+                                        Label(NSLocalizedString("edit", comment: ""), systemImage: "square.and.pencil")
                                     }
                                     
                                     Button(action: { 
@@ -507,11 +509,11 @@ struct SearchViewSimple: View {
                                             SoundService.shared.playInteractionSound()
                                         }
                                     }) {
-                                        Label("Vista previa", systemImage: "eye")
+                                        Label(NSLocalizedString("preview", comment: ""), systemImage: "eye")
                                     }
                                     
                                     Button(action: { toggleFavorite(prompt) }) {
-                                        Label(prompt.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos", 
+                                        Label(prompt.isFavorite ? NSLocalizedString("remove_favorite", comment: "") : NSLocalizedString("add_favorite", comment: ""), 
                                               systemImage: prompt.isFavorite ? "star.slash" : "star.fill")
                                     }
                                     
@@ -523,11 +525,11 @@ struct SearchViewSimple: View {
                                         }
                                         exportPromptsToFile(prompt) 
                                     }) {
-                                        Label("Exportar a texto plano", systemImage: "square.and.arrow.up")
+                                        Label(NSLocalizedString("export_plain_text", comment: ""), systemImage: "square.and.arrow.up")
                                     }
                                     
                                     Button(role: .destructive, action: { deletePrompt(prompt) }) {
-                                         Label("Mover a la papelera", systemImage: "trash.fill")
+                                         Label(NSLocalizedString("delete", comment: ""), systemImage: "trash.fill")
                                      }
                                 }
                             }
@@ -750,8 +752,8 @@ struct SearchViewSimple: View {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.plainText]
         savePanel.nameFieldStringValue = fileName
-        savePanel.title = "Exportar Prompts"
-        savePanel.message = "Elige dónde guardar el archivo de prompts exportados"
+        savePanel.title = NSLocalizedString("export_prompts_title", comment: "")
+        savePanel.message = NSLocalizedString("export_prompts_message", comment: "")
         
         // Hacer la app activa para evitar errores de ViewBridge y paneles en background
         NSApp.activate(ignoringOtherApps: true)
@@ -766,7 +768,7 @@ struct SearchViewSimple: View {
                     try exportContent.write(to: url, atomically: true, encoding: .utf8)
                 } catch {
                     let alert = NSAlert()
-                    alert.messageText = "Error al exportar"
+                    alert.messageText = NSLocalizedString("export_error_title", comment: "")
                     alert.informativeText = error.localizedDescription
                     alert.alertStyle = .critical
                     alert.addButton(withTitle: "OK")
@@ -872,7 +874,7 @@ struct ResizingGuideView: View {
                 }
                 
                 VStack(spacing: 6) {
-                    Text("Tamaño Objetivo")
+                    Text(NSLocalizedString("target_size", comment: ""))
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.secondary)
                         .tracking(1.5)
@@ -882,7 +884,7 @@ struct ResizingGuideView: View {
                         VStack {
                             Text("\(Int(preferences.previewWidth))")
                                 .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            Text("ancho")
+                            Text(NSLocalizedString("width", comment: ""))
                                 .font(.system(size: 10))
                                 .foregroundColor(.secondary)
                         }
@@ -892,7 +894,7 @@ struct ResizingGuideView: View {
                         VStack {
                             Text("\(Int(preferences.previewHeight))")
                                 .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            Text("alto")
+                            Text(NSLocalizedString("height", comment: ""))
                                 .font(.system(size: 10))
                                 .foregroundColor(.secondary)
                         }
@@ -900,7 +902,7 @@ struct ResizingGuideView: View {
                 }
                 
                 // Indicador de "Soltar para aplicar"
-                Text("Suelta para aplicar cambios")
+                Text(NSLocalizedString("release_to_apply", comment: ""))
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.blue.opacity(0.7))
                     .padding(.horizontal, 12)
@@ -933,9 +935,9 @@ struct AccessibilityBanner: View {
                 .font(.system(size: 14))
             
             VStack(alignment: .leading, spacing: 2) {
-                Text("Permisos de Accesibilidad")
+                Text(NSLocalizedString("accessibility_permissions", comment: ""))
                     .font(.system(size: 12, weight: .bold))
-                Text("Necesario para el pegado automático.")
+                Text(NSLocalizedString("accessibility_required_for_paste", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
@@ -943,7 +945,7 @@ struct AccessibilityBanner: View {
             Spacer()
             
             HStack(spacing: 8) {
-                Button("Configurar") {
+                Button(NSLocalizedString("configure", comment: "")) {
                     ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
                 }
                 .buttonStyle(.bordered)
@@ -961,7 +963,7 @@ struct AccessibilityBanner: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .help("No volver a mostrar")
+                .help(NSLocalizedString("do_not_show_again", comment: ""))
             }
         }
         .padding(.horizontal, 16)

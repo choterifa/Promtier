@@ -24,13 +24,13 @@ struct PreferencesView: View {
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
     
-    private let tabs = [
-        (title: "Apariencia", icon: "paintbrush.fill"),
-        (title: "General", icon: "gearshape.fill"),
-        (title: "Atajos", icon: "keyboard.fill"),
-        (title: "Snippets", icon: "text.quote"),
-        (title: "Datos", icon: "externaldrive.fill"),
-        (title: "Soporte", icon: "questionmark.circle.fill")
+    private let tabs: [(title: LocalizedStringKey, icon: String)] = [
+        (title: "appearance_tab", icon: "paintbrush.fill"),
+        (title: "general_tab", icon: "gearshape.fill"),
+        (title: "shortcuts_tab", icon: "keyboard.fill"),
+        (title: "snippets_tab", icon: "text.quote"),
+        (title: "data_tab", icon: "externaldrive.fill"),
+        (title: "support_tab", icon: "questionmark.circle.fill")
     ]
     
     private var tabsContent: some View {
@@ -76,7 +76,7 @@ struct PreferencesView: View {
             // Header Premium
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Configuración")
+                    Text("settings")
                         .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                     Text("Personaliza tu experiencia en Promtier")
                         .font(.system(size: 13 * preferences.fontSize.scale))
@@ -92,7 +92,7 @@ struct PreferencesView: View {
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Cerrar (Esc)")
+                .help("\(NSLocalizedString("close", comment: "")) (Esc)")
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
@@ -118,7 +118,7 @@ struct PreferencesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     if selectedTab == 3 && !preferences.isPremiumActive {
-                        PremiumUpsellView(featureName: "Snippets Reutilizables")
+                        PremiumUpsellView(featureName: NSLocalizedString("snippets_tab", comment: ""))
                             .frame(maxWidth: .infinity)
                             .padding(.top, 40)
                     } else {
@@ -160,14 +160,14 @@ struct PreferencesView: View {
         )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
-        .alert("Restablecer Todo", isPresented: $showingResetAlert) {
-            Button("Cancelar", role: .cancel) { }
-            Button("Restablecer a Fábrica", role: .destructive) {
+        .alert(NSLocalizedString("reset_all", comment: ""), isPresented: $showingResetAlert) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
+            Button(NSLocalizedString("reset_factory", comment: ""), role: .destructive) {
                 preferences.resetToDefaults()
                 promptService.resetAllData()
             }
         } message: {
-            Text("Se perderán permanentemente todos tus ajustes y prompts de la biblioteca.")
+            Text(NSLocalizedString("reset_message", comment: ""))
         }
     }
 }
@@ -175,13 +175,13 @@ struct PreferencesView: View {
 // MARK: - Componentes de Estilo
 
 struct SettingsSection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let content: Content
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    init(title: String, icon: String, @ViewBuilder content: () -> Content) {
+    init(title: LocalizedStringKey, icon: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.icon = icon
         self.content = content()
@@ -193,10 +193,11 @@ struct SettingsSection<Content: View>: View {
                 Image(systemName: icon)
                     .foregroundColor(.blue)
                     .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
-                Text(title.uppercased())
+                Text(title)
                     .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
+                    .textCase(.uppercase)
             }
             
             VStack(spacing: 1) {
@@ -215,15 +216,15 @@ struct SettingsSection<Content: View>: View {
 }
 
 struct SettingsRow<Content: View>: View {
-    let label: String
-    let subtitle: String?
+    let label: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     let icon: String?
     let iconColor: Color?
     let content: Content
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    init(_ label: String, subtitle: String? = nil, icon: String? = nil, iconColor: Color? = nil, @ViewBuilder content: () -> Content) {
+    init(_ label: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, icon: String? = nil, iconColor: Color? = nil, @ViewBuilder content: () -> Content) {
         self.label = label
         self.subtitle = subtitle
         self.icon = icon
@@ -266,12 +267,12 @@ struct AppearanceTab: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Interfaz", icon: "display") {
-                SettingsRow("Apariencia", subtitle: "Selecciona el modo visual de la app") {
-                    Picker("", selection: $preferences.appearance) {
-                        Text("Claro").tag(AppAppearance.light)
-                        Text("Oscuro").tag(AppAppearance.dark)
-                        Text("Sistema").tag(AppAppearance.system)
+            SettingsSection(title: "appearance", icon: "display") {
+                SettingsRow("language", subtitle: "language_subtitle") {
+                    Picker("", selection: $preferences.language) {
+                        ForEach(AppLanguage.allCases, id: \.self) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 200)
@@ -279,7 +280,19 @@ struct AppearanceTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Tamaño de Fuente", subtitle: "Ajusta el texto de tus prompts") {
+                SettingsRow("appearance", subtitle: "appearance_subtitle") {
+                    Picker("", selection: $preferences.appearance) {
+                        Text("light").tag(AppAppearance.light)
+                        Text("dark").tag(AppAppearance.dark)
+                        Text("system").tag(AppAppearance.system)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("font_size", subtitle: "font_size_subtitle") {
                     Picker("", selection: $preferences.fontSize) {
                         Text("S").tag(FontSize.small)
                         Text("M").tag(FontSize.medium)
@@ -291,10 +304,10 @@ struct AppearanceTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Prioridad en Preview", subtitle: "Orden de elementos en la vista rápida") {
+                SettingsRow("preview_priority", subtitle: "preview_priority_subtitle") {
                     Picker("", selection: $preferences.previewImagesFirst) {
-                        Text("Imágenes Primero").tag(true)
-                        Text("Texto Primero").tag(false)
+                        Text("images_first").tag(true)
+                        Text("text_first").tag(false)
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 240)
@@ -303,15 +316,15 @@ struct AppearanceTab: View {
                 if preferences.isPremiumActive {
                     Divider().padding(.leading, 20)
                     
-                    SettingsRow("Efectos Visuales", subtitle: "Efectos especiales al copiar y guardar prompts") {
+                    SettingsRow("visual_effects", subtitle: "visual_effects_subtitle") {
                         Toggle("", isOn: $preferences.visualEffectsEnabled)
                             .toggleStyle(.switch)
                     }
                 }
             }
             
-            SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {
-                SettingsRow("Ancho", subtitle: "\(Int(preferences.previewWidth))px") {
+            SettingsSection(title: "window", icon: "macwindow.badge.plus") {
+                SettingsRow("width", subtitle: "\(Int(preferences.previewWidth))px") {
                     Slider(value: $preferences.previewWidth, in: 500...900, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
@@ -323,7 +336,7 @@ struct AppearanceTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Alto", subtitle: "\(Int(preferences.previewHeight))px") {
+                SettingsRow("height", subtitle: "\(Int(preferences.previewHeight))px") {
                     Slider(value: $preferences.previewHeight, in: 450...750, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
                         if !editing {
@@ -335,7 +348,7 @@ struct AppearanceTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Restablecer tamaño", subtitle: "Volver al tamaño por defecto (690 × 540)") {
+                SettingsRow("reset_size", subtitle: "reset_size_subtitle") {
                     Button(action: {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             preferences.previewWidth  = 690
@@ -344,7 +357,7 @@ struct AppearanceTab: View {
                             preferences.windowHeight  = 540
                         }
                     }) {
-                        Label("Resetear", systemImage: "arrow.counterclockwise")
+                        Label("reset", systemImage: "arrow.counterclockwise")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.blue)
                             .padding(.horizontal, 12)
@@ -359,43 +372,44 @@ struct AppearanceTab: View {
     }
 }
 
+
 struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @ObservedObject private var shortcutManager = ShortcutManager.shared
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Interacción", icon: "hand.tap.fill") {
-                SettingsRow("Sonidos", subtitle: "Feedback auditivo al copiar") {
+            SettingsSection(title: "interaction", icon: "hand.tap.fill") {
+                SettingsRow("sounds", subtitle: "sounds_subtitle") {
                     Toggle("", isOn: $preferences.soundEnabled)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Consejos Visuales", subtitle: "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)", icon: "sparkles", iconColor: .blue) {
+                SettingsRow("ghost_tips", subtitle: "ghost_tips_subtitle", icon: "sparkles", iconColor: .blue) {
                     Toggle("", isOn: $preferences.ghostTipsEnabled)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Cerrar al copiar", subtitle: "Cierra la ventana automáticamente", icon: "xmark.square.fill", iconColor: .red) {
+                SettingsRow("close_on_copy", subtitle: "close_on_copy_subtitle", icon: "xmark.square.fill", iconColor: .red) {
                     Toggle("", isOn: $preferences.closeOnCopy)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Pegado Instantáneo", subtitle: "Pega automáticamente el prompt en la aplicación activa después de copiarlo.", icon: "wand.and.stars", iconColor: .orange) {
+                SettingsRow("auto_paste", subtitle: "auto_paste_subtitle", icon: "wand.and.stars", iconColor: .orange) {
                     Toggle("", isOn: $preferences.autoPaste)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Accesibilidad", subtitle: shortcutManager.isAccessibilityGranted ? "Permisos concedidos ✅" : "Permisos requeridos ⚠️", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
-                    Button(shortcutManager.isAccessibilityGranted ? "Verificado" : "Configurar") {
+                SettingsRow("accessibility", subtitle: shortcutManager.isAccessibilityGranted ? "accessibility_granted" : "accessibility_required", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
+                    Button(shortcutManager.isAccessibilityGranted ? "accessibility_verified" : "accessibility_configure") {
                         shortcutManager.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
                     }
                     .buttonStyle(.bordered)
@@ -404,27 +418,27 @@ struct BehaviorTab: View {
                 }
             }
             
-            SettingsSection(title: "Haptic Feedback (Trackpad) 🫨", icon: "hand.tap.fill") {
-                SettingsRow("Haptic Feedback", subtitle: "Retroalimentación táctil en el trackpad") {
+            SettingsSection(title: "haptic_feedback", icon: "hand.tap.fill") {
+                SettingsRow("haptic_feedback", subtitle: "haptic_feedback_subtitle") {
                     Toggle("", isOn: $preferences.hapticFeedbackEnabled)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Probar Vibración", subtitle: "Haz clic en los botones para probar el trackpad") {
+                SettingsRow("test_vibration", subtitle: "test_vibration_subtitle") {
                     HStack(spacing: 12) {
-                        Button("Suave") {
+                        Button("haptic_light") {
                             HapticService.shared.playLight()
                         }
                         .buttonStyle(.bordered)
                         
-                        Button("Medio") {
+                        Button("haptic_medium") {
                             HapticService.shared.playAlignment()
                         }
                         .buttonStyle(.bordered)
                         
-                        Button("Fuerte 🪄") {
+                        Button("haptic_strong") {
                             HapticService.shared.playStrong()
                         }
                         .buttonStyle(.borderedProminent)
@@ -434,30 +448,30 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                Text("Nota: Requiere un MacBook con Force Touch o Magic Trackpad. Revisa en Ajustes del Sistema > Trackpad que la retroalimentación esté activada.")
+                Text("haptic_note")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
             }
             
-            SettingsSection(title: "Inteligencia", icon: "sparkles") {
-                SettingsRow("Apple Intelligence", subtitle: "Mostrar herramientas de IA (Writing Tools) en el editor") {
+            SettingsSection(title: "intelligence", icon: "sparkles") {
+                SettingsRow("apple_intelligence", subtitle: "apple_intelligence_subtitle") {
                     Toggle("", isOn: $preferences.appleIntelligenceEnabled)
                         .toggleStyle(.switch)
                 }
             }
             
-            SettingsSection(title: "Sistema", icon: "macwindow") {
-                SettingsRow("Inicio Automático", subtitle: "Abrir Promtier al iniciar sesión") {
+            SettingsSection(title: "system", icon: "macwindow") {
+                SettingsRow("launch_at_login", subtitle: "launch_at_login_subtitle") {
                     Toggle("", isOn: $preferences.launchAtLogin)
                         .toggleStyle(.switch)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("Actualizaciones", subtitle: "Buscar nuevas versiones de Promtier", icon: "arrow.clockwise.circle", iconColor: .blue) {
-                    Button("Buscar ahora") {
+                SettingsRow("updates", subtitle: "updates_subtitle", icon: "arrow.clockwise.circle", iconColor: .blue) {
+                    Button("check_now") {
                         UpdateProvider.shared.checkForUpdates()
                     }
                     .buttonStyle(.bordered)
@@ -465,8 +479,8 @@ struct BehaviorTab: View {
                 }
             }
             
-            SettingsSection(title: "Promtier Premium 💎", icon: "crown.fill") {
-                SettingsRow("Activar Funciones Premium", subtitle: "Simular estado Premium para pruebas del creador", icon: "sparkles", iconColor: .purple) {
+            SettingsSection(title: "premium", icon: "crown.fill") {
+                SettingsRow("activate_premium", subtitle: "activate_premium_subtitle", icon: "sparkles", iconColor: .purple) {
                     Toggle("", isOn: $preferences.isPremiumActive)
                         .toggleStyle(.switch)
                 }
@@ -475,14 +489,15 @@ struct BehaviorTab: View {
     }
 }
 
+
 struct ShortcutsTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
         VStack(spacing: 32) {
             // Atajo global configurable
-            SettingsSection(title: "Atajo Global", icon: "command") {
-                SettingsRow("Atajos Globales", subtitle: "Habilitar combinaciones en todo el sistema") {
+            SettingsSection(title: "shortcuts", icon: "command") {
+                SettingsRow("global_shortcuts", subtitle: "global_shortcuts_subtitle") {
                     Toggle("", isOn: $preferences.globalShortcutEnabled)
                         .toggleStyle(.switch)
                 }
@@ -497,60 +512,60 @@ struct ShortcutsTab: View {
             }
             
             // Lista principal
-            SettingsSection(title: "Navegación de Lista", icon: "list.bullet") {
-                ShortcutRow(label: "Mover selección arriba",     shortcut: "↑")
+            SettingsSection(title: "list_navigation", icon: "list.bullet") {
+                ShortcutRow(label: "move_up",     shortcut: "↑")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Mover selección abajo",      shortcut: "↓")
+                ShortcutRow(label: "move_down",      shortcut: "↓")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Abrir Vista Previa",         shortcut: "Espacio")
+                ShortcutRow(label: "preview",         shortcut: "Espacio")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Copiar prompt seleccionado", shortcut: "⌘C")
+                ShortcutRow(label: "copy", shortcut: "⌘C")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Editar prompt seleccionado", shortcut: "↩ Enter")
+                ShortcutRow(label: "edit", shortcut: "↩ Enter")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Mostrar/Ocultar Sidebar",    shortcut: "⌘B")
+                ShortcutRow(label: "toggle_sidebar",    shortcut: "⌘B")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Nuevo Prompt",               shortcut: "⌘N")
+                ShortcutRow(label: "new_prompt",               shortcut: "⌘N")
             }
             
             // Editor de prompt
-            SettingsSection(title: "Editor de Prompt", icon: "square.and.pencil") {
-                ShortcutRow(label: "Guardar prompt",                  shortcut: "⌘S")
+            SettingsSection(title: "prompt_editor", icon: "square.and.pencil") {
+                ShortcutRow(label: "save_prompt",                  shortcut: "⌘S")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Apertura de Snippets (/)",        shortcut: "/")
+                ShortcutRow(label: "open_snippets",        shortcut: "/")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Navegar snippet arriba",          shortcut: "↑")
+                ShortcutRow(label: "snippet_up",          shortcut: "↑")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Navegar snippet abajo",           shortcut: "↓")
+                ShortcutRow(label: "snippet_down",           shortcut: "↓")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Insertar snippet / Cerrar menú", shortcut: "↩ / Esc")
+                ShortcutRow(label: "insert_snippet", shortcut: "↩ / Esc")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Insertar variable",               shortcut: "⌥V")
+                ShortcutRow(label: "insert_variable",               shortcut: "⌥V")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Modo Zen (pantalla completa)",    shortcut: "⌘⇧Z")
+                ShortcutRow(label: "zen_mode",    shortcut: "⌘⇧Z")
             }
             
             // Variables
-            SettingsSection(title: "Rellenar Variables", icon: "curlybraces") {
-                ShortcutRow(label: "Avanzar al siguiente campo",  shortcut: "↩ Enter")
+            SettingsSection(title: "fill_variables", icon: "curlybraces") {
+                ShortcutRow(label: "next_field",  shortcut: "↩ Enter")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Copiar prompt final",         shortcut: "⌘↩")
+                ShortcutRow(label: "copy_final_prompt",         shortcut: "⌘↩")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Cancelar / Cerrar panel",     shortcut: "Esc")
+                ShortcutRow(label: "cancel_close",     shortcut: "Esc")
             }
             
             // Ventana
-            SettingsSection(title: "Ventana", icon: "macwindow") {
-                ShortcutRow(label: "Abrir / Cerrar Promtier",  shortcut: "Atajo Global")
+            SettingsSection(title: "window", icon: "macwindow") {
+                ShortcutRow(label: "toggle_promtier",  shortcut: "Atajo Global")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Cerrar ventana",           shortcut: "Esc")
+                ShortcutRow(label: "close_window",           shortcut: "Esc")
             }
         }
     }
 }
 
 private struct ShortcutRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let shortcut: String
     @EnvironmentObject var preferences: PreferencesManager
     
@@ -599,9 +614,9 @@ struct DataTab: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Exportar", icon: "square.and.arrow.up") {
+            SettingsSection(title: "export", icon: "square.and.arrow.up") {
                 // Selector de formato
-                SettingsRow("Formato", subtitle: "Elige el formato de exportación") {
+                SettingsRow("format", subtitle: "export_format_subtitle") {
                     Picker("", selection: $exportFormat) {
                         ForEach(ExportFormat.allCases) { fmt in
                             Text(fmt.rawValue).tag(fmt)
@@ -618,8 +633,8 @@ struct DataTab: View {
                     menuBarManager.closePopover()
                     exportData(as: exportFormat)
                 }) {
-                    SettingsRow(exportFormat.subtitle,
-                                subtitle: "Guardar archivo .\(exportFormat.rawValue.lowercased())",
+                    SettingsRow(LocalizedStringKey(exportFormat.subtitle),
+                                subtitle: LocalizedStringKey("save_as_file"),
                                 icon: exportFormat.icon,
                                 iconColor: .blue) {
                         Image(systemName: "square.and.arrow.up")
@@ -629,13 +644,13 @@ struct DataTab: View {
                 }.buttonStyle(.plain)
             }
             
-            SettingsSection(title: "Importar", icon: "square.and.arrow.down") {
+            SettingsSection(title: "import", icon: "square.and.arrow.down") {
                 Button(action: {
                     onClose()
                     menuBarManager.closePopover()
                     importData()
                 }) {
-                    SettingsRow("Importar Biblioteca", subtitle: "Carga desde un archivo JSON (formato Promtier)") {
+                    SettingsRow("import_library", subtitle: "import_subtitle") {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 16))
                             .foregroundColor(.blue)
@@ -650,8 +665,8 @@ struct DataTab: View {
                     .padding(.top, -16)
             }
             
-            SettingsSection(title: "Cloud", icon: "icloud.fill") {
-                SettingsRow("iCloud Sync", subtitle: "Sincroniza entre tus Macs") {
+            SettingsSection(title: "cloud", icon: "icloud.fill") {
+                SettingsRow("icloud_sync", subtitle: "sync_macs") {
                     Toggle("", isOn: $preferences.icloudSyncEnabled)
                         .toggleStyle(.switch)
                 }
@@ -660,7 +675,7 @@ struct DataTab: View {
             Button(action: { showingResetAlert = true }) {
                 HStack {
                     Image(systemName: "arrow.counterclockwise")
-                    Text("Restablecer todos los ajustes y datos")
+                    Text("reset_all")
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.red)
@@ -703,7 +718,7 @@ struct DataTab: View {
             let savePanel = NSSavePanel()
             savePanel.allowedContentTypes = [contentType]
             savePanel.nameFieldStringValue = filename
-            savePanel.title = "Exportar Biblioteca"
+            savePanel.title = NSLocalizedString("export_library", comment: "")
             
             NSApp.activate(ignoringOtherApps: true)
             
@@ -727,7 +742,7 @@ struct DataTab: View {
             openPanel.allowedContentTypes = [.json]
             openPanel.allowsMultipleSelection = false
             openPanel.canChooseDirectories = false
-            openPanel.title = "Importar Biblioteca"
+            openPanel.title = NSLocalizedString("import_library", comment: "")
             
             NSApp.activate(ignoringOtherApps: true)
             
@@ -765,14 +780,14 @@ struct ExportView: View {
         VStack(spacing: 0) {
             // Header moderno
             HStack(spacing: 20) {
-                Text("Exportar Datos")
+                Text("export_data")
                     .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button("Cerrar") {
+                Button("close") {
                     dismiss()
                 }
                 .foregroundColor(.primary)
@@ -806,13 +821,13 @@ struct ExportView: View {
                         .font(.system(size: 64))
                         .foregroundColor(.blue.opacity(0.8))
                     
-                    Text("Selecciona qué datos deseas exportar:")
+                    Text("export_select_data")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     // TODO: Implementar opciones de exportación
-                    Text("Opciones de exportación próximamente")
+                    Text("coming_soon")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
@@ -830,7 +845,7 @@ struct ExportView: View {
                 .padding(.horizontal, 24)
             
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button("cancel") {
                     dismiss()
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -849,7 +864,7 @@ struct ExportView: View {
                 
                 Spacer()
                 
-                Button("Exportar") {
+                Button("export") {
                     // TODO: Implementar exportación
                     dismiss()
                 }
@@ -878,14 +893,14 @@ struct ImportView: View {
         VStack(spacing: 0) {
             // Header moderno
             HStack(spacing: 20) {
-                Text("Importar Datos")
+                Text("import_data")
                     .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button("Cerrar") {
+                Button("close") {
                     dismiss()
                 }
                 .foregroundColor(.primary)
@@ -919,13 +934,13 @@ struct ImportView: View {
                         .font(.system(size: 64))
                         .foregroundColor(.blue.opacity(0.8))
                     
-                    Text("Arrastra un archivo JSON aquí o selecciónalo:")
+                    Text("import_drag_drop")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     // TODO: Implementar importación
-                    Text("Importación de archivos próximamente")
+                    Text("coming_soon")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
@@ -943,7 +958,7 @@ struct ImportView: View {
                 .padding(.horizontal, 24)
             
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button("cancel") {
                     dismiss()
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -962,7 +977,7 @@ struct ImportView: View {
                 
                 Spacer()
                 
-                Button("Importar") {
+                Button("import") {
                     // TODO: Implementar importación
                     dismiss()
                 }
@@ -991,9 +1006,9 @@ struct SupportTab: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Contacto y Ayuda", icon: "envelope.fill") {
+            SettingsSection(title: "contact_help", icon: "envelope.fill") {
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Consulta Promtier") }) {
-                    SettingsRow("Soporte por Email", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
+                    SettingsRow("email_support", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1004,7 +1019,7 @@ struct SupportTab: View {
                 Divider().padding(.leading, 60)
                 
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Reporte de Error - Promtier") }) {
-                    SettingsRow("Reportar un Problema", subtitle: "Envíanos detalles sobre un error", icon: "ant.fill", iconColor: .orange) {
+                    SettingsRow("report_problem", subtitle: "report_details", icon: "ant.fill", iconColor: .orange) {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1013,9 +1028,9 @@ struct SupportTab: View {
                 .buttonStyle(.plain)
             }
             
-            SettingsSection(title: "Legal y Privacidad", icon: "doc.text.fill") {
+            SettingsSection(title: "legal_privacy", icon: "doc.text.fill") {
                 Button(action: { openLink("https://promtier.app/privacy") }) {
-                    SettingsRow("Política de Privacidad", subtitle: "Cómo manejamos tus datos", icon: "hand.raised.fill", iconColor: .green) {
+                    SettingsRow("privacy_policy", subtitle: "how_data_handled", icon: "hand.raised.fill", iconColor: .green) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1026,7 +1041,7 @@ struct SupportTab: View {
                 Divider().padding(.leading, 60)
                 
                 Button(action: { openLink("https://promtier.app/terms") }) {
-                    SettingsRow("Términos de Servicio", subtitle: "Condiciones de uso de la app", icon: "list.bullet.rectangle.portrait.fill", iconColor: .purple) {
+                    SettingsRow("terms_service", subtitle: "app_conditions", icon: "list.bullet.rectangle.portrait.fill", iconColor: .purple) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1045,11 +1060,11 @@ struct SupportTab: View {
                 Text("Promtier v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.system(size: 14, weight: .bold))
                 
-                Text("Creado con pasión por Valencia")
+                Text("created_with_passion")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                 
-                Button("Visitar Sitio Web") {
+                Button("visit_website") {
                     openLink("https://promtier.app")
                 }
                 .buttonStyle(.link)

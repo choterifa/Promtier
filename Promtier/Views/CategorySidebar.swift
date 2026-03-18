@@ -27,7 +27,7 @@ struct CategorySidebar: View {
     private var categoryCounts: [String: Int] {
         var counts: [String: Int] = [:]
         for prompt in promptService.prompts {
-            let folder = prompt.folder ?? "Sin categoría"
+            let folder = prompt.folder ?? NSLocalizedString("uncategorized", comment: "")
             counts[folder, default: 0] += 1
         }
         return counts
@@ -37,7 +37,7 @@ struct CategorySidebar: View {
         VStack(spacing: 0) {
             // Header sutil
             HStack {
-                Text("Explorar")
+                Text("explore")
                     .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.secondary)
                     .textCase(.uppercase)
@@ -55,7 +55,7 @@ struct CategorySidebar: View {
                         .foregroundColor(.blue.opacity(0.8))
                 }
                 .buttonStyle(.plain)
-                .help("Gestionar Categorías")
+                .help(NSLocalizedString("manage_categories", comment: ""))
             }
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -64,7 +64,7 @@ struct CategorySidebar: View {
             VStack(spacing: 4) {
                 // Botón "Todas"
                 SidebarItem(
-                    title: "Todas",
+                    title: "all",
                     icon: "square.grid.2x2.fill",
                     color: .blue,
                     count: promptService.prompts.count,
@@ -75,7 +75,7 @@ struct CategorySidebar: View {
                 
                 // Botón "Recientes"
                 SidebarItem(
-                    title: "Recientes",
+                    title: "recent",
                     icon: "clock.arrow.2.circlepath",
                     color: .purple,
                     count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
@@ -86,7 +86,7 @@ struct CategorySidebar: View {
                 
                 // Botón "Favoritos"
                 SidebarItem(
-                    title: "Favoritos",
+                    title: "favorites",
                     icon: "star.fill",
                     color: .yellow,
                     count: promptService.prompts.filter { $0.isFavorite }.count,
@@ -105,10 +105,10 @@ struct CategorySidebar: View {
                 
                 // Botón "Sin categoría"
                 SidebarItem(
-                    title: "Sin categoría",
+                    title: "uncategorized",
                     icon: "folder.fill",
                     color: .gray,
-                    count: categoryCounts["Sin categoría"] ?? 0,
+                    count: categoryCounts[NSLocalizedString("uncategorized", comment: "")] ?? 0,
                     isSelected: promptService.selectedCategory == "Sin categoría",
                     isDropTarget: isTargetedSinCategoria,
                     action: {
@@ -135,7 +135,7 @@ struct CategorySidebar: View {
                         let count = categoryCounts[folder.name] ?? 0
                         
                         SidebarItem(
-                            title: folder.name,
+                            title: LocalizedStringKey(folder.name),
                             icon: folder.icon ?? "folder.fill",
                             color: Color(hex: folder.displayColor),
                             count: count,
@@ -342,7 +342,7 @@ struct FolderDropDelegate: DropDelegate {
 }
 
 struct SidebarItem: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let color: Color
     let count: Int

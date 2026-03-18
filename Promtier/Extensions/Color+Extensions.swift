@@ -125,10 +125,10 @@ enum AppLanguage: String, CaseIterable {
     case spanish = "es"
     case english = "en"
     
-    var displayName: String {
+    var displayName: LocalizedStringKey {
         switch self {
-        case .spanish: return "Español"
-        case .english: return "English"
+        case .spanish: return "spanish"
+        case .english: return "english"
         }
     }
     
@@ -150,7 +150,16 @@ enum PredefinedCategory: String, CaseIterable {
     case personal = "Personal"
     case study = "Estudio"
     
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .iaModels: return NSLocalizedString("cat_ai", comment: "")
+        case .code: return NSLocalizedString("cat_code", comment: "")
+        case .creative: return NSLocalizedString("cat_creative", comment: "")
+        case .work: return NSLocalizedString("cat_work", comment: "")
+        case .personal: return NSLocalizedString("cat_personal", comment: "")
+        case .study: return NSLocalizedString("cat_study", comment: "")
+        }
+    }
     
     var color: Color {
         switch self {

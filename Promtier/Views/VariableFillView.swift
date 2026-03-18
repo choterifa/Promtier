@@ -154,7 +154,7 @@ struct VariableFillView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Rellenar Variables")
+                Text(NSLocalizedString("fill_variables", comment: ""))
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                 Text(prompt.title)
                     .font(.system(size: 11 * preferences.fontSize.scale))
@@ -246,7 +246,7 @@ struct VariableFillView: View {
     private var footerSection: some View {
         HStack(spacing: 16) {
             Button(action: onCancel) {
-                Text("Cancelar")
+                Text(NSLocalizedString("cancel", comment: ""))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
@@ -261,7 +261,7 @@ struct VariableFillView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "doc.on.doc.fill")
-                    Text("Copiar Prompt Final")
+                    Text(NSLocalizedString("copy_final_prompt", comment: ""))
                 }
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.white)
@@ -287,7 +287,7 @@ struct VariableFillView: View {
         Group {
             switch variable.type {
             case .text:
-                TextField("Valor para \(variable.name)...", text: Binding(
+                TextField(String(format: NSLocalizedString("value_for", comment: ""), variable.name), text: Binding(
                     get: { variableValues[variable.id, default: ""] },
                     set: { variableValues[variable.id] = $0 }
                 ))
@@ -340,9 +340,9 @@ struct VariableFillView: View {
     
     private func statusText(for type: VariableType) -> String {
         switch type {
-        case .text: return "Escribiendo..."
-        case .selection: return "Seleccionando..."
-        case .date, .time: return "Eligiendo..."
+        case .text: return NSLocalizedString("typing", comment: "")
+        case .selection: return NSLocalizedString("selecting", comment: "")
+        case .date, .time: return NSLocalizedString("choosing", comment: "")
         }
     }
     
