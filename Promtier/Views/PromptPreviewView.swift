@@ -198,6 +198,84 @@ struct PromptPreviewView: View {
                     .foregroundColor(.primary.opacity(0.9))
                     .textSelection(.enabled)
                 
+                // Prompt Negativo (Si existe)
+                if let negative = prompt.negativePrompt, !negative.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.red.opacity(0.8))
+                            Text("negative_prompt".localized(for: preferences.language).uppercased())
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary)
+                                .tracking(1)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                ClipboardService.shared.copyToClipboard(negative)
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.red.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        Text(negative)
+                            .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .padding(12)
+                            .background(Color.red.opacity(0.03))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.red.opacity(0.08), lineWidth: 1)
+                            )
+                    }
+                    .padding(.top, 8)
+                }
+                
+                // Prompt Alternativo (Si existe)
+                if let alternative = prompt.alternativePrompt, !alternative.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.green.opacity(0.8))
+                            Text("alternative_prompt".localized(for: preferences.language).uppercased())
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary)
+                                .tracking(1)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                ClipboardService.shared.copyToClipboard(alternative)
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.green.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        Text(alternative)
+                            .font(.system(size: 13 * preferences.fontSize.scale, design: .rounded))
+                            .foregroundColor(.primary.opacity(0.8))
+                            .padding(12)
+                            .background(Color.green.opacity(0.03))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.green.opacity(0.08), lineWidth: 1)
+                            )
+                    }
+                    .padding(.top, 8)
+                }
+                
                 // Galería al final si la preferencia es false
                 if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
                     Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo

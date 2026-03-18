@@ -205,6 +205,21 @@ struct PromptCard: View {
                     .background(Color.purple.opacity(0.1))
                     .clipShape(Capsule())
                 }
+                
+                // Indicador de Prompt Negativo / Alternativo
+                let hasNegative = (prompt.negativePrompt?.isEmpty == false)
+                let hasAlternative = (prompt.alternativePrompt?.isEmpty == false)
+                if hasNegative || hasAlternative {
+                    HStack(spacing: 4) {
+                        if hasNegative {
+                            Circle().fill(Color.red.opacity(0.6)).frame(width: 5, height: 5)
+                        }
+                        if hasAlternative {
+                            Circle().fill(Color.green.opacity(0.6)).frame(width: 5, height: 5)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
 
                 if prompt.isFavorite {
                     Image(systemName: "star.fill")

@@ -33,6 +33,8 @@ extension PromptEntity {
         prompt.icon = icon
         prompt.promptDescription = promptDescription
         prompt.deletedAt = deletedAt
+        prompt.negativePrompt = negativePrompt
+        prompt.alternativePrompt = alternativePrompt
         
         var images: [Data] = []
         if let img1 = image1 { images.append(img1) }
@@ -57,6 +59,8 @@ extension PromptEntity {
         icon = prompt.icon
         promptDescription = prompt.promptDescription
         deletedAt = prompt.deletedAt
+        negativePrompt = prompt.negativePrompt
+        alternativePrompt = prompt.alternativePrompt
         
         // Limpiar y reasignar imágenes
         image1 = prompt.showcaseImages.indices.contains(0) ? prompt.showcaseImages[0] : nil

@@ -24,7 +24,14 @@ class DraftService: ObservableObject {
     /// Guarda el estado actual del prompt como un borrador
     func saveDraft(prompt: Prompt, isEditing: Bool) {
         // No guardar si el borrador está completamente vacío
-        if prompt.title.isEmpty && prompt.content.isEmpty && prompt.promptDescription?.isEmpty ?? true && prompt.showcaseImages.isEmpty {
+        let isNegativeEmpty = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+        let isAlternativeEmpty = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+        if prompt.title.isEmpty &&
+            prompt.content.isEmpty &&
+            (prompt.promptDescription?.isEmpty ?? true) &&
+            isNegativeEmpty &&
+            isAlternativeEmpty &&
+            prompt.showcaseImages.isEmpty {
             clearDraft()
             return
         }

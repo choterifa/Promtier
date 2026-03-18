@@ -26,6 +26,10 @@ class DataController: ObservableObject {
                                                                forKey: NSPersistentHistoryTrackingKey)
         container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
                                                                forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        container.persistentStoreDescriptions.first?.setOption(true as NSNumber,
+                                                               forKey: NSMigratePersistentStoresAutomaticallyOption)
+        container.persistentStoreDescriptions.first?.setOption(true as NSNumber,
+                                                               forKey: NSInferMappingModelAutomaticallyOption)
         
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {

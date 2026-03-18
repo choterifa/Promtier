@@ -288,6 +288,10 @@
 "add_prompt_results" = "Add prompt results";
 "category" = "Category";
 "prompt_results" = "PROMPT RESULTS";
+"negative_prompt" = "Negative Prompt";
+"negative_prompt_placeholder" = "What the AI should NOT do (ex: no blur, no text)...";
+"alternative_prompt" = "Alternative Prompt";
+"alternative_prompt_placeholder" = "A similar variation or alternative approach...";
 "export_plain_text" = "Export as plain text";
 "spanish" = "Spanish";
 "english" = "English";

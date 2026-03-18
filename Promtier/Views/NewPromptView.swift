@@ -19,6 +19,8 @@ struct NewPromptView: View {
     
     @State private var title = ""
     @State private var content = ""
+    @State private var negativePrompt = ""
+    @State private var alternativePrompt = ""
     @State private var promptDescription = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
@@ -66,6 +68,8 @@ struct NewPromptView: View {
     private var isContentEmpty: Bool {
         title.trimmingCharacters(in: .whitespaces).isEmpty && 
         content.trimmingCharacters(in: .whitespaces).isEmpty &&
+        negativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
+        alternativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
         promptDescription.trimmingCharacters(in: .whitespaces).isEmpty &&
         showcaseImages.isEmpty
     }
@@ -75,32 +79,128 @@ struct NewPromptView: View {
         self.onClose = onClose
     }
     
+    @ViewBuilder
+    private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
+        VStack(spacing: 24) {
+            EditorCard(
+                title: $title,
+                content: $content,
+                promptDescription: $promptDescription,
+                selectedIcon: $selectedIcon,
+                fallbackIconName: selectedFolder.flatMap { PredefinedCategory.fromString($0)?.icon } ?? "doc.text.fill",
+                showingIconPicker: $showingIconPicker,
+                showingZenEditor: $showingZenEditor,
+                showingPremiumFor: $showingPremiumFor,
+                insertionRequest: $insertionRequest,
+                replaceSnippetRequest: $replaceSnippetRequest,
+                showSnippets: $showSnippets,
+                snippetSearchQuery: $snippetSearchQuery,
+                snippetSelectedIndex: $snippetSelectedIndex,
+                triggerSnippetSelection: $triggerSnippetSelection,
+                triggerAppleIntelligence: $triggerAppleIntelligence,
+                isAIActive: $isAIActive,
+                currentCategoryColor: currentCategoryColor
+            )
+            .frame(height: geometry.size.height * 0.83, alignment: .top)
+            
+            // Nuevas secciones de prompt avanzado
+            VStack(spacing: 20) {
+                SecondaryEditorCard(
+                    title: "negative_prompt".localized(for: preferences.language),
+                    placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
+                    text: $negativePrompt,
+                    icon: "minus.circle.fill",
+                    color: .red
+                )
+                
+                SecondaryEditorCard(
+                    title: "alternative_prompt".localized(for: preferences.language),
+                    placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
+                    text: $alternativePrompt,
+                    icon: "arrow.triangle.2.circlepath.circle.fill",
+                    color: .green
+                )
+            }
+            
+            imageGallery
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+    }
+
+    private var fullScreenImageSheetItem: Binding<IdentifiableData?> {
+        Binding(
+            get: { showingFullScreenImage.map { IdentifiableData(value: $0) } },
+            set: { showingFullScreenImage = $0?.value }
+        )
+    }
+
+    private var premiumSheetItem: Binding<IdentifiableString?> {
+        Binding(
+            get: { showingPremiumFor.map { IdentifiableString(value: $0) } },
+            set: { showingPremiumFor = $0?.value }
+        )
+    }
+
+    private struct DraftState: Equatable {
+        let title: String
+        let content: String
+        let negativePrompt: String
+        let alternativePrompt: String
+        let promptDescription: String
+        let selectedFolder: String?
+        let isFavorite: Bool
+        let selectedIcon: String?
+        let showcaseImages: [Data]
+        let tags: [String]
+        let isContentEmpty: Bool
+    }
+
+    private var draftState: DraftState {
+        DraftState(
+            title: title,
+            content: content,
+            negativePrompt: negativePrompt,
+            alternativePrompt: alternativePrompt,
+            promptDescription: promptDescription,
+            selectedFolder: selectedFolder,
+            isFavorite: isFavorite,
+            selectedIcon: selectedIcon,
+            showcaseImages: showcaseImages,
+            tags: tags,
+            isContentEmpty: isContentEmpty
+        )
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 header
-                
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        editorCard
-                            .frame(height: geometry.size.height * 0.83, alignment: .top)
-                        
-                        imageGallery
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
+                    mainScrollViewContent(geometry: geometry)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(backgroundView)
-        .sheet(item: Binding(
-            get: { showingFullScreenImage.map { IdentifiableData(value: $0) } },
-            set: { showingFullScreenImage = $0?.value }
-        )) { item in
+        .sheet(item: fullScreenImageSheetItem) { item in
             FullScreenImageView(imageData: item.value)
         }
-        .overlay {
+        .overlay { overlays }
+        .sheet(item: premiumSheetItem) { item in
+            PremiumUpsellView(featureName: item.value)
+        }
+        .onAppear { setupOnAppear() }
+        .onChange(of: draftState) { _, newValue in
+            saveCurrentDraft()
+            MenuBarManager.shared.isModalActive = !newValue.isContentEmpty
+        }
+    }
+    
+    @ViewBuilder
+    private var overlays: some View {
+        Group {
             if showingZenEditor {
                 ZenEditorView(
                     title: $title,
@@ -135,64 +235,51 @@ struct NewPromptView: View {
                     .zIndex(300)
             }
         }
-        .sheet(item: Binding(
-            get: { showingPremiumFor.map { IdentifiableString(value: $0) } },
-            set: { showingPremiumFor = $0?.value }
-        )) { item in
-            PremiumUpsellView(featureName: item.value)
-        }
-        .onAppear {
-            if let prompt = prompt {
-                self.originalPrompt = prompt
-                title = prompt.title
-                content = prompt.content
-                promptDescription = prompt.promptDescription ?? ""
-                selectedFolder = prompt.folder
-                isFavorite = prompt.isFavorite
-                selectedIcon = prompt.icon
-                showcaseImages = prompt.showcaseImages
-                tags = prompt.tags
-            } else if let draft = DraftService.shared.loadDraft() {
-                // Restaurar borrador si existe y no estamos editando uno específico pasado por parámetro
-                let draftPrompt = draft.prompt
-                
-                // Si el borrador era una edición, intentamos recuperar el original
-                if draft.isEditing {
-                    if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
-                        self.originalPrompt = original
-                    }
+    }
+
+    private func setupOnAppear() {
+        if let prompt = prompt {
+            self.originalPrompt = prompt
+            title = prompt.title
+            content = prompt.content
+            negativePrompt = prompt.negativePrompt ?? ""
+            alternativePrompt = prompt.alternativePrompt ?? ""
+            promptDescription = prompt.promptDescription ?? ""
+            selectedFolder = prompt.folder
+            isFavorite = prompt.isFavorite
+            selectedIcon = prompt.icon
+            showcaseImages = prompt.showcaseImages
+            tags = prompt.tags
+        } else if let draft = DraftService.shared.loadDraft() {
+            // Restaurar borrador si existe y no estamos editando uno específico pasado por parámetro
+            let draftPrompt = draft.prompt
+            
+            // Si el borrador era una edición, intentamos recuperar el original
+            if draft.isEditing {
+                if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
+                    self.originalPrompt = original
                 }
-                
-                title = draftPrompt.title
-                content = draftPrompt.content
-                promptDescription = draftPrompt.promptDescription ?? ""
-                selectedFolder = draftPrompt.folder
-                isFavorite = draftPrompt.isFavorite
-                selectedIcon = draftPrompt.icon
-                showcaseImages = draftPrompt.showcaseImages
-                tags = draftPrompt.tags
-                isDraftRestored = true
-                
-                // Activar bloqueo de popover si el borrador restaurado no está vacío
-                if !isContentEmpty {
-                    MenuBarManager.shared.isModalActive = true
-                }
-            } else if let activeCategory = promptService.selectedCategory {
-                // Autoseleccionar la categoría activa al crear uno nuevo
-                selectedFolder = activeCategory
             }
-        }
-        .onChange(of: title) { _, _ in saveCurrentDraft() }
-        .onChange(of: content) { _, _ in saveCurrentDraft() }
-        .onChange(of: promptDescription) { _, _ in saveCurrentDraft() }
-        .onChange(of: selectedFolder) { _, _ in saveCurrentDraft() }
-        .onChange(of: isFavorite) { _, _ in saveCurrentDraft() }
-        .onChange(of: selectedIcon) { _, _ in saveCurrentDraft() }
-        .onChange(of: showcaseImages) { _, _ in saveCurrentDraft() }
-        .onChange(of: tags) { _, _ in saveCurrentDraft() }
-        .onChange(of: isContentEmpty) { _, isEmpty in
-            // Notificar al gestor si puede cerrar o no el popover
-            MenuBarManager.shared.isModalActive = !isEmpty
+            
+            title = draftPrompt.title
+            content = draftPrompt.content
+            negativePrompt = draftPrompt.negativePrompt ?? ""
+            alternativePrompt = draftPrompt.alternativePrompt ?? ""
+            promptDescription = draftPrompt.promptDescription ?? ""
+            selectedFolder = draftPrompt.folder
+            isFavorite = draftPrompt.isFavorite
+            selectedIcon = draftPrompt.icon
+            showcaseImages = draftPrompt.showcaseImages
+            tags = draftPrompt.tags
+            isDraftRestored = true
+            
+            // Activar bloqueo de popover si el borrador restaurado no está vacío
+            if !isContentEmpty {
+                MenuBarManager.shared.isModalActive = true
+            }
+        } else if let activeCategory = promptService.selectedCategory {
+            // Autoseleccionar la categoría activa al crear uno nuevo
+            selectedFolder = activeCategory
         }
     }
     
@@ -204,7 +291,9 @@ struct NewPromptView: View {
                              promptDescription != (original.promptDescription ?? "") ||
                              selectedFolder != original.folder ||
                              selectedIcon != original.icon ||
-                             showcaseImages != original.showcaseImages
+                             showcaseImages != original.showcaseImages ||
+                             negativePrompt != (original.negativePrompt ?? "") ||
+                             alternativePrompt != (original.alternativePrompt ?? "")
             if !hasChanges { return }
         }
         
@@ -212,11 +301,13 @@ struct NewPromptView: View {
         var draftPrompt = Prompt(
             title: title,
             content: content,
-            promptDescription: promptDescription,
+            promptDescription: promptDescription.isEmpty ? nil : promptDescription,
             folder: selectedFolder,
             icon: selectedIcon,
             showcaseImages: showcaseImages,
-            tags: tags
+            tags: tags,
+            negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
+            alternativePrompt: alternativePrompt.isEmpty ? nil : alternativePrompt
         )
         
         // Si estamos editando, mantenemos el ID original para poder actualizarlo al restaurar
@@ -278,163 +369,6 @@ struct NewPromptView: View {
         .padding(.horizontal, 24)
         .padding(.top, 16)
         .padding(.bottom, 12)
-    }
-    
-    private var editorCard: some View {
-        VStack(spacing: 0) {
-            // Título e Icono (Header del Documento)
-            HStack(alignment: .top, spacing: 16) {
-                Button(action: { showingIconPicker.toggle() }) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(currentCategoryColor.opacity(0.1))
-                            .frame(width: 44, height: 44)
-                        
-                        Image(systemName: selectedIcon ?? (selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.icon ?? "doc.text.fill" : "doc.text.fill"))
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
-                    }
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
-                    IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
-                    
-                    TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                // Toolbar de Acciones (Header)
-                HStack(spacing: 8) {
-                    // Variables y Snippets (Ahora en el Header)
-                    HStack(spacing: 0) {
-                        Button(action: { 
-                            if preferences.isPremiumActive {
-                                insertionRequest = "{{variable}}"
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                            }
-                        }) {
-                            Image(systemName: "curlybraces")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .help("insert_variable_hint".localized(for: preferences.language))
-                        
-                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
-                        
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                showSnippets = true
-                                snippetSearchQuery = ""
-                            } else {
-                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
-                            }
-                        }) {
-                            Text("/")
-                                .font(.system(size: 14, weight: .black, design: .monospaced))
-                                .foregroundColor(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .help("insert_snippet_hint".localized(for: preferences.language))
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-                    )
-
-                    Button(action: { showingZenEditor = true }) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.blue)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(Color.blue.opacity(0.1)))
-                    }
-                    .buttonStyle(.plain)
-                    .help("zen_editor".localized(for: preferences.language))
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 24)
-            
-            // Área de Texto con IA Flotante
-            VStack(alignment: .leading, spacing: 6) {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .bottomTrailing) {
-                        HighlightedEditor(
-                            text: $content,
-                            insertionRequest: $insertionRequest,
-                            replaceSnippetRequest: $replaceSnippetRequest,
-                            triggerAppleIntelligence: $triggerAppleIntelligence,
-                            isAIActive: $isAIActive,
-                            fontSize: 16 * preferences.fontSize.scale,
-                            showSnippets: $showSnippets,
-                            snippetSearchQuery: $snippetSearchQuery,
-                            snippetSelectedIndex: $snippetSelectedIndex,
-                            triggerSnippetSelection: $triggerSnippetSelection,
-                            isPremium: preferences.isPremiumActive
-                        )
-                        .padding(12)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        
-                        // Botón Apple Intelligence (Esquina inferior derecha del editor)
-                        if preferences.appleIntelligenceEnabled {
-                            Button(action: {
-                                triggerAppleIntelligence = true
-                                HapticService.shared.playLight()
-                            }) {
-                                Image(systemName: "apple.intelligence")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
-                                    .foregroundColor(isAIActive ? .blue : .primary)
-                                    .frame(width: 32, height: 32)
-                                    .background(
-                                        Circle()
-                                            .fill(Color(NSColor.textBackgroundColor))
-                                            .shadow(color: Color.black.opacity(0.1), radius: 3, y: 1)
-                                    )
-                                    .overlay(
-                                        Circle()
-                                            .stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
-                                    )
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                            .padding(10)
-                            .help("apple_intelligence".localized(for: preferences.language))
-                        }
-                    }
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                        )
-                )
-
-                // Contador de palabras limpio (Afuera, pegado al editor)
-                Text("\(content.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .padding(.leading, 8)
-            }
-        }
     }
     
     private var imageGallery: some View {
@@ -559,6 +493,9 @@ struct NewPromptView: View {
         // Limpiar borrador al guardar con éxito
         DraftService.shared.clearDraft()
         MenuBarManager.shared.isModalActive = false
+
+        let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
+        let newAlternativePrompt: String? = alternativePrompt.isEmpty ? nil : alternativePrompt
         
         // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
         if let existingPrompt = originalPrompt ?? prompt {
@@ -569,7 +506,9 @@ struct NewPromptView: View {
                              existingPrompt.folder != selectedFolder ||
                              existingPrompt.isFavorite != isFavorite ||
                              existingPrompt.icon != selectedIcon ||
-                             existingPrompt.showcaseImages != showcaseImages
+                             existingPrompt.showcaseImages != showcaseImages ||
+                             existingPrompt.negativePrompt != newNegativePrompt ||
+                             existingPrompt.alternativePrompt != newAlternativePrompt
             
             if !basicChanges {
                 onClose()
@@ -580,7 +519,10 @@ struct NewPromptView: View {
             
             // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
             if preferences.isPremiumActive {
-                let coreChanges = existingPrompt.title != title || existingPrompt.content != content
+                let coreChanges = existingPrompt.title != title || 
+                                 existingPrompt.content != content ||
+                                 existingPrompt.negativePrompt != newNegativePrompt ||
+                                 existingPrompt.alternativePrompt != newAlternativePrompt
                 
                 if coreChanges {
                     let snapshot = PromptSnapshot(
@@ -603,10 +545,22 @@ struct NewPromptView: View {
             updated.icon = selectedIcon
             updated.showcaseImages = showcaseImages
             updated.tags = tags
+            updated.negativePrompt = newNegativePrompt
+            updated.alternativePrompt = newAlternativePrompt
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
-            var new = Prompt(title: title, content: content, promptDescription: promptDescription.isEmpty ? nil : promptDescription, folder: selectedFolder, icon: selectedIcon, showcaseImages: showcaseImages, tags: tags)
+            var new = Prompt(
+                title: title,
+                content: content,
+                promptDescription: promptDescription.isEmpty ? nil : promptDescription,
+                folder: selectedFolder,
+                icon: selectedIcon,
+                showcaseImages: showcaseImages,
+                tags: tags,
+                negativePrompt: newNegativePrompt,
+                alternativePrompt: newAlternativePrompt
+            )
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
         }
@@ -666,6 +620,232 @@ struct NewPromptView: View {
                     }
                 )
                 .padding(.bottom, 24)
+            }
+        }
+    }
+}
+
+struct EditorCard: View {
+    @Binding var title: String
+    @Binding var content: String
+    @Binding var promptDescription: String
+    @Binding var selectedIcon: String?
+    let fallbackIconName: String
+    @Binding var showingIconPicker: Bool
+    @Binding var showingZenEditor: Bool
+    @Binding var showingPremiumFor: String?
+    @Binding var insertionRequest: String?
+    @Binding var replaceSnippetRequest: String?
+    @Binding var showSnippets: Bool
+    @Binding var snippetSearchQuery: String
+    @Binding var snippetSelectedIndex: Int
+    @Binding var triggerSnippetSelection: Bool
+    @Binding var triggerAppleIntelligence: Bool
+    @Binding var isAIActive: Bool
+    
+    let currentCategoryColor: Color
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Título e Icono (Header del Documento)
+            HStack(alignment: .top, spacing: 16) {
+                Button(action: { showingIconPicker.toggle() }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(currentCategoryColor.opacity(0.1))
+                            .frame(width: 44, height: 44)
+                        
+                        Image(systemName: selectedIcon ?? fallbackIconName)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(currentCategoryColor)
+                    }
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
+                    IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
+                    
+                    TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Toolbar de Acciones (Header)
+                HStack(spacing: 8) {
+                    HStack(spacing: 0) {
+                        Button(action: { 
+                            if preferences.isPremiumActive {
+                                insertionRequest = "{{variable}}"
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                            }
+                        }) {
+                            Image(systemName: "curlybraces")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
+                        
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            } else {
+                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                            }
+                        }) {
+                            Text("/")
+                                .font(.system(size: 14, weight: .black, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue.opacity(0.2), lineWidth: 1))
+
+                    Button(action: { showingZenEditor = true }) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill(Color.blue.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 24)
+            
+            // Área de Texto con IA Flotante
+            VStack(alignment: .leading, spacing: 6) {
+                VStack(spacing: 0) {
+                    ZStack(alignment: .bottomTrailing) {
+                        HighlightedEditor(
+                            text: $content,
+                            insertionRequest: $insertionRequest,
+                            replaceSnippetRequest: $replaceSnippetRequest,
+                            triggerAppleIntelligence: $triggerAppleIntelligence,
+                            isAIActive: $isAIActive,
+                            fontSize: 16 * preferences.fontSize.scale,
+                            showSnippets: $showSnippets,
+                            snippetSearchQuery: $snippetSearchQuery,
+                            snippetSelectedIndex: $snippetSelectedIndex,
+                            triggerSnippetSelection: $triggerSnippetSelection,
+                            isPremium: preferences.isPremiumActive
+                        )
+                        .padding(12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        if preferences.appleIntelligenceEnabled {
+                            Button(action: {
+                                triggerAppleIntelligence = true
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "apple.intelligence")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
+                                    .foregroundColor(isAIActive ? .blue : .primary)
+                                    .frame(width: 32, height: 32)
+                                    .background(Circle().fill(Color(NSColor.textBackgroundColor)).shadow(color: Color.black.opacity(0.1), radius: 3, y: 1))
+                                    .overlay(Circle().stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            .padding(10)
+                        }
+                    }
+                }
+                .background(RoundedRectangle(cornerRadius: 16).fill(Color(NSColor.textBackgroundColor).opacity(0.5)).overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.08), lineWidth: 1)))
+
+                Text("\(content.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .padding(.leading, 8)
+            }
+        }
+    }
+}
+
+struct SecondaryEditorCard: View {
+    let title: String
+    let placeholder: String
+    @Binding var text: String
+    let icon: String
+    let color: Color
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(color)
+                
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+                
+                Spacer()
+            }
+            
+            VStack(spacing: 0) {
+                HighlightedEditor(
+                    text: $text,
+                    insertionRequest: .constant(nil),
+                    replaceSnippetRequest: .constant(nil),
+                    triggerAppleIntelligence: .constant(false),
+                    isAIActive: .constant(false),
+                    fontSize: 14 * preferences.fontSize.scale,
+                    showSnippets: .constant(false),
+                    snippetSearchQuery: .constant(""),
+                    snippetSelectedIndex: .constant(0),
+                    triggerSnippetSelection: .constant(false),
+                    isPremium: preferences.isPremiumActive
+                )
+                .padding(12)
+                .frame(minHeight: 120)
+                .background(
+                    ZStack(alignment: .topLeading) {
+                        if text.isEmpty {
+                            Text(placeholder)
+                                .font(.system(size: 14 * preferences.fontSize.scale))
+                                .foregroundColor(.secondary.opacity(0.4))
+                                .padding(12)
+                                .padding(.top, 4)
+                        }
+                    }
+                )
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                    )
+            )
+            
+            HStack {
+                Text("\(text.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.4))
+                    .padding(.leading, 8)
+                Spacer()
             }
         }
     }

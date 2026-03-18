@@ -311,6 +311,10 @@
 "add_prompt_results" = "Añadir resultados del prompt";
 "category" = "Categoría";
 "prompt_results" = "RESULTADOS DEL PROMPT";
+"negative_prompt" = "Prompt Negativo";
+"negative_prompt_placeholder" = "Lo que la IA NO debe hacer (ej: sin desenfoque, sin texto)...";
+"alternative_prompt" = "Prompt Alternativo";
+"alternative_prompt_placeholder" = "Una variación similar o enfoque alternativo...";
 "export_plain_text" = "Exportar a texto plano";
 "spanish" = "Español";
 "english" = "Inglés";

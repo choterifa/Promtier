@@ -26,8 +26,12 @@ struct Prompt: Identifiable, Codable {
     var tags: [String] = []         // Etiquetas (Premium)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
     
+    // Nuevas funciones de prompt
+    var negativePrompt: String?     // Lo que la IA NO debe hacer
+    var alternativePrompt: String?  // Un prompt similar o variante
+    
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = []) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
@@ -36,6 +40,8 @@ struct Prompt: Identifiable, Codable {
         self.icon = icon
         self.showcaseImages = showcaseImages
         self.tags = tags
+        self.negativePrompt = negativePrompt
+        self.alternativePrompt = alternativePrompt
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()

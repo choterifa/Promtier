@@ -16,6 +16,8 @@
         <attribute name="image2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="image3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="versionHistoryData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="negativePrompt" optional="YES" attributeType="String"/>
+        <attribute name="alternativePrompt" optional="YES" attributeType="String"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>
