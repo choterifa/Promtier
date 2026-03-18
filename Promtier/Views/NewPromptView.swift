@@ -676,7 +676,7 @@ struct ImageSlotView: View {
                 Image(nsImage: nsImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 180, height: 120, alignment: .top)
+                    .frame(width: 180, height: 120, alignment: .center)
                     .clipped()
                     .background(Color.primary.opacity(0.03))
                     .clipShape(RoundedRectangle(cornerRadius: 12))

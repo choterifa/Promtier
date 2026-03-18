@@ -16,6 +16,7 @@
 - ✅ Vista previa en tiempo real del contenido
 - ✅ Detección automática de variables de plantilla {{variable}}
 - ✅ **Persistencia de Borradores**: Guardado automático de cambios para evitar pérdida de datos.
+- ✅ **Resiliencia de Cierre**: Permite cerrar con ESC o clic fuera sin perder progreso, restaurando al reabrir.
 - ✅ **Galería Dinámica**: Reordenamiento de imágenes mediante Drag & Drop y alineación superior.
 - ✅ Modo edición para prompts existentes
 - ✅ Validación de datos antes de guardar
@@ -66,6 +67,8 @@
 #### MenuBarManager
 - ✅ Integración completa con NSStatusItem
 - ✅ Popover SwiftUI con contenido dinámico
+- ✅ **Comportamiento Transitorio**: Cierre mediante tecla `ESC` o clic fuera del popover.
+- ✅ **Persistencia de Estado entre Aperturas**: Reabre automáticamente en la última pantalla activa (e.g. editor).
 - ✅ Efectos visuales y hápticos
 - ✅ Manejo de eventos del menú
 - ✅ Compatibilidad con AppKit

@@ -12,6 +12,11 @@ struct FullScreenImageView: View {
     @State private var toolbarOpacity: Double = 1.0
     @State private var hideTimer: DispatchWorkItem? = nil
     
+    // Hint animation states
+    @State private var hintOpacity: Double = 0.0
+    @State private var hintScale: CGFloat = 0.5
+    @State private var hintPulse = false
+    
     private let minScale: CGFloat = 1.0
     private let maxScale: CGFloat = 5.0
     
@@ -19,67 +24,74 @@ struct FullScreenImageView: View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
             
-            if let nsImage = NSImage(data: imageData) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .scaleEffect(scale, anchor: .center)
-                    .offset(offset)
-                    // PINCH TO ZOOM via MagnificationGesture
-                    .gesture(
-                        MagnificationGesture()
-                            .onChanged { value in
-                                let delta = value / lastScale
-                                lastScale = value
-                                let newScale = (scale * delta).clamped(to: minScale...maxScale)
-                                scale = newScale
-                                bumpToolbar()
-                            }
-                            .onEnded { _ in
-                                lastScale = 1.0
-                                if scale <= minScale {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        scale = minScale
-                                        offset = .zero
-                                        lastOffset = .zero
-                                    }
+            // IMAGE LAYER (Isolated to prevent layout shifts)
+            ZStack {
+                if let nsImage = NSImage(data: imageData) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .scaleEffect(scale, anchor: .center)
+                        .offset(offset)
+                        .animation(nil, value: scale) // BLOQUEAR ANIMACIONES EXTERNAS EN LA IMAGEN
+                        .animation(nil, value: offset)
+                        // PINCH TO ZOOM via MagnificationGesture
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    let newScale = (scale * delta).clamped(to: minScale...maxScale)
+                                    scale = newScale
+                                    bumpToolbar()
                                 }
-                                scheduleHide()
+                                .onEnded { _ in
+                                    lastScale = 1.0
+                                    if scale <= minScale {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            scale = minScale
+                                            offset = .zero
+                                            lastOffset = .zero
+                                        }
+                                    }
+                                    scheduleHide()
+                                }
+                        )
+                        // PAN (only when zoomed in)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    guard scale > 1.0 else { return }
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                    bumpToolbar()
+                                }
+                                .onEnded { _ in
+                                    lastOffset = offset
+                                    scheduleHide()
+                                }
+                        )
+                        // DOUBLE TAP: toggle between 100% and 200%
+                        .onTapGesture(count: 2) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                if scale > minScale {
+                                    scale = minScale
+                                    offset = .zero
+                                    lastOffset = .zero
+                                } else {
+                                    scale = 2.0
+                                }
                             }
-                    )
-                    // PAN (only when zoomed in)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                guard scale > 1.0 else { return }
-                                offset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                                bumpToolbar()
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                                scheduleHide()
-                            }
-                    )
-                    // DOUBLE TAP: toggle between 100% and 200%
-                    .onTapGesture(count: 2) {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            if scale > minScale {
-                                scale = minScale
-                                offset = .zero
-                                lastOffset = .zero
-                            } else {
-                                scale = 2.0
-                            }
+                            bumpToolbar()
+                            scheduleHide()
                         }
-                        bumpToolbar()
-                        scheduleHide()
-                    }
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(nil) // PREVENIR CUALQUIER ANIMACIÓN DE LAYOUT EN ESTE ZSTACK
             
-            // CLOSE BUTTON (always visible)
+            // UI CONTROLS LAYER
             VStack {
                 HStack {
                     Spacer()
@@ -101,6 +113,26 @@ struct FullScreenImageView: View {
                     .padding(.bottom, 28)
             }
         }
+        .overlay {
+            // DOUBLE-TAP HINT OVERLAY (Non-intrusive)
+            if hintOpacity > 0 {
+                ZStack {
+                    // Pulse ring
+                    Circle()
+                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                        .frame(width: 80, height: 80)
+                        .scaleEffect(hintPulse ? 1.2 : 0.8)
+                    
+                    Image(systemName: "hand.tap.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.white)
+                        .shadow(radius: 10)
+                }
+                .opacity(hintOpacity)
+                .scaleEffect(hintScale)
+                .allowsHitTesting(false) // Never block clicks
+            }
+        }
         .frame(minWidth: 700, minHeight: 500)
         .onHover { isHovering in
             if isHovering {
@@ -111,6 +143,28 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             scheduleHide()
+            showDoubleTapHint()
+        }
+    }
+    
+    // MARK: - Hint Logic
+    
+    private func showDoubleTapHint() {
+        // Trigger a subtle pulse animation twice
+        withAnimation(.easeIn(duration: 0.3)) {
+            hintOpacity = 0.7
+            hintScale = 1.0
+        }
+        
+        withAnimation(.easeInOut(duration: 0.4).repeatCount(3, autoreverses: true)) {
+            hintPulse = true
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            withAnimation(.easeOut(duration: 0.5)) {
+                hintOpacity = 0.0
+                hintScale = 1.2
+            }
         }
     }
     
