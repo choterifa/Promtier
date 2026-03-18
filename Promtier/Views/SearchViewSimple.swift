@@ -467,6 +467,9 @@ struct SearchViewSimple: View {
             onCopy: {
                 usePrompt(prompt)
             },
+            onCopyPack: {
+                copyPromptPack(prompt)
+            },
             onHover: { isHovering in
                 DispatchQueue.main.async {
                     hoveredPrompt = isHovering ? prompt : nil
@@ -494,6 +497,10 @@ struct SearchViewSimple: View {
     private func promptContextMenu(for prompt: Prompt) -> some View {
         Button(action: { usePrompt(prompt) }) {
             Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
+        }
+
+        Button(action: { copyPromptPack(prompt) }) {
+            Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
         }
 
         Button(action: {
@@ -699,6 +706,28 @@ struct SearchViewSimple: View {
                 self.menuBarManager.closePopover()
             }
         }
+    }
+
+    /// Copia un "pack" del prompt: Main + Negative + Alternative (si existen)
+    private func copyPromptPack(_ prompt: Prompt) {
+        var packPrompt = prompt
+
+        var parts: [String] = [prompt.content]
+
+        if let negative = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !negative.isEmpty {
+            let title = "negative_prompt".localized(for: preferences.language)
+            parts.append("\n\n\(title):\n\(negative)")
+        }
+
+        if let alternative = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !alternative.isEmpty {
+            let title = "alternative_prompt".localized(for: preferences.language)
+            parts.append("\n\n\(title):\n\(alternative)")
+        }
+
+        packPrompt.content = parts.joined()
+        usePrompt(packPrompt)
     }
     
     /// Cambia el estado de favorito de un prompt - Versión optimizada

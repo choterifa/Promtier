@@ -47,7 +47,8 @@ struct FullScreenImageView: View {
         if preferences.disableImageAnimations {
             body()
         } else {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            // Sensación tipo popover de macOS: entrada rápida con rebote sutil
+            withAnimation(.interpolatingSpring(stiffness: 320, damping: 24)) {
                 body()
             }
         }
@@ -147,7 +148,8 @@ struct FullScreenImageView: View {
             }
         }
         .opacity(isEntering ? 1.0 : 0.0)
-        .scaleEffect(isEntering ? 1.0 : 0.985)
+        .scaleEffect(isEntering ? 1.0 : 0.94)
+        .offset(y: isEntering ? 0 : 16)
         .overlay {
             // DOUBLE-TAP & PINCH HINT OVERLAY (Non-intrusive)
             if hintOpacity > 0 && !preferences.disableImageAnimations {

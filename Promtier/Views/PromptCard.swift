@@ -16,6 +16,7 @@ struct PromptCard: View {
     let onTap: () -> Void
     let onDoubleTap: () -> Void
     let onCopy: (() -> Void)?
+    let onCopyPack: (() -> Void)?
     let onHover: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
@@ -162,6 +163,16 @@ struct PromptCard: View {
                     }
                     .buttonStyle(.plain)
                     .help("copy".localized(for: preferences.language))
+                    .contextMenu {
+                        Button(action: { onCopy() }) {
+                            Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
+                        }
+                        if let onCopyPack = onCopyPack {
+                            Button(action: { onCopyPack() }) {
+                                Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
+                            }
+                        }
+                    }
                 }
 
                 if prompt.useCount > 0 {
@@ -383,6 +394,7 @@ struct PromptCard: View {
             onTap: { },
             onDoubleTap: { },
             onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
         
@@ -397,6 +409,7 @@ struct PromptCard: View {
             onTap: { },
             onDoubleTap: { },
             onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
         
@@ -411,6 +424,7 @@ struct PromptCard: View {
             onTap: { },
             onDoubleTap: { },
             onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
     }
