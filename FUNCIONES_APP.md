@@ -32,7 +32,18 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Preview Rápido**: Visualiza el contenido completo y las imágenes sin abrir el editor (Espacio).
 - **Consistencia Visual**: El preview mantiene el mismo resaltado de sintaxis (variables y brackets) que el editor.
 - **Barra de Color Adaptativa**: Línea superior de 3px que adopta el color de la categoría actual.
-- **Galería de Resultados**: Scroll lateral para previsualizar hasta 3 imágenes de referencia en alta resolución.
+- **Galería de Resultados**:
+    - **Alineación Superior**: Las imágenes se centran en la parte de arriba (`alignment: .top`) para un enfoque visual consistente.
+    - **Escalado de Relleno**: Uso de modo `cover` (`.fill`) para ocupar todo el slot de 280x180 sin dejar huecos.
+
+### 📝 Editor y Creación de Prompts
+- **Borradores Automáticos (Drafts)**: Guardado instantáneo de cada cambio al crear o editar un prompt.
+- **Restauración tras Reinicio**: Si la app se cierra, se abre automáticamente en la ventana de edición con todo lo escrito recuperado.
+- **Bloqueo de Popover Inteligente**: La ventana detecta si hay contenido escrito y bloquea el cierre accidental al hacer clic fuera, permitiéndolo solo si el formulario está vacío.
+- **Galería de Resultados Dinámica**:
+    - **Reordenamiento**: Soporte para arrastrar y soltar (Drag & Drop) imágenes entre slots para organizar los resultados.
+    - **Alineación Superior**: Enfoque en la parte de arriba de las imágenes con escalado de relleno.
+    - **UX Anti-Recorte**: Padding optimizado para evitar cortes visuales durante las animaciones de escalado.
 
 ### 🤖 Inteligencia Artificial
 - **Apple Intelligence Integration**: Acceso directo a *Writing Tools* de macOS 15+ desde el editor.

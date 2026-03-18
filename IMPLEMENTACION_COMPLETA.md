@@ -15,6 +15,8 @@
 - ✅ Selección de carpetas para organización
 - ✅ Vista previa en tiempo real del contenido
 - ✅ Detección automática de variables de plantilla {{variable}}
+- ✅ **Persistencia de Borradores**: Guardado automático de cambios para evitar pérdida de datos.
+- ✅ **Galería Dinámica**: Reordenamiento de imágenes mediante Drag & Drop y alineación superior.
 - ✅ Modo edición para prompts existentes
 - ✅ Validación de datos antes de guardar
 
@@ -73,6 +75,12 @@
 - ✅ Historial de copias
 - ✅ Notificaciones de éxito
 - ✅ Manejo de errores
+
+#### DraftService
+- ✅ Guardado automático de borradores en UserDefaults
+- ✅ Restauración de estado al iniciar la aplicación
+- ✅ Diferenciación entre creación y edición tras reinicio
+- ✅ Limpieza automática al guardar o descartar cambios
 
 ### 7. **Modelos y Extensiones**
 

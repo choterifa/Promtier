@@ -48,6 +48,10 @@ struct NewPromptView: View {
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
     
+    // Identificador para rastrear cambios y guardar borradores
+    @State private var originalPrompt: Prompt? = nil
+    @State private var isDraftRestored = false
+    
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
@@ -56,6 +60,14 @@ struct NewPromptView: View {
             return PredefinedCategory.fromString(folderName)?.color ?? .blue
         }
         return .blue
+    }
+    
+    // Propiedad calculada para saber si el prompt está vacío
+    private var isContentEmpty: Bool {
+        title.trimmingCharacters(in: .whitespaces).isEmpty && 
+        content.trimmingCharacters(in: .whitespaces).isEmpty &&
+        promptDescription.trimmingCharacters(in: .whitespaces).isEmpty &&
+        showcaseImages.isEmpty
     }
     
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
@@ -131,6 +143,7 @@ struct NewPromptView: View {
         }
         .onAppear {
             if let prompt = prompt {
+                self.originalPrompt = prompt
                 title = prompt.title
                 content = prompt.content
                 promptDescription = prompt.promptDescription ?? ""
@@ -139,18 +152,90 @@ struct NewPromptView: View {
                 selectedIcon = prompt.icon
                 showcaseImages = prompt.showcaseImages
                 tags = prompt.tags
+            } else if let draft = DraftService.shared.loadDraft() {
+                // Restaurar borrador si existe y no estamos editando uno específico pasado por parámetro
+                let draftPrompt = draft.prompt
+                
+                // Si el borrador era una edición, intentamos recuperar el original
+                if draft.isEditing {
+                    if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
+                        self.originalPrompt = original
+                    }
+                }
+                
+                title = draftPrompt.title
+                content = draftPrompt.content
+                promptDescription = draftPrompt.promptDescription ?? ""
+                selectedFolder = draftPrompt.folder
+                isFavorite = draftPrompt.isFavorite
+                selectedIcon = draftPrompt.icon
+                showcaseImages = draftPrompt.showcaseImages
+                tags = draftPrompt.tags
+                isDraftRestored = true
+                
+                // Activar bloqueo de popover si el borrador restaurado no está vacío
+                if !isContentEmpty {
+                    MenuBarManager.shared.isModalActive = true
+                }
             } else if let activeCategory = promptService.selectedCategory {
                 // Autoseleccionar la categoría activa al crear uno nuevo
                 selectedFolder = activeCategory
             }
         }
+        .onChange(of: title) { _, _ in saveCurrentDraft() }
+        .onChange(of: content) { _, _ in saveCurrentDraft() }
+        .onChange(of: promptDescription) { _, _ in saveCurrentDraft() }
+        .onChange(of: selectedFolder) { _, _ in saveCurrentDraft() }
+        .onChange(of: isFavorite) { _, _ in saveCurrentDraft() }
+        .onChange(of: selectedIcon) { _, _ in saveCurrentDraft() }
+        .onChange(of: showcaseImages) { _, _ in saveCurrentDraft() }
+        .onChange(of: tags) { _, _ in saveCurrentDraft() }
+        .onChange(of: isContentEmpty) { _, isEmpty in
+            // Notificar al gestor si puede cerrar o no el popover
+            MenuBarManager.shared.isModalActive = !isEmpty
+        }
+    }
+    
+    private func saveCurrentDraft() {
+        // No guardar si el contenido es idéntico al original que estamos editando
+        if let original = originalPrompt {
+            let hasChanges = title != original.title || 
+                             content != original.content || 
+                             promptDescription != (original.promptDescription ?? "") ||
+                             selectedFolder != original.folder ||
+                             selectedIcon != original.icon ||
+                             showcaseImages != original.showcaseImages
+            if !hasChanges { return }
+        }
+        
+        // Crear un objeto prompt temporal para el borrador
+        var draftPrompt = Prompt(
+            title: title,
+            content: content,
+            promptDescription: promptDescription,
+            folder: selectedFolder,
+            icon: selectedIcon,
+            showcaseImages: showcaseImages,
+            tags: tags
+        )
+        
+        // Si estamos editando, mantenemos el ID original para poder actualizarlo al restaurar
+        if let original = originalPrompt {
+            draftPrompt.id = original.id
+        }
+        
+        DraftService.shared.saveDraft(prompt: draftPrompt, isEditing: prompt != nil || originalPrompt != nil)
     }
     
     // MARK: - Subviews
     
     private var header: some View {
         HStack(alignment: .center) {
-            Button(action: onClose) {
+            Button(action: {
+                DraftService.shared.clearDraft()
+                MenuBarManager.shared.isModalActive = false
+                onClose()
+            }) {
                 Text("cancel".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
@@ -459,7 +544,12 @@ struct NewPromptView: View {
     private func savePrompt() {
         isSaving = true
         
-        if let existingPrompt = prompt {
+        // Limpiar borrador al guardar con éxito
+        DraftService.shared.clearDraft()
+        MenuBarManager.shared.isModalActive = false
+        
+        // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
+        if let existingPrompt = originalPrompt ?? prompt {
             // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
             let basicChanges = existingPrompt.title != title ||
                              existingPrompt.content != content ||

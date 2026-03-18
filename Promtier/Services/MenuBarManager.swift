@@ -22,7 +22,11 @@ class MenuBarManager: NSObject, ObservableObject {
     private var ghostWindow: NSPanel?
     
     @Published var isPopoverShown = false
-    @Published var activeViewState: PopoverViewState = .main
+    @Published var activeViewState: PopoverViewState = .main {
+        didSet {
+            updatePopoverBehavior()
+        }
+    }
     @Published var folderToEdit: Folder? = nil
     @Published var isModalActive: Bool = false {
         didSet {
@@ -58,6 +62,12 @@ class MenuBarManager: NSObject, ObservableObject {
             self.setupGlobalHotkey()
             self.setupThemeObserver()
             self.setupDimensionObserver()
+            
+            // RESTAURACIÓN DE ESTADO: Abrir en modo nuevo prompt si hay un borrador
+            if DraftService.shared.hasDraft {
+                self.activeViewState = .newPrompt
+                self.isModalActive = true
+            }
         }
     }
     
@@ -89,21 +99,14 @@ class MenuBarManager: NSObject, ObservableObject {
     @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
         
-        // Si hay un modal activo (ej: FolderManager), el primer click solo cierra el modal
-        if isModalActive {
-            isModalActive = false
-            return
-        }
-        
-        if let popover = popover {
-            if popover.isShown {
-                closePopover()
-            } else {
-                activeViewState = .main
-                showPopover(relativeTo: button.bounds, of: button)
-            }
+        if let popover = popover, popover.isShown {
+            closePopover()
         } else {
-            activeViewState = .main
+            // Si estábamos en NewPrompt pero se cerró (clic fuera o ESC), reabrimos ahí.
+            // Solo forzamos .main si no había borradores y ya estábamos ahí.
+            if !DraftService.shared.hasDraft && activeViewState == .main {
+                activeViewState = .main
+            }
             showPopover(relativeTo: button.bounds, of: button)
         }
     }
@@ -380,10 +383,10 @@ class MenuBarManager: NSObject, ObservableObject {
     private func updatePopoverBehavior() {
         guard let popover = popover else { return }
         
-        // Si estamos en cualquier vista que no sea la principal, mantenemos el popover abierto
-        // para evitar que un click fuera cierre accidentalmente la ventana de edición.
-        let needsPersistence = activeViewState != .main || isModalActive
-        popover.behavior = needsPersistence ? .applicationDefined : .transient
+        // CAMBIO: Ahora permitimos que el popover siempre sea transitorio (.transient)
+        // para que se cierre con ESC o clic fuera, pero mantenemos el estado
+        // en activeViewState para que al reabrir regrese a la misma pantalla.
+        popover.behavior = .transient
     }
 }
 
