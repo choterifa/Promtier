@@ -59,7 +59,7 @@ struct PremiumUpsellView: View {
                 )
                 
                 PremiumFeatureRow(
-                    icon: "keyboard.badge.waveform",
+                    icon: "/",
                     title: "reusable_snippets".localized(for: preferences.language),
                     description: "reusable_snippets_desc".localized(for: preferences.language)
                 )
@@ -133,16 +133,35 @@ struct PremiumFeatureRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [.purple, .blue]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            if icon == "/" {
+                // Icono especial para Snippets estilo botón
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [.purple, .blue]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    Text("/")
+                        .font(.system(size: 14, weight: .black, design: .monospaced))
+                        .foregroundColor(.white)
+                }
                 .frame(width: 24, height: 24)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.purple, .blue]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 24, height: 24)
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -151,6 +170,7 @@ struct PremiumFeatureRow: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(nil)
             }
         }
     }
