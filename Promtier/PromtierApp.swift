@@ -43,7 +43,13 @@ struct EmptyScene: Scene {
         .windowResizability(.contentSize)
         .defaultSize(width: 0, height: 0)
         .commands {
-            // Vaciar comandos para no mostrar menú
+            // Cmd + , -> Ajustes (abre la sección de preferencias dentro del popover)
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") {
+                    MenuBarManager.shared.showWithState(.preferences)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }

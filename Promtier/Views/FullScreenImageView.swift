@@ -4,6 +4,9 @@ struct FullScreenImageView: View {
     let imageData: Data
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var preferences = PreferencesManager.shared
+
+    @State private var decodedImage: NSImage? = nil
+    @State private var isEntering: Bool = false
     
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -39,6 +42,16 @@ struct FullScreenImageView: View {
             }
         }
     }
+
+    private func presentWithAnimation(_ body: @escaping () -> Void) {
+        if preferences.disableImageAnimations {
+            body()
+        } else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                body()
+            }
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -46,7 +59,7 @@ struct FullScreenImageView: View {
             
             // IMAGE LAYER (Isolated to prevent layout shifts)
             ZStack {
-                if let nsImage = NSImage(data: imageData) {
+                if let nsImage = decodedImage {
                     Image(nsImage: nsImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -133,6 +146,8 @@ struct FullScreenImageView: View {
                     .padding(.bottom, 28)
             }
         }
+        .opacity(isEntering ? 1.0 : 0.0)
+        .scaleEffect(isEntering ? 1.0 : 0.985)
         .overlay {
             // DOUBLE-TAP & PINCH HINT OVERLAY (Non-intrusive)
             if hintOpacity > 0 && !preferences.disableImageAnimations {
@@ -189,8 +204,17 @@ struct FullScreenImageView: View {
             }
         }
         .onAppear {
+            if decodedImage == nil {
+                decodedImage = NSImage(data: imageData)
+            }
+            presentWithAnimation {
+                isEntering = true
+            }
             scheduleHide()
             showGesturesHint()
+        }
+        .onDisappear {
+            isEntering = false
         }
     }
     

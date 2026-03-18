@@ -416,89 +416,10 @@ struct SearchViewSimple: View {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                    PromptCard(
-                                        prompt: prompt,
-                                        isSelected: selectedPrompt?.id == prompt.id,
-                                        isHovered: hoveredPrompt?.id == prompt.id,
-                                        onTap: {
-                                            // Optimización: Actualizar estado de forma síncrona
-                                            selectedPrompt = prompt
-                                        
-                                        // Sonido si la vista previa está abierta
-                                        if showingPreview && preferences.soundEnabled {
-                                            SoundService.shared.playInteractionSound()
-                                        }
-                                        
-                                        // Forzar foco a la ventana principal
-                                        NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-                                        },
-                                        onDoubleTap: {
-                                            selectedPrompt = prompt
-                                            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                                        },
-                                        onHover: { isHovering in
-                                            // Optimización: Reducir actualizaciones de hover
-                                            DispatchQueue.main.async {
-                                                hoveredPrompt = isHovering ? prompt : nil
-                                            }
-                                        }
-                                    )
-                                    .id(prompt.id)
-                                     .popover(isPresented: Binding(
-                                        get: { showingPreview && selectedPrompt?.id == prompt.id },
-                                        set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
-                                    ), arrowEdge: .top) {
-                                        PromptPreviewView(
-                                            prompt: prompt,
-                                            isFullScreenImageOpen: $isFullScreenImageOpen
-                                        )
-                                                           .contextMenu {
-                                    Button(action: { usePrompt(prompt) }) {
-                                        Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
-                                    }
-                                    
-                                    Button(action: { 
-                                        selectedPrompt = prompt
-                                        if preferences.soundEnabled {
-                                            SoundService.shared.playMagicSound()
-                                        }
-                                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
-                                    }) {
-                                        Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
-                                    }
-                                    
-                                    Button(action: { 
-                                        selectedPrompt = prompt
-                                        showingPreview = true
-                                        if preferences.soundEnabled {
-                                            SoundService.shared.playInteractionSound()
-                                        }
-                                    }) {
-                                        Label("preview".localized(for: preferences.language), systemImage: "eye")
-                                    }
-                                    
-                                    Button(action: { toggleFavorite(prompt) }) {
-                                        Label(prompt.isFavorite ? "remove_favorite".localized(for: preferences.language) : "add_favorite".localized(for: preferences.language), 
-                                              systemImage: prompt.isFavorite ? "star.slash" : "star.fill")
-                                    }
-                                    
-                                    Divider()
-                                    
-                                    Button(action: { 
-                                        if preferences.soundEnabled {
-                                            SoundService.shared.playInteractionSound()
-                                        }
-                                        exportPromptsToFile(prompt) 
-                                    }) {
-                                        Label("export_plain_text".localized(for: preferences.language), systemImage: "square.and.arrow.up")
-                                    }
-                                    
-                                    Button(role: .destructive, action: { deletePrompt(prompt) }) {
-                                         Label("delete".localized(for: preferences.language), systemImage: "trash.fill")
-                                     }
-                                }               }
+                                    promptRow(for: prompt)
+                                        .id(prompt.id)
+                                }
                             }
-                        }
                         }
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
@@ -519,6 +440,102 @@ struct SearchViewSimple: View {
                     }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func promptRow(for prompt: Prompt) -> some View {
+        PromptCard(
+            prompt: prompt,
+            isSelected: selectedPrompt?.id == prompt.id,
+            isHovered: hoveredPrompt?.id == prompt.id,
+            onTap: {
+                selectedPrompt = prompt
+
+                // Sonido si la vista previa está abierta
+                if showingPreview && preferences.soundEnabled {
+                    SoundService.shared.playInteractionSound()
+                }
+
+                // Forzar foco a la ventana principal
+                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            },
+            onDoubleTap: {
+                selectedPrompt = prompt
+                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+            },
+            onCopy: {
+                usePrompt(prompt)
+            },
+            onHover: { isHovering in
+                DispatchQueue.main.async {
+                    hoveredPrompt = isHovering ? prompt : nil
+                }
+            }
+        )
+        .contextMenu {
+            promptContextMenu(for: prompt)
+        }
+        .popover(
+            isPresented: Binding(
+                get: { showingPreview && selectedPrompt?.id == prompt.id },
+                set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
+            ),
+            arrowEdge: .top
+        ) {
+            PromptPreviewView(
+                prompt: prompt,
+                isFullScreenImageOpen: $isFullScreenImageOpen
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func promptContextMenu(for prompt: Prompt) -> some View {
+        Button(action: { usePrompt(prompt) }) {
+            Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
+        }
+
+        Button(action: {
+            selectedPrompt = prompt
+            if preferences.soundEnabled {
+                SoundService.shared.playMagicSound()
+            }
+            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+        }) {
+            Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
+        }
+
+        Button(action: {
+            selectedPrompt = prompt
+            showingPreview = true
+            if preferences.soundEnabled {
+                SoundService.shared.playInteractionSound()
+            }
+        }) {
+            Label("preview".localized(for: preferences.language), systemImage: "eye")
+        }
+
+        Button(action: { toggleFavorite(prompt) }) {
+            Label(
+                prompt.isFavorite ? "remove_favorite".localized(for: preferences.language) : "add_favorite".localized(for: preferences.language),
+                systemImage: prompt.isFavorite ? "star.slash" : "star.fill"
+            )
+        }
+
+        Divider()
+
+        Button(action: {
+            if preferences.soundEnabled {
+                SoundService.shared.playInteractionSound()
+            }
+            exportPromptsToFile(prompt)
+        }) {
+            Label("export_plain_text".localized(for: preferences.language), systemImage: "square.and.arrow.up")
+        }
+
+        Button(role: .destructive, action: { deletePrompt(prompt) }) {
+            Label("delete".localized(for: preferences.language), systemImage: "trash.fill")
         }
     }
     

@@ -56,6 +56,16 @@ class MenuBarManager: NSObject, ObservableObject {
     
     private override init() {
         super.init()
+
+        // Cerrar el popover cuando la app pierde foco (evita quedarse "gris" al hacer click fuera)
+        NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.popover?.isShown == true else { return }
+                self.closePopover()
+            }
+            .store(in: &cancellables)
+
         // CONFIGURABLE: Retrasar inicialización para evitar problemas de orden
         DispatchQueue.main.async {
             self.setupMenuBar()
@@ -412,4 +422,3 @@ extension MenuBarManager: NSPopoverDelegate {
                                            accessibilityDescription: "Promtier Activo")
     }
 }
-

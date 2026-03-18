@@ -15,6 +15,7 @@ struct PromptCard: View {
     let isHovered: Bool
     let onTap: () -> Void
     let onDoubleTap: () -> Void
+    let onCopy: (() -> Void)?
     let onHover: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
@@ -148,6 +149,21 @@ struct PromptCard: View {
             
             // Indicadores de estado
             HStack(spacing: 12) {
+                if let onCopy = onCopy {
+                    Button(action: {
+                        onCopy()
+                        HapticService.shared.playLight()
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary.opacity(isHovered || isSelected ? 0.75 : 0.35))
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("copy".localized(for: preferences.language))
+                }
+
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
@@ -366,6 +382,7 @@ struct PromptCard: View {
             isHovered: false,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
             onHover: { _ in }
         )
         
@@ -379,6 +396,7 @@ struct PromptCard: View {
             isHovered: false,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
             onHover: { _ in }
         )
         
@@ -392,6 +410,7 @@ struct PromptCard: View {
             isHovered: true,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
             onHover: { _ in }
         )
     }
