@@ -11,7 +11,8 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **Auto-generación ✨**: Botón inteligente para extraer la descripción automáticamente del contenido.
 - **Sidebar Colapsable**: Panel lateral para filtrar por categorías, favoritos, recientes o papelera (Cmd+B).
 - **Favoritos**: Acceso rápido a tus prompts más utilizados con un sistema de estrellas.
-- **Papelera con Expiración**: 
+- **Papelera (Acceso Rápido)**: 
+    - **Ubicación**: Movida a la parte inferior del sidebar para un acceso más limpio y coherente.
     - **Retención**: Los prompts se guardan por 7 días antes de borrarse permanentemente.
     - **Countdown Visual**: Indicador de tiempo restante con colores de urgencia (verde/naranja/rojo).
 
@@ -45,7 +46,10 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **Frecuencia**: Aparición secuencial (en bucle) cada 25-45 segundos.
     - **Duración**: Se ocultan automáticamente tras 6.5 segundos.
     - **Ubicación**: Centrados en la parte inferior para evitar obstrucciones.
-    - **Tips Implementados**: `Vista Previa`, `Copiar Rápido`, `Nuevo Prompt`, `Configuración`, `Ocultar Sidebar`, `Drag & Drop`, `Multi-selección`, `Papelera` y `Exportar`.
+    - **Tips Implementados**: `Vista Previa (Espacio)`, `Copiar Rápido (Cmd + C)`, `Nuevo Prompt (Cmd + N)`, `Configuración (Cmd + ,)`, `Ocultar Sidebar (Cmd + B)`, `Drag & Drop (Imágenes)` y `Zoom en Imágenes (Clic)`.
+- **Estabilidad Multidioma**: 
+    - **Centrado Inteligente**: La ventana permanece anclada al icono del menú incluso al cambiar entre idiomas (Español/Inglés).
+    - **Hot-Reloading**: Actualización instantánea de la interfaz sin cerrar ni mover la aplicación.
 - **Haptic Feedback (Trackpad)**: Retroalimentación física real en MacBook y Magic Trackpad.
     - **Niveles**: `Suave` (clics), `Medio` (alineación), `Éxito` (doble pulso) y `Error` (triple impacto).
 - **Operaciones en Lote (Batch Mode)**:
@@ -71,4 +75,4 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Historial Extendido**: Hasta 20 versiones guardadas por cada prompt.
 
 ---
-*Última actualización: 17 de Marzo de 2026*
+*Última actualización: 18 de Marzo de 2026*

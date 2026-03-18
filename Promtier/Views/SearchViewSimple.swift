@@ -33,10 +33,8 @@ struct SearchViewSimple: View {
             GhostTip(title: "gt_new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
             GhostTip(title: "gt_settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
             GhostTip(title: "gt_hide_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
-            GhostTip(title: "drag_and_drop".localized(for: preferences.language), icon: "hand.tap", shortcut: "gt_move_categories".localized(for: preferences.language)),
-            GhostTip(title: "gt_multi_select".localized(for: preferences.language), icon: "checkmark.circle", shortcut: "gt_batch_mode".localized(for: preferences.language)),
-            GhostTip(title: "trash".localized(for: preferences.language), icon: "trash", shortcut: "gt_auto_delete".localized(for: preferences.language)),
-            GhostTip(title: "export".localized(for: preferences.language), icon: "square.and.arrow.up", shortcut: "gt_backup_prompts".localized(for: preferences.language))
+            GhostTip(title: "gt_drag_images".localized(for: preferences.language), icon: "photo", shortcut: "gt_images_hint".localized(for: preferences.language)),
+            GhostTip(title: "gt_zoom_images".localized(for: preferences.language), icon: "magnifyingglass", shortcut: "gt_zoom_hint".localized(for: preferences.language))
         ]
     }
     

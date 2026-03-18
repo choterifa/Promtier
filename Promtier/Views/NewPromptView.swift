@@ -74,8 +74,6 @@ struct NewPromptView: View {
                             .frame(height: geometry.size.height * 0.75, alignment: .top)
                         
                         imageGallery
-                        
-                        categorySection
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)

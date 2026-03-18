@@ -231,6 +231,17 @@
 "gt_batch_mode" = "Batch Mode";
 "gt_auto_delete" = "Auto-delete 7d";
 "gt_backup_prompts" = "Backup Prompts";
+"gt_drag_images" = "Drag & Drop";
+"gt_images_hint" = "Images";
+"gt_zoom_images" = "Zoom Preview";
+"gt_zoom_hint" = "Click on images";
+"gt_zen_mode" = "Zen Mode";
+"gt_zen_shortcut" = "Cmd + Shift + Z";
+"gt_variables" = "Variables";
+"gt_variables_shortcut" = "Opt + V";
+"gt_snippets_shortcut" = "Type / to insert";
+"gt_auto_paste_tip" = "Instant Paste";
+"gt_auto_paste_shortcut" = "Enable in Settings";
 
 /* Default Data */
 "snippet_signature_title" = "Professional Signature";

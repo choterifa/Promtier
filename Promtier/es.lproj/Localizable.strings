@@ -252,6 +252,17 @@
 "gt_batch_mode" = "Modo Lote";
 "gt_auto_delete" = "Auto-borrado 7d";
 "gt_backup_prompts" = "Respaldar Prompts";
+"gt_drag_images" = "Arrastrar y Soltar";
+"gt_images_hint" = "Imágenes";
+"gt_zoom_images" = "Zoom en Imágenes";
+"gt_zoom_hint" = "Clic para ampliar";
+"gt_zen_mode" = "Modo Zen";
+"gt_zen_shortcut" = "Cmd + Shift + Z";
+"gt_variables" = "Variables";
+"gt_variables_shortcut" = "Alt + V";
+"gt_snippets_shortcut" = "Escribe / para insertar";
+"gt_auto_paste_tip" = "Pegado Instantáneo";
+"gt_auto_paste_shortcut" = "Activa en Ajustes";
 
 /* Default Data */
 "snippet_signature_title" = "Firma Profesional";
