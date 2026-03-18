@@ -137,7 +137,7 @@ class MenuBarManager: NSObject, ObservableObject {
                 .environmentObject(self)
                 .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
-            popover?.contentViewController = NSHostingController(rootView: contentView)
+            popover?.contentViewController = NSHostingController(rootView: AnyView(contentView))
             
             // Aplicar apariencia inicial al popover
             updatePopoverAppearance()
@@ -250,7 +250,7 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     private func refreshPopoverRootView() {
-        guard let popover = popover else { return }
+        guard let popover = popover, let button = statusItem?.button else { return }
         
         let contentView = SearchViewSimple()
             .environmentObject(self.promptService)
@@ -259,11 +259,19 @@ class MenuBarManager: NSObject, ObservableObject {
             .environmentObject(self)
             .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
-        popover.contentViewController = NSHostingController(rootView: contentView)
+        // CORRECCIÓN: No reemplazar el controller, solo actualizar la rootView
+        // Esto evita que el popover se cierre y reabra internamente
+        if let hostingController = popover.contentViewController as? NSHostingController<AnyView> {
+            hostingController.rootView = AnyView(contentView)
+        } else {
+            popover.contentViewController = NSHostingController(rootView: AnyView(contentView))
+        }
         
-        // CORRECCIÓN: Forzar reposicionamiento si ya está visible para evitar desplazamientos
-        if popover.isShown, let button = statusItem?.button {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        // CORRECCIÓN: Forzar reposicionamiento centrado si ya está visible
+        if popover.isShown {
+            DispatchQueue.main.async {
+                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            }
         }
     }
     
