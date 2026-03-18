@@ -16,6 +16,8 @@ struct CategorySidebar: View {
     @State private var showingFolderManager = false
     @State private var draggedFolder: Folder? = nil
     @State private var dropTargetFolderId: UUID? = nil
+    @State private var isTargetedFavoritos = false
+    @State private var isTargetedSinCategoria = false
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
@@ -89,6 +91,7 @@ struct CategorySidebar: View {
                     color: .yellow,
                     count: promptService.prompts.filter { $0.isFavorite }.count,
                     isSelected: promptService.selectedCategory == "Favoritos",
+                    isDropTarget: isTargetedFavoritos,
                     action: {
                         promptService.selectedCategory = "Favoritos"
                     },
@@ -96,7 +99,7 @@ struct CategorySidebar: View {
                         markAsFavorite(id: promptId)
                     }
                 )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: nil) { providers in
+                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedFavoritos) { providers in
                     handleQuickDrop(providers: providers, to: "Favoritos")
                 }
                 
@@ -107,6 +110,7 @@ struct CategorySidebar: View {
                     color: .gray,
                     count: categoryCounts["Sin categoría"] ?? 0,
                     isSelected: promptService.selectedCategory == "Sin categoría",
+                    isDropTarget: isTargetedSinCategoria,
                     action: {
                         promptService.selectedCategory = "Sin categoría"
                     },
@@ -114,7 +118,7 @@ struct CategorySidebar: View {
                         movePrompt(id: promptId, to: nil)
                     }
                 )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: nil) { providers in
+                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
                     handleQuickDrop(providers: providers, to: nil)
                 }
             }
@@ -136,6 +140,7 @@ struct CategorySidebar: View {
                             color: Color(hex: folder.displayColor),
                             count: count,
                             isSelected: promptService.selectedCategory == folder.name,
+                            isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
                             action: {
                                 promptService.selectedCategory = folder.name
                             }
@@ -282,10 +287,8 @@ struct FolderDropDelegate: DropDelegate {
     var onPromptMove: (String, String) -> Void
     
     func dropEntered(info: DropInfo) {
-        if draggedFolder != nil {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                dropTargetFolderId = folder.id
-            }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            dropTargetFolderId = folder.id
         }
     }
     
@@ -298,7 +301,12 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        return DropProposal(operation: .move)
+        // Si estamos arrastrando una carpeta para reordenar, usamos .move
+        if draggedFolder != nil {
+            return DropProposal(operation: .move)
+        }
+        // Si es un prompt siendo categorizado, usamos .copy para mostrar el "+"
+        return DropProposal(operation: .copy)
     }
     
     func validateDrop(info: DropInfo) -> Bool {
@@ -339,6 +347,7 @@ struct SidebarItem: View {
     let color: Color
     let count: Int
     let isSelected: Bool
+    var isDropTarget: Bool = false
     let action: () -> Void
     
     // Configuración opcional para Drop
@@ -380,6 +389,10 @@ struct SidebarItem: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
                 .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.blue, lineWidth: isDropTarget ? 2 : 0)
+                )
         )
         .contentShape(Rectangle())
         .onTapGesture {
