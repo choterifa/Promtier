@@ -374,20 +374,21 @@ struct NewPromptView: View {
                             imageData: showcaseImages[index],
                             onRemove: { showcaseImages.remove(at: index) },
                             onPreview: { showingFullScreenImage = showcaseImages[index] },
-                            onDrop: { providers in handleGalleryDrop(providers: providers) }
+                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
+                            onDragStart: { self.draggedImageIndex = index }
                         )
                     }
                     
                     // Placeholders para completar hasta 3
-                    ForEach(showcaseImages.count..<3, id: \.self) { _ in
+                    ForEach(showcaseImages.count..<3, id: \.self) { index in
                         PlaceholderSlotView(
                             onSelect: selectImages,
-                            onDrop: { providers in handleGalleryDrop(providers: providers) }
+                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) }
                         )
                     }
                 }
-                .padding(.vertical, 4)
-                .padding(.trailing, 20)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
             }
             .onPasteCommand(of: [.image]) { providers in
                 handleGalleryDrop(providers: providers)
@@ -396,14 +397,30 @@ struct NewPromptView: View {
         .padding(.top, 16)
     }
     
-    private func handleGalleryDrop(providers: [NSItemProvider]) {
+    private func handleGalleryDrop(providers: [NSItemProvider], at index: Int? = nil) {
+        if let sourceIndex = draggedImageIndex {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                let item = showcaseImages.remove(at: sourceIndex)
+                let targetIndex = min(index ?? showcaseImages.count, showcaseImages.count)
+                showcaseImages.insert(item, at: targetIndex)
+                HapticService.shared.playLight()
+            }
+            draggedImageIndex = nil
+            return
+        }
+        
         for provider in providers {
             if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url, let data = try? Data(contentsOf: url) {
+                    if let url = url, let data = try? Data(contentsOf: url),
+                       let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
                         DispatchQueue.main.async {
                             if showcaseImages.count < 3 {
-                                showcaseImages.append(data)
+                                if let targetIndex = index, targetIndex < showcaseImages.count {
+                                    showcaseImages.insert(optimizedData, at: targetIndex)
+                                } else {
+                                    showcaseImages.append(optimizedData)
+                                }
                                 NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                             }
                         }
@@ -411,10 +428,14 @@ struct NewPromptView: View {
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data {
+                    if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
                         DispatchQueue.main.async {
                             if showcaseImages.count < 3 {
-                                showcaseImages.append(data)
+                                if let targetIndex = index, targetIndex < showcaseImages.count {
+                                    showcaseImages.insert(optimizedData, at: targetIndex)
+                                } else {
+                                    showcaseImages.append(optimizedData)
+                                }
                                 NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                             }
                         }
@@ -555,6 +576,7 @@ struct ImageSlotView: View {
     let onRemove: () -> Void
     let onPreview: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
+    let onDragStart: () -> Void
     
     @State private var isTargeted = false
     
@@ -564,13 +586,19 @@ struct ImageSlotView: View {
                 Image(nsImage: nsImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 180, height: 120)
+                    .frame(width: 180, height: 120, alignment: .top)
+                    .clipped()
+                    .background(Color.primary.opacity(0.03))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isTargeted ? Color.blue : Color.primary.opacity(0.05), lineWidth: isTargeted ? 2 : 1)
                     )
                     .onTapGesture(perform: onPreview)
+                    .onDrag {
+                        onDragStart()
+                        return NSItemProvider(item: imageData as NSData, typeIdentifier: UTType.image.identifier)
+                    }
                     .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
                     .scaleEffect(isTargeted ? 1.05 : 1.0)
                     .animation(.spring(response: 0.3), value: isTargeted)
