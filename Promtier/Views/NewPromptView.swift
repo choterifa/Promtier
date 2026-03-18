@@ -83,7 +83,7 @@ struct NewPromptView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.75, alignment: .top)
+                            .frame(height: geometry.size.height * 0.85, alignment: .top)
                         
                         imageGallery
                     }
@@ -474,6 +474,10 @@ struct NewPromptView: View {
                 }
                 .padding(.vertical, 12)
                 .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectImages()
+                }
             }
             .onPasteCommand(of: [.image]) { providers in
                 handleGalleryDrop(providers: providers)

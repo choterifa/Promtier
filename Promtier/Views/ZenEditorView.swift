@@ -41,23 +41,19 @@ struct ZenEditorView: View {
                         showingPremiumFor = "advanced_variables".localized(for: preferences.language)
                     }
                 }) {
-                    HStack {
-                        Image(systemName: "curlybraces")
-                        Text("add_variable_action".localized(for: preferences.language))
-                    }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
+                    Image(systemName: "curlybraces")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .padding(8)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .padding(.trailing, 8)
                 
                 Button(action: onDone) {
                     HStack {
-                        Text("exit_zen_mode".localized(for: preferences.language))
+                        Text("Exit")
                         Image(systemName: "arrow.down.right.and.arrow.up.left")
                     }
                     .font(.system(size: 13, weight: .semibold))
