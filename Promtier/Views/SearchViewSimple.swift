@@ -345,38 +345,6 @@ struct SearchViewSimple: View {
                             .buttonStyle(.plain)
                             .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                             
-                            // Botón Papelera
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    menuBarManager.activeViewState = .trash
-                                }
-                            }) {
-                                ZStack(alignment: .topTrailing) {
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(promptService.trashedPrompts.isEmpty ? .secondary.opacity(0.5) : .red.opacity(0.75))
-                                        .frame(width: 34, height: 34)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(promptService.trashedPrompts.isEmpty ? Color.primary.opacity(0.04) : Color.red.opacity(0.06))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(promptService.trashedPrompts.isEmpty ? Color.primary.opacity(0.06) : Color.red.opacity(0.15), lineWidth: 1)
-                                                )
-                                        )
-                                    if !promptService.trashedPrompts.isEmpty {
-                                        Text("\(promptService.trashedPrompts.count)")
-                                            .font(.system(size: 8, weight: .black))
-                                            .foregroundColor(.white)
-                                            .padding(3)
-                                            .background(Circle().fill(Color.red))
-                                            .offset(x: 4, y: -4)
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .help("trash".localized(for: preferences.language))
-                            
                             // Botón de Selección en Lote
                             Button(action: {
                                 withAnimation(.spring(response: 0.3)) {

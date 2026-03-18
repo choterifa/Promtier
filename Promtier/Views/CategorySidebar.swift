@@ -198,6 +198,25 @@ struct CategorySidebar: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 24)
             }
+            
+            Divider()
+                .padding(.vertical, 8)
+                .padding(.horizontal, 24)
+            
+            // Papelera (Acceso rápido inferior)
+            SidebarItem(
+                title: "trash",
+                icon: "trash.fill",
+                color: .red,
+                count: promptService.trashedPrompts.count,
+                isSelected: menuBarManager.activeViewState == .trash
+            ) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .trash
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 16)
         }
         .frame(width: 200)
         .background(

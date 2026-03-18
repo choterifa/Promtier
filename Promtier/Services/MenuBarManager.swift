@@ -260,6 +260,11 @@ class MenuBarManager: NSObject, ObservableObject {
             .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
         popover.contentViewController = NSHostingController(rootView: contentView)
+        
+        // CORRECCIÓN: Forzar reposicionamiento si ya está visible para evitar desplazamientos
+        if popover.isShown, let button = statusItem?.button {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        }
     }
     
     private func updatePopoverAppearance() {
