@@ -12,6 +12,8 @@
 "preview" = "Preview";
 "add_favorite" = "Add to favorites";
 "remove_favorite" = "Remove from favorites";
+"choose_icon" = "Choose Icon";
+"use_category_icon_help" = "Use category icon";
 "delete" = "Move to trash";
 "close" = "Close";
 "done" = "Done";
@@ -174,6 +176,26 @@
 "import_data_alert_title" = "Import Library";
 "import_button" = "Import";
 "import_completed_message" = "Import completed: %d prompts.";
+
+/* Premium Upsell */
+"premium_exclusive_message" = "This feature is exclusive to Promtier Premium.";
+"advanced_variables_desc" = "Native dropdowns and date pickers instead of just text.";
+"reusable_snippets_desc" = "Autocomplete entire text snippets just by typing '/'";
+"version_history_desc" = "Travel back in time and recover past iterations of your prompts.";
+"visual_vfx" = "Visual Magic (VFX)";
+"visual_vfx_desc" = "Confetti and particle effects when copying to make work feel alive.";
+"unlock_premium" = "Unlock Premium";
+"maybe_later" = "Maybe Later";
+
+/* Batch Operations */
+"selected_count" = "selected";
+"all_action" = "All";
+"select_all_help" = "Select all visible prompts";
+"move_action" = "Move";
+"trash_action" = "Trash";
+"move_to_trash_confirmation" = "Move %d prompts to trash?";
+"move_to_trash_button" = "Move to trash";
+"move_to" = "Move to...";
 
 /* New Keys for Audit */
 "advanced_variables" = "Advanced Variables";

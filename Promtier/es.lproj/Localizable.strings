@@ -12,6 +12,8 @@
 "preview" = "Vista previa";
 "add_favorite" = "Añadir a favoritos";
 "remove_favorite" = "Quitar de favoritos";
+"choose_icon" = "Elegir Icono";
+"use_category_icon_help" = "Usar icono de categoría";
 "delete" = "Mover a la papelera";
 "close" = "Cerrar";
 "done" = "Hecho";
@@ -174,6 +176,27 @@
 "import_data_alert_title" = "Importar Biblioteca";
 "import_button" = "Importar";
 "import_completed_message" = "¡Importación completada: %d prompts añadidos!";
+"import_confirmation_message" = "¿Estás seguro de importar este archivo? Se omitirán los IDs duplicados.";
+
+/* Premium Upsell */
+"premium_exclusive_message" = "Esta función es exclusiva de Promtier Premium.";
+"advanced_variables_desc" = "Menús desplegables y selectores de fecha nativos en lugar de solo texto.";
+"reusable_snippets_desc" = "Autocompleta fragmentos de texto enteros con solo escribir '/'";
+"version_history_desc" = "Viaja en el tiempo y recupera iteraciones pasadas de tus prompts.";
+"visual_vfx" = "Magia Visual (VFX)";
+"visual_vfx_desc" = "Efectos de confeti y partículas al copiar para que el trabajo se sienta vivo.";
+"unlock_premium" = "Desbloquear Premium";
+"maybe_later" = "Quizás más Tarde";
+
+/* Batch Operations */
+"selected_count" = "seleccionados";
+"all_action" = "Todos";
+"select_all_help" = "Seleccionar todos los visibles";
+"move_action" = "Mover";
+"trash_action" = "Papelera";
+"move_to_trash_confirmation" = "¿Mover %d prompts a la papelera?";
+"move_to_trash_button" = "Mover a la papelera";
+"move_to" = "Mover a...";
 
 /* New Keys for Audit */
 "apple_intelligence" = "Apple Intelligence";
@@ -200,7 +223,6 @@
 "title_label" = "Título";
 "content_label" = "Contenido";
 "value_for" = "Valor para %@";
-"import_confirmation_message" = "¿Estás seguro de importar este archivo? Se omitirán los IDs duplicados.";
 
 /* Snippets Manager */
 "quick_snippets" = "Snippets Rápidos";

@@ -43,7 +43,7 @@ struct PremiumUpsellView: View {
                 Text(featureName)
                     .font(.system(size: 20, weight: .bold))
                 
-                Text("Esta función es exclusiva de Promtier Premium.")
+                Text("premium_exclusive_message".localized(for: preferences.language))
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -54,26 +54,26 @@ struct PremiumUpsellView: View {
             VStack(alignment: .leading, spacing: 16) {
                 PremiumFeatureRow(
                     icon: "slider.horizontal.3",
-                    title: "Variables Avanzadas",
-                    description: "Menús desplegables y selectores de fecha nativos en lugar de solo texto."
+                    title: "advanced_variables".localized(for: preferences.language),
+                    description: "advanced_variables_desc".localized(for: preferences.language)
                 )
                 
                 PremiumFeatureRow(
                     icon: "keyboard.badge.waveform",
-                    title: "Snippets Reutilizables",
-                    description: "Autocompleta fragmentos de texto enteros con solo escribir '/'"
+                    title: "reusable_snippets".localized(for: preferences.language),
+                    description: "reusable_snippets_desc".localized(for: preferences.language)
                 )
                 
                 PremiumFeatureRow(
                     icon: "clock.arrow.circlepath",
-                    title: "Historial de Versiones",
-                    description: "Viaja en el tiempo y recupera iteraciones pasadas de tus prompts."
+                    title: "version_history".localized(for: preferences.language),
+                    description: "version_history_desc".localized(for: preferences.language)
                 )
                 
                 PremiumFeatureRow(
                     icon: "sparkles",
-                    title: "Magia Visual (VFX)",
-                    description: "Efectos de confeti y partículas al copiar para que el trabajo se sienta vivo."
+                    title: "visual_vfx".localized(for: preferences.language),
+                    description: "visual_vfx_desc".localized(for: preferences.language)
                 )
             }
             .padding(24)
@@ -95,7 +95,7 @@ struct PremiumUpsellView: View {
                     // En el futuro: Navegaría a Checkout
                     onCancel?() ?? dismiss()
                 }) {
-                    Text("Desbloquear Premium")
+                    Text("unlock_premium".localized(for: preferences.language))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -111,7 +111,7 @@ struct PremiumUpsellView: View {
                 }
                 .buttonStyle(.plain)
                 
-                Button("Quizás más Tarde") {
+                Button("maybe_later".localized(for: preferences.language)) {
                     onCancel?() ?? dismiss()
                 }
                 .font(.system(size: 13))

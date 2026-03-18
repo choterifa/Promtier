@@ -10,6 +10,7 @@ import SwiftUI
 struct IconPickerView: View {
     @Binding var selectedIcon: String?
     let color: Color
+    @EnvironmentObject var preferences: PreferencesManager
     
     // Lista curada de iconos útiles para prompts de IA
     let icons = [
@@ -32,11 +33,11 @@ struct IconPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Elegir Icono")
+                Text("choose_icon".localized(for: preferences.language))
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
                 // El botón de aceptar que pidió el usuario
-                Button("Listo") {
+                Button("done".localized(for: preferences.language)) {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
@@ -62,7 +63,7 @@ struct IconPickerView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .help("Usar icono de categoría")
+                    .help("use_category_icon_help".localized(for: preferences.language))
                     
                     ForEach(icons, id: \.self) { icon in
                         Button(action: { 
