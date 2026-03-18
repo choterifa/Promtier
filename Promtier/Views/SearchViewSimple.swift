@@ -23,6 +23,9 @@ struct SearchViewSimple: View {
     @State private var importURL: URL? = nil
     /// Bloquea atajos de teclado cuando hay una hoja/modal secundaria abierta
     @State private var isFullScreenImageOpen: Bool = false
+    // Prewarm de thumbnails para evitar beachball al abrir preview tras arrancar.
+    @State private var prewarmTask: Task<Void, Never>? = nil
+    @State private var lastPrewarmedPromptId: UUID? = nil
     
     // Ghost Tips logic
     @State private var currentGhostTip: GhostTip? = nil
@@ -477,6 +480,7 @@ struct SearchViewSimple: View {
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
                 selectedPrompt = prompt
+                prewarmPreviewImages(for: prompt)
 
                 // Sonido si la vista previa está abierta
                 if showingPreview && preferences.soundEnabled {
@@ -499,6 +503,9 @@ struct SearchViewSimple: View {
             onHover: { isHovering in
                 DispatchQueue.main.async {
                     hoveredPrompt = isHovering ? prompt : nil
+                }
+                if isHovering {
+                    prewarmPreviewImages(for: prompt)
                 }
             }
         )
@@ -874,6 +881,26 @@ struct SearchViewSimple: View {
                     }
                 }
             }
+        }
+    }
+
+    private func prewarmPreviewImages(for prompt: Prompt) {
+        guard prompt.showcaseImageCount > 0 else { return }
+        if lastPrewarmedPromptId == prompt.id { return }
+        lastPrewarmedPromptId = prompt.id
+
+        prewarmTask?.cancel()
+        prewarmTask = Task(priority: .utility) {
+            let paths: [String]
+            if !prompt.showcaseImagePaths.isEmpty {
+                paths = prompt.showcaseImagePaths
+            } else {
+                paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+            }
+            guard let first = paths.first else { return }
+            let url = ImageStore.shared.url(forRelativePath: first)
+            let cacheKey = "\(prompt.id.uuidString):preview:0:900:\(first)"
+            await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey, maxPixelSize: 900)
         }
     }
     

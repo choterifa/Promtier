@@ -1,6 +1,15 @@
 # 📌 Resumen de Cambios Importantes (Promtier)
 
 ## 🚀 Nuevas Funcionalidades
+0. **Imágenes Escalables (Disco + Paths)**:
+   - Las imágenes de resultados se guardan como archivos optimizados en `Application Support/.../Images/<promptUUID>/`.
+   - Core Data solo persiste **paths + thumbnails** (y mantiene compatibilidad con blobs legacy para migración).
+   - Migración automática en background y migración on-demand al abrir previews.
+
+0. **Backup Completo ZIP (Recomendado)**:
+   - Exporta/importa `manifest.json` + carpeta `Images/` con todos los archivos.
+   - JSON sigue disponible como formato portable (incluye imágenes en base64) y CSV como texto/metadata.
+
 1. **Operaciones en Lote (Batch Mode)**:
    - Selección múltiple de prompts en la lista principal.
    - Barra de herramientas flotante con acciones rápidas: Mover a carpeta y Papelera.
@@ -26,6 +35,10 @@
 
 ## 🛠️ Correcciones Técnicas
 - **Swift 6 Concurrency**: Corregido el error de captura de `NSTextStorage` en hilos secundarios.
+- **Rendimiento Preview**:
+   - Lazy-load de imágenes en lista (sin blobs).
+   - Prewarm de thumbnails al hover/selección.
+   - Throttle global de decodificación concurrente para evitar saturación de I/O/CPU.
 - **SF Symbols**: Sustitución de iconos no compatibles para soportar más versiones de macOS.
 - **Detección de Teclas Globales**: Refinada la lógica de Esc/Enter para no interferir con el visor de imágenes.
 

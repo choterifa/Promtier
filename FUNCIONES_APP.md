@@ -31,6 +31,10 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 ### 👁️ Vista Previa (Quick Look)
 - **Preview Rápido**: Visualiza el contenido completo y las imágenes sin abrir el editor (Espacio).
 - **Consistencia Visual**: El preview mantiene el mismo resaltado de sintaxis (variables y brackets) que el editor.
+- **Optimización de Rendimiento**:
+    - Lazy-load de imágenes (la lista no carga blobs).
+    - Prewarm de thumbnails al hover/selección para que el primer preview sea inmediato.
+    - Límite global de decodificación concurrente para evitar saturar I/O/CPU.
 - **Visualizador Full-Screen**:
     - **Sugerencias de Gestos**: Animaciones visuales inteligentes al abrir una imagen para descubrir funciones de zoom.
     - **Alternancia Dinámica**: El sistema se turna entre mostrar el gesto de **Doble Toque** y el de **Pinch (Pellizcar)** en cada apertura.
@@ -78,7 +82,11 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **Feedback Visual**: Resaltado de bordes azules en categorías al pasar por encima y cursor "+" reactivado.
 - **Pegado Instantáneo**: Tecnología de automatización para transferir el prompt directamente a la app de destino.
 - **Global Shortcut**: Invoca Promtier desde cualquier lugar del sistema con un atajo personalizable.
-- **Importar/Exportar**: Soporte para copias de seguridad en JSON y exportación a CSV o texto plano.
+- **Importar/Exportar**:
+    - **Backup ZIP (Completo)**: Exporta/importa `manifest.json` + carpeta `Images/` con archivos optimizados (recomendado para librerías grandes).
+    - **JSON Portable**: Incluye imágenes en base64 (más pesado, pero 1 archivo único).
+    - **CSV**: Solo texto/metadata (sin imágenes), pensado para Excel/Sheets.
+    - **Almacenamiento Escalable**: Las imágenes de resultados viven en disco (`Application Support/.../Images`) y la app guarda paths + thumbnails en Core Data.
 
 ## 💎 Funciones Premium
 - **Variables Dinámicas (Rellenar Variables)**:

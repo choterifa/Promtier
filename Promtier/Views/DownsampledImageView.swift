@@ -40,10 +40,7 @@ struct DownsampledImageView: View {
         let dataCopy = imageData
         let maxPixel = maxPixelSize
         let key = cacheKey
-
-        let image = await Task.detached(priority: .userInitiated) {
-            ImageDecodeCache.shared.downsampledImage(from: dataCopy, maxPixelSize: maxPixel)
-        }.value
+        let image = await ImageDecodeThrottler.downsample(data: dataCopy, maxPixelSize: maxPixel)
 
         guard let image else { return }
 

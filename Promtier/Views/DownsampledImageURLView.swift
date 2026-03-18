@@ -40,10 +40,7 @@ struct DownsampledImageURLView: View {
         let url = imageURL
         let maxPixel = maxPixelSize
         let key = cacheKey
-
-        let image = await Task.detached(priority: .userInitiated) {
-            ImageDecodeCache.shared.downsampledImage(from: url, maxPixelSize: maxPixel)
-        }.value
+        let image = await ImageDecodeThrottler.downsample(url: url, maxPixelSize: maxPixel)
 
         guard let image else { return }
         let cost = max(image.size.width, image.size.height)
@@ -51,4 +48,3 @@ struct DownsampledImageURLView: View {
         decoded = image
     }
 }
-

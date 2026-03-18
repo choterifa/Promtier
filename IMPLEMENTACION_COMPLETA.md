@@ -35,7 +35,7 @@
 - ✅ **Apariencia**: Tema claro/oscuro/automático, tamaño de fuente, colores
 - ✅ **Comportamiento**: Efectos hápticos, sonidos, notificaciones
 - ✅ **Atajos**: Configuración de atajos globales y locales
-- ✅ **Datos**: Exportación/importación, sincronización iCloud
+- ✅ **Datos**: Exportación/importación (JSON/CSV/ZIP), sincronización iCloud
 - ✅ **Avanzado**: Optimización, modo desarrollador, reportes
 
 ### 5. **Gestión de Carpetas (FolderManagerView)**
@@ -149,11 +149,11 @@
 - Creación, edición y eliminación de prompts
 - Preferencias funcionales
 - Gestión de carpetas operativa
+- Importación/exportación completa (JSON/ZIP/CSV) incluyendo imágenes, carpetas y metadata
 
 ### 🔄 En Desarrollo Futuro
 - Atajos globales con Carbon Events (simplificado temporalmente)
 - Sincronización real con iCloud
-- Importación/exportación de datos
 - Más temas de personalización
 
 ## 🎨 UI/UX Implementada

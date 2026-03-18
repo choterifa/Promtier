@@ -25,8 +25,10 @@ open "/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqu
 - ✅ **Variables de Plantilla**: Soporte para `{{variable}}`
 - ✅ **Sistema de Favoritos**: Marca prompts como favoritos
 - ✅ **Organización**: Etiquetas y carpetas
+- ✅ **Resultados con Imágenes**: Hasta 3 imágenes por prompt (guardadas en disco y optimizadas)
 - ✅ **Copiado al Portapapeles**: Un clic para copiar
 - ✅ **Notificaciones**: Feedback visual y sonoro
+- ✅ **Backup/Restore**: Exportar/Importar en JSON (portable) y ZIP (completo con imágenes), además de CSV
 - ✅ **Datos de Ejemplo**: Prompts pre-cargados para demostración
 
 ## 🏗️ Arquitectura
@@ -37,7 +39,7 @@ open "/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqu
 - `TemplateVariable`: Gestión de variables de plantilla
 
 ### Services
-- `PromptServiceSimple`: Gestión de prompts (versión simplificada)
+- `PromptService`: Gestión de prompts (CRUD, búsqueda, papelera, imágenes, backup)
 - `ClipboardService`: Operaciones del portapapeles
 - `MenuBarManager`: Control del menu bar y popover
 - `PreferencesManager`: Gestión de preferencias
@@ -76,13 +78,12 @@ Política de activación para aplicaciones de menu bar.
 
 - La aplicación está configurada como **menu bar application**
 - No aparecerá en el Dock, solo en la barra de menú superior
-- Los datos se guardan localmente con Core Data
-- La versión actual usa `PromptServiceSimple` para simplicidad
+- Los datos se guardan localmente con Core Data + archivos en `Application Support` (imágenes)
+- La versión actual usa `PromptService` como servicio principal
 
 ## 🔄 Desarrollo Futuro
 
 - Integración completa con Core Data
 - Atajos de teclado globales
 - Sincronización con iCloud
-- Importación/Exportación de datos
 - Interfaz de preferencias completa

@@ -91,18 +91,16 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             if decodedImage == nil {
-                Task.detached(priority: .userInitiated) {
-                    // La mayoría de imágenes guardadas están optimizadas (~1200px), pero evitamos decode sync en main.
+                Task {
+                    // Evita decode sync en main + limita concurrencia global de decodes.
                     let img: NSImage?
                     switch source {
                     case .data(let data):
-                        img = ImageDecodeCache.shared.downsampledImage(from: data, maxPixelSize: 2800)
+                        img = await ImageDecodeThrottler.downsample(data: data, maxPixelSize: 2800)
                     case .url(let url):
-                        img = ImageDecodeCache.shared.downsampledImage(from: url, maxPixelSize: 2800)
+                        img = await ImageDecodeThrottler.downsample(url: url, maxPixelSize: 2800)
                     }
-                    await MainActor.run {
-                        decodedImage = img
-                    }
+                    decodedImage = img
                 }
             }
             if preferences.disableImageAnimations {
