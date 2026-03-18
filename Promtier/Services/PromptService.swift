@@ -107,9 +107,10 @@ class PromptService: ObservableObject {
         print("🌱 Sembrando prompts de ejemplo (V22)...")
         
         // 1. Prompt Normal (Email) con Snippet de firma
+        let language = PreferencesManager.shared.language
         let emailPrompt = Prompt(
-            title: NSLocalizedString("default_prompt_email_title", comment: ""),
-            content: NSLocalizedString("default_prompt_email_content", comment: ""),
+            title: "default_prompt_email_title".localized(for: language),
+            content: "default_prompt_email_content".localized(for: language),
             folder: PredefinedCategory.work.displayName,
             icon: "briefcase.fill"
         )
@@ -117,8 +118,8 @@ class PromptService: ObservableObject {
         
         // 2. Prompt con Variables (Programación)
         let codingPrompt = Prompt(
-            title: NSLocalizedString("default_prompt_coding_title", comment: ""),
-            content: NSLocalizedString("default_prompt_coding_content", comment: ""),
+            title: "default_prompt_coding_title".localized(for: language),
+            content: "default_prompt_coding_content".localized(for: language),
             folder: PredefinedCategory.code.displayName,
             icon: "terminal.fill"
         )
@@ -132,7 +133,7 @@ class PromptService: ObservableObject {
         }
         
         let creativePrompt = Prompt(
-            title: NSLocalizedString("default_prompt_creative_title", comment: ""),
+            title: "default_prompt_creative_title".localized(for: language),
             content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
             folder: PredefinedCategory.creative.displayName,
             icon: "sparkles",
@@ -410,7 +411,7 @@ class PromptService: ObservableObject {
         // Filtrar por categoría si hay una seleccionada
         if let category = category {
             switch category {
-            case "Recientes":
+            case "recent":
                 // Mostrar usados en las últimas 48 horas o los últimos 10
                 let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
                 filtered = filtered.filter { prompt in
@@ -430,11 +431,11 @@ class PromptService: ObservableObject {
                 }
                 filtered.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
                 
-            case "Favoritos":
+            case "favorites":
                 filtered = filtered.filter { $0.isFavorite }
                 filtered.sort { $0.useCount > $1.useCount }
                 
-            case "Sin categoría":
+            case "uncategorized":
                 filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
             default:
                 filtered = filtered.filter { $0.folder == category }

@@ -33,6 +33,7 @@
 "language" = "Language";
 "language_subtitle" = "Select the application language";
 "appearance_subtitle" = "Select the app's visual mode";
+"settings_subtitle" = "Personalize your Promtier experience";
 "light" = "Light";
 "dark" = "Dark";
 "system" = "System";
@@ -113,6 +114,8 @@
 "format" = "Format";
 "export_format_subtitle" = "Choose export format";
 "save_as_file" = "Save as file";
+"export_json_subtitle" = "Full backup with folders (recommended)";
+"export_csv_subtitle" = "Prompts only — compatible with Excel / Sheets";
 "import_library" = "Import Library";
 "import_subtitle" = "Load from a JSON file";
 "icloud_sync" = "iCloud Sync";
@@ -144,6 +147,10 @@
 "customize_workflow" = "Customize your workflow";
 "show_categories" = "Show Categories";
 "hide_categories" = "Hide Categories";
+"hide_sidebar_help" = "Hide Sidebar (⌘B)";
+"show_sidebar_help" = "Show Sidebar (⌘B)";
+"cancel_selection_help" = "Cancel Selection";
+"batch_selection_help" = "Batch Selection";
 "new_category" = "New Category";
 "edit_category" = "Edit Category";
 "name" = "Name";
@@ -152,6 +159,7 @@
 "color" = "Color";
 "create_category" = "Create Category";
 "save_changes" = "Save Changes";
+"delete_category" = "Delete Category";
 
 /* Variable Fill */
 "fill_variables_title" = "Fill Variables";
@@ -159,6 +167,19 @@
 "typing" = "Typing...";
 "selecting" = "Selecting...";
 "choosing" = "Choosing...";
+"drag_and_drop" = "Drag & Drop";
+"export_prompts_title" = "Export Prompt";
+"export_prompts_message" = "Choose where to save the text file.";
+"export_error_title" = "Export Error";
+"import_data_alert_title" = "Import Library";
+"import_button" = "Import";
+"import_completed_message" = "Import completed: %d prompts.";
+
+/* New Keys for Audit */
+"advanced_variables" = "Advanced Variables";
+"preview_placeholder" = "The preview will appear here...";
+"create_tool" = "Design custom prompts";
+"update_details" = "Update prompt details";
 
 /* Snippets Manager */
 "quick_snippets" = "Quick Snippets";

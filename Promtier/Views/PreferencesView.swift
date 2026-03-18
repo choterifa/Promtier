@@ -76,9 +76,9 @@ struct PreferencesView: View {
             // Header Premium
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("settings")
+                    Text("settings".localized(for: preferences.language))
                         .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
-                    Text("Personaliza tu experiencia en Promtier")
+                    Text("settings_subtitle".localized(for: preferences.language))
                         .font(.system(size: 13 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
                 }
@@ -92,7 +92,7 @@ struct PreferencesView: View {
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("\(NSLocalizedString("close", comment: "")) (Esc)")
+                .help("\("close".localized(for: preferences.language)) (Esc)")
             }
             .padding(.horizontal, 32)
             .padding(.top, 32)
@@ -118,7 +118,7 @@ struct PreferencesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     if selectedTab == 3 && !preferences.isPremiumActive {
-                        PremiumUpsellView(featureName: NSLocalizedString("snippets_tab", comment: ""))
+                        PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language))
                             .frame(maxWidth: .infinity)
                             .padding(.top, 40)
                     } else {
@@ -160,14 +160,14 @@ struct PreferencesView: View {
         )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
-        .alert(NSLocalizedString("reset_all", comment: ""), isPresented: $showingResetAlert) {
-            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
-            Button(NSLocalizedString("reset_factory", comment: ""), role: .destructive) {
+        .alert("reset_all".localized(for: preferences.language), isPresented: $showingResetAlert) {
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+            Button("reset_factory".localized(for: preferences.language), role: .destructive) {
                 preferences.resetToDefaults()
                 promptService.resetAllData()
             }
         } message: {
-            Text(NSLocalizedString("reset_message", comment: ""))
+            Text("reset_message".localized(for: preferences.language))
         }
     }
 }
@@ -607,8 +607,8 @@ struct DataTab: View {
         var icon: String { self == .json ? "doc.text" : "tablecells" }
         var subtitle: String {
             self == .json
-                ? "Backup completo con carpetas (recomendado)"
-                : "Solo prompts — compatible con Excel / Sheets"
+                ? "export_json_subtitle"
+                : "export_csv_subtitle"
         }
     }
     
@@ -633,8 +633,8 @@ struct DataTab: View {
                     menuBarManager.closePopover()
                     exportData(as: exportFormat)
                 }) {
-                    SettingsRow(LocalizedStringKey(exportFormat.subtitle),
-                                subtitle: LocalizedStringKey("save_as_file"),
+                    SettingsRow(LocalizedStringKey(exportFormat.subtitle.localized(for: preferences.language)),
+                                subtitle: LocalizedStringKey("save_as_file".localized(for: preferences.language)),
                                 icon: exportFormat.icon,
                                 iconColor: .blue) {
                         Image(systemName: "square.and.arrow.up")
@@ -718,7 +718,7 @@ struct DataTab: View {
             let savePanel = NSSavePanel()
             savePanel.allowedContentTypes = [contentType]
             savePanel.nameFieldStringValue = filename
-            savePanel.title = NSLocalizedString("export_library", comment: "")
+            savePanel.title = "import_library".localized(for: preferences.language)
             
             NSApp.activate(ignoringOtherApps: true)
             
@@ -742,7 +742,7 @@ struct DataTab: View {
             openPanel.allowedContentTypes = [.json]
             openPanel.allowsMultipleSelection = false
             openPanel.canChooseDirectories = false
-            openPanel.title = NSLocalizedString("import_library", comment: "")
+            openPanel.title = "import_library".localized(for: preferences.language)
             
             NSApp.activate(ignoringOtherApps: true)
             

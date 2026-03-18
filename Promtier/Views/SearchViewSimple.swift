@@ -28,15 +28,15 @@ struct SearchViewSimple: View {
     @State private var nextTipIndex: Int = 0
     private var ghostTips: [GhostTip] {
         [
-            GhostTip(title: NSLocalizedString("gt_preview", comment: ""), icon: "eye", shortcut: NSLocalizedString("gt_spacebar", comment: "")),
-            GhostTip(title: NSLocalizedString("gt_quick_copy", comment: ""), icon: "doc.on.doc", shortcut: "Cmd + C"),
-            GhostTip(title: NSLocalizedString("gt_new_prompt", comment: ""), icon: "plus", shortcut: "Cmd + N"),
-            GhostTip(title: NSLocalizedString("gt_settings", comment: ""), icon: "gearshape", shortcut: "Cmd + ,"),
-            GhostTip(title: NSLocalizedString("gt_hide_sidebar", comment: ""), icon: "sidebar.left", shortcut: "Cmd + B"),
-            GhostTip(title: "Drag & Drop", icon: "hand.tap", shortcut: NSLocalizedString("gt_move_categories", comment: "")),
-            GhostTip(title: NSLocalizedString("gt_multi_select", comment: ""), icon: "checkmark.circle", shortcut: NSLocalizedString("gt_batch_mode", comment: "")),
-            GhostTip(title: NSLocalizedString("trash", comment: ""), icon: "trash", shortcut: NSLocalizedString("gt_auto_delete", comment: "")),
-            GhostTip(title: NSLocalizedString("export", comment: ""), icon: "square.and.arrow.up", shortcut: NSLocalizedString("gt_backup_prompts", comment: ""))
+            GhostTip(title: "gt_preview".localized(for: preferences.language), icon: "eye", shortcut: "gt_spacebar".localized(for: preferences.language)),
+            GhostTip(title: "gt_quick_copy".localized(for: preferences.language), icon: "doc.on.doc", shortcut: "Cmd + C"),
+            GhostTip(title: "gt_new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
+            GhostTip(title: "gt_settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
+            GhostTip(title: "gt_hide_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
+            GhostTip(title: "drag_and_drop".localized(for: preferences.language), icon: "hand.tap", shortcut: "gt_move_categories".localized(for: preferences.language)),
+            GhostTip(title: "gt_multi_select".localized(for: preferences.language), icon: "checkmark.circle", shortcut: "gt_batch_mode".localized(for: preferences.language)),
+            GhostTip(title: "trash".localized(for: preferences.language), icon: "trash", shortcut: "gt_auto_delete".localized(for: preferences.language)),
+            GhostTip(title: "export".localized(for: preferences.language), icon: "square.and.arrow.up", shortcut: "gt_backup_prompts".localized(for: preferences.language))
         ]
     }
     
@@ -173,19 +173,19 @@ struct SearchViewSimple: View {
         .overlay {
             importOverlays
         }
-        .alert(NSLocalizedString("import_data_alert_title", comment: ""), isPresented: $showingImportAlert) {
-            Button(NSLocalizedString("import_button", comment: ""), role: .none) {
+        .alert("import_data_alert_title".localized(for: preferences.language), isPresented: $showingImportAlert) {
+            Button("import_button".localized(for: preferences.language), role: .none) {
                 if let data = importData {
                     let results = promptService.importPromptsFromData(data)
-                    importMessage = String(format: NSLocalizedString("import_completed_message", comment: ""), results.success)
+                    importMessage = String(format: "import_completed_message".localized(for: preferences.language), results.success)
                     HapticService.shared.playStrong()
                     showParticles = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
                 }
             }
-            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { importData = nil }
+            Button("cancel".localized(for: preferences.language), role: .cancel) { importData = nil }
         } message: {
-            Text(NSLocalizedString("import_confirmation_message", comment: ""))
+            Text("import_confirmation_message".localized(for: preferences.language))
         }
         .onChange(of: preferences.windowWidth) { oldWidth, newWidth in
             let threshold: CGFloat = 565
@@ -266,7 +266,7 @@ struct SearchViewSimple: View {
                                 )
                         }
                         .buttonStyle(.plain)
-                        .help(preferences.showSidebar ? NSLocalizedString("hide_sidebar_help", comment: "") : NSLocalizedString("show_sidebar_help", comment: ""))
+                        .help(preferences.showSidebar ? "hide_sidebar_help".localized(for: preferences.language) : "show_sidebar_help".localized(for: preferences.language))
                         
                         // Buscador Estilizado
                         HStack(spacing: 12) {
@@ -274,7 +274,7 @@ struct SearchViewSimple: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.blue)
                             
-                            TextField(NSLocalizedString("search_placeholder", comment: ""), text: $promptService.searchQuery)
+                            TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
                                 .focused($isSearchFocused)
@@ -322,7 +322,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help(NSLocalizedString("new_prompt", comment: "") + " (N)")
+                            .help("new_prompt".localized(for: preferences.language) + " (N)")
                             
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -343,7 +343,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help(NSLocalizedString("settings", comment: "") + " (Cmd+,)")
+                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                             
                             // Botón Papelera
                             Button(action: {
@@ -375,7 +375,7 @@ struct SearchViewSimple: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .help(NSLocalizedString("trash", comment: ""))
+                            .help("trash".localized(for: preferences.language))
                             
                             // Botón de Selección en Lote
                             Button(action: {
@@ -401,7 +401,7 @@ struct SearchViewSimple: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help(batchService.isSelectionModeActive ? NSLocalizedString("cancel_selection_help", comment: "") : NSLocalizedString("batch_selection_help", comment: ""))
+                            .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
                         }
                     }
                     .padding(.horizontal, 24)
@@ -422,17 +422,17 @@ struct SearchViewSimple: View {
                             .foregroundColor(.secondary.opacity(0.6))
                         
                         VStack(spacing: 12) {
-                            Text(promptService.searchQuery.isEmpty ? NSLocalizedString("no_prompts", comment: "") : NSLocalizedString("no_results", comment: ""))
+                            Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
                                 .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
                                 .foregroundColor(.primary)
                             
-                            Text(promptService.searchQuery.isEmpty ? NSLocalizedString("create_first_prompt", comment: "") : NSLocalizedString("try_other_terms", comment: ""))
+                            Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
                                 .font(.system(size: 14 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
                         
                         if promptService.searchQuery.isEmpty {
-                            Button(NSLocalizedString("create_first_prompt", comment: "")) {
+                            Button("create_first_prompt".localized(for: preferences.language)) {
                                 selectedPrompt = nil
                                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                             }
@@ -486,10 +486,9 @@ struct SearchViewSimple: View {
                                             prompt: prompt,
                                             isFullScreenImageOpen: $isFullScreenImageOpen
                                         )
-                                    }
-                                    .contextMenu {
+                                                           .contextMenu {
                                     Button(action: { usePrompt(prompt) }) {
-                                        Label(NSLocalizedString("copy", comment: ""), systemImage: "doc.on.doc")
+                                        Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
                                     }
                                     
                                     Button(action: { 
@@ -499,7 +498,7 @@ struct SearchViewSimple: View {
                                         }
                                         withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } 
                                     }) {
-                                        Label(NSLocalizedString("edit", comment: ""), systemImage: "square.and.pencil")
+                                        Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
                                     }
                                     
                                     Button(action: { 
@@ -509,11 +508,11 @@ struct SearchViewSimple: View {
                                             SoundService.shared.playInteractionSound()
                                         }
                                     }) {
-                                        Label(NSLocalizedString("preview", comment: ""), systemImage: "eye")
+                                        Label("preview".localized(for: preferences.language), systemImage: "eye")
                                     }
                                     
                                     Button(action: { toggleFavorite(prompt) }) {
-                                        Label(prompt.isFavorite ? NSLocalizedString("remove_favorite", comment: "") : NSLocalizedString("add_favorite", comment: ""), 
+                                        Label(prompt.isFavorite ? "remove_favorite".localized(for: preferences.language) : "add_favorite".localized(for: preferences.language), 
                                               systemImage: prompt.isFavorite ? "star.slash" : "star.fill")
                                     }
                                     
@@ -525,13 +524,13 @@ struct SearchViewSimple: View {
                                         }
                                         exportPromptsToFile(prompt) 
                                     }) {
-                                        Label(NSLocalizedString("export_plain_text", comment: ""), systemImage: "square.and.arrow.up")
+                                        Label("export_plain_text".localized(for: preferences.language), systemImage: "square.and.arrow.up")
                                     }
                                     
                                     Button(role: .destructive, action: { deletePrompt(prompt) }) {
-                                         Label(NSLocalizedString("delete", comment: ""), systemImage: "trash.fill")
+                                         Label("delete".localized(for: preferences.language), systemImage: "trash.fill")
                                      }
-                                }
+                                }               }
                             }
                         }
                         }
@@ -752,8 +751,8 @@ struct SearchViewSimple: View {
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.plainText]
         savePanel.nameFieldStringValue = fileName
-        savePanel.title = NSLocalizedString("export_prompts_title", comment: "")
-        savePanel.message = NSLocalizedString("export_prompts_message", comment: "")
+        savePanel.title = "export_prompts_title".localized(for: preferences.language)
+        savePanel.message = "export_prompts_message".localized(for: preferences.language)
         
         // Hacer la app activa para evitar errores de ViewBridge y paneles en background
         NSApp.activate(ignoringOtherApps: true)
@@ -768,7 +767,7 @@ struct SearchViewSimple: View {
                     try exportContent.write(to: url, atomically: true, encoding: .utf8)
                 } catch {
                     let alert = NSAlert()
-                    alert.messageText = NSLocalizedString("export_error_title", comment: "")
+                    alert.messageText = "export_error_title".localized(for: preferences.language)
                     alert.informativeText = error.localizedDescription
                     alert.alertStyle = .critical
                     alert.addButton(withTitle: "OK")

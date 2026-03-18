@@ -151,13 +151,14 @@ enum PredefinedCategory: String, CaseIterable {
     case study = "Estudio"
     
     var displayName: String {
+        let language = PreferencesManager.shared.language
         switch self {
-        case .iaModels: return NSLocalizedString("cat_ai", comment: "")
-        case .code: return NSLocalizedString("cat_code", comment: "")
-        case .creative: return NSLocalizedString("cat_creative", comment: "")
-        case .work: return NSLocalizedString("cat_work", comment: "")
-        case .personal: return NSLocalizedString("cat_personal", comment: "")
-        case .study: return NSLocalizedString("cat_study", comment: "")
+        case .iaModels: return "cat_ai".localized(for: language)
+        case .code: return "cat_code".localized(for: language)
+        case .creative: return "cat_creative".localized(for: language)
+        case .work: return "cat_work".localized(for: language)
+        case .personal: return "cat_personal".localized(for: language)
+        case .study: return "cat_study".localized(for: language)
         }
     }
     

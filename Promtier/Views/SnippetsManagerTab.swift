@@ -138,7 +138,7 @@ private struct SnippetManagerListItem: View {
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help(NSLocalizedString("edit_action", comment: ""))
+                    .help("edit_action".localized(for: preferences.language))
                     
                     Button(action: {
                         withAnimation {
@@ -152,7 +152,7 @@ private struct SnippetManagerListItem: View {
                             .foregroundColor(.red.opacity(0.8))
                     }
                     .buttonStyle(.plain)
-                    .help(NSLocalizedString("delete_action", comment: ""))
+                    .help("delete_action".localized(for: preferences.language))
                 }
             }
             .padding(.horizontal, 20)
@@ -181,7 +181,7 @@ private struct SnippetEditorSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text(snippet == nil ? NSLocalizedString("new_snippet", comment: "") : NSLocalizedString("edit_snippet", comment: ""))
+                Text(snippet == nil ? "new_snippet".localized(for: preferences.language) : "edit_snippet".localized(for: preferences.language))
                     .font(.system(size: 16, weight: .bold))
                 Spacer()
                 Button(action: onCancel) {
@@ -199,36 +199,36 @@ private struct SnippetEditorSheet: View {
             // Formulario
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("title_label", comment: ""))
+                    Text("title_label".localized(for: preferences.language))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
-                    TextField(NSLocalizedString("title_placeholder", comment: ""), text: $title)
+                    TextField("title_placeholder".localized(for: preferences.language), text: $title)
                         .textFieldStyle(.plain)
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.1)))
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("command_shortcut", comment: ""))
+                    Text("command_shortcut".localized(for: preferences.language))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     HStack {
                         Text("/")
                             .font(.system(size: 13, weight: .bold, design: .monospaced))
                             .foregroundColor(.secondary)
-                        TextField(NSLocalizedString("command_placeholder", comment: ""), text: $shortcut)
+                        TextField("command_placeholder".localized(for: preferences.language), text: $shortcut)
                             .textFieldStyle(.plain)
                     }
                     .padding(8)
                     .background(RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.1)))
                     
-                    Text(NSLocalizedString("command_rule", comment: ""))
+                    Text("command_rule".localized(for: preferences.language))
                         .font(.system(size: 10))
                         .foregroundColor(.secondary.opacity(0.7))
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("content_label", comment: ""))
+                    Text("content_label".localized(for: preferences.language))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     TextEditor(text: $content)
@@ -246,7 +246,7 @@ private struct SnippetEditorSheet: View {
             HStack {
                 Spacer()
                 Button(action: onCancel) {
-                    Text(NSLocalizedString("cancel", comment: ""))
+                    Text("cancel".localized(for: preferences.language))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 16)
@@ -263,7 +263,7 @@ private struct SnippetEditorSheet: View {
                     }
                     onSave(finalSnippet)
                 }) {
-                    Text(NSLocalizedString("save", comment: ""))
+                    Text("save".localized(for: preferences.language))
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)

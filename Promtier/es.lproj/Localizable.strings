@@ -33,6 +33,7 @@
 "language" = "Idioma";
 "language_subtitle" = "Selecciona el idioma de la aplicación";
 "appearance_subtitle" = "Selecciona el modo visual de la app";
+"settings_subtitle" = "Personaliza tu experiencia en Promtier";
 "light" = "Claro";
 "dark" = "Oscuro";
 "system" = "Sistema";
@@ -113,6 +114,8 @@
 "format" = "Formato";
 "export_format_subtitle" = "Elige el formato de exportación";
 "save_as_file" = "Guardar como archivo";
+"export_json_subtitle" = "Backup completo con carpetas (recomendado)";
+"export_csv_subtitle" = "Solo prompts — compatible con Excel / Sheets";
 "import_library" = "Importar Biblioteca";
 "import_subtitle" = "Carga desde un archivo JSON";
 "icloud_sync" = "Sincronización iCloud";
@@ -144,6 +147,10 @@
 "customize_workflow" = "Personaliza tu flujo de trabajo";
 "show_categories" = "Mostrar Categorías";
 "hide_categories" = "Ocultar Categorías";
+"hide_sidebar_help" = "Ocultar Sidebar (⌘B)";
+"show_sidebar_help" = "Mostrar Sidebar (⌘B)";
+"cancel_selection_help" = "Cancelar Selección";
+"batch_selection_help" = "Selección en Lote";
 "new_category" = "Nueva Categoría";
 "edit_category" = "Editar Categoría";
 "name" = "Nombre";
@@ -152,6 +159,7 @@
 "color" = "Color";
 "create_category" = "Crear Categoría";
 "save_changes" = "Guardar Cambios";
+"delete_category" = "Eliminar categoría";
 
 /* Variable Fill */
 "fill_variables_title" = "Rellenar Variables";
@@ -159,6 +167,40 @@
 "typing" = "Escribiendo...";
 "selecting" = "Seleccionando...";
 "choosing" = "Eligiendo...";
+"drag_and_drop" = "Arrastrar y Soltar";
+"export_prompts_title" = "Exportar Prompt";
+"export_prompts_message" = "Elige dónde guardar el archivo de texto.";
+"export_error_title" = "Error de Exportación";
+"import_data_alert_title" = "Importar Biblioteca";
+"import_button" = "Importar";
+"import_completed_message" = "¡Importación completada: %d prompts añadidos!";
+
+/* New Keys for Audit */
+"apple_intelligence" = "Apple Intelligence";
+"edit" = "Editar";
+"copy" = "Copiar";
+"preview" = "Vista Previa";
+"add_favorite" = "Añadir a Favoritos";
+"remove_favorite" = "Quitar de Favoritos";
+"export_plain_text" = "Exportar como Texto Plano";
+"delete" = "Eliminar";
+"drag_and_drop" = "Arrastrar y Soltar";
+"create_tool" = "Diseña tus propios prompts";
+"update_details" = "Actualiza los detalles del prompt";
+"advanced_variables" = "Variables Avanzadas";
+"preview_placeholder" = "La vista previa aparecerá aquí...";
+"selecting" = "Seleccionando...";
+"choosing" = "Eligiendo...";
+"explore" = "Explorar";
+"all" = "Todos";
+"recent" = "Recientes";
+"favorites" = "Favoritos";
+"edit_action" = "Editar";
+"delete_action" = "Eliminar";
+"title_label" = "Título";
+"content_label" = "Contenido";
+"value_for" = "Valor para %@";
+"import_confirmation_message" = "¿Estás seguro de importar este archivo? Se omitirán los IDs duplicados.";
 
 /* Snippets Manager */
 "quick_snippets" = "Snippets Rápidos";

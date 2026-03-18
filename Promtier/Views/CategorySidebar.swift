@@ -27,7 +27,7 @@ struct CategorySidebar: View {
     private var categoryCounts: [String: Int] {
         var counts: [String: Int] = [:]
         for prompt in promptService.prompts {
-            let folder = prompt.folder ?? NSLocalizedString("uncategorized", comment: "")
+            let folder = prompt.folder ?? "uncategorized"
             counts[folder, default: 0] += 1
         }
         return counts
@@ -55,7 +55,7 @@ struct CategorySidebar: View {
                         .foregroundColor(.blue.opacity(0.8))
                 }
                 .buttonStyle(.plain)
-                .help(NSLocalizedString("manage_categories", comment: ""))
+                .help("manage_categories".localized(for: preferences.language))
             }
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -79,9 +79,9 @@ struct CategorySidebar: View {
                     icon: "clock.arrow.2.circlepath",
                     color: .purple,
                     count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
-                    isSelected: promptService.selectedCategory == "Recientes"
+                    isSelected: promptService.selectedCategory == "recent"
                 ) {
-                    promptService.selectedCategory = "Recientes"
+                    promptService.selectedCategory = "recent"
                 }
                 
                 // Botón "Favoritos"
@@ -90,17 +90,17 @@ struct CategorySidebar: View {
                     icon: "star.fill",
                     color: .yellow,
                     count: promptService.prompts.filter { $0.isFavorite }.count,
-                    isSelected: promptService.selectedCategory == "Favoritos",
+                    isSelected: promptService.selectedCategory == "favorites",
                     isDropTarget: isTargetedFavoritos,
                     action: {
-                        promptService.selectedCategory = "Favoritos"
+                        promptService.selectedCategory = "favorites"
                     },
                     dropHandler: { promptId in
                         markAsFavorite(id: promptId)
                     }
                 )
                 .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedFavoritos) { providers in
-                    handleQuickDrop(providers: providers, to: "Favoritos")
+                    handleQuickDrop(providers: providers, to: "favorites")
                 }
                 
                 // Botón "Sin categoría"
@@ -108,11 +108,11 @@ struct CategorySidebar: View {
                     title: "uncategorized",
                     icon: "folder.fill",
                     color: .gray,
-                    count: categoryCounts[NSLocalizedString("uncategorized", comment: "")] ?? 0,
-                    isSelected: promptService.selectedCategory == "Sin categoría",
+                    count: categoryCounts["uncategorized"] ?? 0,
+                    isSelected: promptService.selectedCategory == "uncategorized",
                     isDropTarget: isTargetedSinCategoria,
                     action: {
-                        promptService.selectedCategory = "Sin categoría"
+                        promptService.selectedCategory = "uncategorized"
                     },
                     dropHandler: { promptId in
                         movePrompt(id: promptId, to: nil)
@@ -184,13 +184,13 @@ struct CategorySidebar: View {
                                     menuBarManager.activeViewState = .folderManager
                                 }
                             } label: {
-                                Label("Editar", systemImage: "square.and.pencil")
+                                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
                             }
                             
                             Button(role: .destructive) {
                                 _ = promptService.deleteFolder(folder)
                             } label: {
-                                Label("Eliminar", systemImage: "trash")
+                                Label("delete".localized(for: preferences.language), systemImage: "trash")
                             }
                         }
                     }
@@ -260,7 +260,7 @@ struct CategorySidebar: View {
                 _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
                     if let data = data, let id = String(data: data, encoding: .utf8) {
                         DispatchQueue.main.async {
-                            if category == "Favoritos" {
+                            if category == "favorites" {
                                 markAsFavorite(id: id)
                             } else {
                                 movePrompt(id: id, to: category)

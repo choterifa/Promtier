@@ -100,7 +100,7 @@ struct VariableFillView: View {
     var body: some View {
         Group {
             if hasPremiumVariables && !preferences.isPremiumActive {
-                PremiumUpsellView(featureName: "Variables Avanzadas", onCancel: onCancel)
+                PremiumUpsellView(featureName: "advanced_variables".localized(for: preferences.language), onCancel: onCancel)
                     .cornerRadius(24)
             } else {
                 mainContainer
@@ -154,7 +154,7 @@ struct VariableFillView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(NSLocalizedString("fill_variables", comment: ""))
+                Text("fill_variables".localized(for: preferences.language))
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                 Text(prompt.title)
                     .font(.system(size: 11 * preferences.fontSize.scale))
@@ -215,14 +215,14 @@ struct VariableFillView: View {
     private var previewArea: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("VISTA PREVIA", systemImage: "eye.fill")
+                Label("preview".localized(for: preferences.language).uppercased(), systemImage: "eye.fill")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.secondary.opacity(0.8))
                 Spacer()
             }
             
             ScrollView {
-                Text(processedContent.isEmpty ? "La vista previa aparecerá aquí..." : processedContent)
+                Text(processedContent.isEmpty ? "preview_placeholder".localized(for: preferences.language) : processedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
                     .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.8))
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -246,7 +246,7 @@ struct VariableFillView: View {
     private var footerSection: some View {
         HStack(spacing: 16) {
             Button(action: onCancel) {
-                Text(NSLocalizedString("cancel", comment: ""))
+                Text("cancel".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
@@ -261,7 +261,7 @@ struct VariableFillView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "doc.on.doc.fill")
-                    Text(NSLocalizedString("copy_final_prompt", comment: ""))
+                    Text("copy_final_prompt".localized(for: preferences.language))
                 }
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.white)
@@ -287,7 +287,7 @@ struct VariableFillView: View {
         Group {
             switch variable.type {
             case .text:
-                TextField(String(format: NSLocalizedString("value_for", comment: ""), variable.name), text: Binding(
+                TextField(String(format: "value_for".localized(for: preferences.language), variable.name), text: Binding(
                     get: { variableValues[variable.id, default: ""] },
                     set: { variableValues[variable.id] = $0 }
                 ))
@@ -340,9 +340,9 @@ struct VariableFillView: View {
     
     private func statusText(for type: VariableType) -> String {
         switch type {
-        case .text: return NSLocalizedString("typing", comment: "")
-        case .selection: return NSLocalizedString("selecting", comment: "")
-        case .date, .time: return NSLocalizedString("choosing", comment: "")
+        case .text: return "typing".localized(for: preferences.language)
+        case .selection: return "selecting".localized(for: preferences.language)
+        case .date, .time: return "choosing".localized(for: preferences.language)
         }
     }
     

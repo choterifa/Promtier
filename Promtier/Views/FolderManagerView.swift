@@ -44,17 +44,17 @@ struct FolderManagerView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                .help(preferences.showSidebar ? NSLocalizedString("hide_categories", comment: "") : NSLocalizedString("show_categories", comment: ""))
+                .help(preferences.showSidebar ? "hide_categories".localized(for: preferences.language) : "show_categories".localized(for: preferences.language))
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(NSLocalizedString("manage_categories", comment: ""))
+                    Text("manage_categories".localized(for: preferences.language))
                         .font(.system(size: 20 * preferences.fontSize.scale, weight: .bold))
-                    Text(NSLocalizedString("customize_workflow", comment: ""))
+                    Text("customize_workflow".localized(for: preferences.language))
                         .font(.system(size: 13 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                Button(NSLocalizedString("done", comment: "")) { onClose() }
+                Button("done".localized(for: preferences.language)) { onClose() }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
             }
@@ -95,17 +95,17 @@ struct FolderManagerView: View {
                         Image(systemName: editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
                             .font(.title3)
                             .foregroundColor(.blue)
-                        Text(editingFolder == nil ? NSLocalizedString("new_category", comment: "") : NSLocalizedString("edit_category", comment: ""))
+                        Text(editingFolder == nil ? "new_category".localized(for: preferences.language) : "edit_category".localized(for: preferences.language))
                             .font(.headline)
                             .fontWeight(.bold)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(NSLocalizedString("name", comment: ""))
+                        Text("name".localized(for: preferences.language))
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.primary.opacity(0.7))
                         
-                        TextField(NSLocalizedString("name_placeholder", comment: ""), text: $newFolderName)
+                        TextField("name_placeholder".localized(for: preferences.language), text: $newFolderName)
                             .textFieldStyle(.plain)
                             .padding(10)
                             .background(
@@ -125,7 +125,7 @@ struct FolderManagerView: View {
                     
                     HStack(alignment: .top, spacing: 24) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(NSLocalizedString("icon", comment: ""))
+                            Text("icon".localized(for: preferences.language))
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.primary.opacity(0.7))
                             
@@ -147,7 +147,7 @@ struct FolderManagerView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(NSLocalizedString("color", comment: ""))
+                            Text("color".localized(for: preferences.language))
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.primary.opacity(0.7))
                             
@@ -183,7 +183,7 @@ struct FolderManagerView: View {
                     
                     HStack(spacing: 12) {
                         if editingFolder != nil {
-                            Button(NSLocalizedString("cancel", comment: "")) {
+                            Button("cancel".localized(for: preferences.language)) {
                                 resetForm()
                             }
                             .buttonStyle(.plain)
@@ -198,7 +198,7 @@ struct FolderManagerView: View {
                         Button {
                             saveFolder()
                         } label: {
-                            Text(editingFolder == nil ? NSLocalizedString("create", comment: "") : NSLocalizedString("save", comment: ""))
+                            Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
@@ -309,7 +309,7 @@ struct CategoryRow: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                .help("Eliminar categoría")
+                .help("delete_category".localized(for: preferences.language))
             }
         }
         .padding(.horizontal, 16)

@@ -153,7 +153,7 @@ struct NewPromptView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button(action: onClose) {
-                Text(NSLocalizedString("cancel", comment: ""))
+                Text("cancel".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
@@ -168,9 +168,9 @@ struct NewPromptView: View {
             Spacer()
             
             VStack(spacing: 2) {
-                Text(prompt != nil ? NSLocalizedString("edit_prompt", comment: "") : NSLocalizedString("new_prompt", comment: ""))
+                Text(prompt != nil ? "edit_prompt".localized(for: preferences.language) : "new_prompt".localized(for: preferences.language))
                     .font(.system(size: 15, weight: .bold))
-                Text(prompt != nil ? NSLocalizedString("update_details", comment: "") : NSLocalizedString("create_tool", comment: ""))
+                Text(prompt != nil ? "update_details".localized(for: preferences.language) : "create_tool".localized(for: preferences.language))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
@@ -178,7 +178,7 @@ struct NewPromptView: View {
             Spacer()
             
             Button(action: savePrompt) {
-                Text(prompt != nil ? NSLocalizedString("save", comment: "") : NSLocalizedString("create", comment: ""))
+                Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -217,7 +217,7 @@ struct NewPromptView: View {
                     IconPickerView(selectedIcon: $selectedIcon, color: selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
                 }
                 
-                TextField(NSLocalizedString("prompt_title_placeholder", comment: ""), text: $title)
+                TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
                     .textFieldStyle(.plain)
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                     .onChange(of: title) { _, newValue in
@@ -243,7 +243,7 @@ struct NewPromptView: View {
                                 .background(Color.blue.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help(NSLocalizedString("insert_variable_hint", comment: ""))
+                        .help("insert_variable_hint".localized(for: preferences.language))
                         
                         Divider().frame(height: 18).background(Color.blue.opacity(0.2))
                         
@@ -252,7 +252,7 @@ struct NewPromptView: View {
                                 showSnippets = true
                                 snippetSearchQuery = ""
                             } else {
-                                showingPremiumFor = NSLocalizedString("reusable_snippets", comment: "")
+                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                             }
                         }) {
                             Text("/")
@@ -262,7 +262,7 @@ struct NewPromptView: View {
                                 .background(Color.blue.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help(NSLocalizedString("insert_snippet_hint", comment: ""))
+                        .help("insert_snippet_hint".localized(for: preferences.language))
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
@@ -280,7 +280,7 @@ struct NewPromptView: View {
                                 .background(Circle().fill(Color.blue.opacity(0.1)))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help(NSLocalizedString("version_history", comment: ""))
+                        .help("version_history".localized(for: preferences.language))
                         .sheet(isPresented: $showingVersionHistory) {
                             if let existingPrompt = prompt {
                                 VersionHistoryView(
@@ -312,7 +312,7 @@ struct NewPromptView: View {
                                 .background(Circle().fill(isAIActive ? Color.blue.opacity(0.15) : Color.primary.opacity(0.05)))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("Apple Intelligence")
+                        .help("apple_intelligence".localized(for: preferences.language))
                     }
 
                     Button(action: { showingZenEditor = true }) {
@@ -323,7 +323,7 @@ struct NewPromptView: View {
                             .background(Circle().fill(Color.blue.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
-                    .help(NSLocalizedString("zen_editor", comment: ""))
+                    .help("zen_editor".localized(for: preferences.language))
                 }
             }
             .frame(minHeight: 44) // Asegura que el título sea visible
@@ -333,7 +333,7 @@ struct NewPromptView: View {
             
             // Descripción breve
             HStack(spacing: 8) {
-                TextField(NSLocalizedString("short_desc_placeholder", comment: ""), text: $promptDescription)
+                TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
                     .foregroundColor(.secondary)
@@ -351,7 +351,7 @@ struct NewPromptView: View {
             // Área de Texto
             ZStack(alignment: .topLeading) {
                 if content.isEmpty {
-                    Text(NSLocalizedString("prompt_content_placeholder", comment: ""))
+                    Text("prompt_content_placeholder".localized(for: preferences.language))
                         .foregroundColor(.secondary.opacity(0.4))
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
@@ -380,7 +380,7 @@ struct NewPromptView: View {
             
             HStack {
                 Spacer()
-                Label(String(format: NSLocalizedString("characters", comment: ""), content.count), systemImage: "character.cursor.ibeam")
+                Label(String(format: "characters".localized(for: preferences.language), content.count), systemImage: "character.cursor.ibeam")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.secondary.opacity(0.6))
                     .padding(.horizontal, 20)
@@ -400,7 +400,7 @@ struct NewPromptView: View {
     private var imageGallery: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label(NSLocalizedString("reference_images", comment: ""), systemImage: "photo.on.rectangle")
+                Label("reference_images".localized(for: preferences.language), systemImage: "photo.on.rectangle")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.secondary)
                 
@@ -410,7 +410,7 @@ struct NewPromptView: View {
                     Button(action: selectImages) {
                         HStack(spacing: 4) {
                             Image(systemName: "plus.circle.fill")
-                            Text(NSLocalizedString("add_image", comment: ""))
+                            Text("add_image".localized(for: preferences.language))
                                 .font(.system(size: 11, weight: .bold))
                         }
                         .padding(.horizontal, 10)
@@ -493,7 +493,7 @@ struct NewPromptView: View {
             )
             
             if showcaseImages.isEmpty {
-                Text(NSLocalizedString("add_prompt_results", comment: ""))
+                Text("add_prompt_results".localized(for: preferences.language))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary.opacity(0.4))
                     .padding(.top, 4)
@@ -661,7 +661,7 @@ struct NewPromptView: View {
             Spacer()
             if !preferences.isPremiumActive {
                 PremiumUpsellView(
-                    featureName: "Snippets Rápidos",
+                    featureName: "quick_snippets".localized(for: preferences.language),
                     onCancel: {
                         withAnimation { showSnippets = false }
                     }
@@ -688,14 +688,14 @@ struct NewPromptView: View {
     
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(NSLocalizedString("category", comment: ""), systemImage: "folder.fill")
+            Label("category".localized(for: preferences.language), systemImage: "folder.fill")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    CategoryChip(title: NSLocalizedString("uncategorized", comment: ""), icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
+                    CategoryChip(title: "uncategorized".localized(for: preferences.language), icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
                         withAnimation(.spring()) {
                             selectedFolder = nil
                         }
