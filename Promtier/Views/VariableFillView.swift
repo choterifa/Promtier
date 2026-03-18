@@ -149,7 +149,7 @@ struct VariableFillView: View {
         }
     }
     
-    // MARK: - Sections
+    // MARK: - Sections r
     
     private var headerSection: some View {
         HStack {
