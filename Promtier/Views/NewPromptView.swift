@@ -1,4 +1,4 @@
- //
+//
 //  NewPromptView.swift
 //  Promtier
 //
@@ -370,57 +370,27 @@ struct NewPromptView: View {
                 HStack(spacing: 12) {
                     // Imágenes actuales
                     ForEach(0..<showcaseImages.count, id: \.self) { index in
-                        ZStack(alignment: .topTrailing) {
-                            if let nsImage = NSImage(data: showcaseImages[index]) {
-                                Image(nsImage: nsImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 180, height: 120)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                                    )
-                                    .onTapGesture {
-                                        showingFullScreenImage = showcaseImages[index]
-                                    }
-                                    .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
-                                
-                                Button(action: { showcaseImages.remove(at: index) }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 16))
-                                        .symbolRenderingMode(.hierarchical)
-                                        .foregroundColor(.red)
-                                        .background(Circle().fill(Color.white))
-                                }
-                                .buttonStyle(.plain)
-                                .offset(x: 6, y: -6)
-                            }
-                        }
+                        ImageSlotView(
+                            imageData: showcaseImages[index],
+                            onRemove: { showcaseImages.remove(at: index) },
+                            onPreview: { showingFullScreenImage = showcaseImages[index] },
+                            onDrop: { providers in handleGalleryDrop(providers: providers) }
+                        )
                     }
                     
                     // Placeholders para completar hasta 3
                     ForEach(showcaseImages.count..<3, id: \.self) { _ in
-                        Button(action: selectImages) {
-                            VStack(spacing: 8) {
-                                Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 20))
-                                Text("add_prompt_results".localized(for: preferences.language))
-                                    .font(.system(size: 10, weight: .medium))
-                            }
-                            .foregroundColor(.secondary.opacity(0.4))
-                            .frame(width: 180, height: 120)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                                    .foregroundColor(.secondary.opacity(0.15))
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        PlaceholderSlotView(
+                            onSelect: selectImages,
+                            onDrop: { providers in handleGalleryDrop(providers: providers) }
+                        )
                     }
                 }
                 .padding(.vertical, 4)
                 .padding(.trailing, 20)
+            }
+            .onPasteCommand(of: [.image]) { providers in
+                handleGalleryDrop(providers: providers)
             }
         }
         .padding(.top, 16)
@@ -547,38 +517,6 @@ struct NewPromptView: View {
         }
     }
     
-    private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        var found = false
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, error in
-                    if let url = url, let data = try? Data(contentsOf: url) {
-                        if let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
-                            DispatchQueue.main.async {
-                                if showcaseImages.count < 3 {
-                                    showcaseImages.append(optimizedData)
-                                }
-                            }
-                        }
-                    }
-                }
-                found = true
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
-                    if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
-                        DispatchQueue.main.async {
-                            if showcaseImages.count < 3 {
-                                showcaseImages.append(optimizedData)
-                            }
-                        }
-                    }
-                }
-                found = true
-            }
-        }
-        return found
-    }
-    
     private var snippetOverlay: some View {
         VStack {
             Spacer()
@@ -608,39 +546,89 @@ struct NewPromptView: View {
             }
         }
     }
+}
+
+// MARK: - Componentes de Soporte de Galería
+
+struct ImageSlotView: View {
+    let imageData: Data
+    let onRemove: () -> Void
+    let onPreview: () -> Void
+    let onDrop: ([NSItemProvider]) -> Void
     
-    private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("category".localized(for: preferences.language), systemImage: "folder.fill")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 4)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    CategoryChip(title: "uncategorized".localized(for: preferences.language), icon: "folder", color: .secondary, isSelected: selectedFolder == nil) {
-                        withAnimation(.spring()) {
-                            selectedFolder = nil
-                        }
-                    }
-                    
-                    ForEach(promptService.folders) { folder in
-                        CategoryChip(
-                            title: folder.name,
-                            icon: folder.icon ?? "folder.fill",
-                            color: Color(hex: folder.displayColor),
-                            isSelected: selectedFolder == folder.name
-                        ) {
-                            withAnimation(.spring()) {
-                                selectedFolder = folder.name
-                            }
-                        }
-                    }
+    @State private var isTargeted = false
+    
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if let nsImage = NSImage(data: imageData) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 180, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isTargeted ? Color.blue : Color.primary.opacity(0.05), lineWidth: isTargeted ? 2 : 1)
+                    )
+                    .onTapGesture(perform: onPreview)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
+                    .scaleEffect(isTargeted ? 1.05 : 1.0)
+                    .animation(.spring(response: 0.3), value: isTargeted)
+                
+                Button(action: onRemove) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(.red)
+                        .background(Circle().fill(Color.white))
                 }
-                .padding(.vertical, 4)
+                .buttonStyle(.plain)
+                .offset(x: 6, y: -6)
             }
         }
-        .padding(.top, 8)
+        .onDrop(of: [.image, .fileURL], isTargeted: $isTargeted) { providers in
+            onDrop(providers)
+            return true
+        }
+    }
+}
+
+struct PlaceholderSlotView: View {
+    let onSelect: () -> Void
+    let onDrop: ([NSItemProvider]) -> Void
+    
+    @State private var isTargeted = false
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(spacing: 8) {
+                Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
+                    .font(.system(size: 24))
+                    .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
+                
+                Text("add_prompt_results".localized(for: preferences.language))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
+            }
+            .frame(width: 180, height: 120)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: isTargeted ? [] : [4]))
+                            .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.2))
+                    )
+            )
+            .scaleEffect(isTargeted ? 1.05 : 1.0)
+            .animation(.spring(response: 0.3), value: isTargeted)
+        }
+        .buttonStyle(.plain)
+        .onDrop(of: [.image, .fileURL], isTargeted: $isTargeted) { providers in
+            onDrop(providers)
+            return true
+        }
     }
 }
 
