@@ -209,7 +209,7 @@ class PreferencesManager: ObservableObject {
         // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
+        self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
         // Dimensiones de ventana (Defaults: 690x540, Max: 900x750, Min: 500x450)
@@ -332,7 +332,7 @@ class PreferencesManager: ObservableObject {
         self.globalShortcutEnabled = true
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.language = .spanish
+        self.language = .english
         self.autoPaste = false
         self.windowWidth = 690
         self.windowHeight = 540

@@ -694,14 +694,33 @@ class PromptService: ObservableObject {
     /// Restablece toda la base de datos (BORRADO TOTAL)
     func resetAllData() {
         let context = dataController.viewContext
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        
+        // 1. Eliminar Prompts
+        let promptRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
+        let deletePrompts = NSBatchDeleteRequest(fetchRequest: promptRequest)
+        
+        // 2. Eliminar Carpetas
+        let folderRequest: NSFetchRequest<NSFetchRequestResult> = FolderEntity.fetchRequest()
+        let deleteFolders = NSBatchDeleteRequest(fetchRequest: folderRequest)
         
         do {
-            try context.execute(deleteRequest)
+            try context.execute(deletePrompts)
+            try context.execute(deleteFolders)
+            
+            // Limpiar flags de seeding para que se vuelvan a crear al recargar
+            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV21")
+            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV22")
+            
             dataController.save()
+            
+            // Volver a sembrar datos limpios
+            seedDefaultFolders()
+            seedDefaultPrompts()
+            
+            loadFolders()
             loadPrompts()
-            print("⚠️ Base de datos restablecida a cero")
+            
+            print("⚠️ Base de datos restablecida completamente")
         } catch {
             print("❌ Error al restablecer base de datos: \(error)")
         }
