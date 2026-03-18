@@ -197,110 +197,43 @@ struct NewPromptView: View {
     
     private var editorCard: some View {
         VStack(spacing: 0) {
-            // Título, Icono y Favorito
-            HStack(alignment: .center, spacing: 12) {
+            // Título e Icono (Header del Documento)
+            HStack(alignment: .top, spacing: 16) {
                 Button(action: { showingIconPicker.toggle() }) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill((selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue).opacity(0.1))
-                            .frame(width: 36, height: 36)
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(currentCategoryColor.opacity(0.1))
+                            .frame(width: 44, height: 44)
                         
                         Image(systemName: selectedIcon ?? (selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.icon ?? "doc.text.fill" : "doc.text.fill"))
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(currentCategoryColor)
                     }
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
-                    IconPickerView(selectedIcon: $selectedIcon, color: selectedFolder != nil ? PredefinedCategory.fromString(selectedFolder!)?.color ?? .blue : .blue)
+                    IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
                 }
                 
-                TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
-                    .onChange(of: title) { _, newValue in
-                        if newValue.count > 40 {
-                            title = String(newValue.prefix(40))
-                        }
-                    }
-                
-                HStack(spacing: 8) {
-                    // Grupo Premium: Variables y Snippets agrupados
-                    HStack(spacing: 0) {
-                        Button(action: { 
-                            if preferences.isPremiumActive {
-                                insertionRequest = "{{variable}}"
-                            } else {
-                                showingPremiumFor = NSLocalizedString("dynamic_variables", comment: "")
-                            }
-                        }) {
-                            Image(systemName: "curlybraces")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .help("insert_variable_hint".localized(for: preferences.language))
-                        
-                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
-                        
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                showSnippets = true
-                                snippetSearchQuery = ""
-                            } else {
-                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
-                            }
-                        }) {
-                            Text("/")
-                                .font(.system(size: 14, weight: .black, design: .monospaced))
-                                .foregroundColor(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .help("insert_snippet_hint".localized(for: preferences.language))
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-                    )
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
                     
-                    // Botón historial (solo en edición, solo Premium)
-                    if prompt != nil && preferences.isPremiumActive && !(prompt?.versionHistory.isEmpty ?? true) {
-                        Button(action: { showingVersionHistory = true }) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.blue)
-                                .frame(width: 32, height: 32)
-                                .background(Circle().fill(Color.blue.opacity(0.1)))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .help("version_history".localized(for: preferences.language))
-                        .sheet(isPresented: $showingVersionHistory) {
-                            if let existingPrompt = prompt {
-                                VersionHistoryView(
-                                    snapshots: existingPrompt.versionHistory,
-                                    currentContent: content,
-                                    onRestore: { snapshot in
-                                        content = snapshot.content
-                                        title   = snapshot.title
-                                        showingVersionHistory = false
-                                    }
-                                )
-                                .environmentObject(preferences)
-                            }
-                        }
-                    }
-
-                    // Botón Apple Intelligence
+                    TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Botón Zen y AI flotantes en el header
+                HStack(spacing: 12) {
                     if preferences.appleIntelligenceEnabled {
                         Button(action: {
                             triggerAppleIntelligence = true
-                            let haptic = NSHapticFeedbackManager.defaultPerformer
-                            haptic.perform(.generic, performanceTime: .now)
+                            HapticService.shared.playLight()
                         }) {
                             Image(systemName: "apple.intelligence")
                                 .font(.system(size: 14, weight: .bold))
@@ -324,181 +257,156 @@ struct NewPromptView: View {
                     .help("zen_editor".localized(for: preferences.language))
                 }
             }
-            .frame(minHeight: 44) // Asegura que el título sea visible
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 24)
             
-            // Descripción breve
-            HStack(spacing: 8) {
-                TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .onChange(of: promptDescription) { _, newValue in
-                        if newValue.count > 100 {
-                            promptDescription = String(newValue.prefix(100))
+            // Área de Texto con Toolbar Integrada
+            VStack(spacing: 0) {
+                ZStack(alignment: .bottomTrailing) {
+                    HighlightedEditor(
+                        text: $content,
+                        insertionRequest: $insertionRequest,
+                        replaceSnippetRequest: $replaceSnippetRequest,
+                        triggerAppleIntelligence: $triggerAppleIntelligence,
+                        isAIActive: $isAIActive,
+                        fontSize: 16 * preferences.fontSize.scale,
+                        showSnippets: $showSnippets,
+                        snippetSearchQuery: $snippetSearchQuery,
+                        snippetSelectedIndex: $snippetSelectedIndex,
+                        triggerSnippetSelection: $triggerSnippetSelection,
+                        isPremium: preferences.isPremiumActive
+                    )
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    
+                    // Toolbar de Acciones Rápidas (Elegante y flotante)
+                    HStack(spacing: 8) {
+                        Button(action: { 
+                            if preferences.isPremiumActive {
+                                insertionRequest = "{{variable}}"
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                            }
+                        }) {
+                            Label("gt_variables".localized(for: preferences.language), systemImage: "curlybraces")
+                                .font(.system(size: 11, weight: .bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Capsule().fill(Color.blue.opacity(0.1)))
+                                .foregroundColor(.blue)
                         }
+                        .buttonStyle(.plain)
+                        
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            } else {
+                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                            }
+                        }) {
+                            Label("quick_snippets".localized(for: preferences.language), systemImage: "text.quote")
+                                .font(.system(size: 11, weight: .bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Capsule().fill(Color.blue.opacity(0.1)))
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
                     }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 6)
-            
-            Divider().padding(.horizontal, 20)
-            
-            // Área de Texto
-            ZStack(alignment: .topLeading) {
-                if content.isEmpty {
-                    Text("prompt_content_placeholder".localized(for: preferences.language))
-                        .foregroundColor(.secondary.opacity(0.4))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .font(.system(size: 15 * preferences.fontSize.scale))
+                    .padding(12)
                 }
-                
-                HighlightedEditor(
-                    text: $content,
-                    insertionRequest: $insertionRequest,
-                    replaceSnippetRequest: $replaceSnippetRequest,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
-                    isAIActive: $isAIActive,
-                    fontSize: 15 * preferences.fontSize.scale,
-                    showSnippets: $showSnippets,
-                    snippetSearchQuery: $snippetSearchQuery,
-                    snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection,
-                    isPremium: preferences.isPremiumActive
-                )
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
-                // Botón Zen removido de aquí (movido al título)
             }
-            
-            HStack {
-                Spacer()
-                Label(String(format: "characters".localized(for: preferences.language), content.count), systemImage: "character.cursor.ibeam")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.6))
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
+            )
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.primary.opacity(0.02))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                )
-        )
     }
     
     private var imageGallery: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("reference_images".localized(for: preferences.language), systemImage: "photo.on.rectangle")
-                    .font(.system(size: 12, weight: .bold))
+                Text("prompt_results".localized(for: preferences.language))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
+                    .tracking(1)
+                    .textCase(.uppercase)
                 
                 Spacer()
                 
                 if showcaseImages.count < 3 {
                     Button(action: selectImages) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("add_image".localized(for: preferences.language))
-                                .font(.system(size: 11, weight: .bold))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .clipShape(Capsule())
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
                     }
                     .buttonStyle(ScaleButtonStyle())
+                    .help("add_image".localized(for: preferences.language))
                 }
             }
             
-            HStack(spacing: 10) {
-                ForEach(0..<3, id: \.self) { index in
-                    ZStack(alignment: .topTrailing) {
-                        if index < showcaseImages.count {
-                            Group {
-                                if let nsImage = NSImage(data: showcaseImages[index]) {
-                                    Image(nsImage: nsImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 150, height: 110, alignment: .top)
-                                        .clipped()
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                        )
-                                        .onTapGesture {
-                                            showingFullScreenImage = showcaseImages[index]
-                                        }
-                                    
-                                    Button(action: { showcaseImages.remove(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.red)
-                                            .background(Circle().fill(Color.white))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(0..<showcaseImages.count, id: \.self) { index in
+                        ZStack(alignment: .topTrailing) {
+                            if let nsImage = NSImage(data: showcaseImages[index]) {
+                                Image(nsImage: nsImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 180, height: 120)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                                    )
+                                    .onTapGesture {
+                                        showingFullScreenImage = showcaseImages[index]
                                     }
-                                    .buttonStyle(.plain)
-                                    .offset(x: 4, y: -4)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
+                                
+                                Button(action: { showcaseImages.remove(at: index) }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 16))
+                                        .symbolRenderingMode(.hierarchical)
+                                        .foregroundColor(.red)
+                                        .background(Circle().fill(Color.white))
                                 }
+                                .buttonStyle(.plain)
+                                .offset(x: 6, y: -6)
                             }
-                            .onDrag {
-                                self.draggedImageIndex = index
-                                return NSItemProvider(object: "\(index)" as NSString)
-                            }
-                            .onDrop(of: [.plainText], isTargeted: .constant(false)) { providers in
-                                if let draggedIndex = self.draggedImageIndex, draggedIndex != index {
-                                    withAnimation {
-                                        let image = showcaseImages.remove(at: draggedIndex)
-                                        showcaseImages.insert(image, at: index)
-                                    }
-                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                                }
-                                self.draggedImageIndex = nil
-                                return true
-                            }
-                        } else {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.primary.opacity(0.04))
-                                .frame(width: 150, height: 110)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.secondary.opacity(0.1))
-                                )
                         }
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                    
+                    if showcaseImages.isEmpty {
+                        Button(action: selectImages) {
+                            VStack(spacing: 8) {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.system(size: 24))
+                                Text("add_prompt_results".localized(for: preferences.language))
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .foregroundColor(.secondary.opacity(0.5))
+                            .frame(width: 180, height: 120)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                    .foregroundColor(.secondary.opacity(0.2))
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                
-                Spacer()
-            }
-            .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
-                handleGalleryDrop(providers: providers)
-                return true
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.blue, lineWidth: isDragging ? 2 : 0)
-            )
-            
-            if showcaseImages.isEmpty {
-                Text("add_prompt_results".localized(for: preferences.language))
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary.opacity(0.4))
-                    .padding(.top, 4)
+                .padding(.vertical, 4)
+                .padding(.trailing, 20)
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 8)
+        .padding(.top, 16)
     }
     
     private func handleGalleryDrop(providers: [NSItemProvider]) {
