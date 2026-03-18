@@ -298,6 +298,7 @@
 "exit_zen_mode" = "Exit Zen Mode";
 "zen_content_placeholder" = "Write your prompt here with total freedom...";
 "words_count" = "%d words";
+"words_count_short" = "words";
 "auto_save_active" = "Auto-save active";
 "apple_intelligence_header" = "APPLE INTELLIGENCE";
 

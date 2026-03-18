@@ -83,7 +83,7 @@ struct NewPromptView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
                         editorCard
-                            .frame(height: geometry.size.height * 0.85, alignment: .top)
+                            .frame(height: geometry.size.height * 0.83, alignment: .top)
                         
                         imageGallery
                     }
@@ -373,59 +373,67 @@ struct NewPromptView: View {
             .padding(.bottom, 24)
             
             // Área de Texto con IA Flotante
-            VStack(spacing: 0) {
-                ZStack(alignment: .bottomTrailing) {
-                    HighlightedEditor(
-                        text: $content,
-                        insertionRequest: $insertionRequest,
-                        replaceSnippetRequest: $replaceSnippetRequest,
-                        triggerAppleIntelligence: $triggerAppleIntelligence,
-                        isAIActive: $isAIActive,
-                        fontSize: 16 * preferences.fontSize.scale,
-                        showSnippets: $showSnippets,
-                        snippetSearchQuery: $snippetSearchQuery,
-                        snippetSelectedIndex: $snippetSelectedIndex,
-                        triggerSnippetSelection: $triggerSnippetSelection,
-                        isPremium: preferences.isPremiumActive
-                    )
-                    .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    
-                    // Botón Apple Intelligence (Esquina inferior derecha del editor)
-                    if preferences.appleIntelligenceEnabled {
-                        Button(action: {
-                            triggerAppleIntelligence = true
-                            HapticService.shared.playLight()
-                        }) {
-                            Image(systemName: "apple.intelligence")
-                                .font(.system(size: 13, weight: .bold))
-                                .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
-                                .foregroundColor(isAIActive ? .blue : .primary)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    Circle()
-                                        .fill(Color(NSColor.textBackgroundColor))
-                                        .shadow(color: Color.black.opacity(0.1), radius: 3, y: 1)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
-                                )
+            VStack(alignment: .leading, spacing: 6) {
+                VStack(spacing: 0) {
+                    ZStack(alignment: .bottomTrailing) {
+                        HighlightedEditor(
+                            text: $content,
+                            insertionRequest: $insertionRequest,
+                            replaceSnippetRequest: $replaceSnippetRequest,
+                            triggerAppleIntelligence: $triggerAppleIntelligence,
+                            isAIActive: $isAIActive,
+                            fontSize: 16 * preferences.fontSize.scale,
+                            showSnippets: $showSnippets,
+                            snippetSearchQuery: $snippetSearchQuery,
+                            snippetSelectedIndex: $snippetSelectedIndex,
+                            triggerSnippetSelection: $triggerSnippetSelection,
+                            isPremium: preferences.isPremiumActive
+                        )
+                        .padding(12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        
+                        // Botón Apple Intelligence (Esquina inferior derecha del editor)
+                        if preferences.appleIntelligenceEnabled {
+                            Button(action: {
+                                triggerAppleIntelligence = true
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "apple.intelligence")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
+                                    .foregroundColor(isAIActive ? .blue : .primary)
+                                    .frame(width: 32, height: 32)
+                                    .background(
+                                        Circle()
+                                            .fill(Color(NSColor.textBackgroundColor))
+                                            .shadow(color: Color.black.opacity(0.1), radius: 3, y: 1)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            .padding(10)
+                            .help("apple_intelligence".localized(for: preferences.language))
                         }
-                        .buttonStyle(ScaleButtonStyle())
-                        .padding(10)
-                        .help("apple_intelligence".localized(for: preferences.language))
                     }
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
+                )
+
+                // Contador de palabras limpio (Afuera, pegado al editor)
+                Text("\(content.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .padding(.leading, 8)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                    )
-            )
         }
     }
     

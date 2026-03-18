@@ -321,6 +321,7 @@
 "exit_zen_mode" = "Salir del Modo Zen";
 "zen_content_placeholder" = "Escribe tu prompt aquí con total libertad...";
 "words_count" = "%d palabras";
+"words_count_short" = "palabras";
 "auto_save_active" = "Auto-guardado activo";
 "apple_intelligence_header" = "APPLE INTELLIGENCE";
 
