@@ -210,7 +210,7 @@ struct SearchViewSimple: View {
             
             // Programar primer Ghost Tip si están activados
             if preferences.ghostTipsEnabled {
-                scheduleNextGhostTip()
+                scheduleNextGhostTip(initialDelay: 3.0)
             }
             
             if localEventMonitor == nil {
@@ -304,11 +304,11 @@ struct SearchViewSimple: View {
                         // Acciones rápidas
                         HStack(spacing: 10) {
                             Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedPrompt = nil
-                                menuBarManager.activeViewState = .newPrompt
-                            }
-                        }) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedPrompt = nil
+                                    menuBarManager.activeViewState = .newPrompt
+                                }
+                            }) {
                                 Image(systemName: "plus")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.white)
@@ -321,27 +321,6 @@ struct SearchViewSimple: View {
                             }
                             .buttonStyle(.plain)
                             .help("new_prompt".localized(for: preferences.language) + " (N)")
-                            
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    menuBarManager.activeViewState = .preferences
-                                }
-                            }) {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.primary.opacity(0.7))
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.primary.opacity(0.04))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                             
                             // Botón de Selección en Lote
                             Button(action: {
@@ -368,6 +347,27 @@ struct SearchViewSimple: View {
                             }
                             .buttonStyle(.plain)
                             .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
+
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .preferences
+                                }
+                            }) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.7))
+                                    .frame(width: 34, height: 34)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.primary.opacity(0.04))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                         }
                     }
                     .padding(.horizontal, 24)
@@ -784,11 +784,11 @@ struct SearchViewSimple: View {
     }
     
     /// Programa la aparición de un Ghost Tip en serie
-    private func scheduleNextGhostTip() {
+    private func scheduleNextGhostTip(initialDelay: Double? = nil) {
         guard preferences.ghostTipsEnabled else { return }
         
-        // Esperar entre 25 y 45 segundos para el próximo tip (más frecuente ahora que duran poco)
-        let delay = Double.random(in: 25...45)
+        // Usar delay inicial (ej: 3s) si se solicita, si no, uno aleatorio normal
+        let delay = initialDelay ?? Double.random(in: 25...45)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             // Solo mostrar si seguimos en la pantalla principal y están activados
@@ -809,7 +809,7 @@ struct SearchViewSimple: View {
                 }
             }
             
-            // Programar el siguiente tip en serie
+            // Programar el siguiente tip en serie (sin delay inicial forzado)
             self.scheduleNextGhostTip()
         }
     }
