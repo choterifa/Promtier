@@ -25,212 +25,285 @@ struct FolderManagerView: View {
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack(spacing: 16) {
-                // Botón Colapsar Sidebar
-                Button(action: {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        preferences.showSidebar.toggle()
-                    }
-                }) {
-                    Image(systemName: preferences.showSidebar ? "sidebar.left" : "sidebar.right")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(preferences.showSidebar ? .blue : .secondary)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
-                        )
-                }
-                .buttonStyle(.plain)
-                .help(preferences.showSidebar ? "hide_categories".localized(for: preferences.language) : "show_categories".localized(for: preferences.language))
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("manage_categories".localized(for: preferences.language))
-                        .font(.system(size: 20 * preferences.fontSize.scale, weight: .bold))
-                    Text("customize_workflow".localized(for: preferences.language))
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                Button("done".localized(for: preferences.language)) { onClose() }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.windowBackgroundColor))
+        ZStack {
+            // Fondo Premium con gradientes
+            backgroundView
             
-            Divider()
-            
-            HStack(alignment: .top, spacing: 0) {
-                if preferences.showSidebar {
-                    // Lista de categorías - Ajustado para vista unificada
-                    VStack(alignment: .leading, spacing: 0) {
-                        ScrollView {
-                            VStack(spacing: 2) {
-                                ForEach(Array(promptService.folders.enumerated()), id: \.offset) { index, folder in
-                                    CategoryRow(
-                                        folder: folder,
-                                        isEditing: editingFolder?.id == folder.id,
-                                        onEdit: { startEditing(folder) },
-                                        onDelete: { _ = promptService.deleteFolder(folder) }
-                                    )
-                                }
-                            }
-                            .padding(.vertical, 12)
-                        }
-                    }
-                    .frame(width: max(160, min(280, preferences.windowWidth * 0.35)))
-                    .background(Color.primary.opacity(0.01))
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                    
-                    Divider()
-                }
+            VStack(spacing: 0) {
+                // Header Refinado
+                headerView
                 
-                // Formulario de edición refinado
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        Image(systemName: editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
-                            .font(.title3)
-                            .foregroundColor(.blue)
-                        Text(editingFolder == nil ? "new_category".localized(for: preferences.language) : "edit_category".localized(for: preferences.language))
-                            .font(.headline)
-                            .fontWeight(.bold)
+                Divider().opacity(0.1)
+                
+                HStack(alignment: .top, spacing: 0) {
+                    if preferences.showSidebar {
+                        // Lista de categorías modernizada
+                        sidebarListView
+                            .frame(width: max(180, min(280, preferences.windowWidth * 0.38)))
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                        
+                        Divider().opacity(0.1)
                     }
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("name".localized(for: preferences.language))
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.primary.opacity(0.7))
-                        
-                        TextField("name_placeholder".localized(for: preferences.language), text: $newFolderName)
-                            .textFieldStyle(.plain)
-                            .padding(10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.primary.opacity(0.04))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                            )
-                            .onChange(of: newFolderName) { _, newValue in
-                                if newValue.count > 40 {
-                                    newFolderName = String(newValue.prefix(40))
-                                }
-                            }
-                    }
-                    
-                    HStack(alignment: .top, spacing: 24) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("icon".localized(for: preferences.language))
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.primary.opacity(0.7))
-                            
-                            Button {
-                                showingIconPicker = true
-                            } label: {
-                                Image(systemName: selectedIcon ?? "folder.fill")
-                                    .font(.system(size: 20))
-                                    .frame(width: 52, height: 52)
-                                    .background(selectedColor.opacity(0.12))
-                                    .foregroundColor(selectedColor)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(selectedColor.opacity(0.2), lineWidth: 1.5)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("color".localized(for: preferences.language))
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.primary.opacity(0.7))
-                            
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 24))], spacing: 12) {
-                                ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
-                                    Circle()
-                                        .fill(color)
-                                        .frame(width: 24, height: 24)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: selectedColor == color ? 2.5 : 0)
-                                                .shadow(radius: 1)
-                                        )
-                                        .scaleEffect(selectedColor == color ? 1.15 : (animateColors ? 1.0 : 0.6))
-                                        .opacity(animateColors ? 1 : 0)
-                                        .offset(x: animateColors ? 0 : -10)
-                                        .animation(
-                                            .spring(response: 0.4, dampingFraction: 0.7)
-                                            .delay(Double(index) * 0.04),
-                                            value: animateColors
-                                        )
-                                        .onTapGesture {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                selectedColor = color
-                                            }
-                                        }
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 12) {
-                        if editingFolder != nil {
-                            Button("cancel".localized(for: preferences.language)) {
-                                resetForm()
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.primary.opacity(0.05))
-                            .cornerRadius(8)
-                        }
-                        
-                        Spacer()
-                        
-                        Button {
-                            saveFolder()
-                        } label: {
-                            Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(newFolderName.isEmpty ? Color.gray.opacity(0.3) : selectedColor)
-                                .cornerRadius(10)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(newFolderName.isEmpty)
-                    }
+                    // Contenido Principal (Formulario en Cards)
+                    mainContentView
                 }
-                .padding(24)
-                .frame(maxWidth: .infinity)
-                .background(Color(NSColor.textBackgroundColor).opacity(0.3))
             }
         }
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
         }
         .onAppear {
-            withAnimation {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 preferences.showSidebar = true
             }
             if let initialFolder = folderToEdit {
                 startEditing(initialFolder)
             }
             
-            // Animación de entrada para los colores (cascada de izq a dcha)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 animateColors = true
             }
         }
+    }
+    
+    // MARK: - Components
+    
+    private var backgroundView: some View {
+        ZStack {
+            Color(NSColor.windowBackgroundColor)
+            
+            // Círculos decorativos para efecto mesh
+            Circle()
+                .fill(selectedColor.opacity(0.04))
+                .frame(width: 400, height: 400)
+                .blur(radius: 60)
+                .offset(x: 200, y: -150)
+            
+            Circle()
+                .fill(Color.blue.opacity(0.02))
+                .frame(width: 300, height: 300)
+                .blur(radius: 50)
+                .offset(x: -250, y: 200)
+        }
+        .ignoresSafeArea()
+    }
+    
+    private var headerView: some View {
+        HStack(spacing: 16) {
+            Button(action: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    preferences.showSidebar.toggle()
+                }
+            }) {
+                Image(systemName: preferences.showSidebar ? "sidebar.left" : "sidebar.right")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(preferences.showSidebar ? .blue : .secondary)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                    )
+            }
+            .buttonStyle(.plain)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("manage_categories".localized(for: preferences.language))
+                    .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
+                Text("customize_workflow".localized(for: preferences.language))
+                    .font(.system(size: 13 * preferences.fontSize.scale))
+                    .foregroundColor(.secondary.opacity(0.8))
+            }
+            
+            Spacer()
+            
+            Button {
+                onClose()
+            } label: {
+                Text("done".localized(for: preferences.language))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(
+                        LinearGradient(gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]), startPoint: .top, endPoint: .bottom)
+                    )
+                    .cornerRadius(10)
+                    .shadow(color: .blue.opacity(0.3), radius: 5, y: 2)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 20)
+    }
+    
+    private var sidebarListView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ScrollView {
+                VStack(spacing: 6) {
+                    ForEach(promptService.folders) { folder in
+                        CategoryRow(
+                            folder: folder,
+                            isEditing: editingFolder?.id == folder.id,
+                            onEdit: { startEditing(folder) },
+                            onDelete: { _ = promptService.deleteFolder(folder) }
+                        )
+                    }
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 12)
+            }
+        }
+        .background(Color.primary.opacity(0.015))
+    }
+    
+    private var mainContentView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Título de sección dinámica
+                HStack(spacing: 12) {
+                    Image(systemName: editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(selectedColor)
+                        .symbolEffect(.bounce, value: editingFolder != nil)
+                    
+                    Text(editingFolder == nil ? "new_category".localized(for: preferences.language) : "edit_category".localized(for: preferences.language))
+                        .font(.system(size: 18, weight: .bold))
+                }
+                .padding(.top, 4)
+                
+                // Form Card
+                VStack(spacing: 20) {
+                    // Campo Nombre
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("name".localized(for: preferences.language).uppercased())
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .tracking(1)
+                        
+                        TextField("name_placeholder".localized(for: preferences.language), text: $newFolderName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 15))
+                            .padding(12)
+                            .background(Color.primary.opacity(0.03))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                            )
+                    }
+                    
+                    HStack(alignment: .top, spacing: 24) {
+                        // Selector de Icono
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("icon".localized(for: preferences.language).uppercased())
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(.secondary.opacity(0.6))
+                                .tracking(1)
+                            
+                            Button {
+                                showingIconPicker = true
+                            } label: {
+                                Image(systemName: selectedIcon ?? "folder.fill")
+                                    .font(.system(size: 24))
+                                    .frame(width: 58, height: 58)
+                                    .background(
+                                        ZStack {
+                                            selectedColor.opacity(0.12)
+                                            Circle().stroke(selectedColor.opacity(0.2), lineWidth: 1)
+                                        }
+                                    )
+                                    .foregroundColor(selectedColor)
+                                    .cornerRadius(16)
+                                    .shadow(color: selectedColor.opacity(0.1), radius: 8, y: 4)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        // Selector de Color
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("color".localized(for: preferences.language).uppercased())
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(.secondary.opacity(0.6))
+                                .tracking(1)
+                            
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 14) {
+                                ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
+                                    Circle()
+                                        .fill(color)
+                                        .frame(width: 28, height: 28)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
+                                                .shadow(color: .black.opacity(0.1), radius: 2)
+                                        )
+                                        .scaleEffect(selectedColor == color ? 1.2 : 1.0)
+                                        .onTapGesture {
+                                            HapticService.shared.playLight()
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                selectedColor = color
+                                            }
+                                        }
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(NSColor.textBackgroundColor).opacity(0.4))
+                        .shadow(color: Color.black.opacity(0.03), radius: 10, y: 5)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                )
+                
+                // Botones de Acción
+                HStack(spacing: 16) {
+                    if editingFolder != nil {
+                        Button("cancel".localized(for: preferences.language)) {
+                            resetForm()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color.primary.opacity(0.05)))
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        saveFolder()
+                    } label: {
+                        HStack {
+                            Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
+                            Image(systemName: "checkmark")
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(
+                            newFolderName.isEmpty ? 
+                                AnyShapeStyle(Color.gray.opacity(0.3)) : 
+                                AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom))
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: selectedColor.opacity(newFolderName.isEmpty ? 0 : 0.25), radius: 8, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(newFolderName.isEmpty)
+                }
+                .padding(.top, 8)
+            }
+            .padding(32)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     private func startEditing(_ folder: Folder) {
