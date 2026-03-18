@@ -16,6 +16,15 @@ struct FullScreenImageView: View {
     @State private var hintOpacity: Double = 0.0
     @State private var hintScale: CGFloat = 0.5
     @State private var hintPulse = false
+    @State private var activeHint: HintType = .doubleTap
+    
+    enum HintType {
+        case doubleTap
+        case pinch
+    }
+    
+    // Persistent counter to alternate hints (stored in AppStorage for simplicity across sessions)
+    @AppStorage("lastHintType") private var lastHintWasPinch = false
     
     private let minScale: CGFloat = 1.0
     private let maxScale: CGFloat = 5.0
@@ -114,19 +123,46 @@ struct FullScreenImageView: View {
             }
         }
         .overlay {
-            // DOUBLE-TAP HINT OVERLAY (Non-intrusive)
+            // DOUBLE-TAP & PINCH HINT OVERLAY (Non-intrusive)
             if hintOpacity > 0 {
                 ZStack {
-                    // Pulse ring
-                    Circle()
-                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                        .frame(width: 80, height: 80)
-                        .scaleEffect(hintPulse ? 1.2 : 0.8)
-                    
-                    Image(systemName: "hand.tap.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                        .shadow(radius: 10)
+                    if activeHint == .doubleTap {
+                        ZStack {
+                            // Pulse ring
+                            Circle()
+                                .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                .frame(width: 80, height: 80)
+                                .scaleEffect(hintPulse ? 1.2 : 0.8)
+                            
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.white)
+                                .shadow(radius: 10)
+                        }
+                    } else {
+                        // PINCH HINT UI (Diagonal animation)
+                        ZStack {
+                            // Two circles moving apart diagonally
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.8))
+                                    .frame(width: 30, height: 30)
+                                    .shadow(radius: 5)
+                                    .offset(x: hintPulse ? -40 : -10, y: hintPulse ? 40 : 10)
+                                
+                                Circle()
+                                    .fill(Color.white.opacity(0.8))
+                                    .frame(width: 30, height: 30)
+                                    .shadow(radius: 5)
+                                    .offset(x: hintPulse ? 40 : 10, y: hintPulse ? -40 : -10)
+                            }
+                            
+                            Image(systemName: "arrow.up.right.and.arrow.down.left")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                                .opacity(hintPulse ? 1.0 : 0.5)
+                        }
+                    }
                 }
                 .opacity(hintOpacity)
                 .scaleEffect(hintScale)
@@ -143,24 +179,28 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             scheduleHide()
-            showDoubleTapHint()
+            showGesturesHint()
         }
     }
     
     // MARK: - Hint Logic
     
-    private func showDoubleTapHint() {
-        // Trigger a subtle pulse animation twice
+    private func showGesturesHint() {
+        // Toggle the active hint for this opening
+        activeHint = lastHintWasPinch ? .doubleTap : .pinch
+        lastHintWasPinch.toggle()
+        
+        // Trigger the hint animation sequence
         withAnimation(.easeIn(duration: 0.3)) {
             hintOpacity = 0.7
             hintScale = 1.0
         }
         
-        withAnimation(.easeInOut(duration: 0.4).repeatCount(3, autoreverses: true)) {
+        withAnimation(.easeInOut(duration: 0.6).repeatCount(3, autoreverses: true)) {
             hintPulse = true
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             withAnimation(.easeOut(duration: 0.5)) {
                 hintOpacity = 0.0
                 hintScale = 1.2

@@ -21,13 +21,15 @@
 - ✅ Modo edición para prompts existentes
 - ✅ Validación de datos antes de guardar
 
-### 3. **Vista de Detalles (PromptDetailView)**
-- ✅ Vista completa del prompt con metadatos
-- ✅ Gestión interactiva de variables de plantilla
-- ✅ Copia con sustitución de variables
-- ✅ Menú de acciones completo
-- ✅ Información de uso y fechas
-- ✅ Visualización de etiquetas y carpetas
+### 3. **Vista de Detalles y Visualizador**
+- ✅ Vista completa del prompt con metadatos.
+- ✅ **Visualizador de Imágenes Pro**:
+    - ✅ **Gestos Pro**: Zoom de doble toque, pellizcar (pinch) y desplazamiento (pan).
+    - ✅ **Sugerencias Dinámicas**: Alternancia automática entre sugerencia visual de **Doble Toque** y de **Pellizcar** en cada entrada para educar al usuario de forma no intrusiva.
+    - ✅ **Persistencia de Alternancia**: Sistema que recuerda qué sugerencia se mostró por última vez para alternarlas correctamente.
+    - ✅ **Aislamiento de Layout**: Las animaciones visuales son independientes de la imagen para evitar movimientos extraños.
+- ✅ Gestión interactiva de variables de plantilla.
+- ✅ Copia con sustitución de variables.
 
 ### 4. **Preferencias Completas (PreferencesView)**
 - ✅ **Apariencia**: Tema claro/oscuro/automático, tamaño de fuente, colores

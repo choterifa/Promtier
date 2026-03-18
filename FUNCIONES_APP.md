@@ -31,6 +31,10 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 ### 👁️ Vista Previa (Quick Look)
 - **Preview Rápido**: Visualiza el contenido completo y las imágenes sin abrir el editor (Espacio).
 - **Consistencia Visual**: El preview mantiene el mismo resaltado de sintaxis (variables y brackets) que el editor.
+- **Visualizador Full-Screen**:
+    - **Sugerencias de Gestos**: Animaciones visuales inteligentes al abrir una imagen para descubrir funciones de zoom.
+    - **Alternancia Dinámica**: El sistema se turna entre mostrar el gesto de **Doble Toque** y el de **Pinch (Pellizcar)** en cada apertura.
+    - **Animaciones Suaves**: Iconos de manos y pulsaciones que no interfieren con la visualización ni el rendimiento.
 - **Barra de Color Adaptativa**: Línea superior de 3px que adopta el color de la categoría actual.
 - **Galería de Resultados**:
     - **Alineación Superior**: Las imágenes se centran en la parte de arriba (`alignment: .top`) para un enfoque visual consistente.
