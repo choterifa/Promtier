@@ -393,6 +393,13 @@ struct BehaviorTab: View {
                 }
                 
                 Divider().padding(.leading, 20)
+
+                SettingsRow("disable_image_animations", subtitle: "disable_image_animations_subtitle", icon: "video.slash.fill", iconColor: .purple) {
+                    Toggle("", isOn: $preferences.disableImageAnimations)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
                 
                 SettingsRow("close_on_copy", subtitle: "close_on_copy_subtitle", icon: "xmark.square.fill", iconColor: .red) {
                     Toggle("", isOn: $preferences.closeOnCopy)

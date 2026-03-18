@@ -3,6 +3,7 @@ import SwiftUI
 struct FullScreenImageView: View {
     let imageData: Data
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var preferences = PreferencesManager.shared
     
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -28,6 +29,16 @@ struct FullScreenImageView: View {
     
     private let minScale: CGFloat = 1.0
     private let maxScale: CGFloat = 5.0
+
+    private func zoomWithAnimation(_ animation: Animation? = .spring(response: 0.35, dampingFraction: 0.8), _ body: @escaping () -> Void) {
+        if preferences.disableImageAnimations {
+            body()
+        } else {
+            withAnimation(animation) {
+                body()
+            }
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -56,7 +67,7 @@ struct FullScreenImageView: View {
                                 .onEnded { _ in
                                     lastScale = 1.0
                                     if scale <= minScale {
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        zoomWithAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                             scale = minScale
                                             offset = .zero
                                             lastOffset = .zero
@@ -83,7 +94,7 @@ struct FullScreenImageView: View {
                         )
                         // DOUBLE TAP: toggle between 100% and 200%
                         .onTapGesture(count: 2) {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            zoomWithAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                 if scale > minScale {
                                     scale = minScale
                                     offset = .zero
@@ -124,7 +135,7 @@ struct FullScreenImageView: View {
         }
         .overlay {
             // DOUBLE-TAP & PINCH HINT OVERLAY (Non-intrusive)
-            if hintOpacity > 0 {
+            if hintOpacity > 0 && !preferences.disableImageAnimations {
                 ZStack {
                     if activeHint == .doubleTap {
                         ZStack {
@@ -214,7 +225,7 @@ struct FullScreenImageView: View {
         HStack(spacing: 0) {
             // Zoom Out
             Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                zoomWithAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     scale = max(minScale, scale - 0.5)
                     if scale <= minScale {
                         offset = .zero
@@ -237,7 +248,7 @@ struct FullScreenImageView: View {
 
             // Percentage tap-to-reset
             Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                zoomWithAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     scale = minScale
                     offset = .zero
                     lastOffset = .zero
@@ -258,7 +269,7 @@ struct FullScreenImageView: View {
 
             // Zoom In
             Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                zoomWithAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     scale = min(maxScale, scale + 0.5)
                 }
                 bumpToolbar()

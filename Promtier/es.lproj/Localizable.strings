@@ -60,6 +60,10 @@
 "sounds_subtitle" = "Feedback auditivo al copiar";
 "ghost_tips" = "Consejos visuales";
 "ghost_tips_subtitle" = "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)";
+"disable_image_animations" = "Desactivar animaciones de imagen";
+"disable_image_animations_subtitle" = "Desactiva el zoom animado al abrir la vista completa";
+"gesture_hints" = "Sugerencias de gestos";
+"gesture_hints_subtitle" = "Muestra animaciones de zoom al abrir imágenes";
 "close_on_copy" = "Cerrar al copiar";
 "close_on_copy_subtitle" = "Cierra la ventana automáticamente al copiar";
 "auto_paste" = "Pegado instantáneo";
