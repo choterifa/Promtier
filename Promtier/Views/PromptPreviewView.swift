@@ -12,7 +12,10 @@ struct PromptPreviewView: View {
     let prompt: Prompt
     @State private var showingFullScreenImage: Data? = nil
     @State private var isVisible = false
+    @State private var showcaseImages: [Data] = []
+    @State private var isLoadingImages: Bool = false
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
     @Binding var isFullScreenImageOpen: Bool
     
@@ -59,9 +62,20 @@ struct PromptPreviewView: View {
         }
         .onAppear {
             isVisible = true
+            showcaseImages = prompt.showcaseImages
         }
         .onDisappear {
             isVisible = false
+        }
+        .task(id: prompt.id) {
+            guard showcaseImages.isEmpty, prompt.showcaseImageCount > 0 else { return }
+            if isLoadingImages { return }
+            isLoadingImages = true
+            let images = await promptService.fetchShowcaseImages(byId: prompt.id)
+            await MainActor.run {
+                self.showcaseImages = images
+                self.isLoadingImages = false
+            }
         }
     }
     
@@ -128,7 +142,7 @@ struct PromptPreviewView: View {
                 }
                 
                 // Toggle para posición de imágenes (Flecha)
-                if !prompt.showcaseImages.isEmpty {
+                if prompt.showcaseImageCount > 0 {
                     Button(action: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             preferences.previewImagesFirst.toggle()
@@ -187,7 +201,7 @@ struct PromptPreviewView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Galería al inicio si la preferencia es true
-                if preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                if preferences.previewImagesFirst && !showcaseImages.isEmpty {
                     showcaseGallery
                     Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
                 }
@@ -277,7 +291,7 @@ struct PromptPreviewView: View {
                 }
                 
                 // Galería al final si la preferencia es false
-                if !preferences.previewImagesFirst && !prompt.showcaseImages.isEmpty {
+                if !preferences.previewImagesFirst && !showcaseImages.isEmpty {
                     Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
                     showcaseGallery
                 }
@@ -303,22 +317,23 @@ struct PromptPreviewView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(prompt.showcaseImages, id: \.self) { imageData in
-                        if let nsImage = NSImage(data: imageData) {
-                            Image(nsImage: nsImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 280, height: 180, alignment: .top)
-                                .clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                )
-                                .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
-                                .onTapGesture {
-                                    showingFullScreenImage = imageData
-                                }
+                    ForEach(Array(showcaseImages.enumerated()), id: \.offset) { index, imageData in
+                        DownsampledImageView(
+                            imageData: imageData,
+                            cacheKey: "\(prompt.id.uuidString):preview:\(index):900:\(imageData.count)",
+                            maxPixelSize: 900,
+                            contentMode: .fill
+                        )
+                        .frame(width: 280, height: 180, alignment: .top)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+                        .onTapGesture {
+                            showingFullScreenImage = imageData
                         }
                     }
                 }
@@ -405,4 +420,6 @@ struct VisualEffectView: NSViewRepresentable {
     )
     
     PromptPreviewView(prompt: samplePrompt)
+        .environmentObject(PreferencesManager.shared)
+        .environmentObject(PromptService())
 }

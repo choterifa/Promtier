@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CoreData
+@preconcurrency import CoreData
 import Combine
 
 // SERVICIO PRINCIPAL: Gestión completa de prompts
@@ -51,6 +51,113 @@ class PromptService: ObservableObject {
         purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
         loadFolders()
         loadPrompts()
+        migrateShowcaseImageCountIfNeeded()
+        optimizeStoredShowcaseImagesIfNeeded()
+    }
+
+    private func migrateShowcaseImageCountIfNeeded() {
+        let key = "hasMigratedShowcaseImageCountV1"
+        if UserDefaults.standard.bool(forKey: key) { return }
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            let context: NSManagedObjectContext = self.dataController.backgroundContext
+            var didUpdate = false
+
+            context.performAndWaitCompat {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "showcaseImageCount == 0 AND (image1 != nil OR image2 != nil OR image3 != nil)")
+
+                do {
+                    let entities = try context.fetch(request)
+                    guard !entities.isEmpty else { return }
+
+                    for entity in entities {
+                        autoreleasepool {
+                            var count = 0
+                            if entity.image1 != nil { count += 1 }
+                            if entity.image2 != nil { count += 1 }
+                            if entity.image3 != nil { count += 1 }
+                            entity.showcaseImageCount = Int16(count)
+                        }
+                    }
+                    try context.save()
+                    didUpdate = true
+                } catch {
+                    print("Error migrando showcaseImageCount: \(error)")
+                }
+            }
+
+            UserDefaults.standard.set(true, forKey: key)
+            if didUpdate {
+                DispatchQueue.main.async { self.loadPrompts() }
+            }
+        }
+    }
+
+    private func optimizeStoredShowcaseImagesIfNeeded() {
+        let key = "hasOptimizedStoredShowcaseImagesV1"
+        if UserDefaults.standard.bool(forKey: key) { return }
+
+        // Ejecutar sin bloquear el arranque: optimización incremental en background.
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self = self else { return }
+            let context: NSManagedObjectContext = dataController.backgroundContext
+            context.performAndWaitCompat {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "image1 != nil OR image2 != nil OR image3 != nil")
+
+                do {
+                    let entities = try context.fetch(request)
+                    var changed = 0
+                    var processed = 0
+
+                    for entity in entities {
+                        autoreleasepool {
+                            processed += 1
+                            var newImages: [Data] = []
+                            let existing: [Data] = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
+
+                            var didChange = false
+                            for data in existing {
+                                if data.count < 450_000 {
+                                    newImages.append(data)
+                                    continue
+                                }
+                                if let optimized = ImageOptimizer.shared.optimize(imageData: data), optimized.count < data.count {
+                                    newImages.append(optimized)
+                                    didChange = true
+                                } else {
+                                    newImages.append(data)
+                                }
+                            }
+
+                            if didChange {
+                                entity.image1 = newImages.indices.contains(0) ? newImages[0] : nil
+                                entity.image2 = newImages.indices.contains(1) ? newImages[1] : nil
+                                entity.image3 = newImages.indices.contains(2) ? newImages[2] : nil
+                                entity.showcaseImageCount = Int16(newImages.count)
+                                entity.modifiedAt = Date()
+                                changed += 1
+                            }
+                        }
+
+                        if processed % 25 == 0, context.hasChanges {
+                            try context.save()
+                        }
+                    }
+
+                    if context.hasChanges {
+                        try context.save()
+                    }
+
+                    print("🖼️ Optimización imágenes: \(changed)/\(processed) prompts actualizados.")
+                    UserDefaults.standard.set(true, forKey: key)
+                    DispatchQueue.main.async { self.loadPrompts() }
+                } catch {
+                    print("Error optimizando imágenes guardadas: \(error)")
+                }
+            }
+        }
     }
     
     /// Crea las carpetas por defecto si no han sido sembradas aún en esta versión
@@ -129,7 +236,11 @@ class PromptService: ObservableObject {
         let imagePath = "/Users/valencia/.gemini/antigravity/brain/834ebcad-97e6-4d5e-a810-2da61e58cece/cyberpunk_example_result_1773778750439.png"
         var showcaseImages: [Data] = []
         if let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) {
-            showcaseImages.append(data)
+            if let optimized = ImageOptimizer.shared.optimize(imageData: data) {
+                showcaseImages.append(optimized)
+            } else {
+                showcaseImages.append(data)
+            }
         }
         
         let creativePrompt = Prompt(
@@ -148,30 +259,132 @@ class PromptService: ObservableObject {
     }
     
     // MARK: - Operaciones CRUD
+
+    private func fetchPromptSummaries(trashDict: [String: Date]) -> Result<[Prompt], Error> {
+        let context: NSManagedObjectContext = dataController.backgroundContext
+        var prompts: [Prompt] = []
+        var fetchError: Error? = nil
+
+        context.performAndWaitCompat {
+            do {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.sortDescriptors = [
+                    NSSortDescriptor(key: "useCount", ascending: false),
+                    NSSortDescriptor(key: "modifiedAt", ascending: false)
+                ]
+                request.returnsObjectsAsFaults = true
+                request.includesPropertyValues = true
+
+                let entities = try context.fetch(request)
+                prompts = entities.map { entity in
+                    var prompt = Prompt(title: entity.title, content: entity.content, folder: entity.folder)
+                    prompt.id = entity.id
+                    prompt.isFavorite = entity.isFavorite
+                    prompt.createdAt = entity.createdAt
+                    prompt.modifiedAt = entity.modifiedAt
+                    prompt.useCount = Int(entity.useCount)
+                    prompt.lastUsedAt = entity.lastUsedAt
+                    prompt.icon = entity.icon
+                    prompt.promptDescription = entity.promptDescription
+                    prompt.negativePrompt = entity.negativePrompt
+                    prompt.alternativePrompt = entity.alternativePrompt
+                    prompt.deletedAt = trashDict[entity.id.uuidString]
+                    prompt.showcaseImages = []
+                    prompt.showcaseImageCount = Int(entity.showcaseImageCount)
+                    return prompt
+                }
+            } catch {
+                fetchError = error
+            }
+        }
+
+        if let fetchError = fetchError {
+            return .failure(fetchError)
+        }
+        return .success(prompts)
+    }
     
     /// Carga todos los prompts desde Core Data (excluye los de la papelera)
     func loadPrompts() {
         DispatchQueue.main.async { self.isLoading = true }
-        
-        let request = PromptEntity.fetchAll(in: dataController.viewContext)
-        
-        do {
-            let entities = try dataController.viewContext.fetch(request)
-            let allPrompts = entities.map { $0.toPrompt() }
-            
+
+        // IMPORTANTE: Para performance, NO cargamos blobs de imágenes en la lista.
+        // Usamos `dictionaryResultType` + `showcaseImageCount` para evitar beachball al abrir preview.
+        let trashDict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let fetchResult = self.fetchPromptSummaries(trashDict: trashDict)
             DispatchQueue.main.async {
-                // Separar prompts activos de los eliminados
-                self.prompts = allPrompts.filter { !$0.isInTrash }
-                self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
-                    ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
+                switch fetchResult {
+                case .failure(let error):
+                    print("Error cargando prompts: \(error)")
+                    self.isLoading = false
+                    return
+                case .success(let allPrompts):
+                    self.prompts = allPrompts.filter { !$0.isInTrash }
+                    self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
+                        ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
+                    }
+                    self.filterPrompts(query: self.searchQuery)
+                    self.isLoading = false
                 }
-                self.filterPrompts(query: self.searchQuery)
-                self.isLoading = false
             }
-        } catch {
-            print("Error cargando prompts: \(error)")
-            DispatchQueue.main.async { self.isLoading = false }
         }
+    }
+
+    /// Obtiene un prompt desde Core Data (opcionalmente incluyendo imágenes).
+    func fetchPrompt(byId id: UUID, includeImages: Bool) async -> Prompt? {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                let context: NSManagedObjectContext = self.dataController.backgroundContext
+                var result: Prompt? = nil
+
+                context.performAndWaitCompat {
+                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                    request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+                    request.fetchLimit = 1
+
+                    do {
+                        guard let entity = try context.fetch(request).first else { return }
+
+                        if includeImages {
+                            result = entity.toPrompt()
+                            return
+                        }
+
+                        var p = Prompt(title: entity.title, content: entity.content, folder: entity.folder)
+                        p.id = entity.id
+                        p.isFavorite = entity.isFavorite
+                        p.createdAt = entity.createdAt
+                        p.modifiedAt = entity.modifiedAt
+                        p.useCount = Int(entity.useCount)
+                        p.lastUsedAt = entity.lastUsedAt
+                        p.icon = entity.icon
+                        p.promptDescription = entity.promptDescription
+                        p.deletedAt = entity.deletedAt
+                        p.negativePrompt = entity.negativePrompt
+                        p.alternativePrompt = entity.alternativePrompt
+                        p.showcaseImages = []
+                        p.showcaseImageCount = Int(entity.showcaseImageCount)
+                        result = p
+                    } catch {
+                        print("Error obteniendo prompt: \(error)")
+                    }
+                }
+
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
+    /// Carga únicamente las imágenes de resultados para un prompt.
+    func fetchShowcaseImages(byId id: UUID) async -> [Data] {
+        let full = await fetchPrompt(byId: id, includeImages: true)
+        return full?.showcaseImages ?? []
     }
     
     /// Carga todas las carpetas desde Core Data aplicando el orden guardado
@@ -243,6 +456,47 @@ class PromptService: ObservableObject {
         }
         
         return false
+    }
+
+    /// Actualiza solo las imágenes de showcase (y su conteo) en background.
+    func updateShowcaseImages(promptId: UUID, images: [Data]) async -> Bool {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                let context: NSManagedObjectContext = self.dataController.backgroundContext
+                var ok = false
+
+                context.performAndWaitCompat {
+                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                    request.predicate = NSPredicate(format: "id == %@", promptId as CVarArg)
+                    request.fetchLimit = 1
+
+                    do {
+                        guard let entity = try context.fetch(request).first else { return }
+
+                        let capped = Array(images.prefix(3))
+                        entity.image1 = capped.indices.contains(0) ? capped[0] : nil
+                        entity.image2 = capped.indices.contains(1) ? capped[1] : nil
+                        entity.image3 = capped.indices.contains(2) ? capped[2] : nil
+                        entity.showcaseImageCount = Int16(capped.count)
+                        entity.modifiedAt = Date()
+
+                        try context.save()
+                        ok = true
+                    } catch {
+                        print("Error actualizando imágenes de showcase: \(error)")
+                    }
+                }
+
+                if ok {
+                    DispatchQueue.main.async { self.loadPrompts() }
+                }
+                continuation.resume(returning: ok)
+            }
+        }
     }
     
     // MARK: - Papelera (Soft Delete)
@@ -659,9 +913,15 @@ class PromptService: ObservableObject {
     /// Exporta toda la base de datos (Prompts + Carpetas) en formato JSON
     func exportAllPromptsAsJSON() -> Data? {
         do {
+            // Export debe incluir imágenes aunque la lista use lazy-load.
+            let request = PromptEntity.fetchAll(in: dataController.viewContext)
+            let entities = try dataController.viewContext.fetch(request)
+            let allPrompts = entities.map { $0.toPrompt() }
+            let activePrompts = allPrompts.filter { !$0.isInTrash }
+
             let package = BackupPackage(
-                version: "2.1",
-                prompts: prompts,
+                version: "2.2",
+                prompts: activePrompts,
                 folders: folders
             )
             let encoder = JSONEncoder()

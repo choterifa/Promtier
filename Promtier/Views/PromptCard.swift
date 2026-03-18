@@ -208,12 +208,12 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
-                // Indicador de Imagen
-                if !prompt.showcaseImages.isEmpty {
+                // Indicador de Imagen (lazy-load friendly)
+                if prompt.showcaseImageCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "photo.fill")
                             .font(.system(size: 8))
-                        Text("\(prompt.showcaseImages.count)")
+                        Text("\(prompt.showcaseImageCount)")
                             .font(.system(size: 9, weight: .bold))
                     }
                     .foregroundColor(.cyan.opacity(0.7))
@@ -344,33 +344,58 @@ struct PromptCard: View {
     }
     
     private func handleImageDrop(providers: [NSItemProvider]) {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url, let data = try? Data(contentsOf: url) {
-                        DispatchQueue.main.async {
-                            var updated = prompt
-                            updated.showcaseImages.append(data)
-                            _ = promptService.updatePrompt(updated)
-                            
-                            // Feedback háptico
-                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                        }
-                    }
-                }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data {
-                        DispatchQueue.main.async {
-                            var updated = prompt
-                            updated.showcaseImages.append(data)
-                            _ = promptService.updatePrompt(updated)
-                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                        }
-                    }
+        Task(priority: .userInitiated) {
+            let existing = await promptService.fetchShowcaseImages(byId: prompt.id)
+            if existing.count >= 3 { return }
+
+            var optimizedToAdd: [Data] = []
+            let available = max(0, 3 - existing.count)
+
+            for provider in providers {
+                guard optimizedToAdd.count < available else { break }
+                guard let raw = await loadImageData(from: provider) else { continue }
+                let optimized = await Task.detached(priority: .userInitiated) {
+                    ImageOptimizer.shared.optimize(imageData: raw)
+                }.value
+                guard let optimized else { continue }
+                optimizedToAdd.append(optimized)
+            }
+
+            guard !optimizedToAdd.isEmpty else { return }
+            let final = Array((existing + optimizedToAdd).prefix(3))
+            let ok = await promptService.updateShowcaseImages(promptId: prompt.id, images: final)
+            if ok {
+                await MainActor.run {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                 }
             }
         }
+    }
+
+    private func loadImageData(from provider: NSItemProvider) async -> Data? {
+        if provider.canLoadObject(ofClass: URL.self) {
+            return await withCheckedContinuation { continuation in
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url = url else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    // Intentar leer archivo en background
+                    let data = try? Data(contentsOf: url)
+                    continuation.resume(returning: data)
+                }
+            }
+        }
+
+        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+            return await withCheckedContinuation { continuation in
+                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                    continuation.resume(returning: data)
+                }
+            }
+        }
+
+        return nil
     }
     
     // Colores dinámicos Premium

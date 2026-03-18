@@ -41,6 +41,9 @@ extension PromptEntity {
         if let img2 = image2 { images.append(img2) }
         if let img3 = image3 { images.append(img3) }
         prompt.showcaseImages = images
+        // Mantener conteo consistente incluso si aún no se migró.
+        let storedCount = Int(showcaseImageCount)
+        prompt.showcaseImageCount = storedCount > 0 ? storedCount : images.count
         
         if let historyData = versionHistoryData,
            let history = try? JSONDecoder().decode([PromptSnapshot].self, from: historyData) {
@@ -63,9 +66,11 @@ extension PromptEntity {
         alternativePrompt = prompt.alternativePrompt
         
         // Limpiar y reasignar imágenes
-        image1 = prompt.showcaseImages.indices.contains(0) ? prompt.showcaseImages[0] : nil
-        image2 = prompt.showcaseImages.indices.contains(1) ? prompt.showcaseImages[1] : nil
-        image3 = prompt.showcaseImages.indices.contains(2) ? prompt.showcaseImages[2] : nil
+        let cappedImages = Array(prompt.showcaseImages.prefix(3))
+        image1 = cappedImages.indices.contains(0) ? cappedImages[0] : nil
+        image2 = cappedImages.indices.contains(1) ? cappedImages[1] : nil
+        image3 = cappedImages.indices.contains(2) ? cappedImages[2] : nil
+        showcaseImageCount = Int16(cappedImages.count)
         
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)

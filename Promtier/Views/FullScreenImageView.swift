@@ -78,7 +78,14 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             if decodedImage == nil {
-                decodedImage = NSImage(data: imageData)
+                let dataCopy = imageData
+                Task.detached(priority: .userInitiated) {
+                    // La mayoría de imágenes guardadas están optimizadas (~1200px), pero evitamos decode sync en main.
+                    let img = ImageDecodeCache.shared.downsampledImage(from: dataCopy, maxPixelSize: 2800)
+                    await MainActor.run {
+                        decodedImage = img
+                    }
+                }
             }
             if preferences.disableImageAnimations {
                 scrimOpacity = 1.0
@@ -164,6 +171,10 @@ struct FullScreenImageView: View {
                             bumpToolbar()
                             scheduleHide()
                         }
+                } else {
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(.white.opacity(0.85))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

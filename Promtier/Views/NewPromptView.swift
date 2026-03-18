@@ -250,6 +250,21 @@ struct NewPromptView: View {
             selectedIcon = prompt.icon
             showcaseImages = prompt.showcaseImages
             tags = prompt.tags
+
+            // Lazy-load de imágenes (la lista ya no carga blobs para mejorar rendimiento).
+            if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
+                Task(priority: .userInitiated) {
+                    if let full = await promptService.fetchPrompt(byId: prompt.id, includeImages: true) {
+                        await MainActor.run {
+                            self.originalPrompt = full
+                            // Evitar pisar cambios del usuario si ya añadió imágenes manualmente.
+                            if self.showcaseImages.isEmpty {
+                                self.showcaseImages = full.showcaseImages
+                            }
+                        }
+                    }
+                }
+            }
         } else if let draft = DraftService.shared.loadDraft() {
             // Restaurar borrador si existe y no estamos editando uno específico pasado por parámetro
             let draftPrompt = draft.prompt

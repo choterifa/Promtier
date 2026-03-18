@@ -22,6 +22,8 @@ struct Prompt: Identifiable, Codable {
     var lastUsedAt: Date?           // Última vez que se copió
     var icon: String?               // Icono personalizado (SFSymbol)
     var showcaseImages: [Data] = [] // Imágenes de resultados (max 3)
+    /// Conteo persistido para UI/lista (permite lazy-load de blobs).
+    var showcaseImageCount: Int = 0
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
     var tags: [String] = []         // Etiquetas (Premium)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
@@ -38,7 +40,8 @@ struct Prompt: Identifiable, Codable {
         self.promptDescription = promptDescription
         self.folder = folder
         self.icon = icon
-        self.showcaseImages = showcaseImages
+        self.showcaseImages = Array(showcaseImages.prefix(3))
+        self.showcaseImageCount = self.showcaseImages.count
         self.tags = tags
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
@@ -47,6 +50,80 @@ struct Prompt: Identifiable, Codable {
         self.modifiedAt = Date()
         self.useCount = 0
         self.deletedAt = nil
+    }
+
+    // MARK: - Codable (retrocompatible)
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case content
+        case promptDescription
+        case folder
+        case isFavorite
+        case createdAt
+        case modifiedAt
+        case useCount
+        case lastUsedAt
+        case icon
+        case showcaseImages
+        case showcaseImageCount
+        case versionHistory
+        case tags
+        case deletedAt
+        case negativePrompt
+        case alternativePrompt
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        content = try container.decode(String.self, forKey: .content)
+
+        promptDescription = try container.decodeIfPresent(String.self, forKey: .promptDescription)
+        folder = try container.decodeIfPresent(String.self, forKey: .folder)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? createdAt
+        useCount = try container.decodeIfPresent(Int.self, forKey: .useCount) ?? 0
+        lastUsedAt = try container.decodeIfPresent(Date.self, forKey: .lastUsedAt)
+
+        icon = try container.decodeIfPresent(String.self, forKey: .icon)
+        showcaseImages = Array((try container.decodeIfPresent([Data].self, forKey: .showcaseImages) ?? []).prefix(3))
+
+        let decodedCount = try container.decodeIfPresent(Int.self, forKey: .showcaseImageCount)
+        showcaseImageCount = decodedCount ?? showcaseImages.count
+
+        versionHistory = try container.decodeIfPresent([PromptSnapshot].self, forKey: .versionHistory) ?? []
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
+
+        negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
+        alternativePrompt = try container.decodeIfPresent(String.self, forKey: .alternativePrompt)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(promptDescription, forKey: .promptDescription)
+        try container.encodeIfPresent(folder, forKey: .folder)
+        try container.encode(isFavorite, forKey: .isFavorite)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(modifiedAt, forKey: .modifiedAt)
+        try container.encode(useCount, forKey: .useCount)
+        try container.encodeIfPresent(lastUsedAt, forKey: .lastUsedAt)
+        try container.encodeIfPresent(icon, forKey: .icon)
+        try container.encode(showcaseImages, forKey: .showcaseImages)
+        try container.encode(showcaseImageCount, forKey: .showcaseImageCount)
+        try container.encode(versionHistory, forKey: .versionHistory)
+        try container.encode(tags, forKey: .tags)
+        try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        try container.encodeIfPresent(negativePrompt, forKey: .negativePrompt)
+        try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
     }
     
     // MARK: - Métodos de ayuda
