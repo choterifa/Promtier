@@ -189,7 +189,7 @@ struct FolderManagerView: View {
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                                    .stroke(Color.primary.opacity(0.07), lineWidth: 1)
                             )
                     }
                     
@@ -258,7 +258,7 @@ struct FolderManagerView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                        .stroke(Color.primary.opacity(0.10), lineWidth: 1.1)
                 )
                 
                 // Botones de Acción
