@@ -25,12 +25,17 @@ struct SearchViewSimple: View {
     
     // Ghost Tips logic
     @State private var currentGhostTip: GhostTip? = nil
+    @State private var nextTipIndex: Int = 0
     private let ghostTips = [
         GhostTip(title: "Vista Previa", icon: "eye", shortcut: "Barra Espaciadora"),
         GhostTip(title: "Copiar Rápido", icon: "doc.on.doc", shortcut: "Cmd + C"),
         GhostTip(title: "Nuevo Prompt", icon: "plus", shortcut: "Cmd + N"),
         GhostTip(title: "Configuración", icon: "gearshape", shortcut: "Cmd + ,"),
-        GhostTip(title: "Ocultar Sidebar", icon: "sidebar.left", shortcut: "Cmd + B")
+        GhostTip(title: "Ocultar Sidebar", icon: "sidebar.left", shortcut: "Cmd + B"),
+        GhostTip(title: "Drag & Drop", icon: "hand.tap", shortcut: "Mover a Categorías"),
+        GhostTip(title: "Multi-selección", icon: "checkmark.circle", shortcut: "Modo Lote"),
+        GhostTip(title: "Papelera", icon: "trash", shortcut: "Auto-borrado 7d"),
+        GhostTip(title: "Exportar", icon: "square.and.arrow.up", shortcut: "Respaldar Prompts")
     ]
     
     var body: some View {
@@ -809,22 +814,33 @@ struct SearchViewSimple: View {
         }
     }
     
-    /// Programa la aparición de un Ghost Tip aleatorio
+    /// Programa la aparición de un Ghost Tip en serie
     private func scheduleNextGhostTip() {
         guard preferences.ghostTipsEnabled else { return }
         
-        // Esperar entre 45 y 90 segundos para el próximo tip
-        let delay = Double.random(in: 45...90)
+        // Esperar entre 25 y 45 segundos para el próximo tip (más frecuente ahora que duran poco)
+        let delay = Double.random(in: 25...45)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             // Solo mostrar si seguimos en la pantalla principal y están activados
             if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
-                withAnimation {
-                    self.currentGhostTip = self.ghostTips.randomElement()
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    // Mostrar siguiente en la serie (bucle)
+                    self.currentGhostTip = self.ghostTips[self.nextTipIndex % self.ghostTips.count]
+                    self.nextTipIndex += 1
+                }
+                
+                // ⏱️ Auto-ocultar después de 5 segundos
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                    if self.currentGhostTip != nil {
+                        withAnimation(.easeOut(duration: 0.4)) {
+                            self.currentGhostTip = nil
+                        }
+                    }
                 }
             }
             
-            // Programar el siguiente (bucle infinito mientras la app esté abierta)
+            // Programar el siguiente tip en serie
             self.scheduleNextGhostTip()
         }
     }
