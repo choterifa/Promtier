@@ -348,17 +348,17 @@ struct HighlightedEditor: NSViewRepresentable {
             highlightTimer?.invalidate()
             
             // Debounce de 150ms para evitar lag al escribir rápido
-            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
-                guard let self = self, let textStorage = textView.textStorage else { return }
+            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self, weak textView] _ in
+                guard let self = self, let textView = textView else { return }
                 
                 let text = textView.string
-                let fullRange = NSRange(location: 0, length: textStorage.length)
-                if fullRange.length == 0 { return }
-                
                 let cursorLocation = textView.selectedRange().location
+                let fontSize = self.parent.fontSize
+                
+                if text.isEmpty { return }
                 
                 // Ejecutar regex en segundo plano para no bloquear el hilo principal
-                DispatchQueue.global(qos: .userInteractive).async {
+                DispatchQueue.global(qos: .userInteractive).async { [weak textView] in
                     // 1. Regex para variables {{...}}
                     let varPattern = "\\{\\{([^}]+)\\}\\}"
                     let varRegex = try? NSRegularExpression(pattern: varPattern, options: [])
@@ -385,16 +385,20 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                     
                     // Aplicar cambios en el hilo principal
-                    DispatchQueue.main.async {
-                        // VALIDACIÓN CRÍTICA: Si el texto cambió mientras calculábamos, abortar para evitar crash
+                    DispatchQueue.main.async { [weak textView] in
+                        guard let textView = textView, let textStorage = textView.textStorage else { return }
+                        
+                        // VALIDACIÓN CRÍTICA: Si el texto cambió significativamente mientras calculábamos, abortar
                         let currentLength = textStorage.length
                         if currentLength == 0 { return }
+                        
+                        let fullRange = NSRange(location: 0, length: currentLength)
                         
                         textStorage.beginEditing()
                         
                         // Resetear estilos base
                         textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
-                        textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize), range: fullRange)
+                        textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize), range: fullRange)
                         textStorage.removeAttribute(.backgroundColor, range: fullRange)
                         textStorage.removeAttribute(.underlineStyle, range: fullRange)
                         
@@ -415,7 +419,7 @@ struct HighlightedEditor: NSViewRepresentable {
                             let range = match.range
                             safeAddAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
                             safeAddAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: self.parent.fontSize, weight: .bold), range: range)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
                         }
                         
                         // Aplicar resaltado de Bracket Matching (VS Code style)

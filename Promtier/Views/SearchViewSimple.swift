@@ -147,16 +147,18 @@ struct SearchViewSimple: View {
             
             // Overlay de Ghost Tips
             if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main {
-                GhostTipView(tip: tip) {
-                    currentGhostTip = nil
+                VStack {
+                    Spacer()
+                    GhostTipView(tip: tip) {
+                        currentGhostTip = nil
+                    }
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .scale(scale: 0.9).combined(with: .opacity)
+                    ))
                 }
-                .padding(.bottom, 24)
-                .padding(.trailing, 24)
+                .padding(.bottom, batchService.isSelectionModeActive ? 90 : 24) // Evitar solapamiento con la barra de lote
                 .zIndex(500)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                ))
             }
         }
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
@@ -383,7 +385,7 @@ struct SearchViewSimple: View {
                                 }
                                 HapticService.shared.playLight()
                             }) {
-                                Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.rectangle.set.fill")
+                                Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
                                     .frame(width: 34, height: 34)
@@ -830,8 +832,8 @@ struct SearchViewSimple: View {
                     self.nextTipIndex += 1
                 }
                 
-                // ⏱️ Auto-ocultar después de 5 segundos
-                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                // ⏱️ Auto-ocultar después de 6.5 segundos (ajustado por petición)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
                     if self.currentGhostTip != nil {
                         withAnimation(.easeOut(duration: 0.4)) {
                             self.currentGhostTip = nil

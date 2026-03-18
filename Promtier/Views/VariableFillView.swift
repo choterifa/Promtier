@@ -228,6 +228,12 @@ struct VariableFillView: View {
                         focusedField = variables.first?.id
                     }
                 }
+                .onCommand(Selector(("copy:"))) {
+                    if canCopy {
+                        HapticService.shared.playImpact()
+                        onCopy(processedContent)
+                    }
+                }
             }
         }
     }
