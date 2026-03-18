@@ -278,3 +278,21 @@
 "export_plain_text" = "Export as plain text";
 "spanish" = "Spanish";
 "english" = "English";
+
+/* Zen Editor */
+"zen_title_placeholder" = "Prompt title...";
+"add_variable_action" = "Add Variable";
+"exit_zen_mode" = "Exit Zen Mode";
+"zen_content_placeholder" = "Write your prompt here with total freedom...";
+"words_count" = "%d words";
+"auto_save_active" = "Auto-save active";
+"apple_intelligence_header" = "APPLE INTELLIGENCE";
+
+/* AI Assistant */
+"ai_enhance" = "Enhance";
+"ai_professional" = "Professional";
+"ai_concise" = "Concise";
+"ai_creative" = "Creative";
+"ai_fix" = "Fix";
+"ai_tip_applied" = "Suggestions added!";
+"ai_tip_writing_tools" = "Opening Writing Tools for %@!";

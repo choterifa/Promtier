@@ -28,7 +28,7 @@ struct ZenEditorView: View {
         VStack(spacing: 0) {
             // Header minimalista
             HStack {
-                TextField("Título del prompt...", text: $title)
+                TextField("zen_title_placeholder".localized(for: preferences.language), text: $title)
                     .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                     .textFieldStyle(.plain)
                 
@@ -38,12 +38,12 @@ struct ZenEditorView: View {
                     if preferences.isPremiumActive {
                         insertionRequest = "{{variable}}" 
                     } else {
-                        showingPremiumFor = "Variables Dinámicas"
+                        showingPremiumFor = "advanced_variables".localized(for: preferences.language)
                     }
                 }) {
                     HStack {
                         Image(systemName: "curlybraces")
-                        Text("Añadir Variable")
+                        Text("add_variable_action".localized(for: preferences.language))
                     }
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.blue)
@@ -57,7 +57,7 @@ struct ZenEditorView: View {
                 
                 Button(action: onDone) {
                     HStack {
-                        Text("Salir del Modo Zen")
+                        Text("exit_zen_mode".localized(for: preferences.language))
                         Image(systemName: "arrow.down.right.and.arrow.up.left")
                     }
                     .font(.system(size: 13, weight: .semibold))
@@ -75,7 +75,7 @@ struct ZenEditorView: View {
             // Editor Principal
             ZStack(alignment: .topLeading) {
                 if content.isEmpty {
-                    Text("Escribe tu prompt aquí con total libertad...")
+                    Text("zen_content_placeholder".localized(for: preferences.language))
                         .font(.system(size: 18 * preferences.fontSize.scale))
                         .foregroundColor(.secondary.opacity(0.5))
                         .padding(.top, 8)
@@ -103,15 +103,15 @@ struct ZenEditorView: View {
             // Footer con info
             HStack {
                 HStack(spacing: 16) {
-                    Label("\(content.count) caracteres", systemImage: "character.cursor.ibeam")
-                    Label("\(content.split(separator: " ").count) palabras", systemImage: "text.word.spacing")
+                    Label(String(format: "characters".localized(for: preferences.language), content.count), systemImage: "character.cursor.ibeam")
+                    Label(String(format: "words_count".localized(for: preferences.language), content.split(separator: " ").count), systemImage: "text.word.spacing")
                 }
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Text("Auto-guardado activo")
+                Text("auto_save_active".localized(for: preferences.language))
                     .font(.system(size: 12))
                     .foregroundColor(.green.opacity(0.8))
             }
