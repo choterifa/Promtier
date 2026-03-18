@@ -123,6 +123,7 @@
 "save_as_file" = "Guardar como archivo";
 "export_json_subtitle" = "Backup completo con carpetas (recomendado)";
 "export_csv_subtitle" = "Solo prompts — compatible con Excel / Sheets";
+"export_zip_subtitle" = "Backup completo (ZIP) — incluye imágenes y carpetas";
 "import_library" = "Importar Biblioteca";
 "import_subtitle" = "Carga desde un archivo JSON";
 "icloud_sync" = "Sincronización iCloud";

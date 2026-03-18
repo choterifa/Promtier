@@ -20,6 +20,7 @@ struct SearchViewSimple: View {
     @State private var importMessage: String? = nil
     @State private var showingImportAlert: Bool = false
     @State private var importData: Data? = nil
+    @State private var importURL: URL? = nil
     /// Bloquea atajos de teclado cuando hay una hoja/modal secundaria abierta
     @State private var isFullScreenImageOpen: Bool = false
     
@@ -164,7 +165,7 @@ struct SearchViewSimple: View {
         .frame(width: preferences.windowWidth, height: preferences.windowHeight)
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
-        .onDrop(of: [UTType.fileURL, UTType.json], isTargeted: $isDraggingFile) { providers in
+        .onDrop(of: [UTType.fileURL, UTType.json, UTType.zip], isTargeted: $isDraggingFile) { providers in
             handleFileDrop(providers: providers)
             return true
         }
@@ -173,15 +174,31 @@ struct SearchViewSimple: View {
         }
         .alert("import_data_alert_title".localized(for: preferences.language), isPresented: $showingImportAlert) {
             Button("import_button".localized(for: preferences.language), role: .none) {
-                if let data = importData {
-                    let results = promptService.importPromptsFromData(data)
-                    importMessage = String(format: "import_completed_message".localized(for: preferences.language), results.success)
-                    HapticService.shared.playStrong()
-                    showParticles = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
+                let localized = "import_completed_message".localized(for: preferences.language)
+                DispatchQueue.global(qos: .userInitiated).async {
+                    if let url = importURL, url.pathExtension.lowercased() == "zip" {
+                        let results = promptService.importBackupZip(from: url)
+                        DispatchQueue.main.async {
+                            importMessage = String(format: localized, results.success)
+                            HapticService.shared.playStrong()
+                            showParticles = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
+                        }
+                    } else if let data = importData {
+                        let results = promptService.importPromptsFromData(data)
+                        DispatchQueue.main.async {
+                            importMessage = String(format: localized, results.success)
+                            HapticService.shared.playStrong()
+                            showParticles = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { showParticles = false }
+                        }
+                    }
                 }
             }
-            Button("cancel".localized(for: preferences.language), role: .cancel) { importData = nil }
+            Button("cancel".localized(for: preferences.language), role: .cancel) {
+                importData = nil
+                importURL = nil
+            }
         } message: {
             Text("import_confirmation_message".localized(for: preferences.language))
         }
@@ -838,12 +855,22 @@ struct SearchViewSimple: View {
     private func handleFileDrop(providers: [NSItemProvider]) {
         for provider in providers {
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                if let url = url, url.pathExtension.lowercased() == "json" {
-                    if let data = try? Data(contentsOf: url) {
-                        DispatchQueue.main.async {
-                            self.importData = data
-                            self.showingImportAlert = true
-                        }
+                guard let url = url else { return }
+                let ext = url.pathExtension.lowercased()
+                if ext == "zip" {
+                    DispatchQueue.main.async {
+                        self.importURL = url
+                        self.importData = nil
+                        self.showingImportAlert = true
+                    }
+                    return
+                }
+
+                if ext == "json", let data = try? Data(contentsOf: url) {
+                    DispatchQueue.main.async {
+                        self.importData = data
+                        self.importURL = nil
+                        self.showingImportAlert = true
                     }
                 }
             }

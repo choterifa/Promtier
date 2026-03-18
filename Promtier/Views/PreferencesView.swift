@@ -610,12 +610,21 @@ struct DataTab: View {
     enum ExportFormat: String, CaseIterable, Identifiable {
         case json = "JSON"
         case csv  = "CSV"
+        case zip  = "ZIP"
         var id: String { rawValue }
-        var icon: String { self == .json ? "doc.text" : "tablecells" }
+        var icon: String {
+            switch self {
+            case .json: return "doc.text"
+            case .csv: return "tablecells"
+            case .zip: return "doc.zipper"
+            }
+        }
         var subtitle: String {
-            self == .json
-                ? "export_json_subtitle"
-                : "export_csv_subtitle"
+            switch self {
+            case .json: return "export_json_subtitle"
+            case .csv: return "export_csv_subtitle"
+            case .zip: return "export_zip_subtitle"
+            }
         }
     }
     
@@ -630,7 +639,7 @@ struct DataTab: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 130)
+                    .frame(width: 190)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -703,39 +712,54 @@ struct DataTab: View {
     
     /// Lógica de exportación nativa — soporta JSON y CSV
     private func exportData(as format: ExportFormat) {
-        let data: Data?
-        let filename: String
-        let contentType: UTType
         let timestamp = Int(Date().timeIntervalSince1970)
-        
-        switch format {
-        case .json:
-            data = promptService.exportAllPromptsAsJSON()
-            filename = "promtier_backup_\(timestamp).json"
-            contentType = .json
-        case .csv:
-            data = promptService.exportAllPromptsAsCSV()
-            filename = "promtier_prompts_\(timestamp).csv"
-            contentType = .commaSeparatedText
-        }
-        
-        guard let exportData = data else { return }
-        
+
         DispatchQueue.main.async {
             let savePanel = NSSavePanel()
-            savePanel.allowedContentTypes = [contentType]
-            savePanel.nameFieldStringValue = filename
+            switch format {
+            case .json:
+                savePanel.allowedContentTypes = [.json]
+                savePanel.nameFieldStringValue = "promtier_backup_\(timestamp).json"
+            case .csv:
+                savePanel.allowedContentTypes = [.commaSeparatedText]
+                savePanel.nameFieldStringValue = "promtier_prompts_\(timestamp).csv"
+            case .zip:
+                savePanel.allowedContentTypes = [.zip]
+                savePanel.nameFieldStringValue = "promtier_backup_\(timestamp).zip"
+            }
             savePanel.title = "import_library".localized(for: preferences.language)
             
             NSApp.activate(ignoringOtherApps: true)
             
             savePanel.begin { response in
                 if response == .OK, let url = savePanel.url {
-                    do {
-                        try exportData.write(to: url)
-                        print("✅ Exportado: \(url.path)")
-                    } catch {
-                        print("❌ Error guardando: \(error)")
+                    switch format {
+                    case .json:
+                        guard let exportData = promptService.exportAllPromptsAsJSON() else { return }
+                        do {
+                            try exportData.write(to: url)
+                            print("✅ Exportado: \(url.path)")
+                        } catch {
+                            print("❌ Error guardando: \(error)")
+                        }
+                    case .csv:
+                        guard let exportData = promptService.exportAllPromptsAsCSV() else { return }
+                        do {
+                            try exportData.write(to: url)
+                            print("✅ Exportado: \(url.path)")
+                        } catch {
+                            print("❌ Error guardando: \(error)")
+                        }
+                    case .zip:
+                        DispatchQueue.global(qos: .utility).async {
+                            let ok = promptService.exportBackupZip(to: url)
+                            DispatchQueue.main.async {
+                                withAnimation {
+                                    self.importStatus = ok ? "✅ Backup ZIP exportado" : "❌ Error exportando ZIP"
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.importStatus = nil }
+                            }
+                        }
                     }
                 }
             }
@@ -746,7 +770,7 @@ struct DataTab: View {
     private func importData() {
         DispatchQueue.main.async {
             let openPanel = NSOpenPanel()
-            openPanel.allowedContentTypes = [.json]
+            openPanel.allowedContentTypes = [.json, .zip]
             openPanel.allowsMultipleSelection = false
             openPanel.canChooseDirectories = false
             openPanel.title = "import_library".localized(for: preferences.language)
@@ -756,8 +780,13 @@ struct DataTab: View {
             openPanel.begin { response in
                 if response == .OK, let url = openPanel.url {
                     do {
-                        let data = try Data(contentsOf: url)
-                        let result = self.promptService.importPromptsFromData(data)
+                        let result: (success: Int, failed: Int, foldersCreated: Int)
+                        if url.pathExtension.lowercased() == "zip" {
+                            result = self.promptService.importBackupZip(from: url)
+                        } else {
+                            let data = try Data(contentsOf: url)
+                            result = self.promptService.importPromptsFromData(data)
+                        }
                         
                         DispatchQueue.main.async {
                             withAnimation {

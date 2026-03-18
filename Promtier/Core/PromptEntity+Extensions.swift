@@ -35,15 +35,23 @@ extension PromptEntity {
         prompt.deletedAt = deletedAt
         prompt.negativePrompt = negativePrompt
         prompt.alternativePrompt = alternativePrompt
-        
-        var images: [Data] = []
-        if let img1 = image1 { images.append(img1) }
-        if let img2 = image2 { images.append(img2) }
-        if let img3 = image3 { images.append(img3) }
-        prompt.showcaseImages = images
+
+        // Nuevo esquema: paths + thumbnails en Core Data (las imágenes completas viven en disco).
+        prompt.showcaseImagePaths = [image1Path, image2Path, image3Path].compactMap { $0 }
+        prompt.showcaseThumbnails = [thumb1, thumb2, thumb3].compactMap { $0 }
+        prompt.showcaseImages = [] // Lazy-load cuando se necesite
+
         // Mantener conteo consistente incluso si aún no se migró.
         let storedCount = Int(showcaseImageCount)
-        prompt.showcaseImageCount = storedCount > 0 ? storedCount : images.count
+        if storedCount > 0 {
+            prompt.showcaseImageCount = storedCount
+        } else if !prompt.showcaseImagePaths.isEmpty {
+            prompt.showcaseImageCount = prompt.showcaseImagePaths.count
+        } else {
+            // Fallback legacy (antes de migración a disco)
+            let legacyCount = [image1, image2, image3].compactMap { $0 }.count
+            prompt.showcaseImageCount = legacyCount
+        }
         
         if let historyData = versionHistoryData,
            let history = try? JSONDecoder().decode([PromptSnapshot].self, from: historyData) {
@@ -64,13 +72,13 @@ extension PromptEntity {
         deletedAt = prompt.deletedAt
         negativePrompt = prompt.negativePrompt
         alternativePrompt = prompt.alternativePrompt
-        
-        // Limpiar y reasignar imágenes
-        let cappedImages = Array(prompt.showcaseImages.prefix(3))
-        image1 = cappedImages.indices.contains(0) ? cappedImages[0] : nil
-        image2 = cappedImages.indices.contains(1) ? cappedImages[1] : nil
-        image3 = cappedImages.indices.contains(2) ? cappedImages[2] : nil
-        showcaseImageCount = Int16(cappedImages.count)
+
+        // NOTA: Las imágenes ahora se guardan en disco (ImageStore).
+        // Este método solo actualiza conteo cuando el caller provee imágenes explícitas.
+        // La asignación de paths/thumbs se maneja desde PromptService.
+        if !prompt.showcaseImages.isEmpty || prompt.showcaseImageCount == 0 {
+            showcaseImageCount = Int16(min(prompt.showcaseImages.count, 3))
+        }
         
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)

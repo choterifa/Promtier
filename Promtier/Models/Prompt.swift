@@ -24,6 +24,10 @@ struct Prompt: Identifiable, Codable {
     var showcaseImages: [Data] = [] // Imágenes de resultados (max 3)
     /// Conteo persistido para UI/lista (permite lazy-load de blobs).
     var showcaseImageCount: Int = 0
+    /// Paths relativos en disco (app support) para imágenes guardadas.
+    var showcaseImagePaths: [String] = []
+    /// Thumbnails (pequeños) para UI rápida.
+    var showcaseThumbnails: [Data] = []
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
     var tags: [String] = []         // Etiquetas (Premium)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
@@ -42,6 +46,8 @@ struct Prompt: Identifiable, Codable {
         self.icon = icon
         self.showcaseImages = Array(showcaseImages.prefix(3))
         self.showcaseImageCount = self.showcaseImages.count
+        self.showcaseImagePaths = []
+        self.showcaseThumbnails = []
         self.tags = tags
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
@@ -67,6 +73,8 @@ struct Prompt: Identifiable, Codable {
         case icon
         case showcaseImages
         case showcaseImageCount
+        case showcaseImagePaths
+        case showcaseThumbnails
         case versionHistory
         case tags
         case deletedAt
@@ -96,6 +104,9 @@ struct Prompt: Identifiable, Codable {
         let decodedCount = try container.decodeIfPresent(Int.self, forKey: .showcaseImageCount)
         showcaseImageCount = decodedCount ?? showcaseImages.count
 
+        showcaseImagePaths = try container.decodeIfPresent([String].self, forKey: .showcaseImagePaths) ?? []
+        showcaseThumbnails = try container.decodeIfPresent([Data].self, forKey: .showcaseThumbnails) ?? []
+
         versionHistory = try container.decodeIfPresent([PromptSnapshot].self, forKey: .versionHistory) ?? []
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
         deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
@@ -119,6 +130,8 @@ struct Prompt: Identifiable, Codable {
         try container.encodeIfPresent(icon, forKey: .icon)
         try container.encode(showcaseImages, forKey: .showcaseImages)
         try container.encode(showcaseImageCount, forKey: .showcaseImageCount)
+        try container.encode(showcaseImagePaths, forKey: .showcaseImagePaths)
+        try container.encode(showcaseThumbnails, forKey: .showcaseThumbnails)
         try container.encode(versionHistory, forKey: .versionHistory)
         try container.encode(tags, forKey: .tags)
         try container.encodeIfPresent(deletedAt, forKey: .deletedAt)

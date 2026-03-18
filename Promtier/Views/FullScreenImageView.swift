@@ -1,7 +1,12 @@
 import SwiftUI
 
 struct FullScreenImageView: View {
-    let imageData: Data
+    enum ImageSource: Equatable {
+        case data(Data)
+        case url(URL)
+    }
+
+    let source: ImageSource
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var preferences = PreferencesManager.shared
 
@@ -55,6 +60,14 @@ struct FullScreenImageView: View {
         }
     }
     
+    init(imageData: Data) {
+        self.source = .data(imageData)
+    }
+
+    init(imageURL: URL) {
+        self.source = .url(imageURL)
+    }
+
     var body: some View {
         ZStack {
             // Base background (match popover/window to avoid white/black flash)
@@ -78,10 +91,15 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             if decodedImage == nil {
-                let dataCopy = imageData
                 Task.detached(priority: .userInitiated) {
                     // La mayoría de imágenes guardadas están optimizadas (~1200px), pero evitamos decode sync en main.
-                    let img = ImageDecodeCache.shared.downsampledImage(from: dataCopy, maxPixelSize: 2800)
+                    let img: NSImage?
+                    switch source {
+                    case .data(let data):
+                        img = ImageDecodeCache.shared.downsampledImage(from: data, maxPixelSize: 2800)
+                    case .url(let url):
+                        img = ImageDecodeCache.shared.downsampledImage(from: url, maxPixelSize: 2800)
+                    }
                     await MainActor.run {
                         decodedImage = img
                     }

@@ -52,7 +52,7 @@ class PromptService: ObservableObject {
         loadFolders()
         loadPrompts()
         migrateShowcaseImageCountIfNeeded()
-        optimizeStoredShowcaseImagesIfNeeded()
+        migrateShowcaseBlobsToDiskIfNeeded()
     }
 
     private func migrateShowcaseImageCountIfNeeded() {
@@ -94,51 +94,34 @@ class PromptService: ObservableObject {
         }
     }
 
-    private func optimizeStoredShowcaseImagesIfNeeded() {
-        let key = "hasOptimizedStoredShowcaseImagesV1"
+    private func migrateShowcaseBlobsToDiskIfNeeded() {
+        let key = "hasMigratedShowcaseImagesToDiskV1"
         if UserDefaults.standard.bool(forKey: key) { return }
 
-        // Ejecutar sin bloquear el arranque: optimización incremental en background.
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1.5) { [weak self] in
+        // Ejecutar sin bloquear el arranque.
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1.2) { [weak self] in
             guard let self = self else { return }
-            let context: NSManagedObjectContext = dataController.backgroundContext
+            let context: NSManagedObjectContext = self.dataController.backgroundContext
+
             context.performAndWaitCompat {
                 let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                request.predicate = NSPredicate(format: "image1 != nil OR image2 != nil OR image3 != nil")
+                request.predicate = NSPredicate(format: "(image1 != nil OR image2 != nil OR image3 != nil) AND (image1Path == nil AND image2Path == nil AND image3Path == nil)")
 
                 do {
                     let entities = try context.fetch(request)
-                    var changed = 0
-                    var processed = 0
+                    if entities.isEmpty {
+                        UserDefaults.standard.set(true, forKey: key)
+                        return
+                    }
 
+                    var processed = 0
                     for entity in entities {
                         autoreleasepool {
+                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
+                            if !legacy.isEmpty {
+                                self.applyShowcaseImages(legacy, to: entity, promptId: entity.id, clearExisting: true)
+                            }
                             processed += 1
-                            var newImages: [Data] = []
-                            let existing: [Data] = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
-
-                            var didChange = false
-                            for data in existing {
-                                if data.count < 450_000 {
-                                    newImages.append(data)
-                                    continue
-                                }
-                                if let optimized = ImageOptimizer.shared.optimize(imageData: data), optimized.count < data.count {
-                                    newImages.append(optimized)
-                                    didChange = true
-                                } else {
-                                    newImages.append(data)
-                                }
-                            }
-
-                            if didChange {
-                                entity.image1 = newImages.indices.contains(0) ? newImages[0] : nil
-                                entity.image2 = newImages.indices.contains(1) ? newImages[1] : nil
-                                entity.image3 = newImages.indices.contains(2) ? newImages[2] : nil
-                                entity.showcaseImageCount = Int16(newImages.count)
-                                entity.modifiedAt = Date()
-                                changed += 1
-                            }
                         }
 
                         if processed % 25 == 0, context.hasChanges {
@@ -150,11 +133,11 @@ class PromptService: ObservableObject {
                         try context.save()
                     }
 
-                    print("🖼️ Optimización imágenes: \(changed)/\(processed) prompts actualizados.")
+                    print("🧳 Migración imágenes a disco completada. Items: \(entities.count)")
                     UserDefaults.standard.set(true, forKey: key)
                     DispatchQueue.main.async { self.loadPrompts() }
                 } catch {
-                    print("Error optimizando imágenes guardadas: \(error)")
+                    print("Error migrando imágenes a disco: \(error)")
                 }
             }
         }
@@ -250,7 +233,11 @@ class PromptService: ObservableObject {
             icon: "sparkles",
             showcaseImages: showcaseImages
         )
-        _ = PromptEntity.create(from: creativePrompt, in: context)
+        let creativeEntity = PromptEntity(context: context)
+        creativeEntity.id = creativePrompt.id
+        creativeEntity.createdAt = creativePrompt.createdAt
+        creativeEntity.updateFromPrompt(creativePrompt)
+        applyShowcaseImages(creativePrompt.showcaseImages, to: creativeEntity, promptId: creativePrompt.id, clearExisting: true)
         
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
@@ -291,6 +278,8 @@ class PromptService: ObservableObject {
                     prompt.deletedAt = trashDict[entity.id.uuidString]
                     prompt.showcaseImages = []
                     prompt.showcaseImageCount = Int(entity.showcaseImageCount)
+                    prompt.showcaseImagePaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
+                    prompt.showcaseThumbnails = [entity.thumb1, entity.thumb2, entity.thumb3].compactMap { $0 }
                     return prompt
                 }
             } catch {
@@ -350,12 +339,6 @@ class PromptService: ObservableObject {
 
                     do {
                         guard let entity = try context.fetch(request).first else { return }
-
-                        if includeImages {
-                            result = entity.toPrompt()
-                            return
-                        }
-
                         var p = Prompt(title: entity.title, content: entity.content, folder: entity.folder)
                         p.id = entity.id
                         p.isFavorite = entity.isFavorite
@@ -368,8 +351,23 @@ class PromptService: ObservableObject {
                         p.deletedAt = entity.deletedAt
                         p.negativePrompt = entity.negativePrompt
                         p.alternativePrompt = entity.alternativePrompt
-                        p.showcaseImages = []
-                        p.showcaseImageCount = Int(entity.showcaseImageCount)
+                        p.showcaseImagePaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
+                        p.showcaseThumbnails = [entity.thumb1, entity.thumb2, entity.thumb3].compactMap { $0 }
+
+                        if includeImages {
+                            if !p.showcaseImagePaths.isEmpty {
+                                p.showcaseImages = p.showcaseImagePaths.compactMap { ImageStore.shared.loadData(relativePath: $0) }
+                                p.showcaseImageCount = p.showcaseImages.count
+                            } else {
+                                // Fallback legacy (antes de migración a disco)
+                                let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
+                                p.showcaseImages = legacy
+                                p.showcaseImageCount = legacy.count
+                            }
+                        } else {
+                            p.showcaseImages = []
+                            p.showcaseImageCount = Int(entity.showcaseImageCount)
+                        }
                         result = p
                     } catch {
                         print("Error obteniendo prompt: \(error)")
@@ -385,6 +383,26 @@ class PromptService: ObservableObject {
     func fetchShowcaseImages(byId id: UUID) async -> [Data] {
         let full = await fetchPrompt(byId: id, includeImages: true)
         return full?.showcaseImages ?? []
+    }
+
+    /// Carga únicamente los paths relativos de las imágenes de resultados para un prompt.
+    func fetchShowcaseImagePaths(byId id: UUID) async -> [String] {
+        let prompt = await fetchPrompt(byId: id, includeImages: false)
+        if let paths = prompt?.showcaseImagePaths, !paths.isEmpty {
+            return paths
+        }
+
+        // Fallback legacy: si aún hay blobs, migrar on-demand para que la UI no pierda imágenes.
+        if (prompt?.showcaseImageCount ?? 0) > 0 {
+            let images = await fetchShowcaseImages(byId: id)
+            if !images.isEmpty {
+                _ = await updateShowcaseImages(promptId: id, images: images)
+                let refreshed = await fetchPrompt(byId: id, includeImages: false)
+                return refreshed?.showcaseImagePaths ?? []
+            }
+        }
+
+        return []
     }
     
     /// Carga todas las carpetas desde Core Data aplicando el orden guardado
@@ -429,10 +447,15 @@ class PromptService: ObservableObject {
     /// Crea un nuevo prompt
     func createPrompt(_ prompt: Prompt) -> Bool {
         let context = dataController.viewContext
-        
-        _ = PromptEntity.create(from: prompt, in: context)
+        let entity = PromptEntity(context: context)
+        entity.id = prompt.id
+        entity.createdAt = prompt.createdAt
+        entity.updateFromPrompt(prompt) // metadata
+
+        // Guardar imágenes en disco + thumbnails en Core Data
+        applyShowcaseImages(prompt.showcaseImages, to: entity, promptId: prompt.id, clearExisting: true)
+
         dataController.save()
-        
         loadPrompts()
         return true
     }
@@ -447,6 +470,11 @@ class PromptService: ObservableObject {
             let entities = try context.fetch(request)
             if let entity = entities.first {
                 entity.updateFromPrompt(prompt)
+
+                // Solo reescribir imágenes si el caller nos pasa imágenes explícitas (o quiere borrar todas).
+                if !prompt.showcaseImages.isEmpty || prompt.showcaseImageCount == 0 {
+                    applyShowcaseImages(prompt.showcaseImages, to: entity, promptId: prompt.id, clearExisting: true)
+                }
                 dataController.save()
                 loadPrompts()
                 return true
@@ -476,12 +504,7 @@ class PromptService: ObservableObject {
 
                     do {
                         guard let entity = try context.fetch(request).first else { return }
-
-                        let capped = Array(images.prefix(3))
-                        entity.image1 = capped.indices.contains(0) ? capped[0] : nil
-                        entity.image2 = capped.indices.contains(1) ? capped[1] : nil
-                        entity.image3 = capped.indices.contains(2) ? capped[2] : nil
-                        entity.showcaseImageCount = Int16(capped.count)
+                        self.applyShowcaseImages(images, to: entity, promptId: promptId, clearExisting: true)
                         entity.modifiedAt = Date()
 
                         try context.save()
@@ -497,6 +520,47 @@ class PromptService: ObservableObject {
                 continuation.resume(returning: ok)
             }
         }
+    }
+
+    private func applyShowcaseImages(_ images: [Data], to entity: PromptEntity, promptId: UUID, clearExisting: Bool) {
+        let existingPaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
+        if clearExisting, !existingPaths.isEmpty {
+            ImageStore.shared.delete(relativePaths: existingPaths)
+        }
+
+        // Reset fields
+        entity.image1Path = nil
+        entity.image2Path = nil
+        entity.image3Path = nil
+        entity.thumb1 = nil
+        entity.thumb2 = nil
+        entity.thumb3 = nil
+
+        // Clear legacy blobs
+        entity.image1 = nil
+        entity.image2 = nil
+        entity.image3 = nil
+
+        let capped = Array(images.prefix(3))
+        var savedPaths: [String] = []
+        var thumbs: [Data] = []
+
+        for (idx, data) in capped.enumerated() {
+            if let saved = try? ImageStore.shared.saveShowcaseImage(imageData: data, promptId: promptId, slot: idx + 1) {
+                savedPaths.append(saved.relativePath)
+                thumbs.append(saved.thumbnailData)
+            }
+        }
+
+        entity.image1Path = savedPaths.indices.contains(0) ? savedPaths[0] : nil
+        entity.image2Path = savedPaths.indices.contains(1) ? savedPaths[1] : nil
+        entity.image3Path = savedPaths.indices.contains(2) ? savedPaths[2] : nil
+
+        entity.thumb1 = thumbs.indices.contains(0) ? thumbs[0] : nil
+        entity.thumb2 = thumbs.indices.contains(1) ? thumbs[1] : nil
+        entity.thumb3 = thumbs.indices.contains(2) ? thumbs[2] : nil
+
+        entity.showcaseImageCount = Int16(savedPaths.count)
     }
     
     // MARK: - Papelera (Soft Delete)
@@ -603,6 +667,9 @@ class PromptService: ObservableObject {
                 var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
                 dict.removeValue(forKey: prompt.id.uuidString)
                 UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+
+                // Limpiar imágenes en disco
+                ImageStore.shared.deleteAllImages(for: prompt.id)
                 
                 context.delete(entity)
                 dataController.save()
@@ -914,15 +981,40 @@ class PromptService: ObservableObject {
     func exportAllPromptsAsJSON() -> Data? {
         do {
             // Export debe incluir imágenes aunque la lista use lazy-load.
-            let request = PromptEntity.fetchAll(in: dataController.viewContext)
-            let entities = try dataController.viewContext.fetch(request)
-            let allPrompts = entities.map { $0.toPrompt() }
-            let activePrompts = allPrompts.filter { !$0.isInTrash }
+            // NOTA: JSON es portable (incluye imágenes en base64), pero puede ser pesado.
+            let context: NSManagedObjectContext = dataController.backgroundContext
+            var allPrompts: [Prompt] = []
+            var allFolders: [Folder] = []
+
+            context.performAndWaitCompat {
+                do {
+                    let folderRequest = FolderEntity.fetchAll(in: context)
+                    allFolders = try context.fetch(folderRequest).map { $0.toFolder() }
+
+                    let request = PromptEntity.fetchAll(in: context)
+                    let entities = try context.fetch(request)
+                    allPrompts = entities.map { entity in
+                        var p = entity.toPrompt()
+                        // Incluir imágenes completas (para que el JSON sea auto-contenido).
+                        if !p.showcaseImagePaths.isEmpty {
+                            p.showcaseImages = p.showcaseImagePaths.compactMap { ImageStore.shared.loadData(relativePath: $0) }
+                            p.showcaseImageCount = p.showcaseImages.count
+                        } else {
+                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
+                            p.showcaseImages = legacy
+                            p.showcaseImageCount = legacy.count
+                        }
+                        return p
+                    }
+                } catch {
+                    print("❌ Error preparando export JSON: \(error)")
+                }
+            }
 
             let package = BackupPackage(
-                version: "2.2",
-                prompts: activePrompts,
-                folders: folders
+                version: "2.3",
+                prompts: allPrompts,
+                folders: allFolders
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
@@ -932,6 +1024,270 @@ class PromptService: ObservableObject {
             print("❌ Error codificando backup a JSON: \(error)")
             return nil
         }
+    }
+
+    /// Exporta un backup completo en ZIP (manifest JSON + carpeta Images con archivos).
+    /// - Importante: a diferencia del JSON, el manifest NO incluye imágenes en base64.
+    func exportBackupZip(to destinationZipURL: URL) -> Bool {
+        let fm = FileManager.default
+        let tempRoot = fm.temporaryDirectory.appendingPathComponent("promtier_backup_\(UUID().uuidString)", isDirectory: true)
+        let bundleRoot = tempRoot.appendingPathComponent("Promtier Backup", isDirectory: true)
+        let imagesRoot = bundleRoot.appendingPathComponent("Images", isDirectory: true)
+        let manifestURL = bundleRoot.appendingPathComponent("manifest.json", isDirectory: false)
+
+        do {
+            try fm.createDirectory(at: imagesRoot, withIntermediateDirectories: true)
+
+            let context: NSManagedObjectContext = dataController.backgroundContext
+            var allPrompts: [Prompt] = []
+            var allFolders: [Folder] = []
+
+            context.performAndWaitCompat {
+                do {
+                    let folderRequest = FolderEntity.fetchAll(in: context)
+                    allFolders = try context.fetch(folderRequest).map { $0.toFolder() }
+
+                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                    request.sortDescriptors = [
+                        NSSortDescriptor(key: "useCount", ascending: false),
+                        NSSortDescriptor(key: "modifiedAt", ascending: false)
+                    ]
+                    let entities = try context.fetch(request)
+
+                    // Asegurar que prompts legacy tengan paths en disco antes de exportar.
+                    var didChange = false
+                    for entity in entities {
+                        let hasPaths = (entity.image1Path != nil || entity.image2Path != nil || entity.image3Path != nil)
+                        if !hasPaths {
+                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
+                            if !legacy.isEmpty {
+                                self.applyShowcaseImages(legacy, to: entity, promptId: entity.id, clearExisting: true)
+                                didChange = true
+                            }
+                        }
+                    }
+                    if didChange, context.hasChanges {
+                        try context.save()
+                    }
+
+                    allPrompts = entities.map { entity in
+                        var p = entity.toPrompt()
+                        // Mantener manifest ligero: las imágenes viajan como archivos en /Images (y thumbs se regeneran al importar).
+                        p.showcaseThumbnails = []
+                        p.showcaseImages = []
+                        return p
+                    }
+                } catch {
+                    print("❌ Error preparando backup ZIP: \(error)")
+                }
+            }
+
+            let archive = BackupArchive(
+                version: "3.0",
+                exportedAt: Date(),
+                prompts: allPrompts,
+                folders: allFolders
+            )
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            encoder.dateEncodingStrategy = .iso8601
+            let manifestData = try encoder.encode(archive)
+            try manifestData.write(to: manifestURL, options: [.atomic])
+
+            // Copiar imágenes referenciadas al bundle (sin cargar en memoria completa).
+            var copied = Set<String>()
+            for prompt in allPrompts {
+                for rel in Array(prompt.showcaseImagePaths.prefix(3)) {
+                    guard let safeRel = sanitizeRelativeImagePath(rel) else { continue }
+                    guard copied.insert(safeRel).inserted else { continue }
+
+                    let sourceURL = ImageStore.shared.url(forRelativePath: safeRel)
+                    guard fm.fileExists(atPath: sourceURL.path) else { continue }
+
+                    let destURL = imagesRoot.appendingPathComponent(safeRel, isDirectory: false)
+                    try fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    if fm.fileExists(atPath: destURL.path) { try? fm.removeItem(at: destURL) }
+                    try fm.copyItem(at: sourceURL, to: destURL)
+                }
+            }
+
+            if fm.fileExists(atPath: destinationZipURL.path) { try? fm.removeItem(at: destinationZipURL) }
+            try ZipService.zip(directory: bundleRoot, to: destinationZipURL)
+            try? fm.removeItem(at: tempRoot)
+            return true
+        } catch {
+            print("❌ Error exportando backup ZIP: \(error)")
+            try? fm.removeItem(at: tempRoot)
+            return false
+        }
+    }
+
+    /// Importa un backup ZIP (manifest + Images). No sobrescribe prompts existentes por ID.
+    func importBackupZip(from zipURL: URL) -> (success: Int, failed: Int, foldersCreated: Int) {
+        let fm = FileManager.default
+        let tempRoot = fm.temporaryDirectory.appendingPathComponent("promtier_import_\(UUID().uuidString)", isDirectory: true)
+
+        do {
+            try fm.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+            try ZipService.unzip(zipFile: zipURL, to: tempRoot)
+
+            guard let manifestURL = findFirstFile(named: "manifest.json", under: tempRoot) else {
+                print("❌ ZIP inválido: no se encontró manifest.json")
+                try? fm.removeItem(at: tempRoot)
+                return (0, 0, 0)
+            }
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let archive = try decoder.decode(BackupArchive.self, from: Data(contentsOf: manifestURL))
+
+            // El bundle root es el directorio donde vive el manifest.
+            let bundleRoot = manifestURL.deletingLastPathComponent()
+            let imagesRoot = bundleRoot.appendingPathComponent("Images", isDirectory: true)
+
+            let context: NSManagedObjectContext = dataController.backgroundContext
+            var successCount = 0
+            var failedCount = 0
+            var foldersCreated = 0
+
+            context.performAndWaitCompat { [self] in
+                do {
+                    // Cache de existentes por ID para evitar fetch por item.
+                    let existingPromptIds = try self.fetchExistingPromptIds(in: context)
+                    let existingFolderIds = try self.fetchExistingFolderIds(in: context)
+                    let existingFolderNames = try self.fetchExistingFolderNames(in: context)
+
+                    var promptIdSet = existingPromptIds
+                    var folderIdSet = existingFolderIds
+                    var folderNameSet = existingFolderNames
+
+                    // 1) Carpetas
+                    for folder in archive.folders {
+                        if folderIdSet.contains(folder.id) || folderNameSet.contains(folder.name) { continue }
+                        _ = FolderEntity.create(from: folder, in: context)
+                        foldersCreated += 1
+                        folderIdSet.insert(folder.id)
+                        folderNameSet.insert(folder.name)
+                    }
+
+                    // 2) Prompts
+                    for prompt in archive.prompts {
+                        if promptIdSet.contains(prompt.id) {
+                            failedCount += 1
+                            continue
+                        }
+
+                        let entity = PromptEntity(context: context)
+                        entity.id = prompt.id
+                        entity.createdAt = prompt.createdAt
+                        entity.updateFromPrompt(prompt)
+
+                        let paths = Array(prompt.showcaseImagePaths.prefix(3)).compactMap(self.sanitizeRelativeImagePath(_:))
+                        var thumbs: [Data] = []
+
+                        if !paths.isEmpty {
+                            for rel in paths {
+                                let sourceURL = imagesRoot.appendingPathComponent(rel, isDirectory: false)
+                                guard fm.fileExists(atPath: sourceURL.path) else { continue }
+
+                                let destURL = ImageStore.shared.url(forRelativePath: rel)
+                                try fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                                if fm.fileExists(atPath: destURL.path) { try? fm.removeItem(at: destURL) }
+                                try fm.copyItem(at: sourceURL, to: destURL)
+
+                                if let data = try? Data(contentsOf: destURL),
+                                   let thumb = ImageOptimizer.shared.optimizeForDisk(imageData: data, maxPixelSize: 480, compressionQuality: 0.7)?.data {
+                                    thumbs.append(thumb)
+                                }
+                            }
+                        }
+
+                        entity.image1Path = paths.indices.contains(0) ? paths[0] : nil
+                        entity.image2Path = paths.indices.contains(1) ? paths[1] : nil
+                        entity.image3Path = paths.indices.contains(2) ? paths[2] : nil
+
+                        entity.thumb1 = thumbs.indices.contains(0) ? thumbs[0] : nil
+                        entity.thumb2 = thumbs.indices.contains(1) ? thumbs[1] : nil
+                        entity.thumb3 = thumbs.indices.contains(2) ? thumbs[2] : nil
+
+                        entity.image1 = nil
+                        entity.image2 = nil
+                        entity.image3 = nil
+
+                        entity.showcaseImageCount = Int16(paths.count)
+
+                        successCount += 1
+                        promptIdSet.insert(prompt.id)
+
+                        if successCount % 50 == 0, context.hasChanges {
+                            try context.save()
+                        }
+                    }
+
+                    if context.hasChanges {
+                        try context.save()
+                    }
+                } catch {
+                    print("❌ Error importando backup ZIP: \(error)")
+                }
+            }
+
+            DispatchQueue.main.async {
+                self.loadFolders()
+                self.loadPrompts()
+            }
+
+            try? fm.removeItem(at: tempRoot)
+            return (successCount, failedCount, foldersCreated)
+        } catch {
+            print("❌ Error leyendo ZIP: \(error)")
+            try? fm.removeItem(at: tempRoot)
+            return (0, 0, 0)
+        }
+    }
+
+    private func sanitizeRelativeImagePath(_ path: String) -> String? {
+        if path.isEmpty { return nil }
+        if path.hasPrefix("/") { return nil }
+        let components = (path as NSString).pathComponents
+        if components.contains("..") { return nil }
+        return path
+    }
+
+    private func findFirstFile(named filename: String, under directory: URL) -> URL? {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
+            return nil
+        }
+        for case let url as URL in enumerator {
+            if url.lastPathComponent == filename { return url }
+        }
+        return nil
+    }
+
+    private func fetchExistingPromptIds(in context: NSManagedObjectContext) throws -> Set<UUID> {
+        let request = NSFetchRequest<NSDictionary>(entityName: "PromptEntity")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = ["id"]
+        let rows = try context.fetch(request)
+        return Set(rows.compactMap { $0["id"] as? UUID })
+    }
+
+    private func fetchExistingFolderIds(in context: NSManagedObjectContext) throws -> Set<UUID> {
+        let request = NSFetchRequest<NSDictionary>(entityName: "FolderEntity")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = ["id"]
+        let rows = try context.fetch(request)
+        return Set(rows.compactMap { $0["id"] as? UUID })
+    }
+
+    private func fetchExistingFolderNames(in context: NSManagedObjectContext) throws -> Set<String> {
+        let request = NSFetchRequest<NSDictionary>(entityName: "FolderEntity")
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = ["name"]
+        let rows = try context.fetch(request)
+        return Set(rows.compactMap { $0["name"] as? String })
     }
     
     /// Exporta todos los prompts en formato CSV (RFC 4180)
@@ -1030,6 +1386,9 @@ class PromptService: ObservableObject {
     /// Restablece toda la base de datos (BORRADO TOTAL)
     func resetAllData() {
         let context = dataController.viewContext
+
+        // 0. Wipe de imágenes en disco (para evitar huérfanas)
+        ImageStore.shared.wipeAll()
         
         // 1. Eliminar Prompts
         let promptRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
@@ -1046,6 +1405,8 @@ class PromptService: ObservableObject {
             // Limpiar flags de seeding para que se vuelvan a crear al recargar
             UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV21")
             UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV22")
+            UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImagesToDiskV1")
+            UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImageCountV1")
             
             dataController.save()
             

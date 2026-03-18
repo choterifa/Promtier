@@ -121,6 +121,7 @@
 "save_as_file" = "Save as file";
 "export_json_subtitle" = "Full backup with folders (recommended)";
 "export_csv_subtitle" = "Prompts only — compatible with Excel / Sheets";
+"export_zip_subtitle" = "Full backup (ZIP) — includes images and folders";
 "import_library" = "Import Library";
 "import_subtitle" = "Load from a JSON file";
 "icloud_sync" = "iCloud Sync";

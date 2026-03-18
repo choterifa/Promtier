@@ -50,6 +50,12 @@ extension PromptEntity {
     @NSManaged public var image1: Data?
     @NSManaged public var image2: Data?
     @NSManaged public var image3: Data?
+    @NSManaged public var image1Path: String?
+    @NSManaged public var image2Path: String?
+    @NSManaged public var image3Path: String?
+    @NSManaged public var thumb1: Data?
+    @NSManaged public var thumb2: Data?
+    @NSManaged public var thumb3: Data?
     @NSManaged public var showcaseImageCount: Int16
     @NSManaged public var versionHistoryData: Data?
     @NSManaged public var negativePrompt: String?

@@ -10,9 +10,9 @@ import SwiftUI
 
 struct PromptPreviewView: View {
     let prompt: Prompt
-    @State private var showingFullScreenImage: Data? = nil
+    @State private var showingFullScreenImageURL: URL? = nil
     @State private var isVisible = false
-    @State private var showcaseImages: [Data] = []
+    @State private var showcaseImagePaths: [String] = []
     @State private var isLoadingImages: Bool = false
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
@@ -52,28 +52,28 @@ struct PromptPreviewView: View {
             }
         )
         .sheet(item: Binding(
-            get: { showingFullScreenImage.map { IdentifiableData(value: $0) } },
-            set: { showingFullScreenImage = $0?.value }
+            get: { showingFullScreenImageURL.map { IdentifiableURL(value: $0) } },
+            set: { showingFullScreenImageURL = $0?.value }
         )) { item in
-            FullScreenImageView(imageData: item.value)
+            FullScreenImageView(imageURL: item.value)
         }
-        .onChange(of: showingFullScreenImage != nil) { _, isOpen in
+        .onChange(of: showingFullScreenImageURL != nil) { _, isOpen in
             isFullScreenImageOpen = isOpen
         }
         .onAppear {
             isVisible = true
-            showcaseImages = prompt.showcaseImages
+            showcaseImagePaths = prompt.showcaseImagePaths
         }
         .onDisappear {
             isVisible = false
         }
         .task(id: prompt.id) {
-            guard showcaseImages.isEmpty, prompt.showcaseImageCount > 0 else { return }
+            guard showcaseImagePaths.isEmpty, prompt.showcaseImageCount > 0 else { return }
             if isLoadingImages { return }
             isLoadingImages = true
-            let images = await promptService.fetchShowcaseImages(byId: prompt.id)
+            let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
             await MainActor.run {
-                self.showcaseImages = images
+                self.showcaseImagePaths = paths
                 self.isLoadingImages = false
             }
         }
@@ -201,7 +201,7 @@ struct PromptPreviewView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Galería al inicio si la preferencia es true
-                if preferences.previewImagesFirst && !showcaseImages.isEmpty {
+                if preferences.previewImagesFirst && !showcaseImagePaths.isEmpty {
                     showcaseGallery
                     Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
                 }
@@ -291,7 +291,7 @@ struct PromptPreviewView: View {
                 }
                 
                 // Galería al final si la preferencia es false
-                if !preferences.previewImagesFirst && !showcaseImages.isEmpty {
+                if !preferences.previewImagesFirst && !showcaseImagePaths.isEmpty {
                     Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
                     showcaseGallery
                 }
@@ -317,10 +317,11 @@ struct PromptPreviewView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(Array(showcaseImages.enumerated()), id: \.offset) { index, imageData in
-                        DownsampledImageView(
-                            imageData: imageData,
-                            cacheKey: "\(prompt.id.uuidString):preview:\(index):900:\(imageData.count)",
+                    ForEach(Array(showcaseImagePaths.enumerated()), id: \.offset) { index, relativePath in
+                        let url = ImageStore.shared.url(forRelativePath: relativePath)
+                        DownsampledImageURLView(
+                            imageURL: url,
+                            cacheKey: "\(prompt.id.uuidString):preview:\(index):900:\(relativePath)",
                             maxPixelSize: 900,
                             contentMode: .fill
                         )
@@ -333,7 +334,7 @@ struct PromptPreviewView: View {
                         )
                         .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
                         .onTapGesture {
-                            showingFullScreenImage = imageData
+                            showingFullScreenImageURL = url
                         }
                     }
                 }

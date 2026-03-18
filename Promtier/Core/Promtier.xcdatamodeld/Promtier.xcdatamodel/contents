@@ -15,6 +15,12 @@
         <attribute name="image1" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="image2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="image3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="image1Path" optional="YES" attributeType="String"/>
+        <attribute name="image2Path" optional="YES" attributeType="String"/>
+        <attribute name="image3Path" optional="YES" attributeType="String"/>
+        <attribute name="thumb1" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="thumb2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="thumb3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="showcaseImageCount" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="versionHistoryData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="negativePrompt" optional="YES" attributeType="String"/>

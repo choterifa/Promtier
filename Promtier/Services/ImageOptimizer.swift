@@ -12,8 +12,8 @@ final class ImageOptimizer: @unchecked Sendable {
         optimize(imageData: imageData, maxPixelSize: 1200, compressionQuality: 0.8)
     }
 
-    /// Optimiza una imagen de forma eficiente (sin decodificar a tamaño completo en memoria).
-    nonisolated func optimize(imageData: Data, maxPixelSize: Int, compressionQuality: Double) -> Data? {
+    /// Optimiza para guardado en disco, devolviendo también la extensión sugerida.
+    nonisolated func optimizeForDisk(imageData: Data, maxPixelSize: Int, compressionQuality: Double) -> (data: Data, fileExtension: String)? {
         let sourceOptions: [CFString: Any] = [
             kCGImageSourceShouldCache: false
         ]
@@ -30,16 +30,23 @@ final class ImageOptimizer: @unchecked Sendable {
         let alpha = cgImage.alphaInfo
         let hasAlpha = alpha == .first || alpha == .last || alpha == .premultipliedFirst || alpha == .premultipliedLast
 
-        let destType: CFString = (hasAlpha ? UTType.png.identifier : UTType.jpeg.identifier) as CFString
+        let destUTType = hasAlpha ? UTType.png : UTType.jpeg
         let mutableData = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(mutableData, destType, 1, nil) else { return nil }
+        guard let destination = CGImageDestinationCreateWithData(mutableData, destUTType.identifier as CFString, 1, nil) else { return nil }
 
         var properties: [CFString: Any] = [:]
-        if !hasAlpha {
+        if destUTType == .jpeg {
             properties[kCGImageDestinationLossyCompressionQuality] = compressionQuality
         }
         CGImageDestinationAddImage(destination, cgImage, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return nil }
-        return mutableData as Data
+
+        let ext = (destUTType == .png) ? "png" : "jpg"
+        return (mutableData as Data, ext)
+    }
+
+    /// Optimiza una imagen de forma eficiente (sin decodificar a tamaño completo en memoria).
+    nonisolated func optimize(imageData: Data, maxPixelSize: Int, compressionQuality: Double) -> Data? {
+        optimizeForDisk(imageData: imageData, maxPixelSize: maxPixelSize, compressionQuality: compressionQuality)?.data
     }
 }
