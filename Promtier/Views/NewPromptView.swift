@@ -228,23 +228,50 @@ struct NewPromptView: View {
                 
                 Spacer()
                 
-                // Botón Zen y AI flotantes en el header
-                HStack(spacing: 12) {
-                    if preferences.appleIntelligenceEnabled {
-                        Button(action: {
-                            triggerAppleIntelligence = true
-                            HapticService.shared.playLight()
+                // Toolbar de Acciones (Header)
+                HStack(spacing: 8) {
+                    // Variables y Snippets (Ahora en el Header)
+                    HStack(spacing: 0) {
+                        Button(action: { 
+                            if preferences.isPremiumActive {
+                                insertionRequest = "{{variable}}"
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                            }
                         }) {
-                            Image(systemName: "apple.intelligence")
-                                .font(.system(size: 14, weight: .bold))
-                                .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
-                                .foregroundColor(isAIActive ? .blue : .primary)
+                            Image(systemName: "curlybraces")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.blue)
                                 .frame(width: 32, height: 32)
-                                .background(Circle().fill(isAIActive ? Color.blue.opacity(0.15) : Color.primary.opacity(0.05)))
+                                .background(Color.blue.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        .help("apple_intelligence".localized(for: preferences.language))
+                        .help("insert_variable_hint".localized(for: preferences.language))
+                        
+                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
+                        
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            } else {
+                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                            }
+                        }) {
+                            Text("/")
+                                .font(.system(size: 14, weight: .black, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .help("insert_snippet_hint".localized(for: preferences.language))
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                    )
 
                     Button(action: { showingZenEditor = true }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -260,7 +287,7 @@ struct NewPromptView: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 24)
             
-            // Área de Texto con Toolbar Integrada
+            // Área de Texto con IA Flotante
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     HighlightedEditor(
@@ -279,42 +306,31 @@ struct NewPromptView: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     
-                    // Toolbar de Acciones Rápidas (Elegante y flotante)
-                    HStack(spacing: 8) {
-                        Button(action: { 
-                            if preferences.isPremiumActive {
-                                insertionRequest = "{{variable}}"
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                            }
-                        }) {
-                            Label("gt_variables".localized(for: preferences.language), systemImage: "curlybraces")
-                                .font(.system(size: 11, weight: .bold))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Capsule().fill(Color.blue.opacity(0.1)))
-                                .foregroundColor(.blue)
-                        }
-                        .buttonStyle(.plain)
-                        
+                    // Botón Apple Intelligence (Esquina inferior derecha del editor)
+                    if preferences.appleIntelligenceEnabled {
                         Button(action: {
-                            if preferences.isPremiumActive {
-                                showSnippets = true
-                                snippetSearchQuery = ""
-                            } else {
-                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
-                            }
+                            triggerAppleIntelligence = true
+                            HapticService.shared.playLight()
                         }) {
-                            Label("quick_snippets".localized(for: preferences.language), systemImage: "text.quote")
-                                .font(.system(size: 11, weight: .bold))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Capsule().fill(Color.blue.opacity(0.1)))
-                                .foregroundColor(.blue)
+                            Image(systemName: "apple.intelligence")
+                                .font(.system(size: 13, weight: .bold))
+                                .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
+                                .foregroundColor(isAIActive ? .blue : .primary)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(Color(NSColor.textBackgroundColor))
+                                        .shadow(color: Color.black.opacity(0.1), radius: 3, y: 1)
+                                )
+                                .overlay(
+                                    Circle()
+                                        .stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
+                                )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(10)
+                        .help("apple_intelligence".localized(for: preferences.language))
                     }
-                    .padding(12)
                 }
             }
             .background(
@@ -330,14 +346,12 @@ struct NewPromptView: View {
     
     private var imageGallery: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(spacing: 8) {
                 Text("prompt_results".localized(for: preferences.language))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
                     .textCase(.uppercase)
-                
-                Spacer()
                 
                 if showcaseImages.count < 3 {
                     Button(action: selectImages) {
@@ -348,10 +362,13 @@ struct NewPromptView: View {
                     .buttonStyle(ScaleButtonStyle())
                     .help("add_image".localized(for: preferences.language))
                 }
+                
+                Spacer()
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
+                    // Imágenes actuales
                     ForEach(0..<showcaseImages.count, id: \.self) { index in
                         ZStack(alignment: .topTrailing) {
                             if let nsImage = NSImage(data: showcaseImages[index]) {
@@ -380,23 +397,23 @@ struct NewPromptView: View {
                                 .offset(x: 6, y: -6)
                             }
                         }
-                        .transition(.scale.combined(with: .opacity))
                     }
                     
-                    if showcaseImages.isEmpty {
+                    // Placeholders para completar hasta 3
+                    ForEach(showcaseImages.count..<3, id: \.self) { _ in
                         Button(action: selectImages) {
                             VStack(spacing: 8) {
                                 Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 24))
+                                    .font(.system(size: 20))
                                 Text("add_prompt_results".localized(for: preferences.language))
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(.system(size: 10, weight: .medium))
                             }
-                            .foregroundColor(.secondary.opacity(0.5))
+                            .foregroundColor(.secondary.opacity(0.4))
                             .frame(width: 180, height: 120)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                                    .foregroundColor(.secondary.opacity(0.2))
+                                    .foregroundColor(.secondary.opacity(0.15))
                             )
                         }
                         .buttonStyle(.plain)
