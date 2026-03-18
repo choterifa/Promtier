@@ -19,6 +19,7 @@ struct PromptCard: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var batchService: BatchOperationsService
     
     @State private var isTargetedForDrop = false
     
@@ -62,6 +63,20 @@ struct PromptCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Checkbox para selección en lote
+            if batchService.isSelectionModeActive {
+                Button(action: {
+                    batchService.toggleSelection(for: prompt.id)
+                    HapticService.shared.playLight()
+                }) {
+                    Image(systemName: batchService.selectedPromptIds.contains(prompt.id) ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(batchService.selectedPromptIds.contains(prompt.id) ? .blue : .secondary.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+            
             // Icono de categoría o personalizado grande restaurado
             if let iconName = prompt.icon {
                 ZStack {
@@ -221,12 +236,19 @@ struct PromptCard: View {
         .contentShape(Rectangle())
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
-            onTap()
+            if batchService.isSelectionModeActive {
+                batchService.toggleSelection(for: prompt.id)
+                HapticService.shared.playLight()
+            } else {
+                onTap()
+            }
         }
         // GESTO SIMULTÁNEO PARA EL DOBLE CLIC
         .simultaneousGesture(
             TapGesture(count: 2).onEnded {
-                onDoubleTap()
+                if !batchService.isSelectionModeActive {
+                    onDoubleTap()
+                }
             }
         )
         .onHover { hovering in
@@ -293,7 +315,11 @@ struct PromptCard: View {
     
     // Colores dinámicos Premium
     private var cardBackgroundColor: Color {
-        if isSelected {
+        let isBatchSelected = batchService.selectedPromptIds.contains(prompt.id)
+        
+        if isBatchSelected {
+            return Color.blue.opacity(0.12)
+        } else if isSelected {
             return Color.blue.opacity(0.05)
         } else if isHovered {
             return Color.primary.opacity(0.04)

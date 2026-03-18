@@ -48,4 +48,29 @@ class HapticService {
             }
         }
     }
+    
+    /// Genera un feedback de éxito
+    func playSuccess() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
+        DispatchQueue.main.async {
+            let performer = NSHapticFeedbackManager.defaultPerformer
+            performer.perform(.generic, performanceTime: .now)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                performer.perform(.generic, performanceTime: .now)
+            }
+        }
+    }
+    
+    /// Genera un feedback de error
+    func playError() {
+        guard PreferencesManager.shared.hapticFeedbackEnabled else { return }
+        DispatchQueue.main.async {
+            let performer = NSHapticFeedbackManager.defaultPerformer
+            for i in 0..<3 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.1) {
+                    performer.perform(.alignment, performanceTime: .now)
+                }
+            }
+        }
+    }
 }

@@ -47,6 +47,9 @@ class MenuBarManager: NSObject, ObservableObject {
     // CONFIGURABLE: Gestor de atajos (inicialización lazy)
     private var shortcutManager: ShortcutManager?
     
+    // CONFIGURABLE: Operaciones en lote
+    @Published var batchService = BatchOperationsService()
+    
     private override init() {
         super.init()
         // CONFIGURABLE: Retrasar inicialización para evitar problemas de orden
@@ -130,6 +133,7 @@ class MenuBarManager: NSObject, ObservableObject {
             let contentView = SearchViewSimple()
                 .environmentObject(self.promptService)
                 .environmentObject(self.preferencesManager)
+                .environmentObject(self.batchService)
                 .environmentObject(self)
             
             

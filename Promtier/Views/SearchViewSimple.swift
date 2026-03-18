@@ -7,6 +7,7 @@ struct SearchViewSimple: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
+    @EnvironmentObject var batchService: BatchOperationsService
     
     @FocusState private var isSearchFocused: Bool
     @State private var localEventMonitor: Any?
@@ -366,6 +367,32 @@ struct SearchViewSimple: View {
                             }
                             .buttonStyle(.plain)
                             .help("Papelera")
+                            
+                            // Botón de Selección en Lote
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3)) {
+                                    batchService.isSelectionModeActive.toggle()
+                                    if !batchService.isSelectionModeActive {
+                                        batchService.clearSelection()
+                                    }
+                                }
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.rectangle.set.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
+                                    .frame(width: 34, height: 34)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.2) : Color.primary.opacity(0.06), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .help(batchService.isSelectionModeActive ? "Cancelar Selección" : "Selección en Lote")
                         }
                     }
                     .padding(.horizontal, 24)
