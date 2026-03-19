@@ -225,11 +225,15 @@ struct NewPromptView: View {
                                         )
                                         _ = promptService.createPrompt(newPrompt)
                                         HapticService.shared.playSuccess()
-                                        withAnimation {
-                                            branchMessage = "Prompt branched successfully!"
-                                        }
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                            withAnimation { branchMessage = nil }
+                                        
+                                        // Feedback visual y navegación inmediata
+                                        branchMessage = "Prompt branched successfully!"
+                                        
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                            branchMessage = nil
+                                            DraftService.shared.clearDraft()
+                                            MenuBarManager.shared.isModalActive = false
+                                            onClose() // Salir a la lista
                                         }
                                     }) {
                                         HStack(spacing: 4) {
@@ -1000,6 +1004,7 @@ struct EditorCard: View {
                         )
                         .padding(12)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.blue.opacity(0.05)) // Fondo azul tenue al editor principal
                         
                         if preferences.appleIntelligenceEnabled {
                             Button(action: {
@@ -1087,6 +1092,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                 .frame(minHeight: 120)
                 .background(
                     ZStack(alignment: .topLeading) {
+                        color.opacity(0.05) // Color de fondo sutil (Rojo para Negative, Verde para Alternative)
+                        
                         if text.isEmpty {
                             Text(placeholder)
                                 .font(.system(size: 14 * preferences.fontSize.scale))
