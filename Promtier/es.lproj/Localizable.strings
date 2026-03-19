@@ -269,12 +269,26 @@
 "gt_zoom_images" = "Zoom en Imágenes";
 "gt_zoom_hint" = "Clic para ampliar";
 "gt_zen_mode" = "Modo Zen";
-"gt_zen_shortcut" = "Cmd + Shift + Z";
+"gt_zen_shortcut" = "Cmd + ⇧ + Z";
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Alt + V";
 "gt_snippets_shortcut" = "Escribe / para insertar";
 "gt_auto_paste_tip" = "Pegado Instantáneo";
 "gt_auto_paste_shortcut" = "Activa en Ajustes";
+"gt_save_prompt" = "Guardar Prompt";
+"gt_save_shortcut" = "Cmd + S";
+"gt_edit" = "Editar Prompt";
+"gt_edit_shortcut" = "Enter";
+"gt_focus_negative" = "Prompt Negativo";
+"gt_focus_negative_shortcut" = "Alt + N";
+"gt_focus_alternative" = "Prompt Alternativo";
+"gt_focus_alternative_shortcut" = "Alt + A";
+"gt_copy_final" = "Copiar Prompt Final";
+"gt_copy_final_shortcut" = "Cmd + C / Enter";
+"gt_next_field" = "Siguiente Campo";
+"gt_next_field_shortcut" = "Tab / Enter";
+"gt_close_window" = "Cerrar Ventana";
+"gt_close_window_shortcut" = "Esc";
 
 /* Default Data */
 "snippet_signature_title" = "Firma Profesional";
@@ -293,12 +307,12 @@
 "default_prompt_coding_content" = "Actúa como senior. Revisa este código {{lenguaje}}:\n\n```\n{{codigo}}\n```";
 "default_prompt_creative_title" = "Showcase: Paisaje Cyberpunk";
 
-"cat_work" = "Trabajo";
 "cat_code" = "Código";
-"cat_creative" = "Creativo";
-"cat_personal" = "Personal";
-"cat_study" = "Estudio";
-"cat_ai" = "IA/Modelos";
+"cat_writing" = "Escritura";
+"cat_image_gen" = "Generación de Imágenes";
+"cat_marketing" = "Marketing";
+"cat_productivity" = "Productividad";
+"cat_automation" = "Automatización";
 
 /* New Prompt */
 "edit_prompt" = "Editar Prompt";

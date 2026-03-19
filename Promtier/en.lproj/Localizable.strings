@@ -246,12 +246,26 @@
 "gt_zoom_images" = "Zoom Preview";
 "gt_zoom_hint" = "Click on images";
 "gt_zen_mode" = "Zen Mode";
-"gt_zen_shortcut" = "Cmd + Shift + Z";
+"gt_zen_shortcut" = "Cmd + ⇧ + Z";
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Opt + V";
 "gt_snippets_shortcut" = "Type / to insert";
 "gt_auto_paste_tip" = "Instant Paste";
 "gt_auto_paste_shortcut" = "Enable in Settings";
+"gt_save_prompt" = "Save Prompt";
+"gt_save_shortcut" = "Cmd + S";
+"gt_edit" = "Edit Prompt";
+"gt_edit_shortcut" = "Enter";
+"gt_focus_negative" = "Negative Prompt";
+"gt_focus_negative_shortcut" = "Opt + N";
+"gt_focus_alternative" = "Alternative Prompt";
+"gt_focus_alternative_shortcut" = "Opt + A";
+"gt_copy_final" = "Copy Final Prompt";
+"gt_copy_final_shortcut" = "Cmd + C / Enter";
+"gt_next_field" = "Next Field";
+"gt_next_field_shortcut" = "Tab / Enter";
+"gt_close_window" = "Close Window";
+"gt_close_window_shortcut" = "Esc";
 
 /* Default Data */
 "snippet_signature_title" = "Professional Signature";
@@ -270,12 +284,12 @@
 "default_prompt_coding_content" = "Act as a senior dev. Review this {{language}} code:\n\n```\n{{code}}\n```";
 "default_prompt_creative_title" = "Showcase: Cyberpunk Landscape";
 
-"cat_work" = "Work";
 "cat_code" = "Code";
-"cat_creative" = "Creative";
-"cat_personal" = "Personal";
-"cat_study" = "Study";
-"cat_ai" = "AI Models";
+"cat_writing" = "Writing";
+"cat_image_gen" = "Image Generation";
+"cat_marketing" = "Marketing";
+"cat_productivity" = "Productivity";
+"cat_automation" = "Automation";
 
 /* New Prompt */
 "edit_prompt" = "Edit Prompt";

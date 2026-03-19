@@ -306,9 +306,14 @@ struct PromptCard: View {
         }
         // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
-            // Cerrar el popover al empezar el arrastre para que no estorbe el destino del drop
-            DispatchQueue.main.async {
-                menuBarManager.closePopover()
+            // MEJORA: No cerrar inmediatamente para permitir categorización interna (drag-to-sidebar).
+            // Solo cerramos si detectamos que el arrastre sale de los límites de la ventana.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                if let window = NSApp.keyWindow, 
+                   window.className.contains("Popover"),
+                   !NSMouseInRect(NSEvent.mouseLocation, window.frame, false) {
+                    menuBarManager.closePopover()
+                }
             }
             let provider = NSItemProvider()
 

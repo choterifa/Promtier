@@ -276,6 +276,7 @@ struct VariableFillView: View {
             .buttonStyle(ScaleButtonStyle())
             .disabled(!canCopy)
             .keyboardShortcut("c", modifiers: [.command]) 
+            .keyboardShortcut(.return, modifiers: [.command]) 
         }
         .padding(.horizontal, 28)
         .padding(.top, 16)

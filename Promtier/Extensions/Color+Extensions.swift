@@ -143,55 +143,55 @@ enum AppLanguage: String, CaseIterable {
 // MARK: - Predefined Categories
 
 enum PredefinedCategory: String, CaseIterable {
-    case iaModels = "IA/Modelos"
-    case code = "Código"
-    case creative = "Creativo"
-    case work = "Trabajo"
-    case personal = "Personal"
-    case study = "Estudio"
+    case code = "Code"
+    case writing = "Writing"
+    case imageGen = "Image Generation"
+    case marketing = "Marketing"
+    case productivity = "Productivity"
+    case automation = "Automation"
     
     var displayName: String {
         let language = PreferencesManager.shared.language
         switch self {
-        case .iaModels: return "cat_ai".localized(for: language)
         case .code: return "cat_code".localized(for: language)
-        case .creative: return "cat_creative".localized(for: language)
-        case .work: return "cat_work".localized(for: language)
-        case .personal: return "cat_personal".localized(for: language)
-        case .study: return "cat_study".localized(for: language)
+        case .writing: return "cat_writing".localized(for: language)
+        case .imageGen: return "cat_image_gen".localized(for: language)
+        case .marketing: return "cat_marketing".localized(for: language)
+        case .productivity: return "cat_productivity".localized(for: language)
+        case .automation: return "cat_automation".localized(for: language)
         }
     }
     
     var color: Color {
         switch self {
-        case .iaModels: return Color.blue
         case .code: return Color.green
-        case .creative: return Color.purple
-        case .work: return Color.orange
-        case .personal: return Color.pink
-        case .study: return Color.yellow
+        case .writing: return Color.blue
+        case .imageGen: return Color.purple
+        case .marketing: return Color.orange
+        case .productivity: return Color.pink
+        case .automation: return Color.yellow
         }
     }
     
     var hexColor: String {
         switch self {
-        case .iaModels: return "#007AFF"
         case .code: return "#34C759"
-        case .creative: return "#AF52DE"
-        case .work: return "#FF9500"
-        case .personal: return "#FF2D92"
-        case .study: return "#FFCC00"
+        case .writing: return "#007AFF"
+        case .imageGen: return "#AF52DE"
+        case .marketing: return "#FF9500"
+        case .productivity: return "#FF2D92"
+        case .automation: return "#FFCC00"
         }
     }
     
     var icon: String {
         switch self {
-        case .iaModels: return "brain.head.profile"
-        case .code: return "chevron.left.forwardslash.chevron.right"
-        case .creative: return "paintbrush.pointed"
-        case .work: return "briefcase"
-        case .personal: return "heart"
-        case .study: return "book"
+        case .code: return "terminal.fill"
+        case .writing: return "square.and.pencil"
+        case .imageGen: return "sparkles"
+        case .marketing: return "megaphone.fill"
+        case .productivity: return "list.bullet.rectangle.portrait.fill"
+        case .automation: return "bolt.fill"
         }
     }
     

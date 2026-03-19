@@ -148,7 +148,7 @@ class PromptService: ObservableObject {
         let context = dataController.viewContext
         
         // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
-        let seedKey = "hasSeededDefaultsV21"
+        let seedKey = "hasSeededDefaultsV22"
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
         let request = FolderEntity.fetchAll(in: context)
@@ -201,7 +201,7 @@ class PromptService: ObservableObject {
         let emailPrompt = Prompt(
             title: "default_prompt_email_title".localized(for: language),
             content: "default_prompt_email_content".localized(for: language),
-            folder: PredefinedCategory.work.displayName,
+            folder: PredefinedCategory.writing.displayName,
             icon: "briefcase.fill"
         )
         _ = PromptEntity.create(from: emailPrompt, in: context)
@@ -229,7 +229,7 @@ class PromptService: ObservableObject {
         let creativePrompt = Prompt(
             title: "default_prompt_creative_title".localized(for: language),
             content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
-            folder: PredefinedCategory.creative.displayName,
+            folder: PredefinedCategory.imageGen.displayName,
             icon: "sparkles",
             showcaseImages: showcaseImages
         )

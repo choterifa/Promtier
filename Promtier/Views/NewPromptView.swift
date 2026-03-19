@@ -500,6 +500,24 @@ struct NewPromptView: View {
                 }
                 return nil
             }
+
+            // Cmd + Shift + Z -> Zen Mode (Z is keyCode 6)
+            if modifiers.contains(.command) && modifiers.contains(.shift) && event.keyCode == 6 {
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        self.showingZenEditor.toggle()
+                    }
+                }
+                return nil
+            }
+
+            // Cmd + S -> Save (S is keyCode 1)
+            if modifiers == .command && event.keyCode == 1 {
+                DispatchQueue.main.async {
+                    self.savePrompt()
+                }
+                return nil
+            }
             
             return event
         }

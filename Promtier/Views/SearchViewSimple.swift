@@ -32,11 +32,28 @@ struct SearchViewSimple: View {
     @State private var nextTipIndex: Int = 0
     private var ghostTips: [GhostTip] {
         [
-            GhostTip(title: "gt_preview".localized(for: preferences.language), icon: "eye", shortcut: "gt_spacebar".localized(for: preferences.language)),
-            GhostTip(title: "gt_quick_copy".localized(for: preferences.language), icon: "doc.on.doc", shortcut: "Cmd + C"),
-            GhostTip(title: "gt_new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
-            GhostTip(title: "gt_settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
-            GhostTip(title: "gt_hide_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
+            // Navegación y Lista
+            GhostTip(title: "move_up".localized(for: preferences.language), icon: "arrow.up", shortcut: "↑"),
+            GhostTip(title: "move_down".localized(for: preferences.language), icon: "arrow.down", shortcut: "↓"),
+            GhostTip(title: "preview".localized(for: preferences.language), icon: "eye", shortcut: "gt_spacebar".localized(for: preferences.language)),
+            GhostTip(title: "copy".localized(for: preferences.language), icon: "doc.on.doc", shortcut: "Cmd + C"),
+            GhostTip(title: "edit".localized(for: preferences.language), icon: "pencil", shortcut: "Enter"),
+            GhostTip(title: "toggle_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
+            GhostTip(title: "new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
+            GhostTip(title: "settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
+            
+            // Editor
+            GhostTip(title: "save_prompt".localized(for: preferences.language), icon: "square.and.arrow.down", shortcut: "Cmd + S"),
+            GhostTip(title: "gt_zen_mode".localized(for: preferences.language), icon: "pencil.and.outline", shortcut: "gt_zen_shortcut".localized(for: preferences.language)),
+            GhostTip(title: "gt_snippets_shortcut".localized(for: preferences.language), icon: "text.quote", shortcut: "/"),
+            GhostTip(title: "insert_variable".localized(for: preferences.language), icon: "curlybraces", shortcut: "gt_variables_shortcut".localized(for: preferences.language)),
+            GhostTip(title: "focus_negative".localized(for: preferences.language), icon: "minus.circle", shortcut: "⌥ N"),
+            GhostTip(title: "focus_alternative".localized(for: preferences.language), icon: "plus.circle", shortcut: "⌥ A"),
+            
+            // Variables y Otros
+            GhostTip(title: "copy_final_prompt".localized(for: preferences.language), icon: "doc.on.doc.fill", shortcut: "Cmd + Enter"),
+            GhostTip(title: "cancel_close".localized(for: preferences.language), icon: "xmark.square", shortcut: "Esc"),
+            GhostTip(title: "gt_auto_paste_tip".localized(for: preferences.language), icon: "wand.and.stars", shortcut: "gt_auto_paste_shortcut".localized(for: preferences.language)),
             GhostTip(title: "gt_drag_images".localized(for: preferences.language), icon: "photo", shortcut: "gt_images_hint".localized(for: preferences.language)),
             GhostTip(title: "gt_zoom_images".localized(for: preferences.language), icon: "magnifyingglass", shortcut: "gt_zoom_hint".localized(for: preferences.language))
         ]
