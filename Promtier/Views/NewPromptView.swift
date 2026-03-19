@@ -227,6 +227,9 @@ struct NewPromptView: View {
         .background(backgroundView)
         .sheet(item: fullScreenImageSheetItem) { item in
             FullScreenImageView(imageData: item.value)
+                .onDisappear {
+                    MenuBarManager.shared.fixTransientState()
+                }
         }
         .overlay { overlays }
         .sheet(item: premiumSheetItem) { item in

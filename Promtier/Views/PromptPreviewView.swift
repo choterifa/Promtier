@@ -56,9 +56,11 @@ struct PromptPreviewView: View {
             set: { showingFullScreenImageURL = $0?.value }
         )) { item in
             FullScreenImageView(imageURL: item.value)
-        }
-        .onChange(of: showingFullScreenImageURL != nil) { _, isOpen in
-            isFullScreenImageOpen = isOpen
+                .onAppear { isFullScreenImageOpen = true }
+                .onDisappear { 
+                    isFullScreenImageOpen = false
+                    MenuBarManager.shared.fixTransientState()
+                }
         }
         .onAppear {
             isVisible = true

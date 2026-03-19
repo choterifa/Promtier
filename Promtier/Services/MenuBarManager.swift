@@ -193,6 +193,18 @@ class MenuBarManager: NSObject, ObservableObject {
         isModalActive = false
     }
     
+    /// Repara el comportamiento transitorio del popover tras cerrar un modal o sheet
+    func fixTransientState() {
+        guard let popover = popover else { return }
+        // Forzar un ciclo de actualización del comportamiento para reactivar los monitores de eventos internos de AppKit
+        popover.behavior = .applicationDefined
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            popover.behavior = .transient
+            NSApp.activate(ignoringOtherApps: true)
+            popover.contentViewController?.view.window?.makeKey()
+        }
+    }
+    
     // MARK: - Atajos Globales
     
     /// Configura los atajos globales
