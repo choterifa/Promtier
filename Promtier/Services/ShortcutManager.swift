@@ -48,6 +48,10 @@ class ShortcutManager: ObservableObject {
     ]
     
     private var hotKeyRef: EventHotKeyRef?
+    private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
+    private var promptHotkeyMap: [UInt32: UUID] = [:]
+    private var nextHotKeyId: UInt32 = 2
+    
     private var localMonitor: Any?
     private var permissionTimer: Timer?
     
@@ -119,8 +123,15 @@ class ShortcutManager: ObservableObject {
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             
             InstallEventHandler(GetApplicationEventTarget(), { (nextHandler, theEvent, userData) -> OSStatus in
-                // Llamada estática para evitar captura de contexto
-                ShortcutManager.handleGlobalHotKey()
+                // Extraer el ID del HotKey presionado
+                var hkCom: EventHotKeyID = EventHotKeyID()
+                let status = GetEventParameter(theEvent, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hkCom)
+                
+                if status == noErr {
+                    let hotKeyId = hkCom.id
+                    ShortcutManager.handleGlobalHotKey(id: hotKeyId)
+                }
+                
                 return noErr
             }, 1, &eventType, nil, nil)
             
@@ -128,16 +139,62 @@ class ShortcutManager: ObservableObject {
         }
     }
     
-    // Método estático para el handler de Carbon
-    static func handleGlobalHotKey() {
-        DispatchQueue.main.async {
-            shared.handleCarbonHotKey()
+    // Método para registrar hotkeys dinámicos de prompts
+    func registerPromptHotkeys(prompts: [Prompt]) {
+        // Limpiar anteriores
+        for (_, ref) in promptHotKeyRefs {
+            UnregisterEventHotKey(ref)
+        }
+        promptHotKeyRefs.removeAll()
+        promptHotkeyMap.removeAll()
+        nextHotKeyId = 2 // 1 está reservado para Toggle Popover
+        
+        for prompt in prompts {
+            guard let shortcutStr = prompt.customShortcut else { continue }
+            let parts = shortcutStr.split(separator: ":")
+            guard parts.count == 2,
+                  let kc = UInt32(parts[0]),
+                  let mods = UInt(parts[1]) else { continue }
+            
+            var carbonModifiers: UInt32 = 0
+            let flags = NSEvent.ModifierFlags(rawValue: mods)
+            if flags.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
+            if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
+            if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
+            if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
+            
+            let hotKeyId = nextHotKeyId
+            nextHotKeyId += 1
+            
+            let hotKeyIDStruct = EventHotKeyID(signature: OSType(1347571781), id: hotKeyId)
+            var registration: EventHotKeyRef?
+            
+            let status = RegisterEventHotKey(kc, carbonModifiers, hotKeyIDStruct, GetApplicationEventTarget(), 0, &registration)
+            
+            if status == noErr, let ref = registration {
+                promptHotKeyRefs[hotKeyId] = ref
+                promptHotkeyMap[hotKeyId] = prompt.id
+                print("💎 Carbon HotKey registrado para prompt: \(prompt.title)")
+            }
         }
     }
     
-    func handleCarbonHotKey() {
-        print("🚀 Carbon HotKey detectado!")
-        MenuBarManager.shared.togglePopover()
+    // Método estático para el handler de Carbon
+    static func handleGlobalHotKey(id: UInt32) {
+        DispatchQueue.main.async {
+            shared.handleCarbonHotKey(id: id)
+        }
+    }
+    
+    func handleCarbonHotKey(id: UInt32) {
+        if id == 1 {
+            print("🚀 Carbon HotKey (Principal) detectado!")
+            MenuBarManager.shared.togglePopover()
+        } else if let promptId = promptHotkeyMap[id] {
+            print("🚀 Carbon HotKey (Prompt) detectado para ID: \(promptId)")
+            // Notificar a PromptService para copiar
+            NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)
+        }
     }
     
     // MARK: - Accesibilidad

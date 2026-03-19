@@ -45,7 +45,7 @@ class PromptService: ObservableObject {
                 self?.filterPrompts(query: self?.searchQuery ?? "", categoryOverride: category)
             }
             .store(in: &cancellables)
-        
+            
         seedDefaultFolders() // Crear categorías de sistema si no existen
         seedDefaultPrompts() // Crear prompts de ejemplo iniciales
         purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
@@ -315,6 +315,7 @@ class PromptService: ObservableObject {
                         ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
                     }
                     self.filterPrompts(query: self.searchQuery)
+                    ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
                     self.isLoading = false
                 }
             }

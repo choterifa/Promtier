@@ -67,6 +67,7 @@
 "show_advanced_fields_subtitle" = "Show negative and alternative prompt fields";
 "view_negative" = "View Negative";
 "view_alternative" = "View Alternative";
+"global_shortcut_copy" = "Custom Global Shortcut";
 "close_on_copy" = "Close on Copy";
 "close_on_copy_subtitle" = "Close the window automatically after copying";
 "auto_paste" = "Instant Paste";

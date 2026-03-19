@@ -60,5 +60,6 @@ extension PromptEntity {
     @NSManaged public var versionHistoryData: Data?
     @NSManaged public var negativePrompt: String?
     @NSManaged public var alternativePrompt: String?
+    @NSManaged public var customShortcut: String?
 
 }

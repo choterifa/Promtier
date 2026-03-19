@@ -35,9 +35,10 @@ struct Prompt: Identifiable, Codable {
     // Nuevas funciones de prompt
     var negativePrompt: String?     // Lo que la IA NO debe hacer
     var alternativePrompt: String?  // Un prompt similar o variante
+    var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, customShortcut: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
@@ -51,6 +52,7 @@ struct Prompt: Identifiable, Codable {
         self.tags = tags
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
+        self.customShortcut = customShortcut
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -80,6 +82,7 @@ struct Prompt: Identifiable, Codable {
         case deletedAt
         case negativePrompt
         case alternativePrompt
+        case customShortcut
     }
 
     init(from decoder: any Decoder) throws {
@@ -113,6 +116,7 @@ struct Prompt: Identifiable, Codable {
 
         negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
         alternativePrompt = try container.decodeIfPresent(String.self, forKey: .alternativePrompt)
+        customShortcut = try container.decodeIfPresent(String.self, forKey: .customShortcut)
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -137,6 +141,7 @@ struct Prompt: Identifiable, Codable {
         try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try container.encodeIfPresent(negativePrompt, forKey: .negativePrompt)
         try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
+        try container.encodeIfPresent(customShortcut, forKey: .customShortcut)
     }
     
     // MARK: - Métodos de ayuda

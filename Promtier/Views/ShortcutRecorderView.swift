@@ -178,3 +178,110 @@ struct ShortcutFormatter {
         }
     }
 }
+
+// MARK: - Grabador de atajos reutilizable (para prompts individuales)
+struct ReusableShortcutRecorderView: View {
+    let title: String
+    @Binding var shortcutString: String?
+    @State private var isRecording = false
+    @State private var localMonitor: Any?
+    
+    private var formattedShortcut: String {
+        guard let shortcut = shortcutString, let (keyCode, modifiers) = parseShortcut(shortcut) else { return "Ninguno" }
+        return ShortcutFormatter.format(keyCode: keyCode, modifiers: modifiers)
+    }
+    
+    private func parseShortcut(_ shortcut: String) -> (Int, NSEvent.ModifierFlags)? {
+        let parts = shortcut.split(separator: ":")
+        guard parts.count == 2,
+              let keyCode = Int(parts[0]),
+              let modifiersValue = UInt(parts[1]) else { return nil }
+        return (keyCode, NSEvent.ModifierFlags(rawValue: modifiersValue))
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+            
+            Spacer()
+            
+            Button(action: {
+                if isRecording {
+                    stopRecording()
+                } else {
+                    startRecording()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    if isRecording {
+                        Text("Presiona...")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 8, height: 8)
+                            .opacity(isRecording ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.6).repeatForever(), value: isRecording)
+                    } else {
+                        Text(formattedShortcut)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isRecording ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(isRecording ? Color.blue : Color.clear, lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            
+            if !isRecording && shortcutString != nil {
+                Button(action: {
+                    shortcutString = nil
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .help("Eliminar atajo")
+            }
+        }
+    }
+    
+    private func startRecording() {
+        isRecording = true
+        
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+            if event.type == .flagsChanged { return event }
+            
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if modifiers.isEmpty && event.keyCode != 53 { return event }
+            
+            if event.keyCode == 53 { // Escape
+                stopRecording()
+                return nil
+            }
+            
+            shortcutString = "\(event.keyCode):\(modifiers.rawValue)"
+            stopRecording()
+            return nil
+        }
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        if let monitor = localMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMonitor = nil
+        }
+    }
+}

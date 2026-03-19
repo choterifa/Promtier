@@ -155,31 +155,6 @@ struct PromptCard: View {
             
             // Indicadores de estado
             HStack(spacing: 12) {
-                if let onCopy = onCopy {
-                    Button(action: {
-                        onCopy()
-                        HapticService.shared.playLight()
-                    }) {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.secondary.opacity(isHovered || isSelected ? 0.75 : 0.35))
-                            .frame(width: 24, height: 24)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("copy".localized(for: preferences.language))
-                    .contextMenu {
-                        Button(action: { onCopy() }) {
-                            Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
-                        }
-                        if let onCopyPack = onCopyPack {
-                            Button(action: { onCopyPack() }) {
-                                Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
-                            }
-                        }
-                    }
-                }
-
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
@@ -258,6 +233,33 @@ struct PromptCard: View {
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
                         .shadow(color: .yellow.opacity(0.3), radius: 2)
+                }
+                
+                if let onCopy = onCopy {
+                    Button(action: {
+                        onCopy()
+                        HapticService.shared.playLight()
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary.opacity(isHovered || isSelected ? 0.9 : 0.4))
+                            .frame(width: 24, height: 24)
+                            .background(Color.primary.opacity(isHovered || isSelected ? 0.05 : 0))
+                            .cornerRadius(6)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("copy".localized(for: preferences.language))
+                    .contextMenu {
+                        Button(action: { onCopy() }) {
+                            Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
+                        }
+                        if let onCopyPack = onCopyPack {
+                            Button(action: { onCopyPack() }) {
+                                Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
+                            }
+                        }
+                    }
                 }
                 
                 Image(systemName: "chevron.right")

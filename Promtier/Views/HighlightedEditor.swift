@@ -14,6 +14,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var replaceSnippetRequest: String?
     @Binding var triggerAppleIntelligence: Bool
     @Binding var isAIActive: Bool
+    var focusRequest: Binding<Bool>? = nil
     var fontSize: CGFloat
     
     // Autocompletado (Snippets)
@@ -160,6 +161,14 @@ struct HighlightedEditor: NSViewRepresentable {
         if textView.font?.pointSize != fontSize {
             textView.font = .systemFont(ofSize: fontSize)
             context.coordinator.applyHighlighting(textView)
+        }
+        
+        // Manejar petición de foco
+        if let focusRequest = focusRequest, focusRequest.wrappedValue {
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+                focusRequest.wrappedValue = false
+            }
         }
     }
     

@@ -245,6 +245,21 @@ struct SearchViewSimple: View {
                 localEventMonitor = nil
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PromtierCustomShortcutPressed"))) { notification in
+            guard let promptId = notification.object as? UUID,
+                  let prompt = promptService.prompts.first(where: { $0.id == promptId }) else { return }
+            
+            if prompt.hasTemplateVariables() {
+                menuBarManager.showPopover()
+                // Dar tiempo a que el popover se muestre antes de activar el overlay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    usePrompt(prompt)
+                }
+            } else {
+                // Copia silenciosa en background sin abrir ventana si no hay variables
+                usePrompt(prompt)
+            }
+        }
     }
     
     private var mainView: some View {

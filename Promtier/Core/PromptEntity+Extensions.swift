@@ -35,6 +35,7 @@ extension PromptEntity {
         prompt.deletedAt = deletedAt
         prompt.negativePrompt = negativePrompt
         prompt.alternativePrompt = alternativePrompt
+        prompt.customShortcut = customShortcut
 
         // Nuevo esquema: paths + thumbnails en Core Data (las imágenes completas viven en disco).
         prompt.showcaseImagePaths = [image1Path, image2Path, image3Path].compactMap { $0 }
@@ -72,6 +73,7 @@ extension PromptEntity {
         deletedAt = prompt.deletedAt
         negativePrompt = prompt.negativePrompt
         alternativePrompt = prompt.alternativePrompt
+        customShortcut = prompt.customShortcut
 
         // NOTA: Las imágenes ahora se guardan en disco (ImageStore).
         // Este método solo actualiza conteo cuando el caller provee imágenes explícitas.

@@ -52,6 +52,11 @@ struct NewPromptView: View {
     
     @State private var showNegativeField: Bool = false
     @State private var showAlternativeField: Bool = false
+    @State private var customShortcut: String? = nil
+    
+    @State private var focusNegative: Bool = false
+    @State private var focusAlternative: Bool = false
+    @State private var localMonitor: Any? = nil
     
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -145,21 +150,91 @@ struct NewPromptView: View {
                             placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
                             text: $negativePrompt,
                             icon: "minus.circle.fill",
-                            color: .red
+                            color: .red,
+                            focusRequest: $focusNegative
                         )
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     
                     if showAlternativeField {
-                        SecondaryEditorCard(
-                            title: "alternative_prompt".localized(for: preferences.language),
-                            placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
-                            text: $alternativePrompt,
-                            icon: "arrow.triangle.2.circlepath.circle.fill",
-                            color: .green
-                        )
+                        VStack(alignment: .trailing, spacing: 8) {
+                            SecondaryEditorCard(
+                                title: "alternative_prompt".localized(for: preferences.language),
+                                placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
+                                text: $alternativePrompt,
+                                icon: "arrow.triangle.2.circlepath.circle.fill",
+                                color: .green,
+                                focusRequest: $focusAlternative
+                            )
+                            
+                            if !alternativePrompt.isEmpty {
+                                HStack(spacing: 8) {
+                                    Button(action: {
+                                        withAnimation {
+                                            let temp = content
+                                            content = alternativePrompt
+                                            alternativePrompt = temp
+                                        }
+                                    }) {
+                                        Label("Swap", systemImage: "arrow.up.arrow.down")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .tint(.green)
+                                    
+                                    Button(action: {
+                                        withAnimation {
+                                            if !content.isEmpty { content += "\n\n---\n\n" }
+                                            content += alternativePrompt
+                                            alternativePrompt = ""
+                                        }
+                                    }) {
+                                        Label("Merge", systemImage: "arrow.down.to.line.compact")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .tint(.blue)
+                                    
+                                    Button(action: {
+                                        let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
+                                        let newPrompt = Prompt(
+                                            title: newTitle,
+                                            content: alternativePrompt,
+                                            folder: selectedFolder,
+                                            tags: tags
+                                        )
+                                        _ = promptService.createPrompt(newPrompt)
+                                        HapticService.shared.playSuccess()
+                                    }) {
+                                        Label("Branching", systemImage: "arrow.uturn.right")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .tint(.purple)
+                                }
+                            }
+                        }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
+                }
+            }
+            
+            // Custom Shortcut per prompt
+            if preferences.isPremiumActive {
+                VStack(alignment: .leading, spacing: 8) {
+                    ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.primary.opacity(0.03))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                )
+                        )
                 }
             }
             
@@ -194,6 +269,7 @@ struct NewPromptView: View {
         let selectedIcon: String?
         let showcaseImages: [Data]
         let tags: [String]
+        let customShortcut: String?
         let isContentEmpty: Bool
     }
 
@@ -209,6 +285,7 @@ struct NewPromptView: View {
             selectedIcon: selectedIcon,
             showcaseImages: showcaseImages,
             tags: tags,
+            customShortcut: customShortcut,
             isContentEmpty: isContentEmpty
         )
     }
@@ -235,7 +312,16 @@ struct NewPromptView: View {
         .sheet(item: premiumSheetItem) { item in
             PremiumUpsellView(featureName: item.value)
         }
-        .onAppear { setupOnAppear() }
+        .onAppear { 
+            setupOnAppear() 
+            setupKeyboardMonitor()
+        }
+        .onDisappear {
+            if let monitor = localMonitor {
+                NSEvent.removeMonitor(monitor)
+                localMonitor = nil
+            }
+        }
         .onChange(of: draftState) { _, newValue in
             saveCurrentDraft()
             MenuBarManager.shared.isModalActive = !newValue.isContentEmpty
@@ -281,6 +367,43 @@ struct NewPromptView: View {
         }
     }
 
+    private func setupKeyboardMonitor() {
+        if localMonitor != nil { return }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            
+            // Option + N -> Focus Negative Prompt
+            if modifiers == .option && event.keyCode == 45 {
+                DispatchQueue.main.async {
+                    withAnimation(.spring()) {
+                        self.showNegativeField = true
+                    }
+                    // Dar tiempo a que la vista se inserte antes de pedir foco
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.focusNegative = true
+                    }
+                }
+                return nil
+            }
+            
+            // Option + A -> Focus Alternative Prompt
+            if modifiers == .option && event.keyCode == 0 { // keyCode 0 is 'A'
+                DispatchQueue.main.async {
+                    withAnimation(.spring()) {
+                        self.showAlternativeField = true
+                    }
+                    // Dar tiempo a que la vista se inserte antes de pedir foco
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.focusAlternative = true
+                    }
+                }
+                return nil
+            }
+            
+            return event
+        }
+    }
+
     private func setupOnAppear() {
         if let prompt = prompt {
             self.originalPrompt = prompt
@@ -294,6 +417,7 @@ struct NewPromptView: View {
             selectedIcon = prompt.icon
             showcaseImages = prompt.showcaseImages
             tags = prompt.tags
+            customShortcut = prompt.customShortcut
             
             if !negativePrompt.isEmpty { showNegativeField = true }
             if !alternativePrompt.isEmpty { showAlternativeField = true }
@@ -333,6 +457,7 @@ struct NewPromptView: View {
             selectedIcon = draftPrompt.icon
             showcaseImages = draftPrompt.showcaseImages
             tags = draftPrompt.tags
+            customShortcut = draftPrompt.customShortcut
             isDraftRestored = true
             
             if !negativePrompt.isEmpty { showNegativeField = true }
@@ -358,7 +483,8 @@ struct NewPromptView: View {
                              selectedIcon != original.icon ||
                              showcaseImages != original.showcaseImages ||
                              negativePrompt != (original.negativePrompt ?? "") ||
-                             alternativePrompt != (original.alternativePrompt ?? "")
+                             alternativePrompt != (original.alternativePrompt ?? "") ||
+                             customShortcut != original.customShortcut
             if !hasChanges { return }
         }
         
@@ -372,7 +498,8 @@ struct NewPromptView: View {
             showcaseImages: showcaseImages,
             tags: tags,
             negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
-            alternativePrompt: alternativePrompt.isEmpty ? nil : alternativePrompt
+            alternativePrompt: alternativePrompt.isEmpty ? nil : alternativePrompt,
+            customShortcut: customShortcut
         )
         
         // Si estamos editando, mantenemos el ID original para poder actualizarlo al restaurar
@@ -573,7 +700,8 @@ struct NewPromptView: View {
                              existingPrompt.icon != selectedIcon ||
                              existingPrompt.showcaseImages != showcaseImages ||
                              existingPrompt.negativePrompt != newNegativePrompt ||
-                             existingPrompt.alternativePrompt != newAlternativePrompt
+                             existingPrompt.alternativePrompt != newAlternativePrompt ||
+                             existingPrompt.customShortcut != customShortcut
             
             if !basicChanges {
                 onClose()
@@ -612,6 +740,7 @@ struct NewPromptView: View {
             updated.tags = tags
             updated.negativePrompt = newNegativePrompt
             updated.alternativePrompt = newAlternativePrompt
+            updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
         } else {
@@ -624,7 +753,8 @@ struct NewPromptView: View {
                 showcaseImages: showcaseImages,
                 tags: tags,
                 negativePrompt: newNegativePrompt,
-                alternativePrompt: newAlternativePrompt
+                alternativePrompt: newAlternativePrompt,
+                customShortcut: customShortcut
             )
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
@@ -851,6 +981,7 @@ struct SecondaryEditorCard: View {
     @Binding var text: String
     let icon: String
     let color: Color
+    var focusRequest: Binding<Bool>? = nil
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
@@ -875,6 +1006,7 @@ struct SecondaryEditorCard: View {
                     replaceSnippetRequest: .constant(nil),
                     triggerAppleIntelligence: .constant(false),
                     isAIActive: .constant(false),
+                    focusRequest: focusRequest,
                     fontSize: 14 * preferences.fontSize.scale,
                     showSnippets: .constant(false),
                     snippetSearchQuery: .constant(""),

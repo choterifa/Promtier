@@ -67,6 +67,7 @@
 "show_advanced_fields_subtitle" = "Mostrar campos de Negative y Alternative prompt";
 "view_negative" = "Ver Negative";
 "view_alternative" = "Ver Alternative";
+"global_shortcut_copy" = "Atajo personalizado (global)";
 "gesture_hints" = "Sugerencias de gestos";
 "gesture_hints_subtitle" = "Muestra animaciones de zoom al abrir imágenes";
 "close_on_copy" = "Cerrar al copiar";
