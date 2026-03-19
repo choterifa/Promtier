@@ -26,6 +26,7 @@ struct PromptCard: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var menuBarManager: MenuBarManager
     @EnvironmentObject var batchService: BatchOperationsService
     
     @State private var isTargetedForDrop = false
@@ -305,6 +306,10 @@ struct PromptCard: View {
         }
         // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
+            // Cerrar el popover al empezar el arrastre para que no estorbe el destino del drop
+            DispatchQueue.main.async {
+                menuBarManager.closePopover()
+            }
             let provider = NSItemProvider()
 
             let selectedIds = batchService.selectedPromptIds

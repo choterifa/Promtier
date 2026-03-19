@@ -815,13 +815,17 @@ struct SearchViewSimple: View {
     
     /// Exporta un prompt específico a un archivo de texto
     private func exportPromptsToFile(_ prompt: Prompt) {
-        let exportContent = "Título: \(prompt.title)\n\n\(prompt.content)"
+        let exportContent = "# \(prompt.title)\n\n\(prompt.content)"
         
-        let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).txt"
+        let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).md"
         
         // Crear el diálogo de guardar nativo de macOS
         let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.plainText]
+        if let mdType = UTType(filenameExtension: "md") {
+            savePanel.allowedContentTypes = [mdType, .plainText]
+        } else {
+            savePanel.allowedContentTypes = [.plainText]
+        }
         savePanel.nameFieldStringValue = fileName
         savePanel.title = "export_prompts_title".localized(for: preferences.language)
         savePanel.message = "export_prompts_message".localized(for: preferences.language)

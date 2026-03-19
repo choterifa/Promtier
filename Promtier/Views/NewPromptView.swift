@@ -57,6 +57,8 @@ struct NewPromptView: View {
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
     @State private var localMonitor: Any? = nil
+    @State private var showingDiff: Bool = false
+    @State private var branchMessage: String? = nil
     
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -152,7 +154,9 @@ struct NewPromptView: View {
                             icon: "minus.circle.fill",
                             color: .red,
                             focusRequest: $focusNegative
-                        )
+                        ) {
+                            EmptyView()
+                        }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     
@@ -174,12 +178,15 @@ struct NewPromptView: View {
                                             alternativePrompt = temp
                                         }
                                     }) {
-                                        Image(systemName: "arrow.up.arrow.down")
-                                            .font(.system(size: 11, weight: .bold))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.up.arrow.down")
+                                            Text("Swap")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
                                     }
                                     .buttonStyle(.plain)
                                     .foregroundColor(.green)
-                                    .help("Swap")
+                                    .help("Swap Content and Alternative")
                                     
                                     Button(action: {
                                         withAnimation {
@@ -188,12 +195,15 @@ struct NewPromptView: View {
                                             alternativePrompt = ""
                                         }
                                     }) {
-                                        Image(systemName: "arrow.down.to.line.compact")
-                                            .font(.system(size: 11, weight: .bold))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.down.to.line.compact")
+                                            Text("Merge")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
                                     }
                                     .buttonStyle(.plain)
                                     .foregroundColor(.blue)
-                                    .help("Merge")
+                                    .help("Merge Alternative into Content")
                                     
                                     Button(action: {
                                         let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
@@ -205,13 +215,33 @@ struct NewPromptView: View {
                                         )
                                         _ = promptService.createPrompt(newPrompt)
                                         HapticService.shared.playSuccess()
+                                        withAnimation {
+                                            branchMessage = "Prompt branched successfully!"
+                                        }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                            withAnimation { branchMessage = nil }
+                                        }
                                     }) {
-                                        Image(systemName: "arrow.uturn.right")
-                                            .font(.system(size: 11, weight: .bold))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.uturn.right")
+                                            Text("Branching")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
                                     }
                                     .buttonStyle(.plain)
                                     .foregroundColor(.purple)
-                                    .help("Branching")
+                                    .help("Create new prompt from Alternative")
+
+                                    Button(action: { showingDiff = true }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.left.and.right.text.vertical")
+                                            Text("Diff")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.orange)
+                                    .help("Compare with Content")
                                 }
                             }
                         }
@@ -307,14 +337,16 @@ struct NewPromptView: View {
                 }
         }
         .overlay { overlays }
-        .sheet(item: premiumSheetItem) { item in
-            PremiumUpsellView(featureName: item.value)
-        }
-        .onAppear { 
-            setupOnAppear() 
-            setupKeyboardMonitor()
-        }
-        .onDisappear {
+                .sheet(item: premiumSheetItem) { item in
+                    PremiumUpsellView(featureName: item.value)
+                }
+                .sheet(isPresented: $showingDiff) {
+                    DiffView(text1: content, text2: alternativePrompt)
+                }
+                .onAppear {
+                    setupOnAppear() 
+                    setupKeyboardMonitor()
+                }        .onDisappear {
             if let monitor = localMonitor {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
@@ -361,6 +393,21 @@ struct NewPromptView: View {
                 ParticleSystemView(accentColor: currentCategoryColor)
                     .allowsHitTesting(false)
                     .zIndex(300)
+            }
+            
+            if let msg = branchMessage {
+                VStack {
+                    Spacer()
+                    Text(msg)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color.purple).shadow(radius: 10))
+                        .padding(.bottom, 40)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(400)
             }
         }
     }
