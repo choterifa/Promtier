@@ -52,7 +52,7 @@
 "width" = "Ancho";
 "height" = "Alto";
 "reset_size" = "Restablecer tamaño";
-"reset_size_subtitle" = "Volver al tamaño por defecto (690 × 540)";
+"reset_size_subtitle" = "Volver al tamaño por defecto (740 × 530)";
 "reset" = "Resetear";
 
 /* Behavior Tab */
@@ -112,7 +112,8 @@
 "snippet_down" = "Navegar snippet abajo";
 "insert_snippet" = "Insertar snippet / Cerrar menú";
 "insert_variable" = "Insertar variable";
-"zen_mode" = "Modo Zen (pantalla completa)";
+"focus_negative" = "Enfocar Prompt Negativo";
+"focus_alternative" = "Enfocar Prompt Alternativo";
 "fill_variables" = "Rellenar Variables";
 "next_field" = "Avanzar al siguiente campo";
 "copy_final_prompt" = "Copiar prompt final";

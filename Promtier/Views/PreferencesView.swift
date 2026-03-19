@@ -160,7 +160,8 @@ struct PreferencesView: View {
                     }
                 }
                 .padding(.horizontal, 32)
-                .padding(.vertical, 32)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
             }
         }
         .onAppear {
@@ -446,8 +447,15 @@ struct BehaviorTab: View {
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("auto_paste", subtitle: "auto_paste_subtitle", icon: "wand.and.stars", iconColor: .orange) {
-                    Toggle("", isOn: $preferences.autoPaste)
-                        .toggleStyle(.switch)
+                    HStack(spacing: 8) {
+                        if !shortcutManager.isAccessibilityGranted {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                                .help("accessibility_required".localized(for: preferences.language))
+                        }
+                        Toggle("", isOn: $preferences.autoPaste)
+                            .toggleStyle(.switch)
+                    }
                 }
                 
                 Divider().padding(.leading, 20)
@@ -467,36 +475,6 @@ struct BehaviorTab: View {
                     Toggle("", isOn: $preferences.hapticFeedbackEnabled)
                         .toggleStyle(.switch)
                 }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("test_vibration", subtitle: "test_vibration_subtitle") {
-                    HStack(spacing: 12) {
-                        Button("haptic_light") {
-                            HapticService.shared.playLight()
-                        }
-                        .buttonStyle(.bordered)
-                        
-                        Button("haptic_medium") {
-                            HapticService.shared.playAlignment()
-                        }
-                        .buttonStyle(.bordered)
-                        
-                        Button("haptic_strong") {
-                            HapticService.shared.playStrong()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .controlSize(.small)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                Text("haptic_note")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
             }
             
             SettingsSection(title: "intelligence", icon: "sparkles") {
@@ -586,7 +564,9 @@ struct ShortcutsTab: View {
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "insert_variable",               shortcut: "⌥V")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "zen_mode",    shortcut: "⌘⇧Z")
+                ShortcutRow(label: "focus_negative",               shortcut: "⌥N")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "focus_alternative",               shortcut: "⌥A")
             }
             
             // Variables
@@ -601,6 +581,8 @@ struct ShortcutsTab: View {
             // Ventana
             SettingsSection(title: "window", icon: "macwindow") {
                 ShortcutRow(label: "toggle_promtier",  shortcut: "Atajo Global")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "global_shortcut_copy",  shortcut: "Atajo por Prompt")
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "close_window",           shortcut: "Esc")
             }
@@ -720,8 +702,18 @@ struct DataTab: View {
             
             SettingsSection(title: "cloud", icon: "icloud.fill") {
                 SettingsRow("icloud_sync", subtitle: "sync_macs") {
-                    Toggle("", isOn: $preferences.icloudSyncEnabled)
-                        .toggleStyle(.switch)
+                    HStack(spacing: 8) {
+                        Text("Soon")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.gray.opacity(0.5)))
+                        
+                        Toggle("", isOn: .constant(false))
+                            .toggleStyle(.switch)
+                            .disabled(true)
+                    }
                 }
             }
             

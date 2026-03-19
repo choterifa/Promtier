@@ -1,6 +1,7 @@
 # ❓ Promtier — Preguntas Frecuentes (FAQ)
 
 > Cada respuesta incluye una versión **para humanos** y otra **técnica**.
+No eliminies las anteriores simplemente agrega mas preguntas (.)
 
 ## 1) ¿Qué es la "Copia Mágica" y cómo funciona?
 **Para humanos:** Es la capacidad de copiar cualquier prompt usando un atajo de teclado global (ej. `Cmd+Opt+1`) sin necesidad de abrir la aplicación. Funciona incluso si Promtier está minimizado o cerrado.

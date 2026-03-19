@@ -459,6 +459,18 @@ struct NewPromptView: View {
                 return nil
             }
             
+            // Option + V -> Insert Variable
+            if modifiers == .option && event.keyCode == 9 { // keyCode 9 is 'V'
+                DispatchQueue.main.async {
+                    if self.preferences.isPremiumActive {
+                        self.insertionRequest = "{{variable}}"
+                    } else {
+                        self.showingPremiumFor = "dynamic_variables".localized(for: self.preferences.language)
+                    }
+                }
+                return nil
+            }
+            
             return event
         }
     }
