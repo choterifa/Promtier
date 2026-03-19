@@ -73,8 +73,25 @@ struct HighlightedEditor: NSViewRepresentable {
         // Sincronizar texto si cambió externamente
         if textView.string != text {
             let selectedRanges = textView.selectedRanges
+            textView.undoManager?.removeAllActions() // Prevenir crash de Cmd+Z por desincronización
             textView.string = text
-            textView.selectedRanges = selectedRanges
+            
+            // Restaurar selección de forma segura para evitar Out of Bounds
+            let maxLen = (text as NSString).length
+            var safeRanges = [NSValue]()
+            for val in selectedRanges {
+                let r = val.rangeValue
+                if r.location + r.length <= maxLen {
+                    safeRanges.append(val)
+                }
+            }
+            
+            if !safeRanges.isEmpty {
+                textView.selectedRanges = safeRanges
+            } else {
+                textView.setSelectedRange(NSRange(location: maxLen, length: 0))
+            }
+            
             context.coordinator.applyHighlighting(textView)
         }
         

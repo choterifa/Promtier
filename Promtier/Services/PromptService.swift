@@ -275,6 +275,7 @@ class PromptService: ObservableObject {
                     prompt.promptDescription = entity.promptDescription
                     prompt.negativePrompt = entity.negativePrompt
                     prompt.alternativePrompt = entity.alternativePrompt
+                    prompt.customShortcut = entity.customShortcut
                     prompt.deletedAt = trashDict[entity.id.uuidString]
                     prompt.showcaseImages = []
                     prompt.showcaseImageCount = Int(entity.showcaseImageCount)
@@ -352,6 +353,7 @@ class PromptService: ObservableObject {
                         p.deletedAt = entity.deletedAt
                         p.negativePrompt = entity.negativePrompt
                         p.alternativePrompt = entity.alternativePrompt
+                        p.customShortcut = entity.customShortcut
                         p.showcaseImagePaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
                         p.showcaseThumbnails = [entity.thumb1, entity.thumb2, entity.thumb3].compactMap { $0 }
 

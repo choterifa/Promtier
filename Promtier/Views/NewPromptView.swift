@@ -157,16 +157,14 @@ struct NewPromptView: View {
                     }
                     
                     if showAlternativeField {
-                        VStack(alignment: .trailing, spacing: 8) {
-                            SecondaryEditorCard(
-                                title: "alternative_prompt".localized(for: preferences.language),
-                                placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
-                                text: $alternativePrompt,
-                                icon: "arrow.triangle.2.circlepath.circle.fill",
-                                color: .green,
-                                focusRequest: $focusAlternative
-                            )
-                            
+                        SecondaryEditorCard(
+                            title: "alternative_prompt".localized(for: preferences.language),
+                            placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
+                            text: $alternativePrompt,
+                            icon: "arrow.triangle.2.circlepath.circle.fill",
+                            color: .green,
+                            focusRequest: $focusAlternative
+                        ) {
                             if !alternativePrompt.isEmpty {
                                 HStack(spacing: 8) {
                                     Button(action: {
@@ -176,12 +174,12 @@ struct NewPromptView: View {
                                             alternativePrompt = temp
                                         }
                                     }) {
-                                        Label("Swap", systemImage: "arrow.up.arrow.down")
-                                            .font(.system(size: 11, weight: .semibold))
+                                        Image(systemName: "arrow.up.arrow.down")
+                                            .font(.system(size: 11, weight: .bold))
                                     }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .tint(.green)
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.green)
+                                    .help("Swap")
                                     
                                     Button(action: {
                                         withAnimation {
@@ -190,12 +188,12 @@ struct NewPromptView: View {
                                             alternativePrompt = ""
                                         }
                                     }) {
-                                        Label("Merge", systemImage: "arrow.down.to.line.compact")
-                                            .font(.system(size: 11, weight: .semibold))
+                                        Image(systemName: "arrow.down.to.line.compact")
+                                            .font(.system(size: 11, weight: .bold))
                                     }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .tint(.blue)
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.blue)
+                                    .help("Merge")
                                     
                                     Button(action: {
                                         let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
@@ -208,12 +206,12 @@ struct NewPromptView: View {
                                         _ = promptService.createPrompt(newPrompt)
                                         HapticService.shared.playSuccess()
                                     }) {
-                                        Label("Branching", systemImage: "arrow.uturn.right")
-                                            .font(.system(size: 11, weight: .semibold))
+                                        Image(systemName: "arrow.uturn.right")
+                                            .font(.system(size: 11, weight: .bold))
                                     }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .tint(.purple)
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.purple)
+                                    .help("Branching")
                                 }
                             }
                         }
@@ -975,14 +973,26 @@ struct EditorCard: View {
     }
 }
 
-struct SecondaryEditorCard: View {
+struct SecondaryEditorCard<Actions: View>: View {
     let title: String
     let placeholder: String
     @Binding var text: String
     let icon: String
     let color: Color
     var focusRequest: Binding<Bool>? = nil
+    let actions: Actions
+    
     @EnvironmentObject var preferences: PreferencesManager
+    
+    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, focusRequest: Binding<Bool>? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+        self.title = title
+        self.placeholder = placeholder
+        self._text = text
+        self.icon = icon
+        self.color = color
+        self.focusRequest = focusRequest
+        self.actions = actions()
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -997,6 +1007,8 @@ struct SecondaryEditorCard: View {
                     .tracking(1)
                 
                 Spacer()
+                
+                actions
             }
             
             VStack(spacing: 0) {
