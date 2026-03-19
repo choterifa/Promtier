@@ -35,14 +35,21 @@ No eliminies las anteriores simplemente agrega mas preguntas (.)
 **Técnico:** La función de exportación utiliza `UTType.plainText` y `UTType.json`, y ahora prioriza `.md` envolviendo el título en un encabezado H1 para compatibilidad inmediata.
 
 ## 8) ¿Por qué la ventana se cierra sola al arrastrar un prompt?
-**Para humanos:** Para que no te estorbe. En cuanto empiezas a arrastrar un prompt hacia otra aplicación (como un navegador), la ventana de Promtier desaparece para que veas claramente dónde vas a soltar el texto.
-**Técnico:** Se llama a `menuBarManager.closePopover()` dentro del cierre `onDrag` de `PromptCard.swift`.
+**Para humanos:** Para que no te estorbe. Si lo arrastras hacia afuera (a otra app), se cierra. Pero si lo arrastras a la izquierda (hacia tus categorías), se queda abierta para que puedas organizarlo fácilmente.
+**Técnico:** Implementación de un delay de validación de 150ms en `onDrag` que comprueba si la posición del ratón está fuera de los límites del `NSPopover` antes de llamar a `close()`.
 
-## 9) ¿Puedo sentir cuándo la ventana cambia de tamaño?
+## 9) ¿Puedo usar el teclado para todo?
+**Para humanos:** ¡Casi! Hemos añadido atajos para guardar (`Cmd+S`), navegar (`↑ / ↓`), cambiar al modo Zen (`Cmd+⇧+Z`) y copiar el resultado final con variables (`Cmd+Enter`).
+**Técnico:** Monitores de eventos de teclado locales y globales (`addLocalMonitorForEvents`) que interceptan KeyCodes específicos como el 1 (S) o el 6 (Z).
+
+## 10) ¿Puedo sentir cuándo la ventana cambia de tamaño?
 **Para humanos:** Sí, si tienes una MacBook o Magic Trackpad sentirás un "clic" físico cada vez que la ventana crece o se encoge 10 píxeles en los ajustes.
 **Técnico:** Integración de `NSHapticFeedbackManager` con el nivel `.strong` disparado por el `.onChange` de los sliders de dimensiones en `PreferencesView`.
 
-## 10) ¿Cuál es el tamaño ideal de la ventana?
+## 11) ¿Cuál es el tamaño ideal de la ventana?
 **Para humanos:** La app viene configurada a **740x530px**, un tamaño balanceado para ver el editor avanzado y la lista de prompts sin scroll innecesario.
 **Técnico:** Dimensiones fijadas como constantes de inicialización en `PreferencesManager.swift`.
+
+---
+*Última actualización: 19 de Marzo de 2026*
 

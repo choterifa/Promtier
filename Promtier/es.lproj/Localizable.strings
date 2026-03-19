@@ -255,6 +255,8 @@
 /* Ghost Tips */
 "gt_preview" = "Vista Previa";
 "gt_spacebar" = "Barra Espaciadora";
+"gt_move_selection" = "Mover Selección";
+"gt_move_shortcut" = "↑ / ↓";
 "gt_quick_copy" = "Copiar Rápido";
 "gt_new_prompt" = "Nuevo Prompt";
 "gt_settings" = "Configuración";
@@ -301,11 +303,13 @@
 "snippet_review_content" = "Por favor revisa este código:";
 "snippet_review_shortcut" = "revisar";
 
-"default_prompt_email_title" = "Resumen de Proyecto";
-"default_prompt_email_content" = "Hola,\n\nTe adjunto el resumen de los avances. Hemos superado los objetivos.\n\n/firma";
-"default_prompt_coding_title" = "Revisión de Código (Ejemplo Variable)";
-"default_prompt_coding_content" = "Actúa como senior. Revisa este código {{lenguaje}}:\n\n```\n{{codigo}}\n```";
+"default_prompt_email_title" = "Respuesta de Email Amigable";
+"default_prompt_email_content" = "Hola,\n\n¡Gracias por contactarme! He revisado tu solicitud y te responderé lo antes posible.\n\n/firma";
+"default_prompt_coding_title" = "Explicador de Código";
+"default_prompt_coding_content" = "Explica el siguiente código en {{lenguaje}} de forma sencilla para un principiante:\n\n```\n{{codigo}}\n```";
 "default_prompt_creative_title" = "Showcase: Paisaje Cyberpunk";
+"default_prompt_productivity_title" = "Organizador de Tareas Diario";
+"default_prompt_productivity_content" = "Organiza mis tareas para hoy: {{tareas}}. Priorízalas usando la Matriz de Eisenhower y sugiere un horario para cada una.";
 
 "cat_code" = "Código";
 "cat_writing" = "Escritura";

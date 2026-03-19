@@ -232,6 +232,8 @@
 /* Ghost Tips */
 "gt_preview" = "Preview";
 "gt_spacebar" = "Spacebar";
+"gt_move_selection" = "Move Selection";
+"gt_move_shortcut" = "↑ / ↓";
 "gt_quick_copy" = "Quick Copy";
 "gt_new_prompt" = "New Prompt";
 "gt_settings" = "Settings";
@@ -278,11 +280,13 @@
 "snippet_review_content" = "Please review this code:";
 "snippet_review_shortcut" = "review";
 
-"default_prompt_email_title" = "Project Summary";
-"default_prompt_email_content" = "Hi,\n\nAttached is the summary of this week's progress.\n\n/signature";
-"default_prompt_coding_title" = "Code Review (Variable Example)";
-"default_prompt_coding_content" = "Act as a senior dev. Review this {{language}} code:\n\n```\n{{code}}\n```";
+"default_prompt_email_title" = "Friendly Email Reply";
+"default_prompt_email_content" = "Hi there,\n\nThanks for reaching out! I've reviewed your request and I'll get back to you shortly.\n\n/signature";
+"default_prompt_coding_title" = "Code Explainer";
+"default_prompt_coding_content" = "Explain the following {{language}} code in simple terms for a beginner:\n\n```\n{{code}}\n```";
 "default_prompt_creative_title" = "Showcase: Cyberpunk Landscape";
+"default_prompt_productivity_title" = "Daily Task Organizer";
+"default_prompt_productivity_content" = "Organize my tasks for today: {{tasks}}. Prioritize them using the Eisenhower Matrix and suggest a time for each.";
 
 "cat_code" = "Code";
 "cat_writing" = "Writing";

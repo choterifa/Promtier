@@ -191,10 +191,10 @@ class PromptService: ObservableObject {
     /// Crea prompts de ejemplo para guiar al usuario
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV22" // BUMP VERSION
+        let seedKey = "hasSeededInitialPromptsV23" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
-        print("🌱 Sembrando prompts de ejemplo (V22)...")
+        print("🌱 Sembrando prompts de ejemplo (V23)...")
         
         // 1. Prompt Normal (Email) con Snippet de firma
         let language = PreferencesManager.shared.language
@@ -202,7 +202,7 @@ class PromptService: ObservableObject {
             title: "default_prompt_email_title".localized(for: language),
             content: "default_prompt_email_content".localized(for: language),
             folder: PredefinedCategory.writing.displayName,
-            icon: "briefcase.fill"
+            icon: "envelope.fill"
         )
         _ = PromptEntity.create(from: emailPrompt, in: context)
         
@@ -239,6 +239,15 @@ class PromptService: ObservableObject {
         creativeEntity.updateFromPrompt(creativePrompt)
         applyShowcaseImages(creativePrompt.showcaseImages, to: creativeEntity, promptId: creativePrompt.id, clearExisting: true)
         
+        // 4. Prompt de Productividad (Variables) - NUEVO
+        let productivityPrompt = Prompt(
+            title: "default_prompt_productivity_title".localized(for: language),
+            content: "default_prompt_productivity_content".localized(for: language),
+            folder: PredefinedCategory.productivity.displayName,
+            icon: "list.bullet.rectangle.portrait.fill"
+        )
+        _ = PromptEntity.create(from: productivityPrompt, in: context)
+
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
         self.loadPrompts() // Recargar para que aparezcan inmediatamente

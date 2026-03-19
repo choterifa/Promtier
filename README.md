@@ -27,12 +27,12 @@ open "/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqu
 - ✅ **Editor Avanzado**: Resaltado de sintaxis, bracket matching, auto-indentación y Diff View en paralelo.
 - ✅ **Campos Avanzados**: Soporte para Negative y Alternative prompts con acciones de Swap/Merge/Branching.
 - ✅ **Sistema de Favoritos**: Marca prompts como favoritos y accede a los más usados.
-- ✅ **Organización**: Categorías con iconos/colores y Papelera con retención de 7 días.
+- ✅ **Organización**: Nuevas categorías por defecto (**Code, Writing, Image Generation, Marketing, Productivity, Automation**) con iconos/colores y Papelera con retención de 7 días.
 - ✅ **Resultados con Imágenes**: Hasta 3 imágenes por prompt (guardadas en disco y optimizadas).
 - ✅ **Copiado al Portapapeles**: Un clic para copiar o usar atajos globales.
 - ✅ **Feedback Premium**: Respuesta háptica fuerte en trackpad y efectos visuales de partículas.
 - ✅ **Backup/Restore**: Exportar a .md (Markdown), JSON, ZIP y CSV.
-- ✅ **Drag & Drop**: Soporte universal con auto-cierre de ventana al arrastrar.
+- ✅ **Drag & Drop**: Soporte inteligente: se mantiene abierto para categorización interna y se cierra automáticamente al arrastrar hacia afuera.
 
 ## 🏗️ Arquitectura
 

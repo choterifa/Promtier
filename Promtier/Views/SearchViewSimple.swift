@@ -33,8 +33,7 @@ struct SearchViewSimple: View {
     private var ghostTips: [GhostTip] {
         [
             // Navegación y Lista
-            GhostTip(title: "move_up".localized(for: preferences.language), icon: "arrow.up", shortcut: "↑"),
-            GhostTip(title: "move_down".localized(for: preferences.language), icon: "arrow.down", shortcut: "↓"),
+            GhostTip(title: "gt_move_selection".localized(for: preferences.language), icon: "arrow.up", shortcut: "gt_move_shortcut".localized(for: preferences.language)),
             GhostTip(title: "preview".localized(for: preferences.language), icon: "eye", shortcut: "gt_spacebar".localized(for: preferences.language)),
             GhostTip(title: "copy".localized(for: preferences.language), icon: "doc.on.doc", shortcut: "Cmd + C"),
             GhostTip(title: "edit".localized(for: preferences.language), icon: "pencil", shortcut: "Enter"),
@@ -44,7 +43,6 @@ struct SearchViewSimple: View {
             
             // Editor
             GhostTip(title: "save_prompt".localized(for: preferences.language), icon: "square.and.arrow.down", shortcut: "Cmd + S"),
-            GhostTip(title: "gt_zen_mode".localized(for: preferences.language), icon: "pencil.and.outline", shortcut: "gt_zen_shortcut".localized(for: preferences.language)),
             GhostTip(title: "gt_snippets_shortcut".localized(for: preferences.language), icon: "text.quote", shortcut: "/"),
             GhostTip(title: "insert_variable".localized(for: preferences.language), icon: "curlybraces", shortcut: "gt_variables_shortcut".localized(for: preferences.language)),
             GhostTip(title: "focus_negative".localized(for: preferences.language), icon: "minus.circle", shortcut: "⌥ N"),
