@@ -50,7 +50,7 @@ struct PreferencesView: View {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { 
                         selectedTab = index 
                     } 
-                    HapticService.shared.playLight()
+                    HapticService.shared.playImpact()
                 }) {
                     HStack(spacing: 12) {
                         Image(systemName: tabs[index].icon)
@@ -70,6 +70,7 @@ struct PreferencesView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
+                    .contentShape(Rectangle())
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(selectedTab == index ? Color.blue : Color.clear)
@@ -81,20 +82,6 @@ struct PreferencesView: View {
             }
             
             Spacer()
-            
-            // Botón de Cerrar al final del sidebar (Opcional, estilo alternativo)
-            Button(action: onClose) {
-                HStack {
-                    Image(systemName: "arrow.left.circle.fill")
-                    Text("back_to_main".localized(for: preferences.language))
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-            .padding(.bottom, 16)
         }
         .frame(width: 200)
         .background(
@@ -571,7 +558,7 @@ struct ShortcutsTab: View {
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "copy", shortcut: "⌘C")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "edit", shortcut: "↩ Enter")
+                ShortcutRow(label: "edit", shortcut: "Double Tap / ↩ Enter")
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "toggle_sidebar",    shortcut: "⌘B")
                 Divider().padding(.leading, 20)
@@ -1098,7 +1085,7 @@ struct SupportTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             SettingsSection(title: "contact_help", icon: "envelope.fill") {
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Consulta Promtier") }) {
                     SettingsRow("email_support", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
@@ -1164,7 +1151,7 @@ struct SupportTab: View {
                 .font(.system(size: 12))
                 .padding(.top, 4)
             }
-            .padding(.top, 16)
+            .padding(.top, 4)
         }
     }
     

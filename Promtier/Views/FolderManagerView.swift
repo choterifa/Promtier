@@ -237,7 +237,9 @@ struct FolderManagerView: View {
                                                 .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
                                                 .shadow(color: .black.opacity(0.1), radius: 2)
                                         )
-                                        .scaleEffect(selectedColor == color ? 1.2 : 1.0)
+                                        .scaleEffect(selectedColor == color ? 1.2 : (animateColors ? 1.0 : 0.4))
+                                        .opacity(animateColors ? 1.0 : 0.0)
+                                        .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(index) * 0.05), value: animateColors)
                                         .onTapGesture {
                                             HapticService.shared.playLight()
                                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {

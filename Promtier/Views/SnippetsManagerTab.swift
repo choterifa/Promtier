@@ -133,9 +133,9 @@ private struct SnippetManagerListItem: View {
                 // Acciones
                 HStack(spacing: 12) {
                     Button(action: { editingSnippet = snippet }) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue.opacity(0.8))
                     }
                     .buttonStyle(.plain)
                     .help("edit_action".localized(for: preferences.language))

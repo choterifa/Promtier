@@ -14,7 +14,7 @@ import Combine
 class MenuBarManager: NSObject, ObservableObject {
     static let shared = MenuBarManager()
     
-    private let menuBarIcon = "text.bubble"
+    private let menuBarIcon = "text.bubble.fill"
     private let menuBarIconAlt = "text.bubble.fill"
     
     private var statusItem: NSStatusItem?
