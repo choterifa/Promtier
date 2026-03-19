@@ -139,6 +139,29 @@
 "reset_message" = "Se perderán permanentemente todos tus ajustes y prompts.";
 
 /* Support Tab */
+"icon_glossary" = "Glosario de Iconos";
+"glossary_variable_title" = "Variables";
+"glossary_variables_desc" = "Campos dinámicos que rellenas antes de copiar el prompt.";
+"glossary_recent_desc" = "Prompts que has usado recientemente en todas las categorías.";
+"glossary_favorites_desc" = "Tus prompts marcados para un acceso rápido.";
+"glossary_snippets_desc" = "Fragmentos de texto reutilizables que insertas escribiendo /.";
+"glossary_snippets_trigger_desc" = "Escribe / en el editor para insertar fragmentos reutilizables rápidamente.";
+"glossary_negative_desc" = "Instrucciones sobre qué excluir del resultado (común en IA).";
+"glossary_alternative_desc" = "Una variación o enfoque similar al prompt principal.";
+"glossary_copy_title" = "Copiar al Portapapeles";
+"glossary_copy_desc" = "Copia el contenido final a tu portapapeles, listo para usar.";
+"glossary_images_title" = "Imágenes y Resultados";
+"glossary_images_desc" = "Resultados visuales o fotos de referencia adjuntas a tu prompt.";
+"glossary_negative_dot_title" = "Indicador Negativo";
+"glossary_negative_dot_desc" = "Punto rojo que indica que el prompt tiene instrucciones negativas.";
+"glossary_alternative_dot_title" = "Indicador Alternativo";
+"glossary_alternative_dot_desc" = "Punto verde que indica que el prompt tiene variaciones alternativas.";
+"glossary_variable_indicator_title" = "Indicador de Variables";
+"glossary_variable_indicator_desc" = "Cantidad de campos dinámicos en el prompt.";
+"glossary_images_indicator_title" = "Indicador de Imágenes";
+"glossary_images_indicator_desc" = "Cantidad de imágenes o resultados adjuntos.";
+"glossary_versions_indicator_title" = "Indicador de Versiones";
+"glossary_versions_indicator_desc" = "Historial de cambios realizados en este prompt.";
 "contact_help" = "Contacto y Ayuda";
 "email_support" = "Soporte por Email";
 "report_problem" = "Reportar un Problema";

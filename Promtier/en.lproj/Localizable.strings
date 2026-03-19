@@ -137,6 +137,29 @@
 "reset_message" = "All your settings and prompts will be permanently lost.";
 
 /* Support Tab */
+"icon_glossary" = "Icon Glossary";
+"glossary_variable_title" = "Variables";
+"glossary_variables_desc" = "Dynamic fields that you fill in before copying the prompt.";
+"glossary_recent_desc" = "Prompts you have used recently across all categories.";
+"glossary_favorites_desc" = "Your bookmarked prompts for quick access.";
+"glossary_snippets_desc" = "Reusable text fragments that you can insert by typing /.";
+"glossary_snippets_trigger_desc" = "Type / in the editor to quickly insert reusable text fragments.";
+"glossary_negative_desc" = "Instructions on what to exclude from the result (common in AI).";
+"glossary_alternative_desc" = "A variation or similar approach to the main prompt.";
+"glossary_copy_title" = "Copy to Clipboard";
+"glossary_copy_desc" = "Copies the final content to your clipboard, ready to use.";
+"glossary_images_title" = "Images and Results";
+"glossary_images_desc" = "Visual results or reference photos attached to your prompt.";
+"glossary_negative_dot_title" = "Negative Indicator";
+"glossary_negative_dot_desc" = "Small red dot indicating the prompt has negative instructions.";
+"glossary_alternative_dot_title" = "Alternative Indicator";
+"glossary_alternative_dot_desc" = "Small green dot indicating the prompt has alternative variations.";
+"glossary_variable_indicator_title" = "Variables Indicator";
+"glossary_variable_indicator_desc" = "Count of dynamic fields in the prompt.";
+"glossary_images_indicator_title" = "Images Indicator";
+"glossary_images_indicator_desc" = "Count of images or results attached.";
+"glossary_versions_indicator_title" = "Versions Indicator";
+"glossary_versions_indicator_desc" = "History of changes for this prompt.";
 "contact_help" = "Contact and Help";
 "email_support" = "Email Support";
 "report_problem" = "Report a Problem";
