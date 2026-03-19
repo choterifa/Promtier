@@ -176,6 +176,11 @@ struct NewPromptView: View {
                                             let temp = content
                                             content = alternativePrompt
                                             alternativePrompt = temp
+                                            branchMessage = "Content swapped!"
+                                        }
+                                        HapticService.shared.playLight()
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                            withAnimation { branchMessage = nil }
                                         }
                                     }) {
                                         HStack(spacing: 4) {
@@ -193,6 +198,11 @@ struct NewPromptView: View {
                                             if !content.isEmpty { content += "\n\n---\n\n" }
                                             content += alternativePrompt
                                             alternativePrompt = ""
+                                            branchMessage = "Prompts merged!"
+                                        }
+                                        HapticService.shared.playLight()
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                            withAnimation { branchMessage = nil }
                                         }
                                     }) {
                                         HStack(spacing: 4) {

@@ -355,6 +355,9 @@ struct AppearanceTab: View {
                             preferences.windowWidth = preferences.previewWidth
                         }
                     })
+                    .onChange(of: preferences.previewWidth) { _, _ in
+                        HapticService.shared.playStrong()
+                    }
                     .frame(width: 150)
                 }
                 
@@ -367,6 +370,9 @@ struct AppearanceTab: View {
                             preferences.windowHeight = preferences.previewHeight
                         }
                     })
+                    .onChange(of: preferences.previewHeight) { _, _ in
+                        HapticService.shared.playStrong()
+                    }
                     .frame(width: 150)
                 }
                 
