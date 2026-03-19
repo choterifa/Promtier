@@ -2,49 +2,46 @@
 
 > Cada respuesta incluye una versión **para humanos** y otra **técnica**.
 
-## 1) ¿Cuántas imágenes permite por prompt?
-**Para humanos:** Hasta **3 imágenes** de resultados por prompt.  
-**Técnico:** Se persisten 3 slots: `image1Path/image2Path/image3Path` + `thumb1/thumb2/thumb3` (Core Data) y los archivos viven en `Application Support/.../Images/<promptUUID>/`.
+## 1) ¿Qué es la "Copia Mágica" y cómo funciona?
+**Para humanos:** Es la capacidad de copiar cualquier prompt usando un atajo de teclado global (ej. `Cmd+Opt+1`) sin necesidad de abrir la aplicación. Funciona incluso si Promtier está minimizado o cerrado.
+**Técnico:** Implementado mediante el framework **Carbon**, registrando `EventHotKey` individuales por cada prompt. Al detectarse la pulsación, se dispara una notificación que indica al `PromptService` que copie el contenido al `NSPasteboard`.
 
-## 2) ¿Dónde guarda Promtier mis imágenes?
-**Para humanos:** En tu Mac, dentro de la carpeta de datos de la app (no en la nube).  
-**Técnico:** `~/Library/Application Support/<bundleId>/Images/<promptUUID>/showcase_<n>.jpg|png`.
+## 2) ¿Por qué el editor tiene diferentes colores de fondo?
+**Para humanos:** Para ayudarte a identificar rápidamente qué estás escribiendo. El **Azul** es para tu prompt principal, el **Rojo** para el prompt negativo (lo que quieres evitar) y el **Verde** para una versión alternativa.
+**Técnico:** La UI utiliza un tinte de fondo del 5% de opacidad basado en el tipo de campo dentro de `NewPromptView`, facilitando la jerarquía visual en formularios complejos.
 
-## 3) ¿Las imágenes se comprimen/optimizan?
-**Para humanos:** Sí: se guardan “más ligeras” para que la app vaya rápida.  
-**Técnico:** Al guardar se redimensionan a ~**1200px** (lado mayor) y se exportan como **JPEG** (si no hay alpha) o **PNG** (si hay transparencias). Además se generan thumbnails (~**480px**) para UI.
+## 3) ¿Necesito permisos de Accesibilidad para usar Promtier?
+**Para humanos:** **Solo si activas el "Pegado Automático" (Instant Paste).** Para el resto de funciones (copiar, buscar, atajos globales) no necesitas ningún permiso especial.
+**Técnico:** El pegado automático requiere simular eventos de teclado del sistema (`CGEvent` para Cmd+V), lo cual macOS bloquea por seguridad a menos que el usuario conceda permisos en *Ajustes del Sistema > Privacidad y Seguridad > Accesibilidad*.
 
-## 4) ¿Qué formatos de exportación existen?
-**Para humanos:**  
-- **ZIP (recomendado):** Backup completo con imágenes.  
-- **JSON:** Un solo archivo (puede pesar mucho).  
-- **CSV:** Para Excel/Sheets (sin imágenes).  
-**Técnico:** ZIP exporta `manifest.json` + `Images/`; JSON incluye imágenes en base64; CSV exporta texto/metadata.
+## 4) ¿Qué hacen los botones Swap, Merge y Branching?
+**Para humanos:** Son herramientas de productividad para iterar prompts:
+- **Swap:** Intercambia el contenido principal con el alternativo.
+- **Merge:** Junta el alternativo al final del principal con una línea divisoria.
+- **Branching:** Crea un prompt nuevo independiente a partir del texto alternativo.
+**Técnico:** Operaciones de mutación de strings que incluyen la limpieza del `undoManager` del `NSTextView` nativo para evitar errores de desincronización de memoria (`EXC_BAD_ACCESS`).
 
-## 5) ¿Puedo exportar e importar sin perder categorías, historial y favoritos?
-**Para humanos:** Sí. El backup guarda tus carpetas/categorías, favoritos, uso y más.  
-**Técnico:** Se exportan prompts + folders con campos como `deletedAt`, `useCount`, `lastUsedAt`, `versionHistory`, `tags`, `negativePrompt`, `alternativePrompt`, etc. (según el formato).
+## 5) ¿Puedo comparar dos versiones de un prompt?
+**Para humanos:** Sí, usando el botón **Diff**. Abrirá una ventana comparativa para ver las diferencias entre el contenido principal y el alternativo lado a lado.
+**Técnico:** Se invoca la vista `DiffView.swift` que presenta ambos textos en una estructura de columnas paralelas con tipografía monoespaciada.
 
-## 6) ¿Qué pasa si importo y ya tengo un prompt con el mismo ID?
-**Para humanos:** Se omite para evitar duplicados y evitar sobrescrituras.  
-**Técnico:** Import (ZIP/JSON) hace “skip” por `id` existente; no sobreescribe el registro ni sus imágenes.
+## 6) ¿Cómo funciona la sección de "Recientes"?
+**Para humanos:** Muestra tus **7 prompts más importantes** del momento: aquellos que usaste en las últimas 48 horas o tus favoritos de siempre si no has usado muchos últimamente.
+**Técnico:** Filtro híbrido que combina `lastUsedAt > 48h` con el `top 10` por `useCount`, eliminando duplicados y aplicando un `prefix(7)`.
 
-## 7) ¿Cuánto espacio ocupa guardar muchos prompts con imágenes (ej. 1000)?
-**Para humanos:** Depende de cuántas imágenes uses, pero suele estar entre **~0.3 GB y ~1.5 GB**.  
-**Técnico (estimación):**
-- 1 imagen/prompt: ~300–490 MB (full 250–400KB + thumb 40–90KB).
-- 3 imágenes/prompt: ~0.9–1.5 GB (3000 imágenes).
-- Peor caso (mucho PNG): puede subir a varios GB.
+## 7) ¿Qué formatos de exportación soporta?
+**Para humanos:** Por defecto exporta a **Markdown (.md)**, pero también permite **ZIP** (completo con imágenes), **JSON** (portable) y **CSV** (tablas).
+**Técnico:** La función de exportación utiliza `UTType.plainText` y `UTType.json`, y ahora prioriza `.md` envolviendo el título en un encabezado H1 para compatibilidad inmediata.
 
-## 8) ¿Promtier sube mis datos a internet?
-**Para humanos:** No, por defecto todo queda local en tu Mac.  
-**Técnico:** Persistencia local (Core Data + Application Support). iCloud Sync depende de configuración/estado del proyecto.
+## 8) ¿Por qué la ventana se cierra sola al arrastrar un prompt?
+**Para humanos:** Para que no te estorbe. En cuanto empiezas a arrastrar un prompt hacia otra aplicación (como un navegador), la ventana de Promtier desaparece para que veas claramente dónde vas a soltar el texto.
+**Técnico:** Se llama a `menuBarManager.closePopover()` dentro del cierre `onDrag` de `PromptCard.swift`.
 
-## 9) ¿Cómo hago un backup “seguro” para moverlo a otra Mac?
-**Para humanos:** Exporta en **ZIP** y guarda ese archivo donde quieras (USB, iCloud Drive, etc.).  
-**Técnico:** ZIP contiene manifest + `Images/`. Si quieres privacidad extra, puedes cifrar el archivo con herramientas del sistema (ej. en un volumen cifrado).
+## 9) ¿Puedo sentir cuándo la ventana cambia de tamaño?
+**Para humanos:** Sí, si tienes una MacBook o Magic Trackpad sentirás un "clic" físico cada vez que la ventana crece o se encoge 10 píxeles en los ajustes.
+**Técnico:** Integración de `NSHapticFeedbackManager` con el nivel `.strong` disparado por el `.onChange` de los sliders de dimensiones en `PreferencesView`.
 
-## 10) ¿Cómo libero espacio si tengo demasiadas imágenes?
-**Para humanos:** Borra prompts con imágenes o haz un reset total si quieres empezar limpio.  
-**Técnico:** Las imágenes viven en `Application Support/.../Images/`. El “Reset All” borra también esa carpeta.
+## 10) ¿Cuál es el tamaño ideal de la ventana?
+**Para humanos:** La app viene configurada a **740x530px**, un tamaño balanceado para ver el editor avanzado y la lista de prompts sin scroll innecesario.
+**Técnico:** Dimensiones fijadas como constantes de inicialización en `PreferencesManager.swift`.
 
