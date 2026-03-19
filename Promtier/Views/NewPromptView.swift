@@ -176,7 +176,7 @@ struct NewPromptView: View {
                 isAIActive: $isAIActive,
                 currentCategoryColor: currentCategoryColor
             )
-            .frame(height: geometry.size.height * 0.83)
+            .frame(minHeight: 380) // Usar minHeight en lugar de frame fijo basado en % para mejor scroll
             
             // SECTION 2: ADVANCED FIELDS
             VStack(spacing: 24) {
@@ -193,25 +193,23 @@ struct NewPromptView: View {
                             zenTarget = .negative
                             showingZenEditor = true
                         }
-                    }
+                    },
+                    insertionRequest: $insertionRequest,
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
+                    showingPremiumFor: $showingPremiumFor
                 ) {
                     EmptyView()
                 }
                 
                 // 2.2: ALTERNATIVE PROMPTS
                 VStack(alignment: .leading, spacing: 16) {
-                    if alternatives.isEmpty {
-                        Text("no_alternatives_hint".localized(for: preferences.language))
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary.opacity(0.6))
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                                    .foregroundColor(.primary.opacity(0.1))
-                            )
-                    } else {
+                    if !alternatives.isEmpty {
                         VStack(spacing: 16) {
                             ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
                                 alternativeRow(index: index)
@@ -244,29 +242,47 @@ struct NewPromptView: View {
             }
             
             // SECTION 3: UTILITIES
-            VStack(alignment: .leading, spacing: 16) {
-                Text("global_shortcuts".localized(for: preferences.language).uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
-                    .padding(.horizontal, 8)
+            VStack(alignment: .leading, spacing: 20) {
+                // Atajo Individual (Movido aquí para mayor visibilidad)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("shortcut_settings".localized(for: preferences.language).uppercased())
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .tracking(1)
+                        .padding(.horizontal, 8)
 
-                if preferences.isPremiumActive {
-                    ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
+                    if preferences.isPremiumActive {
+                        ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.primary.opacity(0.03))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                    )
+                            )
+                    } else {
+                        // Mostrar locked state para transparencia
+                        HStack {
+                            Label("global_shortcut_copy".localized(for: preferences.language), systemImage: "lock.fill")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button("unlock".localized(for: preferences.language)) {
+                                showingPremiumFor = "global_shortcut_copy".localized(for: preferences.language)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
                         .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.primary.opacity(0.03))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                )
-                        )
+                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.03)))
+                    }
                 }
                 
                 imageGallery
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, 40)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 24)
@@ -288,7 +304,16 @@ struct NewPromptView: View {
                     zenTarget = .alternative(index)
                     showingZenEditor = true
                 }
-            }
+            },
+            insertionRequest: $insertionRequest,
+            replaceSnippetRequest: $replaceSnippetRequest,
+            showSnippets: $showSnippets,
+            snippetSearchQuery: $snippetSearchQuery,
+            snippetSelectedIndex: $snippetSelectedIndex,
+            triggerSnippetSelection: $triggerSnippetSelection,
+            triggerAppleIntelligence: $triggerAppleIntelligence,
+            isAIActive: $isAIActive,
+            showingPremiumFor: $showingPremiumFor
         ) {
             HStack(spacing: 10) {
                 if !alternatives[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1149,23 +1174,25 @@ struct EditorCard: View {
                                 .background(currentCategoryColor.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
+
+                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
+
+                        Button(action: { 
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showingZenEditor = true
+                                zenTarget = .main
+                            }
+                        }) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(currentCategoryColor)
+                                .frame(width: 32, height: 32)
+                                .background(currentCategoryColor.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-
-                    Button(action: { 
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showingZenEditor = true
-                            zenTarget = .main
-                        }
-                    }) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(currentCategoryColor.opacity(0.1)))
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 8)
@@ -1210,11 +1237,30 @@ struct SecondaryEditorCard<Actions: View>: View {
     let color: Color
     var focusRequest: Binding<Bool>? = nil
     var onZenMode: (() -> Void)? = nil
+    
+    // Bindings for standard actions
+    @Binding var insertionRequest: String?
+    @Binding var replaceSnippetRequest: String?
+    @Binding var showSnippets: Bool
+    @Binding var snippetSearchQuery: String
+    @Binding var snippetSelectedIndex: Int
+    @Binding var triggerSnippetSelection: Bool
+    @Binding var triggerAppleIntelligence: Bool
+    @Binding var isAIActive: Bool
+    @Binding var showingPremiumFor: String?
+    
     let actions: Actions
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
+         focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
+         insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>,
+         showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
+         snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>,
+         triggerAppleIntelligence: Binding<Bool>, isAIActive: Binding<Bool>,
+         showingPremiumFor: Binding<String?>,
+         @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
         self.placeholder = placeholder
         self._text = text
@@ -1222,6 +1268,15 @@ struct SecondaryEditorCard<Actions: View>: View {
         self.color = color
         self.focusRequest = focusRequest
         self.onZenMode = onZenMode
+        self._insertionRequest = insertionRequest
+        self._replaceSnippetRequest = replaceSnippetRequest
+        self._showSnippets = showSnippets
+        self._snippetSearchQuery = snippetSearchQuery
+        self._snippetSelectedIndex = snippetSelectedIndex
+        self._triggerSnippetSelection = triggerSnippetSelection
+        self._triggerAppleIntelligence = triggerAppleIntelligence
+        self._isAIActive = isAIActive
+        self._showingPremiumFor = showingPremiumFor
         self.actions = actions()
     }
     
@@ -1240,17 +1295,72 @@ struct SecondaryEditorCard<Actions: View>: View {
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    if let onZen = onZenMode {
-                        Button(action: onZen) {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 10, weight: .bold))
+                    HStack(spacing: 0) {
+                        if preferences.appleIntelligenceEnabled {
+                            Button(action: {
+                                triggerAppleIntelligence = true
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "apple.intelligence")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundColor(color)
+                                    .frame(width: 24, height: 24)
+                                    .background(isAIActive ? color.opacity(0.2) : color.opacity(0.1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Divider().frame(height: 14).background(color.opacity(0.2))
+                        }
+
+                        Button(action: { 
+                            if preferences.isPremiumActive {
+                                insertionRequest = "{{variable}}"
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                            }
+                        }) {
+                            Image(systemName: "curlybraces")
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(color)
                                 .frame(width: 24, height: 24)
-                                .background(Circle().fill(color.opacity(0.1)))
+                                .background(color.opacity(0.1))
                         }
-                        .buttonStyle(.plain)
-                        .help("zen_mode".localized(for: preferences.language))
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Divider().frame(height: 14).background(color.opacity(0.2))
+                        
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            } else {
+                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                            }
+                        }) {
+                            Text("/")
+                                .font(.system(size: 12, weight: .black, design: .monospaced))
+                                .foregroundColor(color)
+                                .frame(width: 24, height: 24)
+                                .background(color.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        if let onZen = onZenMode {
+                            Divider().frame(height: 14).background(color.opacity(0.2))
+                            
+                            Button(action: onZen) {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(color)
+                                    .frame(width: 24, height: 24)
+                                    .background(color.opacity(0.1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                     
                     actions
                 }
@@ -1259,16 +1369,16 @@ struct SecondaryEditorCard<Actions: View>: View {
             VStack(spacing: 0) {
                 HighlightedEditor(
                     text: $text,
-                    insertionRequest: .constant(nil),
-                    replaceSnippetRequest: .constant(nil),
-                    triggerAppleIntelligence: .constant(false),
-                    isAIActive: .constant(false),
+                    insertionRequest: $insertionRequest,
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
                     focusRequest: focusRequest,
                     fontSize: 14 * preferences.fontSize.scale,
-                    showSnippets: .constant(false),
-                    snippetSearchQuery: .constant(""),
-                    snippetSelectedIndex: .constant(0),
-                    triggerSnippetSelection: .constant(false),
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection,
                     isPremium: preferences.isPremiumActive
                 )
                 .padding(12)
