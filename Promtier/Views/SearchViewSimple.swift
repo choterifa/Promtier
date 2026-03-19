@@ -949,7 +949,7 @@ struct SearchViewSimple: View {
         }
     }
     
-    /// Programa la aparición de un Ghost Tip en serie
+    /// Programa la aparición de un Ghost Tip de forma secuencial
     private func scheduleNextGhostTip(initialDelay: Double? = nil) {
         guard preferences.ghostTipsEnabled else { return }
         
@@ -960,9 +960,12 @@ struct SearchViewSimple: View {
             // Solo mostrar si seguimos en la pantalla principal y están activados
             if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    // Mostrar siguiente en la serie (bucle)
-                    self.currentGhostTip = self.ghostTips[self.nextTipIndex % self.ghostTips.count]
-                    self.nextTipIndex += 1
+                    // Seleccionar el siguiente consejo en la lista de forma circular
+                    let tips = self.ghostTips
+                    if !tips.isEmpty {
+                        self.currentGhostTip = tips[self.nextTipIndex % tips.count]
+                        self.nextTipIndex = (self.nextTipIndex + 1) % tips.count
+                    }
                 }
                 
                 // ⏱️ Auto-ocultar después de 6.5 segundos (ajustado por petición)
@@ -975,7 +978,7 @@ struct SearchViewSimple: View {
                 }
             }
             
-            // Programar el siguiente tip en serie (sin delay inicial forzado)
+            // Programar el siguiente tip (sin delay inicial forzado)
             self.scheduleNextGhostTip()
         }
     }
