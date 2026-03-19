@@ -114,6 +114,11 @@ struct NewPromptView: View {
             )
             .frame(height: geometry.size.height * 0.83)
             
+            Line()
+                .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                .frame(height: 1)
+                .foregroundColor(.primary.opacity(0.1))
+            
             // SECTION 2: ADVANCED FIELDS
             VStack(spacing: 24) {
                 // 2.1: NEGATIVE PROMPT
@@ -172,6 +177,11 @@ struct NewPromptView: View {
                     }
                 }
             }
+            
+            Line()
+                .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                .frame(height: 1)
+                .foregroundColor(.primary.opacity(0.1))
             
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 16) {
@@ -684,8 +694,8 @@ struct NewPromptView: View {
                     .padding(.vertical, 6)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
-                            .shadow(color: title.isEmpty || content.isEmpty ? .clear : Color.blue.opacity(0.2), radius: 4, y: 2)
+                            .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : currentCategoryColor)
+                            .shadow(color: title.isEmpty || content.isEmpty ? .clear : currentCategoryColor.opacity(0.2), radius: 4, y: 2)
                     )
             }
             .buttonStyle(.plain)
@@ -1018,13 +1028,13 @@ struct EditorCard: View {
                                 Image(systemName: "apple.intelligence")
                                     .font(.system(size: 11, weight: .bold))
                                     .symbolRenderingMode(.monochrome)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(currentCategoryColor)
                                     .frame(width: 32, height: 32)
-                                    .background(isAIActive ? Color.blue.opacity(0.2) : Color.blue.opacity(0.1))
+                                    .background(isAIActive ? currentCategoryColor.opacity(0.2) : currentCategoryColor.opacity(0.1))
                             }
                             .buttonStyle(ScaleButtonStyle())
                             
-                            Divider().frame(height: 18).background(Color.blue.opacity(0.2))
+                            Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         }
 
                         Button(action: { 
@@ -1036,13 +1046,13 @@ struct EditorCard: View {
                         }) {
                             Image(systemName: "curlybraces")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(currentCategoryColor)
                                 .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
+                                .background(currentCategoryColor.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
                         
-                        Divider().frame(height: 18).background(Color.blue.opacity(0.2))
+                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         
                         Button(action: {
                             if preferences.isPremiumActive {
@@ -1054,23 +1064,25 @@ struct EditorCard: View {
                         }) {
                             Text("/")
                                 .font(.system(size: 14, weight: .black, design: .monospaced))
-                                .foregroundColor(.blue)
+                                .foregroundColor(currentCategoryColor)
                                 .frame(width: 32, height: 32)
-                                .background(Color.blue.opacity(0.1))
+                                .background(currentCategoryColor.opacity(0.1))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
+                        
+                        Button(action: { showingZenEditor = true }) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(currentCategoryColor)
+                                .frame(width: 32, height: 32)
+                                .background(currentCategoryColor.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-
-                    Button(action: { showingZenEditor = true }) {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.blue)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(Color.blue.opacity(0.1)))
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 8)
@@ -1093,7 +1105,7 @@ struct EditorCard: View {
                 )
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.blue.opacity(0.05)) // Azul profesional sutil
+                .background(currentCategoryColor.opacity(0.05)) // Color profesional sutil
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
