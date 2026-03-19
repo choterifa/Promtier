@@ -612,22 +612,54 @@ struct SearchViewSimple: View {
     /// Maneja eventos de teclado locales para Cmd+C, Enter y navegación
     private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
         let keyCode = event.keyCode
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         
-        // ESC (KeyCode 53): cerrar solo el overlay de Variables si está abierto
-        if keyCode == 53 {
+        // ESC (KeyCode 53)
+        if keyCode == 53 && modifiers.isEmpty {
+            // 1. Overlay de Variables Dinámicas (Prioridad alta)
             if fillingVariablesFor != nil {
                 DispatchQueue.main.async { withAnimation { fillingVariablesFor = nil } }
                 return nil  // consumir el evento — no cerrar la app
             }
+            
+            // 2. Vista Previa (Quick Look)
+            if showingPreview {
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.3)) {
+                        showingPreview = false
+                    }
+                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                }
+                return nil
+            }
+            
+            // 3. Vistas secundarias (Ajustes, Papelera, Carpetas)
+            // Nota: NewPromptView tiene su propio monitor, pero esto actúa como salvaguarda
+            // para el resto de estados que no tienen monitor dedicado.
+            let currentState = menuBarManager.activeViewState
+            if currentState != .main {
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        // Limpieza de estados específicos según la vista
+                        if currentState == .newPrompt {
+                            DraftService.shared.clearDraft()
+                        }
+                        
+                        menuBarManager.activeViewState = .main
+                        selectedPrompt = nil
+                        menuBarManager.folderToEdit = nil
+                        menuBarManager.isModalActive = false
+                    }
+                }
+                return nil // Bloquear cierre del popover principal
+            }
         }
         
-        // GUARDIA PRINCIPAL: solo actuar en vista principal, sin overlays ni modales abiertos
+        // GUARDIA PRINCIPAL: solo actuar en vista principal para el resto de atajos (flechas, espacio, etc)
         guard case .main = menuBarManager.activeViewState,
               fillingVariablesFor == nil,
               !isFullScreenImageOpen,
               !menuBarManager.isModalActive else { return event }
-        
-        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         
         // Enter (KeyCode 36) -> Editar
         if keyCode == 36 {

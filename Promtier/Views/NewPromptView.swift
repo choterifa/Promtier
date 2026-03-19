@@ -28,6 +28,30 @@ struct NewPromptView: View {
     @State private var showcaseImages: [Data] = []
     @State private var isSaving = false
     @State private var showingZenEditor = false
+    @State private var zenTarget: ZenEditorTarget? = nil
+    
+    enum ZenEditorTarget: Identifiable {
+        case main
+        case negative
+        case alternative(Int)
+        
+        var id: String {
+            switch self {
+            case .main: return "main"
+            case .negative: return "negative"
+            case .alternative(let i): return "alt-\(i)"
+            }
+        }
+        
+        func title(for promptTitle: String, language: AppLanguage) -> String {
+            switch self {
+            case .main: return promptTitle.isEmpty ? "new_prompt".localized(for: language) : promptTitle
+            case .negative: return "negative_prompt".localized(for: language)
+            case .alternative(let i): return "\("alternative".localized(for: language)) #\(i + 1)"
+            }
+        }
+    }
+
     @State private var showingIconPicker = false
     @State private var isDragging = false
     @State private var draggedImageIndex: Int? = nil
@@ -63,6 +87,45 @@ struct NewPromptView: View {
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
+    
+    private var zenBindingContent: Binding<String> {
+        Binding(
+            get: {
+                switch zenTarget {
+                case .main: return content
+                case .negative: return negativePrompt
+                case .alternative(let i): return i < alternatives.count ? alternatives[i] : ""
+                case .none: return ""
+                }
+            },
+            set: { val in
+                switch zenTarget {
+                case .main: content = val
+                case .negative: negativePrompt = val
+                case .alternative(let i): if i < alternatives.count { alternatives[i] = val }
+                case .none: break
+                }
+            }
+        )
+    }
+
+    private var zenBindingTitle: Binding<String> {
+        Binding(
+            get: {
+                switch zenTarget {
+                case .main: return title
+                case .negative: return "negative_prompt".localized(for: preferences.language)
+                case .alternative(let i): return "\("alternative".localized(for: preferences.language)) #\(i + 1)"
+                case .none: return ""
+                }
+            },
+            set: { val in
+                if case .main = zenTarget {
+                    title = val
+                }
+            }
+        )
+    }
     
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
@@ -101,6 +164,7 @@ struct NewPromptView: View {
                 fallbackIconName: selectedFolder.flatMap { PredefinedCategory.fromString($0)?.icon } ?? "doc.text.fill",
                 showingIconPicker: $showingIconPicker,
                 showingZenEditor: $showingZenEditor,
+                zenTarget: $zenTarget,
                 showingPremiumFor: $showingPremiumFor,
                 insertionRequest: $insertionRequest,
                 replaceSnippetRequest: $replaceSnippetRequest,
@@ -123,7 +187,13 @@ struct NewPromptView: View {
                     text: $negativePrompt,
                     icon: "minus.circle.fill",
                     color: .red,
-                    focusRequest: $focusNegative
+                    focusRequest: $focusNegative,
+                    onZenMode: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            zenTarget = .negative
+                            showingZenEditor = true
+                        }
+                    }
                 ) {
                     EmptyView()
                 }
@@ -212,7 +282,13 @@ struct NewPromptView: View {
                 set: { if alternatives.indices.contains(index) { alternatives[index] = $0 } }
             ),
             icon: "text.bubble.fill",
-            color: .green
+            color: .green,
+            onZenMode: {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    zenTarget = .alternative(index)
+                    showingZenEditor = true
+                }
+            }
         ) {
             HStack(spacing: 10) {
                 if !alternatives[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -405,11 +481,12 @@ struct NewPromptView: View {
     @ViewBuilder
     private var overlays: some View {
         Group {
-            if showingZenEditor {
+            if let target = zenTarget {
                 ZenEditorView(
-                    title: $title,
-                    content: $content,
-                    onDone: { showingZenEditor = false },
+                    title: zenBindingTitle,
+                    content: zenBindingContent,
+                    isTitleEditable: { if case .main = target { return true } else { return false } }(),
+                    onDone: { withAnimation(.spring()) { zenTarget = nil; showingZenEditor = false } },
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
                     showSnippets: $showSnippets,
@@ -422,6 +499,7 @@ struct NewPromptView: View {
                 )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(150)
             }
             if showSnippets {
                 snippetOverlay
@@ -469,9 +547,20 @@ struct NewPromptView: View {
                 }
                 
                 // Si no hay overlays críticos abiertos, cerrar la vista
-                if !self.showingZenEditor && !self.showingIconPicker {
+                if self.zenTarget == nil && !self.showingIconPicker {
                     DispatchQueue.main.async {
                         self.onClose()
+                    }
+                    return nil
+                }
+                
+                // Si estamos en ZenMode, salir del modo con animación
+                if self.zenTarget != nil {
+                    DispatchQueue.main.async {
+                        withAnimation(.spring()) {
+                            self.zenTarget = nil
+                            self.showingZenEditor = false
+                        }
                     }
                     return nil
                 }
@@ -961,6 +1050,7 @@ struct EditorCard: View {
     let fallbackIconName: String
     @Binding var showingIconPicker: Bool
     @Binding var showingZenEditor: Bool
+    @Binding var zenTarget: NewPromptView.ZenEditorTarget?
     @Binding var showingPremiumFor: String?
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
@@ -1063,7 +1153,12 @@ struct EditorCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
 
-                    Button(action: { showingZenEditor = true }) {
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            showingZenEditor = true
+                            zenTarget = .main
+                        }
+                    }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(currentCategoryColor)
@@ -1114,17 +1209,19 @@ struct SecondaryEditorCard<Actions: View>: View {
     let icon: String
     let color: Color
     var focusRequest: Binding<Bool>? = nil
+    var onZenMode: (() -> Void)? = nil
     let actions: Actions
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, focusRequest: Binding<Bool>? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil, @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
         self.placeholder = placeholder
         self._text = text
         self.icon = icon
         self.color = color
         self.focusRequest = focusRequest
+        self.onZenMode = onZenMode
         self.actions = actions()
     }
     
@@ -1142,7 +1239,21 @@ struct SecondaryEditorCard<Actions: View>: View {
                 
                 Spacer()
                 
-                actions
+                HStack(spacing: 12) {
+                    if let onZen = onZenMode {
+                        Button(action: onZen) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(color)
+                                .frame(width: 24, height: 24)
+                                .background(Circle().fill(color.opacity(0.1)))
+                        }
+                        .buttonStyle(.plain)
+                        .help("zen_mode".localized(for: preferences.language))
+                    }
+                    
+                    actions
+                }
             }
             
             VStack(spacing: 0) {

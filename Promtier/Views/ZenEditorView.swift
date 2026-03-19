@@ -10,6 +10,7 @@ import SwiftUI
 struct ZenEditorView: View {
     @Binding var title: String
     @Binding var content: String
+    var isTitleEditable: Bool = true
     let onDone: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
@@ -28,9 +29,15 @@ struct ZenEditorView: View {
         VStack(spacing: 0) {
             // Header minimalista
             HStack {
-                TextField("zen_title_placeholder".localized(for: preferences.language), text: $title)
-                    .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
-                    .textFieldStyle(.plain)
+                if isTitleEditable {
+                    TextField("zen_title_placeholder".localized(for: preferences.language), text: $title)
+                        .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
+                        .textFieldStyle(.plain)
+                } else {
+                    Text(title)
+                        .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
