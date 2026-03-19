@@ -23,6 +23,11 @@ class SoundService {
         playSystem("Glass", volume: 0.45)
     }
     
+    // "Submarine" → sonido de burbuja profundo, para copias secundarias ✅
+    func playSecondaryCopySound() {
+        playSystem("Submarine", volume: 0.45)
+    }
+    
     // MARK: - Vista previa (preview abierto/cerrado)
     // "Pop" → pop suave, sutil ✅
     func playPreviewSound() {

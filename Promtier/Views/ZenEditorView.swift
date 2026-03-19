@@ -65,6 +65,7 @@ struct ZenEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.escape, modifiers: [])
+                .keyboardShortcut("s", modifiers: [.command])
             }
             .padding(32)
             

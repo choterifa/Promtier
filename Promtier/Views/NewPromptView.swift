@@ -510,14 +510,6 @@ struct NewPromptView: View {
                 }
                 return nil
             }
-
-            // Cmd + S -> Save (S is keyCode 1)
-            if modifiers == .command && event.keyCode == 1 {
-                DispatchQueue.main.async {
-                    self.savePrompt()
-                }
-                return nil
-            }
             
             return event
         }
@@ -682,6 +674,7 @@ struct NewPromptView: View {
             }
             .buttonStyle(.plain)
             .disabled(title.isEmpty || content.isEmpty)
+            .keyboardShortcut("s", modifiers: [.command]) 
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)

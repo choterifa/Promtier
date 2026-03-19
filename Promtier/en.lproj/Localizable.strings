@@ -257,7 +257,7 @@
 "gt_save_prompt" = "Save Prompt";
 "gt_save_shortcut" = "Cmd + S";
 "gt_edit" = "Edit Prompt";
-"gt_edit_shortcut" = "Enter";
+"gt_edit_shortcut" = "Enter / Double Tap";
 "gt_focus_negative" = "Negative Prompt";
 "gt_focus_negative_shortcut" = "Opt + N";
 "gt_focus_alternative" = "Alternative Prompt";
