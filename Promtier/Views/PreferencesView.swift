@@ -34,154 +34,141 @@ struct PreferencesView: View {
         (title: "support_tab", icon: "questionmark.circle.fill")
     ]
     
-    private var tabsContent: some View {
-        HStack(spacing: 2) {
+    private var sidebarContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Header del Sidebar
+            Text("settings".localized(for: preferences.language).uppercased())
+                .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                .foregroundColor(.secondary)
+                .tracking(1.2)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .padding(.top, 32)
+            
             ForEach(0..<tabs.count, id: \.self) { index in
-                Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
-                    HStack(spacing: 6) {
+                Button(action: { 
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { 
+                        selectedTab = index 
+                    } 
+                    HapticService.shared.playLight()
+                }) {
+                    HStack(spacing: 12) {
                         Image(systemName: tabs[index].icon)
-                            .font(.system(size: 13 * preferences.fontSize.scale, weight: .semibold))
+                            .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
+                            .foregroundColor(selectedTab == index ? .white : .blue)
+                            .frame(width: 24, height: 24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(selectedTab == index ? Color.white.opacity(0.15) : Color.blue.opacity(0.1))
+                            )
+                        
                         Text(tabs[index].title)
-                            .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                            .fixedSize(horizontal: true, vertical: false)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: selectedTab == index ? .bold : .medium))
+                            .foregroundColor(selectedTab == index ? .white : .primary)
+                        
+                        Spacer()
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .contentShape(Rectangle())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
                     .background(
-                        ZStack {
-                            if selectedTab == index {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
-                                    .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
-                            } else {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.clear)
-                            }
-                        }
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedTab == index ? Color.blue : Color.clear)
+                            .shadow(color: selectedTab == index ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
                     )
-                    .foregroundColor(selectedTab == index ? .white : .primary)
                 }
                 .buttonStyle(.plain)
+                .padding(.horizontal, 12)
             }
+            
+            Spacer()
+            
+            // Botón de Cerrar al final del sidebar (Opcional, estilo alternativo)
+            Button(action: onClose) {
+                HStack {
+                    Image(systemName: "arrow.left.circle.fill")
+                    Text("back_to_main".localized(for: preferences.language))
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 16)
         }
-        .padding(6)
+        .frame(width: 200)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(0.05))
+            ZStack {
+                Color(NSColor.windowBackgroundColor).opacity(0.98)
+                Color.primary.opacity(0.02)
+                
+                Rectangle()
+                    .fill(Color.primary.opacity(0.05))
+                    .frame(width: 1)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
         )
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header Premium
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("settings".localized(for: preferences.language))
-                        .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
-                    Text("settings_subtitle".localized(for: preferences.language))
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
+        HStack(spacing: 0) {
+            // Sidebar Izquierdo
+            sidebarContent
+            
+            // Contenido Derecho
+            VStack(spacing: 0) {
+                // Header del Contenido
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(tabs[selectedTab].title)
+                            .font(.system(size: 26 * preferences.fontSize.scale, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text("settings_subtitle".localized(for: preferences.language))
+                            .font(.system(size: 13 * preferences.fontSize.scale))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("\("close".localized(for: preferences.language)) (Esc)")
                 }
+                .padding(.horizontal, 40)
+                .padding(.top, 40)
+                .padding(.bottom, 24)
                 
-                Spacer()
+                Divider()
+                    .padding(.horizontal, 40)
                 
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("\("close".localized(for: preferences.language)) (Esc)")
-            }
-            .padding(.horizontal, 32)
-            .padding(.top, 32)
-            .padding(.bottom, 24)
-            
-            // Selector de pestañas personalizado (Segmented Premium)
-            // Selector de pestañas personalizado (Segmented Premium)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    tabsContent
-                    Spacer(minLength: 0)
-                }
-                .frame(minWidth: max(0, preferences.windowWidth - 64))
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 24)
-            
-            Divider()
-                .padding(.horizontal, 32)
-            
-            // Contenido de la pestaña
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    if selectedTab == 3 && !preferences.isPremiumActive {
-                        ZStack {
-                            SnippetsManagerTab()
-                                .blur(radius: 6)
-                                .disabled(true)
-                                .allowsHitTesting(false)
-                            
-                            VStack(spacing: 16) {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
-                                
-                                Button(action: { showingPremiumUpsell = true }) {
-                                    Text("unlock_premium".localized(for: preferences.language))
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 24)
-                                        .padding(.vertical, 10)
-                                        .background(Color.purple)
-                                        .cornerRadius(10)
-                                        .shadow(color: .purple.opacity(0.3), radius: 4, y: 2)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    } else {
-                        switch selectedTab {
-                        case 0: AppearanceTab()
-                        case 1: BehaviorTab()
-                        case 2: ShortcutsTab()
-                        case 3: SnippetsManagerTab()
-                        case 4: DataTab(
-                            showingResetAlert: $showingResetAlert,
-                            onClose: onClose
-                        )
-                        case 5: SupportTab()
-                        default: EmptyView()
+                // Scroll de opciones
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        if selectedTab == 3 && !preferences.isPremiumActive {
+                            premiumLockedSnippets
+                        } else {
+                            activeTabContent
                         }
                     }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 32)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
             }
+            .frame(maxWidth: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
         .onAppear {
-            // Inicializar estados temporales en el manager para el HUD
             preferences.previewWidth = preferences.windowWidth
             preferences.previewHeight = preferences.windowHeight
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            ZStack {
-                Color(NSColor.windowBackgroundColor)
-                
-                // Decoración sutil de fondo
-                Circle()
-                    .fill(Color.blue.opacity(0.03))
-                    .frame(width: 400, height: 400)
-                    .blur(radius: 60)
-                    .offset(x: 200, y: -200)
-            }
-        )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
         .sheet(isPresented: $showingPremiumUpsell) { PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language)) }
@@ -193,6 +180,47 @@ struct PreferencesView: View {
             }
         } message: {
             Text("reset_message".localized(for: preferences.language))
+        }
+    }
+    
+    @ViewBuilder
+    private var activeTabContent: some View {
+        switch selectedTab {
+        case 0: AppearanceTab()
+        case 1: BehaviorTab()
+        case 2: ShortcutsTab()
+        case 3: SnippetsManagerTab()
+        case 4: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)
+        case 5: SupportTab()
+        default: EmptyView()
+        }
+    }
+    
+    private var premiumLockedSnippets: some View {
+        ZStack {
+            SnippetsManagerTab()
+                .blur(radius: 6)
+                .disabled(true)
+                .allowsHitTesting(false)
+            
+            VStack(spacing: 16) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                
+                Button(action: { showingPremiumUpsell = true }) {
+                    Text("unlock_premium".localized(for: preferences.language))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(Color.purple)
+                        .cornerRadius(10)
+                        .shadow(color: .purple.opacity(0.3), radius: 4, y: 2)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
