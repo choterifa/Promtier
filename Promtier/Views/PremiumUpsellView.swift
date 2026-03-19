@@ -22,7 +22,7 @@ struct PremiumUpsellView: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple.opacity(0.2), .blue.opacity(0.2)]),
+                                gradient: Gradient(colors: [.blue.opacity(0.15), .blue.opacity(0.05)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -33,7 +33,7 @@ struct PremiumUpsellView: View {
                         .font(.system(size: 40))
                         .foregroundStyle(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple, .blue]),
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.7)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -51,32 +51,53 @@ struct PremiumUpsellView: View {
             .padding(.top, 24)
             
             // Lista de beneficios
-            VStack(alignment: .leading, spacing: 16) {
-                PremiumFeatureRow(
-                    icon: "slider.horizontal.3",
-                    title: "advanced_variables".localized(for: preferences.language),
-                    description: "advanced_variables_desc".localized(for: preferences.language)
-                )
-                
-                PremiumFeatureRow(
-                    icon: "/",
-                    title: "reusable_snippets".localized(for: preferences.language),
-                    description: "reusable_snippets_desc".localized(for: preferences.language)
-                )
-                
-                PremiumFeatureRow(
-                    icon: "clock.arrow.circlepath",
-                    title: "version_history".localized(for: preferences.language),
-                    description: "version_history_desc".localized(for: preferences.language)
-                )
-                
-                PremiumFeatureRow(
-                    icon: "sparkles",
-                    title: "visual_vfx".localized(for: preferences.language),
-                    description: "visual_vfx_desc".localized(for: preferences.language)
-                )
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    PremiumFeatureRow(
+                        icon: "slider.horizontal.3",
+                        title: "advanced_variables".localized(for: preferences.language),
+                        description: "advanced_variables_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "/",
+                        title: "reusable_snippets".localized(for: preferences.language),
+                        description: "reusable_snippets_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "keyboard",
+                        title: "global_shortcut_copy".localized(for: preferences.language),
+                        description: "Atajos de teclado personalizados para cada prompt individual."
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "clock.arrow.circlepath",
+                        title: "version_history".localized(for: preferences.language),
+                        description: "version_history_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "sparkles",
+                        title: "visual_vfx".localized(for: preferences.language),
+                        description: "visual_vfx_desc".localized(for: preferences.language)
+                    )
+                    
+                    // Más por venir
+                    HStack(spacing: 12) {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.blue.opacity(0.5))
+                        
+                        Text("¡Y mucho más por venir!")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+                    .padding(.leading, 4)
+                }
+                .padding(24)
             }
-            .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.primary.opacity(0.03))
@@ -86,13 +107,10 @@ struct PremiumUpsellView: View {
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
             
-            Spacer()
-            
             // Botones
             VStack(spacing: 12) {
                 Button(action: {
                     // Acción para "comprar" - Por ahora abre ajustes para activar
-                    // En el futuro: Navegaría a Checkout
                     onCancel?() ?? dismiss()
                 }) {
                     Text("unlock_premium".localized(for: preferences.language))
@@ -102,7 +120,7 @@ struct PremiumUpsellView: View {
                         .padding(.vertical, 12)
                         .background(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple, .blue]),
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]),
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -139,7 +157,7 @@ struct PremiumFeatureRow: View {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple, .blue]),
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -155,7 +173,7 @@ struct PremiumFeatureRow: View {
                     .font(.system(size: 20))
                     .foregroundStyle(
                         LinearGradient(
-                            gradient: Gradient(colors: [.purple, .blue]),
+                            gradient: Gradient(colors: [.blue, .blue.opacity(0.7)]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
