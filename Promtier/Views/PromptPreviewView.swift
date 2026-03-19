@@ -231,7 +231,7 @@ struct PromptPreviewView: View {
                             Button(action: {
                                 ClipboardService.shared.copyToClipboard(negative)
                                 if preferences.soundEnabled {
-                                    SoundService.shared.playSecondaryCopySound()
+                                    SoundService.shared.playNegativeCopySound()
                                 }
                                 HapticService.shared.playLight()
                             }) {
@@ -275,7 +275,7 @@ struct PromptPreviewView: View {
                                     Button(action: {
                                         ClipboardService.shared.copyToClipboard(alternative)
                                         if preferences.soundEnabled {
-                                            SoundService.shared.playSecondaryCopySound()
+                                            SoundService.shared.playAlternativeCopySound()
                                         }
                                         HapticService.shared.playLight()
                                     }) {
@@ -316,6 +316,9 @@ struct PromptPreviewView: View {
                             
                             Button(action: {
                                 ClipboardService.shared.copyToClipboard(alternative)
+                                if preferences.soundEnabled {
+                                    SoundService.shared.playAlternativeCopySound()
+                                }
                                 HapticService.shared.playLight()
                             }) {
                                 Image(systemName: "doc.on.doc")

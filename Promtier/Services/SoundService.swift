@@ -28,6 +28,18 @@ class SoundService {
         playSystem("Submarine", volume: 0.45)
     }
     
+    // MARK: - Copiar Negative Prompt
+    // "Submarine" → sonido de burbuja profundo, comunica algo opuesto o "debajo" ✅
+    func playNegativeCopySound() {
+        playSystem("Submarine", volume: 0.45)
+    }
+    
+    // MARK: - Copiar Alternative Prompt
+    // "Bottle" → sonido corto y hueco, comunica una variante o "otra opción" ✅
+    func playAlternativeCopySound() {
+        playSystem("Bottle", volume: 0.45)
+    }
+    
     // MARK: - Vista previa (preview abierto/cerrado)
     // "Pop" → pop suave, sutil ✅
     func playPreviewSound() {
