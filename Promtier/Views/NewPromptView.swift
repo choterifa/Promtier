@@ -50,6 +50,9 @@ struct NewPromptView: View {
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
     
+    @State private var showNegativeField: Bool = false
+    @State private var showAlternativeField: Bool = false
+    
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
@@ -82,6 +85,36 @@ struct NewPromptView: View {
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 24) {
+            if preferences.showAdvancedFields {
+                HStack(spacing: 8) {
+                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showNegativeField.toggle() } }) {
+                        Text(showNegativeField ? "- Negative" : "+ Negative")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(showNegativeField ? .white : .red)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(showNegativeField ? Color.red : Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showAlternativeField.toggle() } }) {
+                        Text(showAlternativeField ? "- Alternative" : "+ Alternative")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(showAlternativeField ? .white : .green)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(showAlternativeField ? Color.green : Color.green.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, -12) // Reducir un poco el espacio visual hacia el editor
+            }
+            
             EditorCard(
                 title: $title,
                 content: $content,
@@ -104,22 +137,30 @@ struct NewPromptView: View {
             .frame(height: geometry.size.height * 0.83, alignment: .top)
             
             // Nuevas secciones de prompt avanzado
-            VStack(spacing: 20) {
-                SecondaryEditorCard(
-                    title: "negative_prompt".localized(for: preferences.language),
-                    placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
-                    text: $negativePrompt,
-                    icon: "minus.circle.fill",
-                    color: .red
-                )
-                
-                SecondaryEditorCard(
-                    title: "alternative_prompt".localized(for: preferences.language),
-                    placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
-                    text: $alternativePrompt,
-                    icon: "arrow.triangle.2.circlepath.circle.fill",
-                    color: .green
-                )
+            if preferences.showAdvancedFields && (showNegativeField || showAlternativeField) {
+                VStack(spacing: 20) {
+                    if showNegativeField {
+                        SecondaryEditorCard(
+                            title: "negative_prompt".localized(for: preferences.language),
+                            placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
+                            text: $negativePrompt,
+                            icon: "minus.circle.fill",
+                            color: .red
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    
+                    if showAlternativeField {
+                        SecondaryEditorCard(
+                            title: "alternative_prompt".localized(for: preferences.language),
+                            placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
+                            text: $alternativePrompt,
+                            icon: "arrow.triangle.2.circlepath.circle.fill",
+                            color: .green
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
             }
             
             imageGallery
@@ -250,6 +291,9 @@ struct NewPromptView: View {
             selectedIcon = prompt.icon
             showcaseImages = prompt.showcaseImages
             tags = prompt.tags
+            
+            if !negativePrompt.isEmpty { showNegativeField = true }
+            if !alternativePrompt.isEmpty { showAlternativeField = true }
 
             // Lazy-load de imágenes (la lista ya no carga blobs para mejorar rendimiento).
             if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
@@ -287,6 +331,9 @@ struct NewPromptView: View {
             showcaseImages = draftPrompt.showcaseImages
             tags = draftPrompt.tags
             isDraftRestored = true
+            
+            if !negativePrompt.isEmpty { showNegativeField = true }
+            if !alternativePrompt.isEmpty { showAlternativeField = true }
             
             // Activar bloqueo de popover si el borrador restaurado no está vacío
             if !isContentEmpty {

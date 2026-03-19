@@ -18,6 +18,7 @@ struct FullScreenImageView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var isInteracting: Bool = false
     // Controls whether the toolbar auto-hides (after user interaction)
     @State private var toolbarOpacity: Double = 1.0
     @State private var hideTimer: DispatchWorkItem? = nil
@@ -133,12 +134,13 @@ struct FullScreenImageView: View {
                         .aspectRatio(contentMode: .fit)
                         .scaleEffect(scale, anchor: .center)
                         .offset(offset)
-                        .animation(nil, value: scale) // BLOQUEAR ANIMACIONES EXTERNAS EN LA IMAGEN
-                        .animation(nil, value: offset)
+                        .animation(isInteracting ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: scale)
+                        .animation(isInteracting ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: offset)
                         // PINCH TO ZOOM via MagnificationGesture
                         .gesture(
                             MagnificationGesture()
                                 .onChanged { value in
+                                    isInteracting = true
                                     let delta = value / lastScale
                                     lastScale = value
                                     let newScale = (scale * delta).clamped(to: minScale...maxScale)
@@ -146,6 +148,7 @@ struct FullScreenImageView: View {
                                     bumpToolbar()
                                 }
                                 .onEnded { _ in
+                                    isInteracting = false
                                     lastScale = 1.0
                                     if scale <= minScale {
                                         zoomWithAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -162,6 +165,7 @@ struct FullScreenImageView: View {
                             DragGesture()
                                 .onChanged { value in
                                     guard scale > 1.0 else { return }
+                                    isInteracting = true
                                     offset = CGSize(
                                         width: lastOffset.width + value.translation.width,
                                         height: lastOffset.height + value.translation.height
@@ -169,6 +173,7 @@ struct FullScreenImageView: View {
                                     bumpToolbar()
                                 }
                                 .onEnded { _ in
+                                    isInteracting = false
                                     lastOffset = offset
                                     scheduleHide()
                                 }
@@ -194,7 +199,7 @@ struct FullScreenImageView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transaction { $0.animation = nil } // PREVENIR CUALQUIER ANIMACIÓN DE LAYOUT EN ESTE ZSTACK
+            // Removed transaction { $0.animation = nil } to allow explicit zooming animations
             
             // UI CONTROLS LAYER
             VStack {

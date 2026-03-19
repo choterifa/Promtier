@@ -23,6 +23,7 @@ struct PreferencesView: View {
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
+    @State private var showingPremiumUpsell = false
     
     private let tabs: [(title: LocalizedStringKey, icon: String)] = [
         (title: "appearance_tab", icon: "paintbrush.fill"),
@@ -118,9 +119,31 @@ struct PreferencesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     if selectedTab == 3 && !preferences.isPremiumActive {
-                        PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language))
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 40)
+                        ZStack {
+                            SnippetsManagerTab()
+                                .blur(radius: 6)
+                                .disabled(true)
+                                .allowsHitTesting(false)
+                            
+                            VStack(spacing: 16) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                                
+                                Button(action: { showingPremiumUpsell = true }) {
+                                    Text("unlock_premium".localized(for: preferences.language))
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 24)
+                                        .padding(.vertical, 10)
+                                        .background(Color.purple)
+                                        .cornerRadius(10)
+                                        .shadow(color: .purple.opacity(0.3), radius: 4, y: 2)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     } else {
                         switch selectedTab {
                         case 0: AppearanceTab()
@@ -160,6 +183,7 @@ struct PreferencesView: View {
         )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
+        .sheet(isPresented: $showingPremiumUpsell) { PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language)) }
         .alert("reset_all".localized(for: preferences.language), isPresented: $showingResetAlert) {
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
             Button("reset_factory".localized(for: preferences.language), role: .destructive) {
@@ -396,6 +420,13 @@ struct BehaviorTab: View {
 
                 SettingsRow("disable_image_animations", subtitle: "disable_image_animations_subtitle", icon: "video.slash.fill", iconColor: .purple) {
                     Toggle("", isOn: $preferences.disableImageAnimations)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("show_advanced_fields", subtitle: "show_advanced_fields_subtitle", icon: "slider.horizontal.3", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.showAdvancedFields)
                         .toggleStyle(.switch)
                 }
                 

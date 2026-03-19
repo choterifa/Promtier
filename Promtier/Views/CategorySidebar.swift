@@ -25,6 +25,7 @@ struct CategorySidebar: View {
     @State private var dropTargetFolderId: UUID? = nil
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
+    @State private var isTargetedPapelera = false
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
@@ -219,11 +220,15 @@ struct CategorySidebar: View {
                 icon: "trash.fill",
                 color: .red,
                 count: promptService.trashedPrompts.count,
-                isSelected: menuBarManager.activeViewState == .trash
+                isSelected: menuBarManager.activeViewState == .trash,
+                isDropTarget: isTargetedPapelera
             ) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     menuBarManager.activeViewState = .trash
                 }
+            }
+            .onDrop(of: [.json, .plainText], isTargeted: $isTargetedPapelera) { providers in
+                handleQuickDrop(providers: providers, to: "trash")
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 16)
@@ -262,6 +267,16 @@ struct CategorySidebar: View {
         let uuids = ids.compactMap(UUID.init(uuidString:))
         guard !uuids.isEmpty else { return }
         _ = promptService.markPromptsFavorite(withIds: uuids)
+        if batchService.isSelectionModeActive, ids.count > 1 {
+            batchService.clearSelection()
+        }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+
+    private func moveToTrash(ids: [String]) {
+        let uuids = ids.compactMap(UUID.init(uuidString:))
+        guard !uuids.isEmpty else { return }
+        _ = promptService.deletePrompts(withIds: uuids)
         if batchService.isSelectionModeActive, ids.count > 1 {
             batchService.clearSelection()
         }
@@ -309,6 +324,8 @@ struct CategorySidebar: View {
                 DispatchQueue.main.async {
                     if category == "favorites" {
                         markAsFavorite(ids: ids)
+                    } else if category == "trash" {
+                        moveToTrash(ids: ids)
                     } else {
                         movePrompts(ids: ids, to: category)
                     }

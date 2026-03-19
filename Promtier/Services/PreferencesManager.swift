@@ -199,6 +199,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var showAdvancedFields: Bool {
+        didSet {
+            userDefaults.set(showAdvancedFields, forKey: "showAdvancedFields")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -268,6 +274,12 @@ class PreferencesManager: ObservableObject {
         
         // Desactivar animaciones por defecto en false (animadas por defecto)
         self.disableImageAnimations = userDefaults.bool(forKey: "disableImageAnimations")
+        
+        if userDefaults.object(forKey: "showAdvancedFields") != nil {
+            self.showAdvancedFields = userDefaults.bool(forKey: "showAdvancedFields")
+        } else {
+            self.showAdvancedFields = true
+        }
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
@@ -371,6 +383,7 @@ class PreferencesManager: ObservableObject {
         self.gestureHintsEnabled = true
         self.previewImagesFirst = true
         self.disableImageAnimations = false
+        self.showAdvancedFields = true
         
         applyAppearance()
     }

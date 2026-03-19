@@ -63,6 +63,10 @@
 "ghost_tips_subtitle" = "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)";
 "disable_image_animations" = "Desactivar animaciones de imagen";
 "disable_image_animations_subtitle" = "Desactiva el zoom animado al abrir la vista completa";
+"show_advanced_fields" = "Campos avanzados";
+"show_advanced_fields_subtitle" = "Mostrar campos de Negative y Alternative prompt";
+"view_negative" = "Ver Negative";
+"view_alternative" = "Ver Alternative";
 "gesture_hints" = "Sugerencias de gestos";
 "gesture_hints_subtitle" = "Muestra animaciones de zoom al abrir imágenes";
 "close_on_copy" = "Cerrar al copiar";

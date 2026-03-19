@@ -63,6 +63,10 @@
 "ghost_tips_subtitle" = "Occasionally shows shortcut tips (Ghost Tips)";
 "disable_image_animations" = "Disable Image Animations";
 "disable_image_animations_subtitle" = "Turn off zoom and pinch animations in full-size preview";
+"show_advanced_fields" = "Advanced Fields";
+"show_advanced_fields_subtitle" = "Show negative and alternative prompt fields";
+"view_negative" = "View Negative";
+"view_alternative" = "View Alternative";
 "close_on_copy" = "Close on Copy";
 "close_on_copy_subtitle" = "Close the window automatically after copying";
 "auto_paste" = "Instant Paste";
