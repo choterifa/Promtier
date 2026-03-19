@@ -21,15 +21,18 @@ open "/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqu
 ## 📋 Características
 
 - ✅ **Menu Bar Application**: Se ejecuta en la barra de menú de macOS
-- ✅ **Búsqueda Rápida**: Encuentra prompts instantáneamente
-- ✅ **Variables de Plantilla**: Soporte para `{{variable}}`
-- ✅ **Sistema de Favoritos**: Marca prompts como favoritos
-- ✅ **Organización**: Etiquetas y carpetas
-- ✅ **Resultados con Imágenes**: Hasta 3 imágenes por prompt (guardadas en disco y optimizadas)
-- ✅ **Copiado al Portapapeles**: Un clic para copiar
-- ✅ **Notificaciones**: Feedback visual y sonoro
-- ✅ **Backup/Restore**: Exportar/Importar en JSON (portable) y ZIP (completo con imágenes), además de CSV
-- ✅ **Datos de Ejemplo**: Prompts pre-cargados para demostración
+- ✅ **Búsqueda Pro**: Algoritmo híbrido (Fuzzy + Phrasal + Weighted) con límite de 7 en recientes.
+- ✅ **Copia Mágica**: Atajos de teclado globales personalizados por cada prompt (vía Carbon).
+- ✅ **Variables de Plantilla**: Soporte para `{{variable}}` con formulario de relleno inteligente.
+- ✅ **Editor Avanzado**: Resaltado de sintaxis, bracket matching, auto-indentación y Diff View en paralelo.
+- ✅ **Campos Avanzados**: Soporte para Negative y Alternative prompts con acciones de Swap/Merge/Branching.
+- ✅ **Sistema de Favoritos**: Marca prompts como favoritos y accede a los más usados.
+- ✅ **Organización**: Categorías con iconos/colores y Papelera con retención de 7 días.
+- ✅ **Resultados con Imágenes**: Hasta 3 imágenes por prompt (guardadas en disco y optimizadas).
+- ✅ **Copiado al Portapapeles**: Un clic para copiar o usar atajos globales.
+- ✅ **Feedback Premium**: Respuesta háptica fuerte en trackpad y efectos visuales de partículas.
+- ✅ **Backup/Restore**: Exportar a .md (Markdown), JSON, ZIP y CSV.
+- ✅ **Drag & Drop**: Soporte universal con auto-cierre de ventana al arrastrar.
 
 ## 🏗️ Arquitectura
 

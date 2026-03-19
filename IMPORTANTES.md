@@ -1,46 +1,25 @@
 # 📌 Resumen de Cambios Importantes (Promtier)
 
 ## 🚀 Nuevas Funcionalidades
-0. **Imágenes Escalables (Disco + Paths)**:
-   - Las imágenes de resultados se guardan como archivos optimizados en `Application Support/.../Images/<promptUUID>/`.
-   - Core Data solo persiste **paths + thumbnails** (y mantiene compatibilidad con blobs legacy para migración).
-   - Migración automática en background y migración on-demand al abrir previews.
+0. **Dimensiones Dinámicas**:
+   - Tamaño predeterminado ajustado a **740px x 530px**.
+   - Respuesta háptica fuerte (Strong) en el redimensionado para una sensación mecánica.
 
-0. **Backup Completo ZIP (Recomendado)**:
-   - Exporta/importa `manifest.json` + carpeta `Images/` con todos los archivos.
-   - JSON sigue disponible como formato portable (incluye imágenes en base64) y CSV como texto/metadata.
+1. **Editor Avanzado y Copia Mágica**:
+   - **Copia Mágica**: Registro de atajos globales individuales por prompt (framework Carbon). Funciona con la app cerrada.
+   - **Acciones Pro**: Botones integrados en el header del editor (Swap, Merge, Branching, Diff) con etiquetas claras.
+   - **Branching Automático**: Navegación directa a la lista tras clonar un prompt para mejorar la agilidad.
+   - **Color Coding**: Identificación visual inmediata de campos (Azul para principal, Rojo para negativo, Verde para alternativo).
 
-1. **Operaciones en Lote (Batch Mode)**:
-   - Selección múltiple de prompts en la lista principal.
-   - Barra de herramientas flotante con acciones rápidas: Mover a carpeta y Papelera.
-   - Contador visual de items seleccionados.
-
-2. **Rellenar Variables (Formulario Pro)**:
-   - **Atajos**: Añadido `Cmd + C` para copiar el prompt final procesado instantáneamente.
-   - **Auto-Scroll**: La vista centra automáticamente el campo en foco (Enter/Tab).
-   - **Validación Estricta**: Todos los campos son obligatorios antes de poder copiar.
-   - **Sintaxis Simplificada**: Selectores con comas `{{Label: Opción 1, Opción 2}}`.
-   - **Mejora Visual**: Ventana más grande y altura dinámica (85-90% de la app).
-
-3. **Ghost Tips (Consejos Inteligentes)**:
-   - Pantalla completa y centrado inferior para mejor visibilidad.
-   - Duración de 6.5 segundos.
-   - Orden secuencial (bucle completo de tips).
-   - Detección de Batch Mode para evitar solapamientos.
-
-4. **Drag & Drop**:
-   - Resaltado de bordes azules en categorías al arrastrar.
-   - Reparado el cursor "+" (badge) para mayor claridad al mover prompts.
-   - Solucionado conflicto de UTI que impedía arrastrar a apps externas.
+2. **UX y Estabilidad**:
+   - **Auto-Close Drag**: El popover se cierra al arrastrar un prompt hacia afuera para no obstruir el destino.
+   - **Fix Transient State**: Reparado el bug de macOS que congelaba el popover tras cerrar un visor de imágenes.
+   - **Markdown Export**: Exportado enriquecido a `.md` con metadatos estructurados.
 
 ## 🛠️ Correcciones Técnicas
-- **Swift 6 Concurrency**: Corregido el error de captura de `NSTextStorage` en hilos secundarios.
-- **Rendimiento Preview**:
-   - Lazy-load de imágenes en lista (sin blobs).
-   - Prewarm de thumbnails al hover/selección.
-   - Throttle global de decodificación concurrente para evitar saturación de I/O/CPU.
-- **SF Symbols**: Sustitución de iconos no compatibles para soportar más versiones de macOS.
-- **Detección de Teclas Globales**: Refinada la lógica de Esc/Enter para no interferir con el visor de imágenes.
+- **Undo Safe Implementation**: Limpieza de `undoManager` en el `NSTextView` nativo al realizar cambios programáticos (Merge/Swap) para evitar crashes de memoria (`EXC_BAD_ACCESS`).
+- **Core Data Custom Shortcut**: Mapeo completo del nuevo atributo `customShortcut` para persistencia y carga inicial.
+- **Recent Category Logic**: Filtro optimizado para mostrar solo los 7 prompts más relevantes (usados en <48h o más frecuentes).
 
 ## 📂 Organización de Git
 - **Ramas Limpias**: Consolidado todo el trabajo en `main` y `nueva`.

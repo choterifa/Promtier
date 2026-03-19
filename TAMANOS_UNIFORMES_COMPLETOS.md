@@ -1,163 +1,46 @@
-# 🎯 Tamaños Uniformes Completos - Promtier
+# 🎯 Tamaños de Ventana Pro - Promtier
 
-## ✅ **Implementación Exitosa: Opción 1 - Tamaño Uniforme Compacto**
+## ✅ **Implementación: Estándar 740×530px**
 
-### 🎯 **Cambio Aplicado:**
-**TODAS las ventanas ahora tienen el mismo tamaño: 500×400px**
-
----
-
-## 📋 **Ventanas Unificadas**
-
-### 1. **Ventana Principal (SearchViewSimple)** ✅
-- **Tamaño**: 500×400px
-- **Estado**: ✅ Ya estaba ajustada
-- **Función**: Búsqueda y lista de prompts
-
-### 2. **Preferencias (PreferencesView)** ✅
-- **Antes**: 800×600px
-- **Ahora**: 500×400px
-- **Reducción**: -300px ancho, -200px alto
-- **Función**: Configuración completa con 5 pestañas
-
-### 3. **Nuevo/Editar Prompt (NewPromptView)** ✅
-- **Antes**: 750×800px
-- **Ahora**: 500×400px
-- **Reducción**: -250px ancho, -400px alto
-- **Función**: Formulario completo de creación/edición
-
-### 4. **Detalles del Prompt (PromptDetailView)** ✅
-- **Antes**: 800×700px
-- **Ahora**: 500×400px
-- **Reducción**: -300px ancho, -300px alto
-- **Función**: Vista detallada con acciones
-
-### 5. **Gestión de Carpetas (FolderManagerView)** ✅
-- **Antes**: 600×500px
-- **Ahora**: 500×400px
-- **Reducción**: -100px ancho, -100px alto
-- **Función**: CRUD completo de carpetas
+### 🎯 **Nueva Configuración:**
+Tras las mejoras en el editor avanzado y la inclusión de campos para **Negative** y **Alternative** prompts, el tamaño estándar ha sido actualizado para garantizar una legibilidad óptima.
 
 ---
 
-## 🎨 **Archivos Modificados**
+## 📋 **Dimensiones Actualizadas**
 
-### **Cambios Realizados:**
+### 1. **Ventana Base (Viewport)** ✅
+- **Tamaño**: 740×530px
+- **Uso**: Vista principal, Búsqueda y Lista.
 
-#### **MenuBarManager.swift**
-```swift
-// Sin cambios (ya estaba en 500×400)
-popover?.contentSize = NSSize(width: 500, height: 400)
-```
+### 2. **Editor Avanzado (NewPromptView)** ✅
+- **Tamaño**: 740×530px
+- **Layout**: Diseño de tarjetas con fondos coloreados (Azul/Rojo/Verde) para diferenciar secciones sin scroll innecesario.
 
-#### **SearchViewSimple.swift**
-```swift
-// Sin cambios (ya estaba en 500×400)
-.frame(width: 500, height: 400)
-```
-
-#### **PreferencesView.swift**
-```swift
-// ANTES
-.frame(width: 800, height: 600)
-
-// AHORA
-.frame(width: 500, height: 400)
-```
-
-#### **NewPromptView.swift**
-```swift
-// ANTES
-.frame(width: 750, height: 800)
-
-// AHORA
-.frame(width: 500, height: 400)
-```
-
-#### **PromptDetailView.swift**
-```swift
-// ANTES
-.frame(width: 800, height: 700)
-
-// AHORA
-.frame(width: 500, height: 400)
-```
-
-#### **FolderManagerView.swift**
-```swift
-// ANTES
-.frame(width: 600, height: 500)
-
-// AHORA
-.frame(width: 500, height: 400)
-```
+### 3. **Comparador (DiffView)** ✅
+- **Tamaño**: 800×500px (Ventana extendida para visualización side-by-side).
 
 ---
 
-## 🎯 **Resultado Visual**
+## 🎨 **Evolución Histórica**
 
-### ✅ **Máxima Consistencia Lograda:**
-- **Todas las ventanas**: Exactamente el mismo tamaño
-- **Experiencia unificada**: No hay ventanas "grandes" o "pequeñas"
-- **Diseño integrado**: Parece una sola aplicación cohesiva
-- **Sin discontinuidad**: Todas las interacciones tienen el mismo espacio
-
-### ✅ **Beneficios del Tamaño Uniforme:**
-- **Menos confusión**: El usuario siempre sabe qué esperar
-- **Experiencia predecible**: Todas las ventanas se comportan igual
-- **Diseño limpio**: No hay ventanas que dominen otras
-- **Uso eficiente**: Espacio optimizado para cada función
+| Etapa | Ancho | Alto | Motivo |
+|-------|-------|------|--------|
+| Prototipo | 700px | 550px | Diseño inicial |
+| Compacto | 500px | 400px | Minimalismo |
+| **Pro (Actual)** | **740px** | **530px** | **Editor avanzado y Copia Mágica** |
 
 ---
 
-## 📊 **Comparación Final**
+## 🚀 **Feedback Físico (Háptico)**
 
-| Vista | Tamaño Anterior | Tamaño Nuevo | Reducción |
-|-------|----------------|--------------|-----------|
-| **Ventana Principal** | 500×400px | 500×400px | 0×0px |
-| **Preferencias** | 800×600px | 500×400px | -300×-200px |
-| **Nuevo Prompt** | 750×800px | 500×400px | -250×-400px |
-| **Detalles** | 800×700px | 500×400px | -300×-300px |
-| **Carpetas** | 600×500px | 500×400px | -100×-100px |
+Se ha implementado una **Respuesta Háptica Fuerte (Strong)** vinculada al redimensionado manual:
+- El trackpad emite un clic cada **10px** de movimiento.
+- Permite al usuario "sentir" el crecimiento de la ventana sin mirar los números.
+- El botón **"Restablecer tamaño"** en Ajustes regresa la ventana instantáneamente al estándar **740×530px**.
 
 ---
 
-## 🚀 **Impacto en la Experiencia**
+## 🔥 **Resultado Final**
 
-### **Antes del Cambio:**
-- 🚫 **Ventanas de diferentes tamaños**
-- 🚫 **Experiencia inconsistente**
-- 🚫 **Parecían aplicaciones separadas**
-- 🚫 **Confusión visual**
-
-### **Después del Cambio:**
-- ✅ **Todas las ventanas del mismo tamaño**
-- ✅ **Experiencia completamente consistente**
-- ✅ **Parece una aplicación unificada**
-- ✅ **Sin confusión visual**
-
----
-
-## 🎉 **Verificación Final**
-
-### ✅ **Compilación:** Exitosa sin errores
-### ✅ **Aplicación:** Corriendo correctamente
-### ✅ **Todas las ventanas:** 500×400px uniformes
-### ✅ **Funcionalidad:** Completamente operativa
-### ✅ **Experiencia:** Unificada y consistente
-
----
-
-## 🔥 **Conclusión**
-
-**¡La Opción 1 ha sido implementada exitosamente!**
-
-**Promtier ahora tiene:**
-- **TODAS las ventanas del mismo tamaño (500×400px)**
-- **Experiencia completamente unificada**
-- **Diseño cohesivo y consistente**
-- **Funcionalidad completa en espacio optimizado**
-
-**El problema de ventanas separadas está COMPLETAMENTE resuelto!** 🎯✨
-
-Todas las ventanas ahora parecen parte de la misma aplicación integrada, con el mismo tamaño y comportamiento consistente. ¡Ya no hay ventanas "grandes" o "pequeñas"! 🚀
+El equilibrio entre **740px** de ancho y **530px** de alto permite tener una barra lateral siempre visible, un editor con campos avanzados desplegados y una galería de imágenes sin que la ventana se sienta pesada en el escritorio de macOS. 🚀✨

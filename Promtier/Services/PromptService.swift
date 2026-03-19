@@ -811,24 +811,29 @@ class PromptService: ObservableObject {
         if let category = category {
             switch category {
             case "recent":
-                // Mostrar usados en las últimas 48 horas o los últimos 10
+                // 1. Obtener prompts usados en las últimas 48 horas
                 let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
-                filtered = filtered.filter { prompt in
-                    if let lastUsed = prompt.lastUsedAt {
-                        return lastUsed > fortyEightHoursAgo
-                    }
-                    return false
+                let recentlyUsed = prompts.filter { 
+                    if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
+                    return false 
                 }
-                // Si hay pocos, rellenar con los más usados históricamente
-                if filtered.count < 5 {
-                    let mostUsed = prompts.sorted { $0.useCount > $1.useCount }.prefix(10)
-                    for p in mostUsed {
-                        if !filtered.contains(where: { $0.id == p.id }) {
-                            filtered.append(p)
-                        }
+                
+                // 2. Obtener los más usados históricamente (que tengan al menos 1 uso)
+                let mostUsed = prompts.filter { $0.useCount > 0 }
+                    .sorted { $0.useCount > $1.useCount }
+                    .prefix(10)
+                
+                // 3. Combinar y eliminar duplicados
+                var combined = recentlyUsed
+                for p in mostUsed {
+                    if !combined.contains(where: { $0.id == p.id }) {
+                        combined.append(p)
                     }
                 }
-                filtered.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
+                
+                // 4. Ordenar por fecha de último uso y limitar a estrictamente 7
+                combined.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
+                filtered = Array(combined.prefix(7))
                 
             case "favorites":
                 filtered = filtered.filter { $0.isFavorite }

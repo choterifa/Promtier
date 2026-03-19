@@ -4,32 +4,27 @@
 
 ## ✅ Lo último implementado
 
-### 1) Mejoras en el Editor y Campos Avanzados
-- **Dimensiones:** Ancho por defecto ajustado a **710px**.
-- **Alternative Prompt Actions:** Se añadieron botones con nombres en la barra de acciones:
-  - **Swap:** Intercambia contenido principal y alternativo.
-  - **Merge:** Anexa el alternativo al principal con un separador `---`.
-  - **Branching:** Crea un nuevo prompt basado en el contenido alternativo (con notificación visual).
-  - **Diff View:** Nueva vista en paralelo para comparar diferencias entre el Main Content y el Alternative Prompt.
-- **Shortcuts de Teclado:** 
-  - `⌥N` para enfocar Negative Prompt.
-  - `⌥A` para enfocar Alternative Prompt.
-- **Undo Safe:** Se corrigió un crash de `EXC_BAD_ACCESS` al usar Cmd+Z tras operaciones automáticas, limpiando el `undoManager` durante la sincronización.
+### 1) Editor Avanzado y Código de Colores
+- **Fondo de Editor**: Se aplicaron tintes sutiles (5% opacidad) para diferenciar áreas:
+  - **Main Content**: Azul tenue.
+  - **Negative Prompt**: Rojo tenue.
+  - **Alternative Prompt**: Verde tenue.
+- **Botones de Acción**: Añadidos nombres a los iconos para mayor claridad: `Swap`, `Merge`, `Branching` y `Diff`.
+- **Diff View**: Implementada vista en paralelo para comparar versiones del prompt.
 
-### 2) Atajos Globales por Prompt (Copia Mágica)
-- Cada prompt puede tener un **atajo personalizado** registrado vía framework Carbon.
-- Funciona con la app minimizada o cerrada (copia directa al portapapeles).
-- Si el prompt tiene variables `{{...}}`, la app se abre automáticamente para pedirlas.
-- Persistencia completa en Core Data (`customShortcut`).
+### 2) Estabilidad y Correcciones
+- **Undo Safe**: Limpieza del `undoManager` al realizar cambios programáticos (Swap/Merge) para evitar crashes `EXC_BAD_ACCESS` al pulsar Cmd+Z.
+- **Copia Mágica**: Registro global de atajos (vía Carbon) ahora persistente. El campo `customShortcut` se carga correctamente desde Core Data.
+- **Fix Popover**: Reparado el bug de macOS que "congelaba" la ventana tras usar el visor de imágenes (ahora recupera el estado transitorio).
 
-### 3) Interfaz y UX
-- **Drag & Drop:** El popover se cierra automáticamente al iniciar un arrastre hacia afuera para no obstruir el destino.
-- **Premium Upsell:** La pestaña de Snippets ahora muestra un efecto de desenfoque (blur) con un botón de desbloqueo si no es Premium.
-- **Exportado:** Ahora exporta a archivos `.md` (Markdown) por defecto con formato de título.
-- **Botón Copiar:** Siempre visible a la derecha en cada card de la lista para acceso rápido.
+### 3) UX y Sistema
+- **Dimensiones**: Estándar **740px x 530px**.
+- **Haptic Strong**: Respuesta táctil profunda en los sliders de redimensionado.
+- **Recientes (Top 7)**: Lógica refinada para mostrar solo los 7 prompts más frescos o frecuentes.
+- **Exportación**: Cambio a formato **Markdown (.md)** por defecto.
+- **Drag & Drop**: El popover se cierra automáticamente al iniciar un arrastre hacia aplicaciones externas.
 
 ## 🧪 Próximos pasos sugeridos
-- **IA Refiner:** Botón para "Mejorar prompt" usando Apple Intelligence directamente.
-- **Smart Folders:** Carpetas automáticas basadas en etiquetas o frecuencia de uso.
-- **Dashboard de Uso:** Ver estadísticas visuales de productividad.
-- **Sincronización:** Indicador de estado de CloudKit en la barra superior.
+- **Apple Intelligence Integration**: Botón de "Pulido por IA" para mejorar la gramática del prompt.
+- **Dynamic Variable Options**: Soporte para menús desplegables en variables `{{Label: Op1, Op2}}`.
+- **CloudKit Dashboard**: Verificación visual de la sincronización entre dispositivos.
