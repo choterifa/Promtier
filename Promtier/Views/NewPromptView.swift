@@ -68,7 +68,7 @@ struct NewPromptView: View {
     @State private var snippetSelectedIndex: Int = 0
     @State private var triggerSnippetSelection: Bool = false
     
-    @State private var triggerAppleIntelligence: Bool = false
+    @State private var triggerAIRequest: String? = nil
     @State private var isAIActive: Bool = false
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
@@ -172,8 +172,9 @@ struct NewPromptView: View {
                 snippetSearchQuery: $snippetSearchQuery,
                 snippetSelectedIndex: $snippetSelectedIndex,
                 triggerSnippetSelection: $triggerSnippetSelection,
-                triggerAppleIntelligence: $triggerAppleIntelligence,
+                triggerAIRequest: $triggerAIRequest,
                 isAIActive: $isAIActive,
+                editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
             .frame(minHeight: 380) // Usar minHeight en lugar de frame fijo basado en % para mejor scroll
@@ -200,9 +201,10 @@ struct NewPromptView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
-                    showingPremiumFor: $showingPremiumFor
+                    showingPremiumFor: $showingPremiumFor,
+                    editorID: "negative"
                 ) {
                     EmptyView()
                 }
@@ -245,11 +247,16 @@ struct NewPromptView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Atajo Individual (Movido aquí para mayor visibilidad)
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("shortcut_settings".localized(for: preferences.language).uppercased())
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .tracking(1)
-                        .padding(.horizontal, 8)
+                    HStack(spacing: 8) {
+                        Image(systemName: "keyboard.fill")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.secondary)
+                        Text("shortcut_settings".localized(for: preferences.language).uppercased())
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .tracking(1)
+                    }
+                    .padding(.horizontal, 8)
 
                     if preferences.isPremiumActive {
                         ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
@@ -284,7 +291,6 @@ struct NewPromptView: View {
             }
             .padding(.bottom, 40)
         }
-        .padding(.horizontal, 24)
         .padding(.vertical, 24)
     }
 
@@ -311,9 +317,10 @@ struct NewPromptView: View {
             snippetSearchQuery: $snippetSearchQuery,
             snippetSelectedIndex: $snippetSelectedIndex,
             triggerSnippetSelection: $triggerSnippetSelection,
-            triggerAppleIntelligence: $triggerAppleIntelligence,
+            triggerAIRequest: $triggerAIRequest,
             isAIActive: $isAIActive,
-            showingPremiumFor: $showingPremiumFor
+            showingPremiumFor: $showingPremiumFor,
+            editorID: "alt-\(index)"
         ) {
             HStack(spacing: 10) {
                 if !alternatives[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -465,11 +472,15 @@ struct NewPromptView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let targetWidth = geometry.size.width * 0.9
+            
             VStack(spacing: 0) {
-                header
+                header(width: targetWidth)
 
                 ScrollView(showsIndicators: false) {
                     mainScrollViewContent(geometry: geometry)
+                        .frame(width: targetWidth)
+                        .frame(maxWidth: .infinity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -518,7 +529,7 @@ struct NewPromptView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     showingPremiumFor: $showingPremiumFor
                 )
@@ -759,7 +770,7 @@ struct NewPromptView: View {
     
     // MARK: - Subviews
     
-    private var header: some View {
+    private func header(width: CGFloat) -> some View {
         HStack(alignment: .center) {
             Button(action: {
                 DraftService.shared.clearDraft()
@@ -806,32 +817,37 @@ struct NewPromptView: View {
             .disabled(title.isEmpty || content.isEmpty)
             .keyboardShortcut("s", modifiers: [.command]) 
         }
-        .padding(.horizontal, 24)
+        .frame(width: width)
         .padding(.top, 16)
         .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
     }
     
     private var imageGallery: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Text("prompt_results".localized(for: preferences.language))
+                Image(systemName: "photo.stack.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.secondary)
+                Text("prompt_results".localized(for: preferences.language).uppercased())
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
-                    .textCase(.uppercase)
-                
-                if showcaseImages.count < 3 {
-                    Button(action: selectImages) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.blue)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .help("add_image".localized(for: preferences.language))
-                }
-                
-                Spacer()
             }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+                
+            if showcaseImages.count < 3 {
+                Button(action: selectImages) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.blue)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .help("add_image".localized(for: preferences.language))
+            }
+            
+            Spacer()
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -1083,8 +1099,9 @@ struct EditorCard: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
-    @Binding var triggerAppleIntelligence: Bool
+    @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
+    let editorID: String
     
     let currentCategoryColor: Color
     @EnvironmentObject var preferences: PreferencesManager
@@ -1127,7 +1144,7 @@ struct EditorCard: View {
                     HStack(spacing: 0) {
                         if preferences.appleIntelligenceEnabled {
                             Button(action: {
-                                triggerAppleIntelligence = true
+                                triggerAIRequest = editorID
                                 HapticService.shared.playLight()
                             }) {
                                 Image(systemName: "apple.intelligence")
@@ -1204,8 +1221,9 @@ struct EditorCard: View {
                     text: $content,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
+                    editorID: editorID,
                     fontSize: 16 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
@@ -1245,9 +1263,10 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
-    @Binding var triggerAppleIntelligence: Bool
+    @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     @Binding var showingPremiumFor: String?
+    let editorID: String
     
     let actions: Actions
     
@@ -1258,9 +1277,11 @@ struct SecondaryEditorCard<Actions: View>: View {
          insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>,
          showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
          snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>,
-         triggerAppleIntelligence: Binding<Bool>, isAIActive: Binding<Bool>,
-         showingPremiumFor: Binding<String?>,
-         @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+         triggerAIRequest: Binding<String?>, 
+          isAIActive: Binding<Bool>,
+          showingPremiumFor: Binding<String?>,
+          editorID: String,
+          @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
         self.placeholder = placeholder
         self._text = text
@@ -1274,9 +1295,10 @@ struct SecondaryEditorCard<Actions: View>: View {
         self._snippetSearchQuery = snippetSearchQuery
         self._snippetSelectedIndex = snippetSelectedIndex
         self._triggerSnippetSelection = triggerSnippetSelection
-        self._triggerAppleIntelligence = triggerAppleIntelligence
+        self._triggerAIRequest = triggerAIRequest
         self._isAIActive = isAIActive
         self._showingPremiumFor = showingPremiumFor
+        self.editorID = editorID
         self.actions = actions()
     }
     
@@ -1298,7 +1320,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     HStack(spacing: 0) {
                         if preferences.appleIntelligenceEnabled {
                             Button(action: {
-                                triggerAppleIntelligence = true
+                                triggerAIRequest = editorID
                                 HapticService.shared.playLight()
                             }) {
                                 Image(systemName: "apple.intelligence")
@@ -1371,8 +1393,9 @@ struct SecondaryEditorCard<Actions: View>: View {
                     text: $text,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
+                    editorID: editorID,
                     focusRequest: focusRequest,
                     fontSize: 14 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,

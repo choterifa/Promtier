@@ -12,8 +12,9 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
-    @Binding var triggerAppleIntelligence: Bool
+    @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
+    let editorID: String
     var focusRequest: Binding<Bool>? = nil
     var fontSize: CGFloat
     
@@ -155,11 +156,10 @@ struct HighlightedEditor: NSViewRepresentable {
             }
         }
         
-        // Manejar petición de Inteligencia de Apple
-        if triggerAppleIntelligence {
+        // Manejar petición de Inteligencia de Apple (Targeted)
+        if let targetID = triggerAIRequest, targetID == editorID {
             if #available(macOS 15.0, *) {
                 if isAIActive {
-                    // Si ya está activa, intentamos cerrarla enviando cancelOperation al textView específicamente
                     textView.doCommand(by: #selector(NSResponder.cancelOperation(_:)))
                 } else {
                     if textView.selectedRange().length == 0 {
@@ -170,7 +170,7 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             
             DispatchQueue.main.async {
-                self.triggerAppleIntelligence = false
+                self.triggerAIRequest = nil
             }
         }
         

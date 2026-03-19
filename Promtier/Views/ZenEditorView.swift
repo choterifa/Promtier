@@ -21,7 +21,7 @@ struct ZenEditorView: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
-    @Binding var triggerAppleIntelligence: Bool
+    @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     @Binding var showingPremiumFor: String?
     
@@ -90,8 +90,9 @@ struct ZenEditorView: View {
                     text: $content,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
-                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
+                    editorID: "zen", // Or we could pass the actual target ID if needed
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
