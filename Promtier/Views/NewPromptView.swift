@@ -114,11 +114,6 @@ struct NewPromptView: View {
             )
             .frame(height: geometry.size.height * 0.83)
             
-            Line()
-                .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
-                .frame(height: 1)
-                .foregroundColor(.primary.opacity(0.1))
-            
             // SECTION 2: ADVANCED FIELDS
             VStack(spacing: 24) {
                 // 2.1: NEGATIVE PROMPT
@@ -177,11 +172,6 @@ struct NewPromptView: View {
                     }
                 }
             }
-            
-            Line()
-                .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
-                .frame(height: 1)
-                .foregroundColor(.primary.opacity(0.1))
             
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 16) {
@@ -1069,20 +1059,18 @@ struct EditorCard: View {
                                 .background(currentCategoryColor.opacity(0.1))
                         }
                         .buttonStyle(ScaleButtonStyle())
-                        
-                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
-                        
-                        Button(action: { showingZenEditor = true }) {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
-                                .frame(width: 32, height: 32)
-                                .background(currentCategoryColor.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+
+                    Button(action: { showingZenEditor = true }) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(currentCategoryColor)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 8)
