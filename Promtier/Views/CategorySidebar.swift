@@ -233,7 +233,7 @@ struct CategorySidebar: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 16)
         }
-        .frame(width: 200)
+        .frame(width: 198)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor).opacity(0.95)

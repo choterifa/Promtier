@@ -83,7 +83,7 @@ struct PreferencesView: View {
             
             Spacer()
         }
-        .frame(width: 200)
+        .frame(width: 198)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor).opacity(0.98)

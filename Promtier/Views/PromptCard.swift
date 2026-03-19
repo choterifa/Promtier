@@ -272,7 +272,7 @@ struct PromptCard: View {
         }
 
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)

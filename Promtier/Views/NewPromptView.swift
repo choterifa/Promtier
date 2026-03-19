@@ -461,6 +461,22 @@ struct NewPromptView: View {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             
+            // ESC (KeyCode 53) -> Cerrar o salir de overlays
+            if event.keyCode == 53 && modifiers.isEmpty {
+                if self.showSnippets {
+                    DispatchQueue.main.async { withAnimation { self.showSnippets = false } }
+                    return nil
+                }
+                
+                // Si no hay overlays críticos abiertos, cerrar la vista
+                if !self.showingZenEditor && !self.showingIconPicker {
+                    DispatchQueue.main.async {
+                        self.onClose()
+                    }
+                    return nil
+                }
+            }
+            
             // Option + N -> Focus Negative Prompt
             if modifiers == .option && event.keyCode == 45 {
                 DispatchQueue.main.async {
@@ -1002,13 +1018,13 @@ struct EditorCard: View {
                                 Image(systemName: "apple.intelligence")
                                     .font(.system(size: 11, weight: .bold))
                                     .symbolRenderingMode(.monochrome)
-                                    .foregroundColor(isAIActive ? .blue : .primary.opacity(0.7))
+                                    .foregroundColor(.blue)
                                     .frame(width: 32, height: 32)
-                                    .background(isAIActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+                                    .background(isAIActive ? Color.blue.opacity(0.2) : Color.blue.opacity(0.1))
                             }
                             .buttonStyle(ScaleButtonStyle())
                             
-                            Divider().frame(height: 18).background(Color.primary.opacity(0.1))
+                            Divider().frame(height: 18).background(Color.blue.opacity(0.2))
                         }
 
                         Button(action: { 

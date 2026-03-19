@@ -371,27 +371,65 @@ struct PromptPreviewView: View {
                 HStack(spacing: 12) {
                     ForEach(Array(showcaseImagePaths.enumerated()), id: \.offset) { index, relativePath in
                         let url = ImageStore.shared.url(forRelativePath: relativePath)
-                        DownsampledImageURLView(
-                            imageURL: url,
-                            cacheKey: "\(prompt.id.uuidString):preview:\(index):900:\(relativePath)",
-                            maxPixelSize: 900,
-                            contentMode: .fill
-                        )
-                        .frame(width: 280, height: 180, alignment: .top)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
-                        .onTapGesture {
+                        GalleryThumbnail(url: url, promptId: prompt.id, index: index, relativePath: relativePath) {
                             showingFullScreenImageURL = url
                         }
                     }
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 2)
+            }
+        }
+    }
+
+    // Sub-componente para la miniatura con hover
+    private struct GalleryThumbnail: View {
+        let url: URL
+        let promptId: UUID
+        let index: Int
+        let relativePath: String
+        let action: () -> Void
+        
+        @State private var isHovered = false
+        
+        var body: some View {
+            DownsampledImageURLView(
+                imageURL: url,
+                cacheKey: "\(promptId.uuidString):preview:\(index):900:\(relativePath)",
+                maxPixelSize: 900,
+                contentMode: .fill
+            )
+            .frame(width: 280, height: 180, alignment: .top)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .overlay(alignment: .bottomTrailing) {
+                // Icono de lupa al hacer hover (Esquina Inferior Derecha)
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 32, height: 32)
+                        .shadow(color: .black.opacity(0.1), radius: 4)
+                    
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary.opacity(0.7))
+                }
+                .padding(10)
+                .opacity(isHovered ? 1 : 0)
+                .scaleEffect(isHovered ? 1 : 0.8)
+            }
+            .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+            .onTapGesture {
+                action()
+            }
+            .onHover { hovering in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isHovered = hovering
+                }
             }
         }
     }
