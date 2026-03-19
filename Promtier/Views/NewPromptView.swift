@@ -20,7 +20,7 @@ struct NewPromptView: View {
     @State private var title = ""
     @State private var content = ""
     @State private var negativePrompt = ""
-    @State private var alternativePrompt = ""
+    @State private var alternatives: [String] = []
     @State private var promptDescription = ""
     @State private var selectedFolder: String?
     @State private var isFavorite = false
@@ -79,7 +79,7 @@ struct NewPromptView: View {
         title.trimmingCharacters(in: .whitespaces).isEmpty && 
         content.trimmingCharacters(in: .whitespaces).isEmpty &&
         negativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
-        alternativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
+        alternatives.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }) &&
         promptDescription.trimmingCharacters(in: .whitespaces).isEmpty &&
         showcaseImages.isEmpty
     }
@@ -91,37 +91,8 @@ struct NewPromptView: View {
     
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 24) {
-            if preferences.showAdvancedFields {
-                HStack(spacing: 8) {
-                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showNegativeField.toggle() } }) {
-                        Text(showNegativeField ? "- Negative" : "+ Negative")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(showNegativeField ? .white : .red)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(showNegativeField ? Color.red : Color.red.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { showAlternativeField.toggle() } }) {
-                        Text(showAlternativeField ? "- Alternative" : "+ Alternative")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(showAlternativeField ? .white : .green)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(showAlternativeField ? Color.green : Color.green.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, -12) // Reducir un poco el espacio visual hacia el editor
-            }
-            
+        VStack(spacing: 32) {
+            // SECTION 1: MAIN PROMPT (Primary Focus)
             EditorCard(
                 title: $title,
                 content: $content,
@@ -141,149 +112,208 @@ struct NewPromptView: View {
                 isAIActive: $isAIActive,
                 currentCategoryColor: currentCategoryColor
             )
-            .frame(height: geometry.size.height * 0.83, alignment: .top)
+            .frame(height: geometry.size.height * 0.83)
             
-            // Nuevas secciones de prompt avanzado
-            if preferences.showAdvancedFields && (showNegativeField || showAlternativeField) {
-                VStack(spacing: 20) {
-                    if showNegativeField {
-                        SecondaryEditorCard(
-                            title: "negative_prompt".localized(for: preferences.language),
-                            placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
-                            text: $negativePrompt,
-                            icon: "minus.circle.fill",
-                            color: .red,
-                            focusRequest: $focusNegative
-                        ) {
-                            EmptyView()
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                    
-                    if showAlternativeField {
-                        SecondaryEditorCard(
-                            title: "alternative_prompt".localized(for: preferences.language),
-                            placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
-                            text: $alternativePrompt,
-                            icon: "arrow.triangle.2.circlepath.circle.fill",
-                            color: .green,
-                            focusRequest: $focusAlternative
-                        ) {
-                            if !alternativePrompt.isEmpty {
-                                HStack(spacing: 8) {
-                                    Button(action: {
-                                        withAnimation {
-                                            let temp = content
-                                            content = alternativePrompt
-                                            alternativePrompt = temp
-                                            branchMessage = "Content swapped!"
-                                        }
-                                        HapticService.shared.playLight()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                            withAnimation { branchMessage = nil }
-                                        }
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.up.arrow.down")
-                                            Text("Swap")
-                                                .font(.system(size: 10, weight: .bold))
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.green)
-                                    .help("Swap Content and Alternative")
-                                    
-                                    Button(action: {
-                                        withAnimation {
-                                            if !content.isEmpty { content += "\n\n---\n\n" }
-                                            content += alternativePrompt
-                                            alternativePrompt = ""
-                                            branchMessage = "Prompts merged!"
-                                        }
-                                        HapticService.shared.playLight()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                            withAnimation { branchMessage = nil }
-                                        }
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.down.to.line.compact")
-                                            Text("Merge")
-                                                .font(.system(size: 10, weight: .bold))
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.blue)
-                                    .help("Merge Alternative into Content")
-                                    
-                                    Button(action: {
-                                        let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
-                                        let newPrompt = Prompt(
-                                            title: newTitle,
-                                            content: alternativePrompt,
-                                            folder: selectedFolder,
-                                            tags: tags
-                                        )
-                                        _ = promptService.createPrompt(newPrompt)
-                                        HapticService.shared.playSuccess()
-                                        
-                                        // Feedback visual y navegación inmediata
-                                        branchMessage = "Prompt branched successfully!"
-                                        
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                            branchMessage = nil
-                                            DraftService.shared.clearDraft()
-                                            MenuBarManager.shared.isModalActive = false
-                                            onClose() // Salir a la lista
-                                        }
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.uturn.right")
-                                            Text("Branching")
-                                                .font(.system(size: 10, weight: .bold))
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.purple)
-                                    .help("Create new prompt from Alternative")
-
-                                    Button(action: { showingDiff = true }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.left.and.right.text.vertical")
-                                            Text("Diff")
-                                                .font(.system(size: 10, weight: .bold))
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.orange)
-                                    .help("Compare with Content")
-                                }
+            // SECTION 2: ADVANCED FIELDS
+            VStack(spacing: 24) {
+                // 2.1: NEGATIVE PROMPT
+                SecondaryEditorCard(
+                    title: "negative_prompt".localized(for: preferences.language),
+                    placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
+                    text: $negativePrompt,
+                    icon: "minus.circle.fill",
+                    color: .red,
+                    focusRequest: $focusNegative
+                ) {
+                    EmptyView()
+                }
+                
+                // 2.2: ALTERNATIVE PROMPTS
+                VStack(alignment: .leading, spacing: 16) {
+                    if alternatives.isEmpty {
+                        Text("no_alternatives_hint".localized(for: preferences.language))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                    .foregroundColor(.primary.opacity(0.1))
+                            )
+                    } else {
+                        VStack(spacing: 16) {
+                            ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
+                                alternativeRow(index: index)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                         }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    
+                    if alternatives.count < 10 {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                alternatives.append("")
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("add_alternative".localized(for: preferences.language))
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.blue.opacity(0.08))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
             }
             
-            // Custom Shortcut per prompt
-            if preferences.isPremiumActive {
-                VStack(alignment: .leading, spacing: 8) {
+            // SECTION 3: UTILITIES
+            VStack(alignment: .leading, spacing: 16) {
+                Text("global_shortcuts".localized(for: preferences.language).uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
+                    .padding(.horizontal, 8)
+
+                if preferences.isPremiumActive {
                     ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
-                        .padding(12)
+                        .padding(16)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.primary.opacity(0.03))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.primary.opacity(0.06), lineWidth: 1)
                                 )
                         )
                 }
+                
+                imageGallery
             }
-            
-            imageGallery
+            .padding(.bottom, 20)
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .padding(.vertical, 24)
+    }
+
+    @ViewBuilder
+    private func alternativeRow(index: Int) -> some View {
+        SecondaryEditorCard(
+            title: "\("alternative".localized(for: preferences.language)) #\(index + 1)",
+            placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
+            text: Binding(
+                get: { alternatives.indices.contains(index) ? alternatives[index] : "" },
+                set: { if alternatives.indices.contains(index) { alternatives[index] = $0 } }
+            ),
+            icon: "text.bubble.fill",
+            color: .green
+        ) {
+            HStack(spacing: 10) {
+                if !alternatives[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // Action: Swap
+                    Button(action: {
+                        withAnimation {
+                            let temp = content
+                            content = alternatives[index]
+                            alternatives[index] = temp
+                            branchMessage = "Content swapped!"
+                        }
+                        HapticService.shared.playLight()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.arrow.down")
+                            Text("Swap").font(.system(size: 10, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.blue)
+                    .help("Swap")
+                    
+                    // Action: Merge
+                    Button(action: {
+                        withAnimation {
+                            if !content.isEmpty { content += "\n\n---\n\n" }
+                            content += alternatives[index]
+                            alternatives[index] = ""
+                            branchMessage = "Merged into main!"
+                        }
+                        HapticService.shared.playLight()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.to.line.compact")
+                            Text("Merge").font(.system(size: 10, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.blue)
+                    .help("Merge")
+                    
+                    // Action: Branching
+                    Button(action: {
+                        let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
+                        let newPrompt = Prompt(
+                            title: newTitle,
+                            content: alternatives[index],
+                            folder: selectedFolder,
+                            tags: tags
+                        )
+                        _ = promptService.createPrompt(newPrompt)
+                        HapticService.shared.playSuccess()
+                        branchMessage = "Prompt branched successfully!"
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            branchMessage = nil
+                            DraftService.shared.clearDraft()
+                            MenuBarManager.shared.isModalActive = false
+                            onClose() // Salir a la lista
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.uturn.right")
+                            Text("Branching").font(.system(size: 10, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.purple)
+                    .help("Branching")
+
+                    // Action: Diff
+                    Button(action: {
+                        showingDiff = true 
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.left.and.right.text.vertical")
+                            Text("Diff").font(.system(size: 10, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.orange)
+                    .help("Diff")
+                }
+                
+                // Action: Remove
+                Button(action: {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        alternatives.remove(at: index)
+                    }
+                    HapticService.shared.playLight()
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.red.opacity(0.6))
+                .help("Remove")
+            }
+        }
     }
 
     private var fullScreenImageSheetItem: Binding<IdentifiableData?> {
@@ -304,7 +334,7 @@ struct NewPromptView: View {
         let title: String
         let content: String
         let negativePrompt: String
-        let alternativePrompt: String
+        let alternatives: [String]
         let promptDescription: String
         let selectedFolder: String?
         let isFavorite: Bool
@@ -320,7 +350,7 @@ struct NewPromptView: View {
             title: title,
             content: content,
             negativePrompt: negativePrompt,
-            alternativePrompt: alternativePrompt,
+            alternatives: alternatives,
             promptDescription: promptDescription,
             selectedFolder: selectedFolder,
             isFavorite: isFavorite,
@@ -355,7 +385,7 @@ struct NewPromptView: View {
                     PremiumUpsellView(featureName: item.value)
                 }
                 .sheet(isPresented: $showingDiff) {
-                    DiffView(text1: content, text2: alternativePrompt)
+                    DiffView(text1: content, text2: alternatives.first ?? "")
                 }
                 .onAppear {
                     setupOnAppear() 
@@ -481,7 +511,10 @@ struct NewPromptView: View {
             title = prompt.title
             content = prompt.content
             negativePrompt = prompt.negativePrompt ?? ""
-            alternativePrompt = prompt.alternativePrompt ?? ""
+            alternatives = prompt.alternatives
+            if alternatives.isEmpty, let legacy = prompt.alternativePrompt, !legacy.isEmpty {
+                alternatives = [legacy]
+            }
             promptDescription = prompt.promptDescription ?? ""
             selectedFolder = prompt.folder
             isFavorite = prompt.isFavorite
@@ -491,7 +524,7 @@ struct NewPromptView: View {
             customShortcut = prompt.customShortcut
             
             if !negativePrompt.isEmpty { showNegativeField = true }
-            if !alternativePrompt.isEmpty { showAlternativeField = true }
+            if !alternatives.isEmpty { showAlternativeField = true }
 
             // Lazy-load de imágenes (la lista ya no carga blobs para mejorar rendimiento).
             if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
@@ -521,7 +554,10 @@ struct NewPromptView: View {
             title = draftPrompt.title
             content = draftPrompt.content
             negativePrompt = draftPrompt.negativePrompt ?? ""
-            alternativePrompt = draftPrompt.alternativePrompt ?? ""
+            alternatives = draftPrompt.alternatives
+            if alternatives.isEmpty, let legacy = draftPrompt.alternativePrompt, !legacy.isEmpty {
+                alternatives = [legacy]
+            }
             promptDescription = draftPrompt.promptDescription ?? ""
             selectedFolder = draftPrompt.folder
             isFavorite = draftPrompt.isFavorite
@@ -532,7 +568,7 @@ struct NewPromptView: View {
             isDraftRestored = true
             
             if !negativePrompt.isEmpty { showNegativeField = true }
-            if !alternativePrompt.isEmpty { showAlternativeField = true }
+            if !alternatives.isEmpty { showAlternativeField = true }
             
             // Activar bloqueo de popover si el borrador restaurado no está vacío
             if !isContentEmpty {
@@ -554,7 +590,7 @@ struct NewPromptView: View {
                              selectedIcon != original.icon ||
                              showcaseImages != original.showcaseImages ||
                              negativePrompt != (original.negativePrompt ?? "") ||
-                             alternativePrompt != (original.alternativePrompt ?? "") ||
+                             alternatives != original.alternatives ||
                              customShortcut != original.customShortcut
             if !hasChanges { return }
         }
@@ -569,7 +605,7 @@ struct NewPromptView: View {
             showcaseImages: showcaseImages,
             tags: tags,
             negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
-            alternativePrompt: alternativePrompt.isEmpty ? nil : alternativePrompt,
+            alternatives: alternatives,
             customShortcut: customShortcut
         )
         
@@ -758,7 +794,6 @@ struct NewPromptView: View {
         MenuBarManager.shared.isModalActive = false
 
         let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
-        let newAlternativePrompt: String? = alternativePrompt.isEmpty ? nil : alternativePrompt
         
         // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
         if let existingPrompt = originalPrompt ?? prompt {
@@ -771,7 +806,7 @@ struct NewPromptView: View {
                              existingPrompt.icon != selectedIcon ||
                              existingPrompt.showcaseImages != showcaseImages ||
                              existingPrompt.negativePrompt != newNegativePrompt ||
-                             existingPrompt.alternativePrompt != newAlternativePrompt ||
+                             existingPrompt.alternatives != alternatives ||
                              existingPrompt.customShortcut != customShortcut
             
             if !basicChanges {
@@ -786,7 +821,7 @@ struct NewPromptView: View {
                 let coreChanges = existingPrompt.title != title || 
                                  existingPrompt.content != content ||
                                  existingPrompt.negativePrompt != newNegativePrompt ||
-                                 existingPrompt.alternativePrompt != newAlternativePrompt
+                                 existingPrompt.alternatives != alternatives
                 
                 if coreChanges {
                     let snapshot = PromptSnapshot(
@@ -810,7 +845,7 @@ struct NewPromptView: View {
             updated.showcaseImages = showcaseImages
             updated.tags = tags
             updated.negativePrompt = newNegativePrompt
-            updated.alternativePrompt = newAlternativePrompt
+            updated.alternatives = alternatives
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
@@ -824,7 +859,7 @@ struct NewPromptView: View {
                 showcaseImages: showcaseImages,
                 tags: tags,
                 negativePrompt: newNegativePrompt,
-                alternativePrompt: newAlternativePrompt,
+                alternatives: alternatives,
                 customShortcut: customShortcut
             )
             new.isFavorite = isFavorite
@@ -948,6 +983,23 @@ struct EditorCard: View {
                 // Toolbar de Acciones (Header)
                 HStack(spacing: 8) {
                     HStack(spacing: 0) {
+                        if preferences.appleIntelligenceEnabled {
+                            Button(action: {
+                                triggerAppleIntelligence = true
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: "apple.intelligence")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundColor(isAIActive ? .blue : .primary.opacity(0.7))
+                                    .frame(width: 32, height: 32)
+                                    .background(isAIActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Divider().frame(height: 18).background(Color.primary.opacity(0.1))
+                        }
+
                         Button(action: { 
                             if preferences.isPremiumActive {
                                 insertionRequest = "{{variable}}"
@@ -982,7 +1034,7 @@ struct EditorCard: View {
                         .buttonStyle(ScaleButtonStyle())
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.blue.opacity(0.2), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
 
                     Button(action: { showingZenEditor = true }) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -997,52 +1049,33 @@ struct EditorCard: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 24)
             
-            // Área de Texto con IA Flotante
-            VStack(alignment: .leading, spacing: 6) {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .bottomTrailing) {
-                        HighlightedEditor(
-                            text: $content,
-                            insertionRequest: $insertionRequest,
-                            replaceSnippetRequest: $replaceSnippetRequest,
-                            triggerAppleIntelligence: $triggerAppleIntelligence,
-                            isAIActive: $isAIActive,
-                            fontSize: 16 * preferences.fontSize.scale,
-                            showSnippets: $showSnippets,
-                            snippetSearchQuery: $snippetSearchQuery,
-                            snippetSelectedIndex: $snippetSelectedIndex,
-                            triggerSnippetSelection: $triggerSnippetSelection,
-                            isPremium: preferences.isPremiumActive
-                        )
-                        .padding(12)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.blue.opacity(0.05)) // Fondo azul tenue al editor principal
-                        
-                        if preferences.appleIntelligenceEnabled {
-                            Button(action: {
-                                triggerAppleIntelligence = true
-                                HapticService.shared.playLight()
-                            }) {
-                                Image(systemName: "apple.intelligence")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .symbolRenderingMode(isAIActive ? .monochrome : .multicolor)
-                                    .foregroundColor(isAIActive ? .blue : .primary)
-                                    .frame(width: 32, height: 32)
-                                    .background(Circle().fill(Color(NSColor.textBackgroundColor)).shadow(color: Color.black.opacity(0.1), radius: 3, y: 1))
-                                    .overlay(Circle().stroke(isAIActive ? Color.blue.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1))
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                            .padding(10)
-                        }
-                    }
-                }
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color(NSColor.textBackgroundColor).opacity(0.5)).overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.08), lineWidth: 1)))
-
-                Text("\(content.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .padding(.leading, 8)
+            // Área de Texto
+            VStack(spacing: 0) {
+                HighlightedEditor(
+                    text: $content,
+                    insertionRequest: $insertionRequest,
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    triggerAppleIntelligence: $triggerAppleIntelligence,
+                    isAIActive: $isAIActive,
+                    fontSize: 16 * preferences.fontSize.scale,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    isPremium: preferences.isPremiumActive
+                )
+                .padding(12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.blue.opacity(0.05)) // Azul profesional sutil
             }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
+            )
         }
     }
 }
@@ -1104,7 +1137,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                 .frame(minHeight: 120)
                 .background(
                     ZStack(alignment: .topLeading) {
-                        color.opacity(0.05) // Color de fondo sutil (Rojo para Negative, Verde para Alternative)
+                        color.opacity(0.06) // Rojo/Verde sutil profesional
                         
                         if text.isEmpty {
                             Text(placeholder)
@@ -1121,17 +1154,9 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
                     )
             )
-            
-            HStack {
-                Text("\(text.split { $0.isWhitespace }.count) " + "words_count_short".localized(for: preferences.language))
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.4))
-                    .padding(.leading, 8)
-                Spacer()
-            }
         }
     }
 }

@@ -26,6 +26,7 @@
         <attribute name="negativePrompt" optional="YES" attributeType="String"/>
         <attribute name="alternativePrompt" optional="YES" attributeType="String"/>
         <attribute name="customShortcut" optional="YES" attributeType="String"/>
+        <attribute name="alternativesData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>

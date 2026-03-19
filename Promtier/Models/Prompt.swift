@@ -32,13 +32,13 @@ struct Prompt: Identifiable, Codable {
     var tags: [String] = []         // Etiquetas (Premium)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
     
-    // Nuevas funciones de prompt
     var negativePrompt: String?     // Lo que la IA NO debe hacer
-    var alternativePrompt: String?  // Un prompt similar o variante
+    var alternativePrompt: String?  // Un prompt similar o variante (Legacy/Single)
+    var alternatives: [String] = [] // Lista de prompts alternativos (Hasta 10)
     var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, customShortcut: String? = nil) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], customShortcut: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
@@ -52,6 +52,7 @@ struct Prompt: Identifiable, Codable {
         self.tags = tags
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
+        self.alternatives = Array(alternatives.prefix(10))
         self.customShortcut = customShortcut
         self.isFavorite = false
         self.createdAt = Date()
@@ -82,6 +83,7 @@ struct Prompt: Identifiable, Codable {
         case deletedAt
         case negativePrompt
         case alternativePrompt
+        case alternatives
         case customShortcut
     }
 
@@ -116,6 +118,7 @@ struct Prompt: Identifiable, Codable {
 
         negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
         alternativePrompt = try container.decodeIfPresent(String.self, forKey: .alternativePrompt)
+        alternatives = try container.decodeIfPresent([String].self, forKey: .alternatives) ?? []
         customShortcut = try container.decodeIfPresent(String.self, forKey: .customShortcut)
     }
 
@@ -141,6 +144,7 @@ struct Prompt: Identifiable, Codable {
         try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
         try container.encodeIfPresent(negativePrompt, forKey: .negativePrompt)
         try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
+        try container.encode(alternatives, forKey: .alternatives)
         try container.encodeIfPresent(customShortcut, forKey: .customShortcut)
     }
     

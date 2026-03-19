@@ -296,8 +296,13 @@
 "add_prompt_results" = "Add prompt results";
 "category" = "Category";
 "prompt_results" = "PROMPT RESULTS";
+"advanced_options" = "Advanced Options";
 "negative_prompt" = "Negative Prompt";
 "negative_prompt_placeholder" = "What the AI should NOT do (ex: no blur, no text)...";
+"alternatives" = "Alternatives";
+"alternative" = "Alternative";
+"add_alternative" = "Add Alternative";
+"no_alternatives_hint" = "No alternative prompts added yet.";
 "alternative_prompt" = "Alternative Prompt";
 "alternative_prompt_placeholder" = "A similar variation or alternative approach...";
 "export_plain_text" = "Export as plain text";

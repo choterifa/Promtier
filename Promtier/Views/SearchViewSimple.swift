@@ -756,7 +756,7 @@ struct SearchViewSimple: View {
         }
     }
 
-    /// Copia un "pack" del prompt: Main + Negative + Alternative (si existen)
+    /// Copia un "pack" del prompt: Main + Negative + Alternatives (si existen)
     private func copyPromptPack(_ prompt: Prompt) {
         var packPrompt = prompt
 
@@ -768,7 +768,18 @@ struct SearchViewSimple: View {
             parts.append("\n\n\(title):\n\(negative)")
         }
 
-        if let alternative = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
+        // Incluir alternativas de la lista nueva
+        for (index, alt) in prompt.alternatives.enumerated() {
+            let trimmed = alt.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                let title = "\("alternative".localized(for: preferences.language)) #\(index + 1)"
+                parts.append("\n\n\(title):\n\(trimmed)")
+            }
+        }
+
+        // Fallback para datos antiguos si la lista nueva está vacía
+        if prompt.alternatives.isEmpty, 
+           let alternative = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
            !alternative.isEmpty {
             let title = "alternative_prompt".localized(for: preferences.language)
             parts.append("\n\n\(title):\n\(alternative)")

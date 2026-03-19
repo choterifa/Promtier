@@ -253,8 +253,49 @@ struct PromptPreviewView: View {
                     .padding(.top, 8)
                 }
                 
-                // Prompt Alternativo (Si existe)
-                if let alternative = prompt.alternativePrompt, !alternative.isEmpty {
+                // Prompts Alternativos (Si existen)
+                if !prompt.alternatives.isEmpty {
+                    ForEach(Array(prompt.alternatives.enumerated()), id: \.offset) { index, alternative in
+                        if !alternative.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.green.opacity(0.8))
+                                    Text("\("alternative".localized(for: preferences.language).uppercased()) #\(index + 1)")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.secondary)
+                                        .tracking(1)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        ClipboardService.shared.copyToClipboard(alternative)
+                                        HapticService.shared.playLight()
+                                    }) {
+                                        Image(systemName: "doc.on.doc")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.green.opacity(0.6))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                
+                                Text(alternative)
+                                    .font(.system(size: 13 * preferences.fontSize.scale, design: .rounded))
+                                    .foregroundColor(.primary.opacity(0.8))
+                                    .padding(12)
+                                    .background(Color.green.opacity(0.03))
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.green.opacity(0.08), lineWidth: 1)
+                                    )
+                            }
+                            .padding(.top, 8)
+                        }
+                    }
+                } else if let alternative = prompt.alternativePrompt, !alternative.isEmpty {
+                    // Fallback para datos antiguos aún no migrados visualmente en el modelo
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.triangle.2.circlepath.circle.fill")

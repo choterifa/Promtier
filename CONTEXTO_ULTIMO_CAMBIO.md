@@ -4,18 +4,18 @@
 
 ## ✅ Lo último implementado
 
-### 1) Editor Avanzado y Código de Colores
-- **Fondo de Editor**: Se aplicaron tintes sutiles (5% opacidad) para diferenciar áreas:
-  - **Main Content**: Azul tenue.
-  - **Negative Prompt**: Rojo tenue.
-  - **Alternative Prompt**: Verde tenue.
-- **Botones de Acción**: Añadidos nombres a los iconos para mayor claridad: `Swap`, `Merge`, `Branching` y `Diff`.
-- **Diff View**: Implementada vista en paralelo para comparar versiones del prompt.
+### 1) Rediseño del Editor y Soporte Multi-Alternativa
+- **Nueva Estructura Pro**: Interfaz rediseñada para maximizar el foco en el "Main Content", agrupando las opciones secundarias en una sección de "Advanced Options" con divisores minimalistas.
+- **Hasta 10 Alternativas**: El campo único de alternativa ha evolucionado a una lista dinámica que soporta hasta **10 entradas independientes**.
+- **Acciones Dinámicas**: Cada alternativa cuenta con botones de `Swap` (Intercambiar con el principal) y `Remove` integrados en su propia tarjeta.
+- **Visuales Consistentes**: Se mantiene el código de colores (Azul: Main, Rojo: Negative, Verde: Alternatives) con fondos tenues para una navegación visual inmediata.
+- **Persistencia y Migración**: Nuevo atributo en Core Data (`alternativesData`) para almacenar el array. El sistema migra automáticamente los datos del campo antiguo al nuevo formato al editar.
 
-### 2) Estabilidad y Correcciones
-- **Undo Safe**: Limpieza del `undoManager` al realizar cambios programáticos (Swap/Merge) para evitar crashes `EXC_BAD_ACCESS` al pulsar Cmd+Z.
-- **Copia Mágica**: Registro global de atajos (vía Carbon) ahora persistente. El campo `customShortcut` se carga correctamente desde Core Data.
-- **Fix Popover**: Reparado el bug de macOS que "congelaba" la ventana tras usar el visor de imágenes (ahora recupera el estado transitorio).
+### 2) Estabilidad y UX
+- **Build Success**: Resolución de conflictos de tipos genéricos en `SecondaryEditorCard` y limpieza de referencias a variables obsoletas.
+- **Cierre Inteligente (Drag out)**: La ventana se cierra automáticamente al iniciar un arrastre hacia aplicaciones externas.
+- **Markdown Export**: Exportación por defecto a `.md` con estructura de títulos.
+- **Preview Mejorado**: La vista de detalles ahora lista todas las alternativas disponibles de forma numerada.
 
 ### 3) UX y Sistema
 - **Dimensiones**: Estándar **740px x 530px**.

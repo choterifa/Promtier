@@ -18,12 +18,14 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Código de Colores**: 
     - **Azul Tenue**: Contenido principal.
     - **Rojo Tenue**: Negative Prompt.
-    - **Verde Tenue**: Alternative Prompt.
-- **Acciones Rápidas (Alternative Prompt)**:
-    - **Swap**: Intercambia Main ↔ Alternative instantáneamente.
-    - **Merge**: Concatena el alternativo al final con separador `---`.
-    - **Branching**: Crea un nuevo prompt desde el alternativo con un clic (con notificación de éxito).
-    - **Diff View**: Vista modal para comparar visualmente diferencias entre el principal y el alternativo.
+    - **Verde Tenue**: Lista de Alternatives.
+- **Jerarquía Visual**: Foco absoluto en el prompt principal con una sección dedicada de "Opciones Avanzadas" para contenido secundario.
+- **Múltiples Alternativas**: Soporte para hasta **10 prompts alternativos** con gestión dinámica (añadir/eliminar).
+- **Acciones Rápidas (Alternatives)**:
+    - **Swap**: Intercambia el contenido de una alternativa con el principal instantáneamente.
+    - **Remove**: Elimina alternativas de forma individual con animación.
+    - **Branching**: Crea un nuevo prompt desde el contenido de una alternativa (con notificación visual y navegación directa).
+    - **Diff View**: Vista modal para comparar visualmente diferencias entre el principal y la primera alternativa.
 - **Copia Mágica (Atajos Globales)**: Registro de combinaciones de teclas por prompt (Framework Carbon) para copiar sin abrir la app.
 - **Shortcuts de Enfoque**: `⌥N` para Negative, `⌥A` para Alternative.
 - **Undo Safe**: Limpieza de historial de deshecho en ediciones automáticas para evitar crashes.
