@@ -33,20 +33,34 @@ struct PromptCard: View {
     
     private var highlightedContent: AttributedString {
         var attrString = AttributedString(prompt.content)
+        
+        // 1. Resaltado de Brackets
+        let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
+        if let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: []) {
+            let nsRange = NSRange(prompt.content.startIndex..., in: prompt.content)
+            let matches = bracketRegex.matches(in: prompt.content, options: [], range: nsRange)
+            for match in matches {
+                if let range = Range(match.range, in: attrString) {
+                    attrString[range].foregroundColor = currentCategoryColor.opacity(0.8)
+                }
+            }
+        }
+        
+        // 2. Resaltado de Variables
         let pattern = "\\{\\{([^}]+)\\}\\}"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
             return attrString
         }
         
-        let range = NSRange(prompt.content.startIndex..<prompt.content.endIndex, in: prompt.content)
-        let matches = regex.matches(in: prompt.content, options: [], range: range)
+        let nsRange = NSRange(prompt.content.startIndex..., in: prompt.content)
+        let matches = regex.matches(in: prompt.content, options: [], range: nsRange)
         
-        // Aplicar estilos de atrás hacia adelante para no romper los índices (aunque AttributedString maneja rangos, es buena práctica)
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = .blue
+                attrString[range].foregroundColor = currentCategoryColor
                 attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
+                attrString[range].backgroundColor = currentCategoryColor.opacity(0.08)
             }
         }
         
@@ -96,6 +110,13 @@ struct PromptCard: View {
         91: "8", 92: "9", 123: "←", 124: "→", 125: "↓", 126: "↑"
     ]
     
+    private var currentCategoryColor: Color {
+        if let folder = prompt.folder {
+            return getFolderColor(for: folder)
+        }
+        return .blue
+    }
+    
     private func getFolderColor(for folderName: String) -> Color {
         if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
             return Color(hex: customFolder.displayColor)
@@ -121,20 +142,21 @@ struct PromptCard: View {
             
             // Icono de categoría o personalizado grande restaurado
             if let iconName = prompt.icon {
+                let color = currentCategoryColor
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill((prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue).opacity(0.1))
+                        .fill(color.opacity(0.12))
                         .frame(width: 32, height: 32)
                     
                     Image(systemName: iconName)
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue)
+                        .foregroundColor(color)
                 }
             } else if let folder = prompt.folder {
-                let color = getFolderColor(for: folder)
+                let color = currentCategoryColor
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.1))
+                        .fill(color.opacity(0.12))
                         .frame(width: 32, height: 32)
                     
                     Image(systemName: "folder.fill")
@@ -388,9 +410,14 @@ struct PromptCard: View {
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(isSelected || isHovered ? currentCategoryColor.opacity(0.08) : Color.clear)
+                        .blur(radius: isHovered ? 12 : 6)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(cardBorderColor, lineWidth: 1)
+                        .stroke(cardBorderColor, lineWidth: isSelected ? 1.5 : 1)
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
@@ -536,11 +563,11 @@ struct PromptCard: View {
     
     private var cardBorderColor: Color {
         if isSelected {
-            return Color.blue.opacity(0.3)
+            return currentCategoryColor.opacity(0.5)
         } else if isHovered {
-            return Color.primary.opacity(0.08)
+            return currentCategoryColor.opacity(0.2)
         } else {
-            return Color.primary.opacity(0.04)
+            return Color.primary.opacity(0.06)
         }
     }
 }

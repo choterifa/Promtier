@@ -453,19 +453,26 @@ struct PromptPreviewView: View {
     private func highlightContent(_ text: String) -> AttributedString {
         var attrString = AttributedString(text)
         
-        // 1. Resaltado de Brackets (Estilo VS Code - Naranja)
+        let themeColor: Color = {
+            if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+                return category.color
+            }
+            return .blue
+        }()
+        
+        // 1. Resaltado de Brackets (Color categoría)
         let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
         if let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: []) {
             let range = NSRange(text.startIndex..<text.endIndex, in: text)
             let matches = bracketRegex.matches(in: text, options: [], range: range)
             for match in matches {
                 if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = .orange.opacity(0.8)
+                    attrString[range].foregroundColor = themeColor.opacity(0.8)
                 }
             }
         }
         
-        // 2. Resaltado de Variables (Estilo Promtier - Azul)
+        // 2. Resaltado de Variables (Estilo Promtier - Color categoría)
         let pattern = "\\{\\{([^}]+)\\}\\}"
         
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
@@ -477,9 +484,9 @@ struct PromptPreviewView: View {
         
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = .blue
+                attrString[range].foregroundColor = themeColor
                 attrString[range].font = .system(size: 16 * preferences.fontSize.scale, weight: .bold)
-                attrString[range].backgroundColor = Color.blue.opacity(0.08)
+                attrString[range].backgroundColor = themeColor.opacity(0.08)
             }
         }
         
