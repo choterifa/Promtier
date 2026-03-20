@@ -484,9 +484,9 @@ struct PromptPreviewView: View {
         
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = themeColor
+                attrString[range].foregroundColor = .blue
                 attrString[range].font = .system(size: 16 * preferences.fontSize.scale, weight: .bold)
-                attrString[range].backgroundColor = themeColor.opacity(0.08)
+                attrString[range].backgroundColor = Color.blue.opacity(0.08)
             }
         }
         

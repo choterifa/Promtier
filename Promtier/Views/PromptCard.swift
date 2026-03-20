@@ -58,9 +58,9 @@ struct PromptCard: View {
         
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = currentCategoryColor
+                attrString[range].foregroundColor = .blue
                 attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
-                attrString[range].backgroundColor = currentCategoryColor.opacity(0.08)
+                attrString[range].backgroundColor = Color.blue.opacity(0.08)
             }
         }
         
