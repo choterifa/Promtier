@@ -435,10 +435,10 @@ struct AppearanceTab: View {
                 SettingsRow("reset_size", subtitle: "reset_size_subtitle") {
                     Button(action: {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            preferences.previewWidth  = 740
-                            preferences.previewHeight = 530
-                            preferences.windowWidth   = 740
-                            preferences.windowHeight  = 530
+                            preferences.previewWidth  = 800
+                            preferences.previewHeight = 570
+                            preferences.windowWidth   = 800
+                            preferences.windowHeight  = 570
                         }
                     }) {
                         Label("reset", systemImage: "arrow.counterclockwise")

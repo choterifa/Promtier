@@ -84,6 +84,13 @@ struct NewPromptView: View {
     @State private var localMonitor: Any? = nil
     @State private var showingDiff: Bool = false
     @State private var branchMessage: String? = nil
+    @State private var showingAppPicker = false
+    
+    struct RunningApp: Identifiable {
+        let id: String
+        let name: String
+        let icon: NSImage
+    }
     
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -349,7 +356,7 @@ struct NewPromptView: View {
                             }
                         }
                         
-                        Button(action: selectApplication) {
+                        Button(action: { showingAppPicker = true }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus.circle.fill")
                                 Text("assign_app".localized(for: preferences.language))
@@ -362,6 +369,26 @@ struct NewPromptView: View {
                             .cornerRadius(10)
                         }
                         .buttonStyle(.plain)
+                        .popover(isPresented: $showingAppPicker, arrowEdge: .bottom) {
+                            AppPickerPopover(
+                                runningApps: getRunningApps(),
+                                currentAppID: promptService.activeAppBundleID,
+                                onSelect: { bundleID in
+                                    if !targetAppBundleIDs.contains(bundleID) {
+                                        withAnimation {
+                                            targetAppBundleIDs.append(bundleID)
+                                        }
+                                    }
+                                    showingAppPicker = false
+                                },
+                                onBrowse: {
+                                    showingAppPicker = false
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        selectApplication()
+                                    }
+                                }
+                            )
+                        }
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1254,30 +1281,47 @@ struct NewPromptView: View {
     
     // MARK: - App Association Helpers
     
+    private func getRunningApps() -> [RunningApp] {
+        let running = NSWorkspace.shared.runningApplications
+        // Tomar una muestra representativa de apps abiertas (evitando ruido de sistema)
+        return running.compactMap { app in
+            guard let bundleID = app.bundleIdentifier,
+                  let name = app.localizedName,
+                  let icon = app.icon,
+                  app.activationPolicy == .regular,
+                  bundleID != Bundle.main.bundleIdentifier else { return nil }
+            return RunningApp(id: bundleID, name: name, icon: icon)
+        }
+    }
+
     private func getAppName(_ bundleID: String) -> String {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
             return url.deletingPathExtension().lastPathComponent
         }
         return bundleID
     }
-    
+
     private func selectApplication() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.application, .bundle]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.title = "select_app_title".localized(for: preferences.language)
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.application, .aliasFile]
+        panel.allowsMultipleSelection = true
+        panel.message = "select_app_title".localized(for: preferences.language)
+        
+        // Nivel de panel modal para que NO salga por detrás de la ventana de NewPromptView
+        panel.level = .modalPanel
         
         if panel.runModal() == .OK {
             for url in panel.urls {
-                if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
+                if let bundleID = Bundle(url: url)?.bundleIdentifier {
                     if !targetAppBundleIDs.contains(bundleID) {
                         withAnimation {
                             targetAppBundleIDs.append(bundleID)
                         }
                     }
                 } else {
+                    // Intento manual vía plist si Bundle falla (apps externas raras)
                     let infoPath = url.appendingPathComponent("Contents/Info.plist")
                     if let infoDict = NSDictionary(contentsOf: infoPath),
                        let bundleID = infoDict["CFBundleIdentifier"] as? String {
@@ -1882,5 +1926,95 @@ struct FlowLayout: View {
                 }
             }
         }
+    }
+}
+
+struct AppPickerPopover: View {
+    let runningApps: [NewPromptView.RunningApp]
+    let currentAppID: String?
+    let onSelect: (String) -> Void
+    let onBrowse: () -> Void
+    
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("smart_recommendation".localized(for: preferences.language))
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let currentID = currentAppID, let currentApp = runningApps.first(where: { $0.id == currentID }) {
+                        AppItemRow(app: currentApp, isCurrent: true, onSelect: onSelect)
+                        Divider().padding(.horizontal, 8).padding(.vertical, 4)
+                    }
+                    
+                    let otherApps = runningApps.filter { $0.id != currentAppID }
+                    ForEach(otherApps.prefix(8)) { app in
+                        AppItemRow(app: app, isCurrent: false, onSelect: onSelect)
+                    }
+                    
+                    Divider().padding(.horizontal, 8).padding(.vertical, 4)
+                    
+                    Button(action: onBrowse) {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                                .frame(width: 20, height: 20)
+                            Text("select_app_title".localized(for: preferences.language))
+                                .font(.system(size: 12))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.bottom, 8)
+            }
+            .frame(maxHeight: 300)
+        }
+        .frame(width: 240)
+        .padding(.bottom, 8)
+    }
+}
+
+struct AppItemRow: View {
+    let app: NewPromptView.RunningApp
+    let isCurrent: Bool
+    let onSelect: (String) -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: { onSelect(app.id) }) {
+            HStack(spacing: 10) {
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(app.name)
+                        .font(.system(size: 12, weight: .medium))
+                    if isCurrent {
+                        Text("Current Application")
+                            .font(.system(size: 10))
+                            .foregroundColor(.purple)
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isHovered ? Color.primary.opacity(0.1) : Color.clear)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
     }
 }

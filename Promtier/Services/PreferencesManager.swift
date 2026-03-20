@@ -280,12 +280,12 @@ class PreferencesManager: ObservableObject {
             self.customAllowedAppBundleIDs = []
         }
         
-        // Dimensiones de ventana (Defaults: 740x530, Max: 900x750, Min: 500x450)
+        // Dimensiones de ventana (Defaults: 800x570, Max: 900x750, Min: 500x450)
         let savedWidth = userDefaults.double(forKey: "windowWidth")
-        self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 740
+        self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 800
         
         let savedHeight = userDefaults.double(forKey: "windowHeight")
-        self.windowHeight = savedHeight > 0 ? min(750, max(450, CGFloat(savedHeight))) : 530
+        self.windowHeight = savedHeight > 0 ? min(750, max(450, CGFloat(savedHeight))) : 570
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
@@ -420,8 +420,8 @@ class PreferencesManager: ObservableObject {
         self.autoPaste = false
         self.clipboardSuggestions = true
         self.onlySuggestFromBrowsers = true
-        self.windowWidth = 740
-        self.windowHeight = 530
+        self.windowWidth = 800
+        self.windowHeight = 570
         
         // Nuevas propiedades por defecto
         self.showInDock = false

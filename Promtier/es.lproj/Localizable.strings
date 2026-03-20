@@ -52,7 +52,7 @@
 "width" = "Ancho";
 "height" = "Alto";
 "reset_size" = "Restablecer tamaño";
-"reset_size_subtitle" = "Volver al tamaño por defecto (740 × 530)";
+"reset_size_subtitle" = "Volver al tamaño por defecto (800 × 570)";
 "reset" = "Resetear";
 
 /* Behavior Tab */
