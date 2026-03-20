@@ -30,6 +30,7 @@ struct SearchViewSimple: View {
     // Ghost Tips logic
     @State private var currentGhostTip: GhostTip? = nil
     @State private var nextTipIndex: Int = 0
+    @State private var isGhostTipSuppressedByClipboard = false
     private var ghostTips: [GhostTip] {
         [
             // Navegación y Lista
@@ -176,7 +177,7 @@ struct SearchViewSimple: View {
                 .zIndex(400)
             
             // Overlay de Ghost Tips
-            if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main && menuBarManager.suggestedClipboardContent == nil {
+            if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main && menuBarManager.suggestedClipboardContent == nil && !isGhostTipSuppressedByClipboard {
                 VStack {
                     Spacer()
                     GhostTipView(tip: tip) {
@@ -197,6 +198,16 @@ struct SearchViewSimple: View {
         .onDrop(of: [UTType.fileURL, UTType.json, UTType.zip], isTargeted: $isDraggingFile) { providers in
             handleFileDrop(providers: providers)
             return true
+        }
+        .onChange(of: menuBarManager.suggestedClipboardContent) { newValue in
+            if newValue == nil {
+                // El banner de sugerencia desapareció (por tiempo o manual)
+                // Suprimimos los Ghost Tips por 20 segundos para no saturar al usuario
+                isGhostTipSuppressedByClipboard = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+                    isGhostTipSuppressedByClipboard = false
+                }
+            }
         }
         .overlay {
             importOverlays
@@ -337,6 +348,9 @@ struct SearchViewSimple: View {
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
                                 .focused($isSearchFocused)
+                                .onExitCommand {
+                                    isSearchFocused = false
+                                }
                                 .onChange(of: promptService.searchQuery) { _, newValue in
                                     if newValue.count > 40 {
                                         promptService.searchQuery = String(newValue.prefix(40))
@@ -1230,7 +1244,7 @@ struct ClipboardSuggestionBanner: View {
             .buttonStyle(.plain)
         }
         .padding(12)
-        .frame(maxWidth: 430) // Centered and limited width
+        .frame(maxWidth: 420) // Centered and limited width
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)

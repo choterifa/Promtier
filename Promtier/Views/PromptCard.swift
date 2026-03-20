@@ -159,7 +159,8 @@ struct PromptCard: View {
                     Text(prompt.title)
                         .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .blue : .primary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     if let folder = prompt.folder, !folder.isEmpty {
                         let color = getFolderColor(for: folder)
