@@ -217,6 +217,7 @@ struct NewPromptView: View {
                 ) {
                     EmptyView()
                 }
+                .id("negative_prompt_section")
                 
                 // 2.2: ALTERNATIVE PROMPTS
                 VStack(alignment: .leading, spacing: 16) {
@@ -250,6 +251,7 @@ struct NewPromptView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
+                .id("alternatives_section")
             }
             
             // SECTION 3: UTILITIES
@@ -595,9 +597,29 @@ struct NewPromptView: View {
                 header(width: targetWidth)
 
                 ScrollView(showsIndicators: false) {
-                    mainScrollViewContent(geometry: geometry)
-                        .frame(width: targetWidth)
-                        .frame(maxWidth: .infinity)
+                    ScrollViewReader { proxy in
+                        mainScrollViewContent(geometry: geometry)
+                            .frame(width: targetWidth)
+                            .frame(maxWidth: .infinity)
+                            .onChange(of: focusNegative) { isFocused in
+                                if isFocused {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                            proxy.scrollTo("negative_prompt_section", anchor: .center)
+                                        }
+                                    }
+                                }
+                            }
+                            .onChange(of: focusAlternative) { isFocused in
+                                if isFocused {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                            proxy.scrollTo("alternatives_section", anchor: .center)
+                                        }
+                                    }
+                                }
+                            }
+                    }
                 }
                 .onTapGesture {
                     // Click outside any focused field should resign focus
