@@ -399,3 +399,7 @@
 "branch_label" = "Branch";
 "create_branch" = "Create Branch";
 "branch_created_success" = "Branch created successfully!";
+"sort_by" = "Sort by";
+"sort_manual" = "Manual";
+"sort_name" = "Name";
+"sort_newest" = "Newest";

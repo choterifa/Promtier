@@ -25,6 +25,19 @@ class PromptService: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var activeAppBundleID: String? = nil
     
+    enum FolderSortMode: String, Codable, CaseIterable {
+        case manual
+        case name
+        case newest
+    }
+    
+    @Published var folderSortMode: FolderSortMode = .manual {
+        didSet {
+            UserDefaults.standard.set(folderSortMode.rawValue, forKey: "folderSortMode_preference")
+            loadFolders()
+        }
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -47,6 +60,11 @@ class PromptService: ObservableObject {
             }
             .store(in: &cancellables)
             
+        if let savedMode = UserDefaults.standard.string(forKey: "folderSortMode_preference"),
+           let mode = FolderSortMode(rawValue: savedMode) {
+            self.folderSortMode = mode
+        }
+        
         seedDefaultFolders() // Crear categorías de sistema si no existen
         seedDefaultPrompts() // Crear prompts de ejemplo iniciales
         purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
@@ -426,17 +444,26 @@ class PromptService: ObservableObject {
             let entities = try dataController.viewContext.fetch(request)
             var loadedFolders = entities.map { $0.toFolder() }
             
-            // Aplicar orden personalizado guardado en UserDefaults
-            if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder") {
-                loadedFolders.sort { folder1, folder2 in
-                    let index1 = savedOrder.firstIndex(of: folder1.id.uuidString) ?? Int.max
-                    let index2 = savedOrder.firstIndex(of: folder2.id.uuidString) ?? Int.max
-                    
-                    if index1 != index2 {
-                        return index1 < index2
+            switch folderSortMode {
+            case .manual:
+                // Aplicar orden personalizado guardado en UserDefaults
+                if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder") {
+                    loadedFolders.sort { folder1, folder2 in
+                        let index1 = savedOrder.firstIndex(of: folder1.id.uuidString) ?? Int.max
+                        let index2 = savedOrder.firstIndex(of: folder2.id.uuidString) ?? Int.max
+                        
+                        if index1 != index2 {
+                            return index1 < index2
+                        }
+                        return folder1.name.localizedCompare(folder2.name) == .orderedAscending
                     }
-                    return folder1.name < folder2.name // Backup order
+                } else {
+                    loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
                 }
+            case .name:
+                loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
+            case .newest:
+                loadedFolders.sort { $0.createdAt > $1.createdAt }
             }
             
             DispatchQueue.main.async {

@@ -422,3 +422,7 @@
 "branch_label" = "Rama";
 "create_branch" = "Crear Rama";
 "branch_created_success" = "¡Rama creada con éxito!";
+"sort_by" = "Ordenar por";
+"sort_manual" = "Manual";
+"sort_name" = "Nombre";
+"sort_newest" = "Más reciente";

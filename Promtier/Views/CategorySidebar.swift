@@ -9,7 +9,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private struct PromtierDragPayload: Codable, Sendable {
+private struct SidebarDragPayload: Codable, Sendable {
     let kind: String
     let ids: [String]?
     let id: String?
@@ -52,6 +52,22 @@ struct CategorySidebar: View {
                     .tracking(1.2 * preferences.fontSize.scale)
                 
                 Spacer()
+                
+                Menu {
+                    Picker("sort_by".localized(for: preferences.language), selection: $promptService.folderSortMode) {
+                        Label("sort_manual".localized(for: preferences.language), systemImage: "hand.tap").tag(PromptService.FolderSortMode.manual)
+                        Label("sort_name".localized(for: preferences.language), systemImage: "textformat.abc").tag(PromptService.FolderSortMode.name)
+                        Label("sort_newest".localized(for: preferences.language), systemImage: "calendar").tag(PromptService.FolderSortMode.newest)
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("sort_by".localized(for: preferences.language))
+                .padding(.trailing, 4)
                 
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -170,7 +186,7 @@ struct CategorySidebar: View {
                             self.draggedFolder = folder
                             menuBarManager.isModalActive = true // Evitar cierre automático
                             let provider = NSItemProvider()
-                            let payload = PromtierDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
+                            let payload = SidebarDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
                             if let data = try? JSONEncoder().encode(payload) {
                                 provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
                                     completion(data, nil)
@@ -288,7 +304,7 @@ struct CategorySidebar: View {
         guard provider.hasItemConformingToTypeIdentifier(jsonType) else { return false }
         _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
             guard let data,
-                  let payload = try? JSONDecoder().decode(PromtierDragPayload.self, from: data),
+                  let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
                   payload.kind == "promtier.prompt.ids",
                   let ids = payload.ids,
                   !ids.isEmpty else { return }
@@ -394,7 +410,7 @@ struct FolderDropDelegate: DropDelegate {
             if provider.hasItemConformingToTypeIdentifier(jsonType) {
                 _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
                     guard let data,
-                          let payload = try? JSONDecoder().decode(PromtierDragPayload.self, from: data),
+                        let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
                           payload.kind == "promtier.prompt.ids",
                           let ids = payload.ids,
                           !ids.isEmpty else { return }
