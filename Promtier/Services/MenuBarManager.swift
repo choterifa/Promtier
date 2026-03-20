@@ -245,20 +245,29 @@ class MenuBarManager: NSObject, ObservableObject {
     @objc private func showContextMenu() {
         let menu = NSMenu()
         
-        // CONFIGURABLE: Opciones del menú contextual
-        menu.addItem(NSMenuItem(title: "Add Prompt", action: #selector(showAddPrompt), keyEquivalent: "n"))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Mostrar Promtier", action: #selector(togglePopover), keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Preferencias...", action: #selector(showPreferences), keyEquivalent: ","))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Acerca de Promtier", action: #selector(showAbout), keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Salir", action: #selector(quitApp), keyEquivalent: "q"))
+        // CONFIGURABLE: Opciones del menú contextual con target explícito
+        func addMenuItem(_ title: String, selector: Selector, key: String = "") {
+            let item = NSMenuItem(title: title, action: selector, keyEquivalent: key)
+            item.target = self
+            menu.addItem(item)
+        }
         
+        addMenuItem("Add Prompt", selector: #selector(showAddPrompt), key: "n")
+        menu.addItem(NSMenuItem.separator())
+        addMenuItem("Preferencias...", selector: #selector(showPreferences), key: ",")
+        menu.addItem(NSMenuItem.separator())
+        addMenuItem("Acerca de Promtier", selector: #selector(showAbout))
+        menu.addItem(NSMenuItem.separator())
+        addMenuItem("Salir", selector: #selector(quitApp), key: "q")
+        
+        // Mostrar el menú de forma síncrona
         statusItem?.menu = menu
         statusItem?.button?.performClick(nil)
-        statusItem?.menu = nil
+        
+        // Limpiar para que el click izquierdo vuelva a funcionar con togglePopover
+        DispatchQueue.main.async {
+            self.statusItem?.menu = nil
+        }
     }
     
     @objc private func showAddPrompt() {
