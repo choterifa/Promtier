@@ -448,11 +448,8 @@ struct PromptCard: View {
                 }
             }
             
-            // 2. Contenido para apps externas (Texto plano)
-            provider.registerDataRepresentation(forTypeIdentifier: UTType.plainText.identifier, visibility: .all) { completion in
-                completion(prompt.content.data(using: .utf8), nil)
-                return nil
-            }
+            // 2. Contenido para apps externas (Texto plano - Máxima compatibilidad)
+            provider.registerObject(prompt.content as NSString, visibility: .all)
             
             return provider
         }
