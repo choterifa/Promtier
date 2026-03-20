@@ -426,3 +426,5 @@
 "sort_manual" = "Manual";
 "sort_name" = "Nombre";
 "sort_newest" = "Más reciente";
+"sort_most_used" = "Más usados";
+"sort_prompts_help" = "Cambiar orden de los prompts";

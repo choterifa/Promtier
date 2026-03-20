@@ -38,6 +38,20 @@ class PromptService: ObservableObject {
         }
     }
     
+    enum PromptSortMode: String, Codable, CaseIterable {
+        case manual
+        case name
+        case newest
+        case mostUsed
+    }
+    
+    @Published var promptSortMode: PromptSortMode = .manual {
+        didSet {
+            UserDefaults.standard.set(promptSortMode.rawValue, forKey: "promptSortMode_preference")
+            filterPrompts(query: searchQuery)
+        }
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -63,6 +77,11 @@ class PromptService: ObservableObject {
         if let savedMode = UserDefaults.standard.string(forKey: "folderSortMode_preference"),
            let mode = FolderSortMode(rawValue: savedMode) {
             self.folderSortMode = mode
+        }
+        
+        if let savedMode = UserDefaults.standard.string(forKey: "promptSortMode_preference"),
+           let mode = PromptSortMode(rawValue: savedMode) {
+            self.promptSortMode = mode
         }
         
         seedDefaultFolders() // Crear categorías de sistema si no existen
@@ -993,6 +1012,23 @@ class PromptService: ObservableObject {
         // if filtered.count > 50 {
         //    filtered = Array(filtered.prefix(50))
         // }
+        
+        // --- Terminal Global Sort ---
+        if query.isEmpty {
+            switch promptSortMode {
+            case .manual:
+                // If it's a specific folder, we might have a manual order,
+                // but currently manual order is only for folders.
+                // For prompts, we use most recent as default if manual selected.
+                filtered.sort { $0.modifiedAt > $1.modifiedAt }
+            case .name:
+                filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
+            case .newest:
+                filtered.sort { $0.createdAt > $1.createdAt }
+            case .mostUsed:
+                filtered.sort { $0.useCount > $1.useCount }
+            }
+        }
         
         filteredPrompts = filtered
     }

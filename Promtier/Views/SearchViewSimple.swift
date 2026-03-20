@@ -443,6 +443,32 @@ struct SearchViewSimple: View {
                             }
                             .buttonStyle(.plain)
                             .help("settings".localized(for: preferences.language) + " (Cmd+,)")
+                            
+                            // Botón de Ordenamiento de Prompts
+                            Menu {
+                                Picker("sort_by".localized(for: preferences.language), selection: $promptService.promptSortMode) {
+                                    Label("sort_manual".localized(for: preferences.language), systemImage: "clock").tag(PromptService.PromptSortMode.manual)
+                                    Label("sort_name".localized(for: preferences.language), systemImage: "textformat.abc").tag(PromptService.PromptSortMode.name)
+                                    Label("sort_newest".localized(for: preferences.language), systemImage: "calendar").tag(PromptService.PromptSortMode.newest)
+                                    Label("sort_most_used".localized(for: preferences.language), systemImage: "flame.fill").tag(PromptService.PromptSortMode.mostUsed)
+                                }
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down.circle")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.7))
+                                    .frame(width: 34, height: 34)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.primary.opacity(0.04))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                            .menuStyle(.borderlessButton)
+                            .fixedSize()
+                            .help("sort_prompts_help".localized(for: preferences.language))
                         }
                     }
                     .padding(.horizontal, 24)

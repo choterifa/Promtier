@@ -403,3 +403,5 @@
 "sort_manual" = "Manual";
 "sort_name" = "Name";
 "sort_newest" = "Newest";
+"sort_most_used" = "Most Used";
+"sort_prompts_help" = "Change prompt ordering";
