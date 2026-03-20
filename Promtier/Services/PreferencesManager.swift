@@ -84,6 +84,12 @@ class PreferencesManager: ObservableObject {
         "com.kagi.orion"
     ]
     
+    @Published var customAllowedAppBundleIDs: Set<String> {
+        didSet {
+            userDefaults.set(Array(customAllowedAppBundleIDs), forKey: "customAllowedAppBundleIDs")
+        }
+    }
+    
     @Published var windowWidth: CGFloat
     @Published var windowHeight: CGFloat
     
@@ -265,6 +271,13 @@ class PreferencesManager: ObservableObject {
             self.onlySuggestFromBrowsers = userDefaults.bool(forKey: "onlySuggestFromBrowsers")
         } else {
             self.onlySuggestFromBrowsers = true
+        }
+        
+        // Custom apps
+        if let savedCustomApps = userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] {
+            self.customAllowedAppBundleIDs = Set(savedCustomApps)
+        } else {
+            self.customAllowedAppBundleIDs = []
         }
         
         // Dimensiones de ventana (Defaults: 740x530, Max: 900x750, Min: 500x450)
@@ -499,5 +512,23 @@ class PreferencesManager: ObservableObject {
         }
         
         return false
+    }
+    
+    // MARK: - App Whitelist Management
+    
+    func addAppToWhitelist(at url: URL) -> Bool {
+        guard let bundle = Bundle(url: url),
+              let bundleID = bundle.bundleIdentifier else {
+            return false
+        }
+        
+        if customAllowedAppBundleIDs.contains(bundleID) { return true }
+        
+        customAllowedAppBundleIDs.insert(bundleID)
+        return true
+    }
+    
+    func removeAppFromWhitelist(bundleID: String) {
+        customAllowedAppBundleIDs.remove(bundleID)
     }
 }

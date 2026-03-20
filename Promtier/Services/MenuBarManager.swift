@@ -212,12 +212,16 @@ class MenuBarManager: NSObject, ObservableObject {
            text != suggestedClipboardContent {
             
             // CONTEXTO: Si está activado 'solo desde navegadores', verificar el origen
-            if preferencesManager.onlySuggestFromBrowsers {
-                if let sourceID = ClipboardService.shared.lastSourceAppBundleID {
-                    if !preferencesManager.browserBundleIDs.contains(sourceID) {
-                        return // No es un navegador, ignoramos
-                    }
+            if let sourceID = ClipboardService.shared.lastSourceAppBundleID {
+                let isBrowser = preferencesManager.onlySuggestFromBrowsers && preferencesManager.browserBundleIDs.contains(sourceID)
+                let isCustomAllowed = preferencesManager.customAllowedAppBundleIDs.contains(sourceID)
+                
+                if !isBrowser && !isCustomAllowed {
+                    return // No es navegador ni app permitida, ignoramos
                 }
+            } else if preferencesManager.onlySuggestFromBrowsers {
+                // Si no hay sourceID y estamos en modo estricto, podríamos ignorar o permitir.
+                // Por ahora lo permitimos si es desconocido para no ser demasiado restrictivos al inicio.
             }
             
             // Solo sugerir si no hay un borrador activo (para no interrumpir)

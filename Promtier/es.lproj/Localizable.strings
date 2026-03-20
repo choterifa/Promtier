@@ -80,6 +80,10 @@
 "clipboard_only_browsers_subtitle" = "Solo muestra sugerencias para contenido copiado desde Safari, Chrome, Firefox, etc.";
 "clipboard_banner_title" = "Nuevo contenido en el portapapeles";
 "clipboard_banner_action" = "Crear Prompt";
+"custom_apps" = "Aplicaciones Personalizadas";
+"add_app" = "Añadir Aplicación...";
+"remove_app" = "Eliminar";
+"manage_allowed_apps" = "Gestiona las apps que activan sugerencias";
 "accessibility" = "Accesibilidad";
 "accessibility_granted" = "Permisos concedidos ✅";
 "accessibility_required" = "Permisos requeridos ⚠️";

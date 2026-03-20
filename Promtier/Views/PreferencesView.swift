@@ -510,6 +510,50 @@ struct BehaviorTab: View {
                             .toggleStyle(.switch)
                     }
                     .padding(.leading, 20)
+                    
+                    // Lista de aplicaciones personalizadas
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("custom_apps".localized(for: preferences.language))
+                                .font(.system(size: 13, weight: .bold))
+                            Spacer()
+                            Button(action: selectApplication) {
+                                Label("add_app".localized(for: preferences.language), systemImage: "plus.circle.fill")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                        
+                        if !preferences.customAllowedAppBundleIDs.isEmpty {
+                            VStack(spacing: 8) {
+                                ForEach(Array(preferences.customAllowedAppBundleIDs).sorted(), id: \.self) { bundleID in
+                                    HStack {
+                                        let appName = getAppName(from: bundleID)
+                                        Image(systemName: "app.badge.fill")
+                                            .foregroundColor(.blue.opacity(0.7))
+                                        Text(appName)
+                                            .font(.system(size: 11, design: .monospaced))
+                                        Spacer()
+                                        Button(action: { preferences.removeAppFromWhitelist(bundleID: bundleID) }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.secondary.opacity(0.5))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.primary.opacity(0.03))
+                                    .cornerRadius(8)
+                                }
+                            }
+                        } else {
+                            Text("manage_allowed_apps".localized(for: preferences.language))
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary.opacity(0.6))
+                        }
+                    }
+                    .padding(.leading, 40)
+                    .padding(.top, 4)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -574,6 +618,29 @@ struct BehaviorTab: View {
                     Toggle("", isOn: $preferences.isPremiumActive)
                         .toggleStyle(.switch)
                 }
+            }
+        }
+    }
+
+    private func getAppName(from bundleID: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return url.lastPathComponent.replacingOccurrences(of: ".app", with: "")
+        }
+        return bundleID
+    }
+
+    private func selectApplication() {
+        let panel = NSOpenPanel()
+        panel.message = "add_app".localized(for: preferences.language)
+        panel.prompt = "add".localized(for: preferences.language)
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [UTType.application]
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if preferences.addAppToWhitelist(at: url) {
+                HapticService.shared.playLight()
             }
         }
     }

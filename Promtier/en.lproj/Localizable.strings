@@ -78,6 +78,10 @@
 "clipboard_only_browsers_subtitle" = "Only show suggestions for content copied from Safari, Chrome, Firefox, etc.";
 "clipboard_banner_title" = "New content found on clipboard";
 "clipboard_banner_action" = "Create Prompt";
+"custom_apps" = "Custom Applications";
+"add_app" = "Add Application...";
+"remove_app" = "Remove";
+"manage_allowed_apps" = "Manage applications that trigger suggestions";
 "accessibility" = "Accessibility";
 "accessibility_granted" = "Permissions granted ✅";
 "accessibility_required" = "Permissions required ⚠️";

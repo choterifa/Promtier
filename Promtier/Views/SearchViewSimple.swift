@@ -61,15 +61,19 @@ struct SearchViewSimple: View {
         ZStack {
             switch menuBarManager.activeViewState {
             case .main:
-                VStack(spacing: 0) {
-                    if let suggestedContent = menuBarManager.suggestedClipboardContent {
-                        ClipboardSuggestionBanner(content: suggestedContent)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                            .zIndex(60)
+                mainView
+                    .overlay(alignment: .bottom) {
+                        if let suggestedContent = menuBarManager.suggestedClipboardContent {
+                            ClipboardSuggestionBanner(content: suggestedContent)
+                                .padding(.bottom, 32) // Más arriba para evitar solapamiento sutil
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                                    removal: .opacity.combined(with: .scale(scale: 0.95))
+                                ))
+                                .zIndex(70)
+                        }
                     }
-                    mainView
-                }
-                .transition(.opacity)
+                    .transition(.opacity)
             case .newPrompt:
                 NewPromptView(prompt: selectedPrompt, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -1227,16 +1231,15 @@ struct ClipboardSuggestionBanner: View {
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.12), radius: 15, y: 8)
+                .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
         )
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 4)
+        .padding(.horizontal, 32)
+        .padding(.bottom, 8)
     }
 }
