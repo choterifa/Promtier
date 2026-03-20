@@ -9,7 +9,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private struct PromtierDragPayload: Codable {
+private struct PromtierDragPayload: Codable, Sendable {
     let kind: String
     let ids: [String]?
     let id: String?

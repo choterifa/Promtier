@@ -127,6 +127,12 @@ class MenuBarManager: NSObject, ObservableObject {
             if !DraftService.shared.hasDraft && activeViewState == .newPrompt && suggestedClipboardContent == nil {
                 activeViewState = .main
             }
+            
+            // Sugerir desde el portapapeles si está habilitado y estamos en la vista principal
+            if activeViewState == .main {
+                checkClipboardForPromptSuggestion()
+            }
+            
             showPopover(relativeTo: button.bounds, of: button)
         }
     }
@@ -187,13 +193,38 @@ class MenuBarManager: NSObject, ObservableObject {
     func showPopover() {
         guard let button = statusItem?.button else { return }
         
-        if suggestedClipboardContent != nil {
+        // Sugerir desde el portapapeles si está habilitado y estamos en modo normal o ya había contenido
+        if suggestedClipboardContent != nil || !DraftService.shared.hasDraft {
             activeViewState = .main
-        } else if !DraftService.shared.hasDraft {
-            activeViewState = .main
+            checkClipboardForPromptSuggestion()
         }
         
         showPopover(relativeTo: button.bounds, of: button)
+    }
+    
+    /// Verifica el portapapeles para sugerir la creación de un prompt
+    func checkClipboardForPromptSuggestion() {
+        guard preferencesManager.clipboardSuggestions else { return }
+        
+        let pasteboard = NSPasteboard.general
+        if let text = pasteboard.string(forType: .string), 
+           text.count > 10, text.count < 5000,
+           text != suggestedClipboardContent {
+            
+            // CONTEXTO: Si está activado 'solo desde navegadores', verificar el origen
+            if preferencesManager.onlySuggestFromBrowsers {
+                if let sourceID = ClipboardService.shared.lastSourceAppBundleID {
+                    if !preferencesManager.browserBundleIDs.contains(sourceID) {
+                        return // No es un navegador, ignoramos
+                    }
+                }
+            }
+            
+            // Solo sugerir si no hay un borrador activo (para no interrumpir)
+            guard !DraftService.shared.hasDraft else { return }
+            
+            self.suggestedClipboardContent = text
+        }
     }
     
     /// Cierra el popover

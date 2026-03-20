@@ -19,7 +19,35 @@ class ClipboardService: ObservableObject {
     
     @Published var history: [String] = []
     
-    private init() {}
+    // CONTEXTO: Rastrear el origen del contenido del portapapeles
+    @Published var lastSourceAppBundleID: String?
+    private var lastPasteboardChangeCount: Int = NSPasteboard.general.changeCount
+    private var monitorTimer: AnyCancellable?
+    
+    private init() {
+        startMonitoring()
+    }
+    
+    private func startMonitoring() {
+        monitorTimer = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.checkPasteboard()
+            }
+    }
+    
+    private func checkPasteboard() {
+        let pasteboard = NSPasteboard.general
+        guard pasteboard.changeCount != lastPasteboardChangeCount else { return }
+        lastPasteboardChangeCount = pasteboard.changeCount
+        
+        // Si el cambio ocurrió mientras otra app era la activa, registrar su bundleID
+        if let frontmostApp = NSWorkspace.shared.frontmostApplication,
+           frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+            self.lastSourceAppBundleID = frontmostApp.bundleIdentifier
+            print("📋 Nuevo contenido en portapapeles detectado desde: \(lastSourceAppBundleID ?? "unknown")")
+        }
+    }
     
     // MARK: - Métodos principales
     

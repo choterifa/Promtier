@@ -74,6 +74,10 @@
 "close_on_copy_subtitle" = "Cierra la ventana automáticamente al copiar";
 "auto_paste" = "Pegado instantáneo";
 "auto_paste_subtitle" = "Pega automáticamente el prompt en la aplicación activa";
+"clipboard_suggestions" = "Sugerencias de Portapapeles";
+"clipboard_suggestions_subtitle" = "Muestra un banner si hay texto útil en el portapapeles";
+"clipboard_only_browsers" = "Sugerir solo desde Navegadores";
+"clipboard_only_browsers_subtitle" = "Solo muestra sugerencias para contenido copiado desde Safari, Chrome, Firefox, etc.";
 "accessibility" = "Accesibilidad";
 "accessibility_granted" = "Permisos concedidos ✅";
 "accessibility_required" = "Permisos requeridos ⚠️";

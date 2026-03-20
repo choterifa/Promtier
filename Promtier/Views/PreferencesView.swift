@@ -499,6 +499,21 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
+                SettingsRow("clipboard_suggestions", subtitle: "clipboard_suggestions_subtitle", icon: "doc.on.clipboard.fill", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.clipboardSuggestions)
+                        .toggleStyle(.switch)
+                }
+                
+                if preferences.clipboardSuggestions {
+                    SettingsRow("clipboard_only_browsers", subtitle: "clipboard_only_browsers_subtitle", icon: "safari.fill", iconColor: .blue) {
+                        Toggle("", isOn: $preferences.onlySuggestFromBrowsers)
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.leading, 20)
+                }
+                
+                Divider().padding(.leading, 20)
+                
                 SettingsRow("auto_paste", subtitle: "auto_paste_subtitle", icon: "wand.and.stars", iconColor: .orange) {
                     HStack(spacing: 8) {
                         if !shortcutManager.isAccessibilityGranted {

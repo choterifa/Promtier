@@ -72,6 +72,10 @@
 "close_on_copy_subtitle" = "Close the window automatically after copying";
 "auto_paste" = "Instant Paste";
 "auto_paste_subtitle" = "Automatically paste the prompt in the active app";
+"clipboard_suggestions" = "Clipboard Suggestions";
+"clipboard_suggestions_subtitle" = "Show a creation banner if there's text on the clipboard";
+"clipboard_only_browsers" = "Suggest Only from Browsers";
+"clipboard_only_browsers_subtitle" = "Only show suggestions for content copied from Safari, Chrome, Firefox, etc.";
 "accessibility" = "Accessibility";
 "accessibility_granted" = "Permissions granted ✅";
 "accessibility_required" = "Permissions required ⚠️";

@@ -341,7 +341,7 @@ struct NewPromptView: View {
                             branchMessage = "Content swapped!"
                         }
                         HapticService.shared.playLight()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { _ = withAnimation { branchMessage = nil } }
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.arrow.down")
@@ -361,7 +361,7 @@ struct NewPromptView: View {
                             branchMessage = "Merged into main!"
                         }
                         HapticService.shared.playLight()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { _ = withAnimation { branchMessage = nil } }
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down.to.line.compact")
@@ -653,7 +653,7 @@ struct NewPromptView: View {
                 // Si no hay overlays críticos abiertos, cerrar la vista
                 if self.zenTarget == nil && !self.showingIconPicker {
                     // Try to resign first responder to lose focus
-                    if let window = NSApp.keyWindow, let fr = window.firstResponder as? NSTextView {
+                    if let window = NSApp.keyWindow, let _ = window.firstResponder as? NSTextView {
                         DispatchQueue.main.async {
                             window.makeFirstResponder(nil)
                         }

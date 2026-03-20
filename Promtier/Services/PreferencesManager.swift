@@ -60,6 +60,30 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var clipboardSuggestions: Bool {
+        didSet {
+            userDefaults.set(clipboardSuggestions, forKey: "clipboardSuggestions")
+        }
+    }
+    
+    @Published var onlySuggestFromBrowsers: Bool {
+        didSet {
+            userDefaults.set(onlySuggestFromBrowsers, forKey: "onlySuggestFromBrowsers")
+        }
+    }
+    
+    let browserBundleIDs: Set<String> = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "org.mozilla.firefox",
+        "com.microsoft.edgemac",
+        "com.brave.Browser",
+        "com.operasoftware.Opera",
+        "company.thebrowser.Browser",   // Arc Browser
+        "com.vivaldi.Vivaldi",
+        "com.kagi.orion"
+    ]
+    
     @Published var windowWidth: CGFloat
     @Published var windowHeight: CGFloat
     
@@ -230,6 +254,19 @@ class PreferencesManager: ObservableObject {
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
+        // Sugerencias de portapapeles por defecto en true
+        if userDefaults.object(forKey: "clipboardSuggestions") != nil {
+            self.clipboardSuggestions = userDefaults.bool(forKey: "clipboardSuggestions")
+        } else {
+            self.clipboardSuggestions = true
+        }
+
+        if userDefaults.object(forKey: "onlySuggestFromBrowsers") != nil {
+            self.onlySuggestFromBrowsers = userDefaults.bool(forKey: "onlySuggestFromBrowsers")
+        } else {
+            self.onlySuggestFromBrowsers = true
+        }
+        
         // Dimensiones de ventana (Defaults: 740x530, Max: 900x750, Min: 500x450)
         let savedWidth = userDefaults.double(forKey: "windowWidth")
         self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 740
@@ -368,6 +405,8 @@ class PreferencesManager: ObservableObject {
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .english
         self.autoPaste = false
+        self.clipboardSuggestions = true
+        self.onlySuggestFromBrowsers = true
         self.windowWidth = 740
         self.windowHeight = 530
         
