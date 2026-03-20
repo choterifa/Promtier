@@ -47,6 +47,27 @@ public class PromptEntity: NSManagedObject {
             UserDefaults.standard.set(dict, forKey: Self.appAssociationsKey)
         }
     }
+    
+    // MARK: - Branching (Linking)
+    static let parentIDsKey = "promptParentIDs"
+    var parentID: UUID? {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: Self.parentIDsKey) as? [String: String] ?? [:]
+            if let uuidString = dict[id.uuidString] {
+                return UUID(uuidString: uuidString)
+            }
+            return nil
+        }
+        set {
+            var dict = UserDefaults.standard.dictionary(forKey: Self.parentIDsKey) as? [String: String] ?? [:]
+            if let uuid = newValue {
+                dict[id.uuidString] = uuid.uuidString
+            } else {
+                dict.removeValue(forKey: id.uuidString)
+            }
+            UserDefaults.standard.set(dict, forKey: Self.parentIDsKey)
+        }
+    }
 }
 
 extension PromptEntity {

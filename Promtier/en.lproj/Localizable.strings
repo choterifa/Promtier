@@ -395,3 +395,7 @@
 "tooltip_images" = "Images";
 "tooltip_use_count" = "Times used";
 "tooltip_versions" = "Version History";
+"tooltip_branch" = "Derived from another prompt";
+"branch_label" = "Branch";
+"create_branch" = "Create Branch";
+"branch_created_success" = "Branch created successfully!";

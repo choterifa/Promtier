@@ -418,3 +418,7 @@
 "tooltip_images" = "Imágenes";
 "tooltip_use_count" = "Veces usado";
 "tooltip_versions" = "Historial de versiones";
+"tooltip_branch" = "Derivado de otro prompt";
+"branch_label" = "Rama";
+"create_branch" = "Crear Rama";
+"branch_created_success" = "¡Rama creada con éxito!";

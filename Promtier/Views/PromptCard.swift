@@ -285,7 +285,22 @@ struct PromptCard: View {
                     .help("tooltip_use_count".localized(for: preferences.language))
                 }
                 
-                // 6. Indicador de Versiones (Premium)
+                // 6. Indicador de Rama (Branch) - NUEVO
+                if prompt.parentID != nil {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.branch")
+                        Text("branch_label".localized(for: preferences.language))
+                    }
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.green.opacity(0.1))
+                    .clipShape(Capsule())
+                    .help("tooltip_branch".localized(for: preferences.language))
+                }
+                
+                // 7. Indicador de Versiones (Premium) - RE-ENUMERADO
                 if !prompt.versionHistory.isEmpty {
                     HStack(spacing: 3) {
                         Image(systemName: "clock.arrow.circlepath")

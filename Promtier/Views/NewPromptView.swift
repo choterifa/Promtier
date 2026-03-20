@@ -1001,6 +1001,17 @@ struct NewPromptView: View {
             
             Spacer()
             
+            if let msg = branchMessage {
+                Text(msg)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(6)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            
             VStack(spacing: 2) {
                 Text(prompt != nil ? "edit_prompt".localized(for: preferences.language) : "new_prompt".localized(for: preferences.language))
                     .font(.system(size: 15, weight: .bold))
@@ -1011,6 +1022,19 @@ struct NewPromptView: View {
             
             Spacer()
             
+            if let existing = originalPrompt ?? prompt {
+                Button(action: { branchPrompt() }) {
+                    Image(systemName: "arrow.branch")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(currentCategoryColor)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                }
+                .buttonStyle(.plain)
+                .help("create_branch".localized(for: preferences.language))
+                .padding(.trailing, 8)
+            }
+
             Button(action: { savePrompt() }) {
                 Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .bold))
@@ -1278,6 +1302,42 @@ struct NewPromptView: View {
                 }
             } else {
                 onClose()
+            }
+        }
+    }
+    
+    
+    private func branchPrompt() {
+        // Asegurarnos de tener los datos actuales (usamos las variables de estado)
+        let branchTitle = "\("branch_label".localized(for: preferences.language)): \(title)"
+        let newContent = content
+        let currentParentID = (originalPrompt ?? prompt)?.id
+        
+        var newBranch = Prompt(
+            title: branchTitle,
+            content: newContent,
+            promptDescription: promptDescription,
+            folder: selectedFolder,
+            icon: selectedIcon,
+            showcaseImages: showcaseImages,
+            tags: tags,
+            targetAppBundleIDs: targetAppBundleIDs,
+            negativePrompt: negativePrompt,
+            alternatives: Array(alternatives.prefix(10)),
+            customShortcut: nil // Las ramas no heredan el atajo para evitar conflictos
+        )
+        
+        newBranch.parentID = currentParentID
+        newBranch.isFavorite = isFavorite
+        
+        if promptService.createPrompt(newBranch) {
+            HapticService.shared.playSuccess()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                branchMessage = "branch_created_success".localized(for: preferences.language)
+            }
+            // Limpiar mensaje tras 3 segundos
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation { branchMessage = nil }
             }
         }
     }

@@ -37,6 +37,7 @@ extension PromptEntity {
         prompt.alternativePrompt = alternativePrompt
         prompt.customShortcut = customShortcut
         prompt.targetAppBundleIDs = targetAppBundleIDs
+        prompt.parentID = parentID
         
         if let altData = alternativesData,
            let alts = try? JSONDecoder().decode([String].self, from: altData) {
@@ -83,6 +84,7 @@ extension PromptEntity {
         alternativePrompt = prompt.alternativePrompt
         customShortcut = prompt.customShortcut
         targetAppBundleIDs = prompt.targetAppBundleIDs
+        parentID = prompt.parentID
         
         if let altData = try? JSONEncoder().encode(prompt.alternatives) {
             alternativesData = altData

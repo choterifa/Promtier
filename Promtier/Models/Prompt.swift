@@ -37,6 +37,7 @@ struct Prompt: Identifiable, Codable {
     var alternativePrompt: String?  // Un prompt similar o variante (Legacy/Single)
     var alternatives: [String] = [] // Lista de prompts alternativos (Hasta 10)
     var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
+    var parentID: UUID?             // ID del prompt original si es una rama
     
     // Inicializador con valores por defecto
     init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], targetAppBundleIDs: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], customShortcut: String? = nil) {
@@ -56,6 +57,7 @@ struct Prompt: Identifiable, Codable {
         self.alternativePrompt = alternativePrompt
         self.alternatives = Array(alternatives.prefix(10))
         self.customShortcut = customShortcut
+        self.parentID = nil
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()
