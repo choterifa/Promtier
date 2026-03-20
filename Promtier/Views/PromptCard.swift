@@ -189,16 +189,25 @@ struct PromptCard: View {
                 }
                 
                 if let desc = prompt.promptDescription, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.65))
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(desc)
+                            .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.65))
+                            .lineLimit(desc.count < 55 ? 1 : 2)
+                        
+                        if desc.count < 55 {
+                            Text(highlightedContent)
+                                .font(.system(size: 13 * preferences.fontSize.scale))
+                                .foregroundColor(.secondary.opacity(0.8))
+                                .lineLimit(1)
+                        }
+                    }
+                } else {
+                    Text(highlightedContent)
+                        .font(.system(size: 13 * preferences.fontSize.scale))
+                        .foregroundColor(.secondary.opacity(0.8))
+                        .lineLimit(3)
                 }
-                
-                Text(highlightedContent)
-                    .font(.system(size: 13 * preferences.fontSize.scale))
-                    .foregroundColor(.secondary.opacity(0.8))
-                    .lineLimit(prompt.promptDescription != nil ? 2 : 3)
             }
             
             Spacer()
