@@ -309,7 +309,7 @@
 "gt_zen_shortcut" = "Cmd + ⇧ + Z";
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Alt + V";
-"gt_snippets_shortcut" = "Escribe / para insertar";
+"gt_snippets_shortcut" = "Toca / para insertar snippet";
 "gt_auto_paste_tip" = "Pegado Instantáneo";
 "gt_auto_paste_shortcut" = "Activa en Ajustes";
 "gt_save_prompt" = "Guardar Prompt";

@@ -203,8 +203,53 @@ struct PromptCard: View {
             Spacer()
             
             // Indicadores de estado
-            HStack(spacing: 12) {
-                // Indicador de Imagen (lazy-load friendly) - Prioridad alta como solicitó el usuario
+            HStack(spacing: 8) {
+                // 1. Indicador de Prompt Negativo / Alternativo (PUNTOS)
+                let hasNegative = (prompt.negativePrompt?.isEmpty == false)
+                let hasAlternativeField = (prompt.alternativePrompt?.isEmpty == false)
+                if hasNegative || hasAlternativeField {
+                    HStack(spacing: 4) {
+                        if hasNegative {
+                            Circle().fill(Color.red.opacity(0.8)).frame(width: 6, height: 6)
+                        }
+                        if hasAlternativeField {
+                            Circle().fill(Color.green.opacity(0.8)).frame(width: 6, height: 6)
+                        }
+                    }
+                    .padding(.trailing, 4)
+                }
+
+                // 2. Indicador de Alternativas (ARRAY) - Nuevo
+                if !prompt.alternatives.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "square.3.layers.3d.down.right")
+                            .font(.system(size: 8))
+                        Text("\(prompt.alternatives.count)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.teal.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.teal.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                
+                // 3. Indicador de Variables (Cubo)
+                if variableCount > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "cube.transparent.fill")
+                            .font(.system(size: 8))
+                        Text("\(variableCount)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.blue.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+
+                // 4. Indicador de Imagen
                 if prompt.showcaseImageCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "photo.fill")
@@ -219,6 +264,7 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
 
+                // 5. Veces copiado (A LA DERECHA DE LOS ANTERIORES)
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
@@ -233,21 +279,7 @@ struct PromptCard: View {
                     .clipShape(Capsule())
                 }
                 
-                if variableCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "cube.transparent.fill")
-                            .font(.system(size: 8))
-                        Text("\(variableCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.blue.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                
-                // Indicador de Versiones (Premium)
+                // 6. Indicador de Versiones (Premium)
                 if !prompt.versionHistory.isEmpty {
                     HStack(spacing: 3) {
                         Image(systemName: "clock.arrow.circlepath")
@@ -260,21 +292,6 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.purple.opacity(0.1))
                     .clipShape(Capsule())
-                }
-                
-                // Indicador de Prompt Negativo / Alternativo
-                let hasNegative = (prompt.negativePrompt?.isEmpty == false)
-                let hasAlternative = (prompt.alternativePrompt?.isEmpty == false)
-                if hasNegative || hasAlternative {
-                    HStack(spacing: 4) {
-                        if hasNegative {
-                            Circle().fill(Color.red.opacity(0.6)).frame(width: 5, height: 5)
-                        }
-                        if hasAlternative {
-                            Circle().fill(Color.green.opacity(0.6)).frame(width: 5, height: 5)
-                        }
-                    }
-                    .padding(.horizontal, 4)
                 }
 
                 if prompt.isFavorite {

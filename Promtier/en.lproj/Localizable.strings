@@ -286,7 +286,7 @@
 "gt_zen_shortcut" = "Cmd + ⇧ + Z";
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Opt + V";
-"gt_snippets_shortcut" = "Type / to insert";
+"gt_snippets_shortcut" = "Tap / to insert snippet";
 "gt_auto_paste_tip" = "Instant Paste";
 "gt_auto_paste_shortcut" = "Enable in Settings";
 "gt_save_prompt" = "Save Prompt";
@@ -388,3 +388,10 @@
 "recommended" = "Recommended";
 "select_app_title" = "Select an Application";
 "context_awareness" = "Contextual Awareness";
+"tooltip_negative_prompt" = "Negative Prompt";
+"tooltip_alternative_prompt" = "Alternative Prompt";
+"tooltip_alternatives" = "Alternatives";
+"tooltip_variables" = "Variables";
+"tooltip_images" = "Images";
+"tooltip_use_count" = "Times used";
+"tooltip_versions" = "Version History";
