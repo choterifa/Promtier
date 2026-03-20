@@ -446,11 +446,17 @@ struct SearchViewSimple: View {
                             
                             // Botón de Ordenamiento de Prompts
                             Menu {
-                                Picker("sort_by".localized(for: preferences.language), selection: $promptService.promptSortMode) {
-                                    Label("sort_manual".localized(for: preferences.language), systemImage: "clock").tag(PromptService.PromptSortMode.manual)
-                                    Label("sort_name".localized(for: preferences.language), systemImage: "textformat.abc").tag(PromptService.PromptSortMode.name)
-                                    Label("sort_newest".localized(for: preferences.language), systemImage: "calendar").tag(PromptService.PromptSortMode.newest)
-                                    Label("sort_most_used".localized(for: preferences.language), systemImage: "flame.fill").tag(PromptService.PromptSortMode.mostUsed)
+                                Button { promptService.promptSortMode = .manual } label: {
+                                    Label("sort_manual".localized(for: preferences.language), systemImage: promptService.promptSortMode == .manual ? "checkmark" : "clock")
+                                }
+                                Button { promptService.promptSortMode = .name } label: {
+                                    Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
+                                }
+                                Button { promptService.promptSortMode = .newest } label: {
+                                    Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
+                                }
+                                Button { promptService.promptSortMode = .mostUsed } label: {
+                                    Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
                                 }
                             } label: {
                                 Image(systemName: "arrow.up.arrow.down.circle")

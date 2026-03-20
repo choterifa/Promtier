@@ -53,22 +53,6 @@ struct CategorySidebar: View {
                 
                 Spacer()
                 
-                Menu {
-                    Picker("sort_by".localized(for: preferences.language), selection: $promptService.folderSortMode) {
-                        Label("sort_manual".localized(for: preferences.language), systemImage: "hand.tap").tag(PromptService.FolderSortMode.manual)
-                        Label("sort_name".localized(for: preferences.language), systemImage: "textformat.abc").tag(PromptService.FolderSortMode.name)
-                        Label("sort_newest".localized(for: preferences.language), systemImage: "calendar").tag(PromptService.FolderSortMode.newest)
-                    }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help("sort_by".localized(for: preferences.language))
-                .padding(.trailing, 4)
-                
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         menuBarManager.activeViewState = .folderManager
