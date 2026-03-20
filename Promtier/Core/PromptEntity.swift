@@ -28,6 +28,25 @@ public class PromptEntity: NSManagedObject {
             UserDefaults.standard.set(dict, forKey: Self.trashKey)
         }
     }
+    
+    // MARK: - App Associations
+    static let appAssociationsKey = "promptAppAssociations"
+    
+    var targetAppBundleIDs: [String] {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: Self.appAssociationsKey) as? [String: [String]] ?? [:]
+            return dict[id.uuidString] ?? []
+        }
+        set {
+            var dict = UserDefaults.standard.dictionary(forKey: Self.appAssociationsKey) as? [String: [String]] ?? [:]
+            if newValue.isEmpty {
+                dict.removeValue(forKey: id.uuidString)
+            } else {
+                dict[id.uuidString] = newValue
+            }
+            UserDefaults.standard.set(dict, forKey: Self.appAssociationsKey)
+        }
+    }
 }
 
 extension PromptEntity {

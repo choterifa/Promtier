@@ -378,3 +378,11 @@
 "ai_fix" = "Fix";
 "ai_tip_applied" = "Suggestions added!";
 "ai_tip_writing_tools" = "Opening Writing Tools for %@!";
+
+/* Contextual Awareness */
+"smart_recommendation" = "Smart Recommendation";
+"no_apps_assigned" = "No applications assigned to this prompt yet.";
+"assign_app" = "Assign to Application...";
+"recommended" = "Recommended";
+"select_app_title" = "Select an Application";
+"context_awareness" = "Contextual Awareness";

@@ -130,6 +130,11 @@ class MenuBarManager: NSObject, ObservableObject {
             
             // Sugerir desde el portapapeles si está habilitado y estamos en la vista principal
             if activeViewState == .main {
+                // CAPTURAR APP ACTIVA PARA CONTEXTO
+                if let frontApp = NSWorkspace.shared.frontmostApplication,
+                   frontApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+                    promptService.activeAppBundleID = frontApp.bundleIdentifier
+                }
                 checkClipboardForPromptSuggestion()
             }
             

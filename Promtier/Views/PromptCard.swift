@@ -171,6 +171,20 @@ struct PromptCard: View {
                             .background(color.opacity(0.15))
                             .clipShape(Capsule())
                     }
+                    
+                    if let activeApp = promptService.activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 8, weight: .bold))
+                            Text("recommended".localized(for: preferences.language))
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.purple.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
                 }
                 
                 if let desc = prompt.promptDescription, !desc.isEmpty {

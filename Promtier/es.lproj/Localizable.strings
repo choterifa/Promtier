@@ -401,3 +401,11 @@
 "ai_fix" = "Corregir";
 "ai_tip_applied" = "¡Sugerencias añadidas!";
 "ai_tip_writing_tools" = "¡Abriendo Writing Tools para %@!";
+
+/* Contextual Awareness */
+"smart_recommendation" = "Recomendación Inteligente";
+"no_apps_assigned" = "Aún no hay aplicaciones asignadas a este prompt.";
+"assign_app" = "Asignar a Aplicación...";
+"recommended" = "Recomendado";
+"select_app_title" = "Selecciona una Aplicación";
+"context_awareness" = "Conciencia Contextual";

@@ -30,6 +30,7 @@ struct Prompt: Identifiable, Codable {
     var showcaseThumbnails: [Data] = []
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
     var tags: [String] = []         // Etiquetas (Premium)
+    var targetAppBundleIDs: [String] = [] // Apps asociadas (Context-Aware)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
     
     var negativePrompt: String?     // Lo que la IA NO debe hacer
@@ -38,7 +39,7 @@ struct Prompt: Identifiable, Codable {
     var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], customShortcut: String? = nil) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], targetAppBundleIDs: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], customShortcut: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
@@ -50,6 +51,7 @@ struct Prompt: Identifiable, Codable {
         self.showcaseImagePaths = []
         self.showcaseThumbnails = []
         self.tags = tags
+        self.targetAppBundleIDs = targetAppBundleIDs
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
         self.alternatives = Array(alternatives.prefix(10))
@@ -85,6 +87,7 @@ struct Prompt: Identifiable, Codable {
         case alternativePrompt
         case alternatives
         case customShortcut
+        case targetAppBundleIDs
     }
 
     init(from decoder: any Decoder) throws {
@@ -114,6 +117,7 @@ struct Prompt: Identifiable, Codable {
 
         versionHistory = try container.decodeIfPresent([PromptSnapshot].self, forKey: .versionHistory) ?? []
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        targetAppBundleIDs = try container.decodeIfPresent([String].self, forKey: .targetAppBundleIDs) ?? []
         deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
 
         negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
@@ -146,6 +150,7 @@ struct Prompt: Identifiable, Codable {
         try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
         try container.encode(alternatives, forKey: .alternatives)
         try container.encodeIfPresent(customShortcut, forKey: .customShortcut)
+        try container.encode(targetAppBundleIDs, forKey: .targetAppBundleIDs)
     }
     
     // MARK: - Métodos de ayuda

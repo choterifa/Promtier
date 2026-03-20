@@ -23,6 +23,7 @@ class PromptService: ObservableObject {
     @Published var searchQuery: String = ""
     @Published var selectedCategory: String? = nil
     @Published var isLoading: Bool = false
+    @Published var activeAppBundleID: String? = nil
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -820,19 +821,16 @@ class PromptService: ObservableObject {
         if let category = category {
             switch category {
             case "recent":
-                // 1. Obtener prompts usados en las últimas 48 horas
                 let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
                 let recentlyUsed = prompts.filter { 
                     if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
                     return false 
                 }
                 
-                // 2. Obtener los más usados históricamente (que tengan al menos 1 uso)
                 let mostUsed = prompts.filter { $0.useCount > 0 }
                     .sorted { $0.useCount > $1.useCount }
                     .prefix(10)
                 
-                // 3. Combinar y eliminar duplicados
                 var combined = recentlyUsed
                 for p in mostUsed {
                     if !combined.contains(where: { $0.id == p.id }) {
@@ -840,7 +838,6 @@ class PromptService: ObservableObject {
                     }
                 }
                 
-                // 4. Ordenar por fecha de último uso y limitar a estrictamente 7
                 combined.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
                 filtered = Array(combined.prefix(7))
                 
@@ -852,6 +849,15 @@ class PromptService: ObservableObject {
                 filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
             default:
                 filtered = filtered.filter { $0.folder == category }
+            }
+        }
+        
+        // --- Smart Boost based on Active Application ---
+        if let activeApp = activeAppBundleID, !activeApp.isEmpty {
+            if query.isEmpty {
+                let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+                filtered = matched + others
             }
         }
         
@@ -940,6 +946,11 @@ class PromptService: ObservableObject {
                 if score > 0 {
                     score += Int(prompt.useCount) / 2
                     if prompt.isFavorite { score += 40 }
+                    
+                    // BONUS POR APP ACTIVA
+                    if let activeApp = activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
+                        score += 500 // Impulso masivo para matches de app
+                    }
                 }
                 
                 return (prompt, score)

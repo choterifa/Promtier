@@ -80,6 +80,7 @@ struct NewPromptView: View {
     
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
+    @State private var targetAppBundleIDs: [String] = []
     @State private var localMonitor: Any? = nil
     @State private var showingDiff: Bool = false
     @State private var branchMessage: String? = nil
@@ -295,6 +296,85 @@ struct NewPromptView: View {
                     }
                 }
                 
+                // Contextual Awareness (App Association)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.purple)
+                        Text("smart_recommendation".localized(for: preferences.language).uppercased())
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .tracking(1)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        if targetAppBundleIDs.isEmpty {
+                            Text("no_apps_assigned".localized(for: preferences.language))
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 4)
+                        } else {
+                            FlowLayout(spacing: 8) {
+                                ForEach(targetAppBundleIDs, id: \.self) { bundleID in
+                                    HStack(spacing: 6) {
+                                        if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path {
+                                            let icon = NSWorkspace.shared.icon(forFile: path)
+                                            Image(nsImage: icon)
+                                                .resizable()
+                                                .frame(width: 16, height: 16)
+                                        }
+                                        
+                                        Text(getAppName(bundleID))
+                                            .font(.system(size: 12, weight: .medium))
+                                        
+                                        Button(action: {
+                                            withAnimation {
+                                                targetAppBundleIDs.removeAll { $0 == bundleID }
+                                            }
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary.opacity(0.5))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.primary.opacity(0.05))
+                                    .cornerRadius(8)
+                                }
+                            }
+                        }
+                        
+                        Button(action: selectApplication) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("assign_app".localized(for: preferences.language))
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.purple)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.purple.opacity(0.08))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.primary.opacity(0.03))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                            )
+                    )
+                }
+                
                 imageGallery
             }
             .padding(.bottom, 40)
@@ -458,6 +538,7 @@ struct NewPromptView: View {
         let showcaseImages: [Data]
         let tags: [String]
         let customShortcut: String?
+        let targetAppBundleIDs: [String]
         let isContentEmpty: Bool
     }
 
@@ -474,6 +555,7 @@ struct NewPromptView: View {
             showcaseImages: showcaseImages,
             tags: tags,
             customShortcut: customShortcut,
+            targetAppBundleIDs: targetAppBundleIDs,
             isContentEmpty: isContentEmpty
         )
     }
@@ -751,6 +833,7 @@ struct NewPromptView: View {
             selectedIcon = prompt.icon
             showcaseImages = prompt.showcaseImages
             tags = prompt.tags
+            targetAppBundleIDs = prompt.targetAppBundleIDs
             customShortcut = prompt.customShortcut
             
             if !negativePrompt.isEmpty { showNegativeField = true }
@@ -794,6 +877,7 @@ struct NewPromptView: View {
             selectedIcon = draftPrompt.icon
             showcaseImages = draftPrompt.showcaseImages
             tags = draftPrompt.tags
+            targetAppBundleIDs = draftPrompt.targetAppBundleIDs
             customShortcut = draftPrompt.customShortcut
             isDraftRestored = true
             
@@ -817,6 +901,7 @@ struct NewPromptView: View {
                              showcaseImages != original.showcaseImages ||
                              negativePrompt != (original.negativePrompt ?? "") ||
                              alternatives != original.alternatives ||
+                             targetAppBundleIDs != original.targetAppBundleIDs ||
                              customShortcut != original.customShortcut
             if !hasChanges { return }
         }
@@ -830,6 +915,7 @@ struct NewPromptView: View {
             icon: selectedIcon,
             showcaseImages: showcaseImages,
             tags: tags,
+            targetAppBundleIDs: targetAppBundleIDs,
             negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
             alternatives: alternatives,
             customShortcut: customShortcut
@@ -1065,6 +1151,7 @@ struct NewPromptView: View {
                              existingPrompt.showcaseImages != showcaseImages ||
                              existingPrompt.negativePrompt != newNegativePrompt ||
                              existingPrompt.alternatives != alternatives ||
+                             existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
                              existingPrompt.customShortcut != customShortcut
             
             if !basicChanges {
@@ -1104,6 +1191,7 @@ struct NewPromptView: View {
             updated.tags = tags
             updated.negativePrompt = newNegativePrompt
             updated.alternatives = alternatives
+            updated.targetAppBundleIDs = targetAppBundleIDs
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
@@ -1120,6 +1208,7 @@ struct NewPromptView: View {
                 icon: selectedIcon,
                 showcaseImages: showcaseImages,
                 tags: tags,
+                targetAppBundleIDs: targetAppBundleIDs,
                 negativePrompt: newNegativePrompt,
                 alternatives: alternatives,
                 customShortcut: customShortcut
@@ -1157,6 +1246,46 @@ struct NewPromptView: View {
                     if let data = try? Data(contentsOf: url),
                        let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
                         showcaseImages.append(optimizedData)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - App Association Helpers
+    
+    private func getAppName(_ bundleID: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return url.deletingPathExtension().lastPathComponent
+        }
+        return bundleID
+    }
+    
+    private func selectApplication() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application, .bundle]
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.title = "select_app_title".localized(for: preferences.language)
+        
+        if panel.runModal() == .OK {
+            for url in panel.urls {
+                if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
+                    if !targetAppBundleIDs.contains(bundleID) {
+                        withAnimation {
+                            targetAppBundleIDs.append(bundleID)
+                        }
+                    }
+                } else {
+                    let infoPath = url.appendingPathComponent("Contents/Info.plist")
+                    if let infoDict = NSDictionary(contentsOf: infoPath),
+                       let bundleID = infoDict["CFBundleIdentifier"] as? String {
+                        if !targetAppBundleIDs.contains(bundleID) {
+                            withAnimation {
+                                targetAppBundleIDs.append(bundleID)
+                            }
+                        }
                     }
                 }
             }
