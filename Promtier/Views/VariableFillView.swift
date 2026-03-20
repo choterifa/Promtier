@@ -37,26 +37,46 @@ struct VariableFillView: View {
     
     private var variables: [TemplateVariable] {
         let rawVars = prompt.extractTemplateVariables()
-        return rawVars.map { raw in
+        var vars: [TemplateVariable] = []
+        
+        for raw in rawVars {
             if !preferences.isPremiumActive {
-                return TemplateVariable(id: raw, name: raw, type: .text)
+                vars.append(TemplateVariable(id: raw, name: raw, type: .text))
+                continue
             }
             
             let lower = raw.lowercased()
             if lower == "date" || lower == "fecha" {
-                return TemplateVariable(id: raw, name: raw, type: .date)
+                vars.append(TemplateVariable(id: raw, name: raw, type: .date))
+                continue
             }
             if lower == "time" || lower == "hora" {
-                return TemplateVariable(id: raw, name: raw, type: .time)
+                vars.append(TemplateVariable(id: raw, name: raw, type: .time))
+                continue
             }
             
-            // 1. Multiline/Area (e.g., {{area:Name}} or {{multiline:Name}})
+            // 1. Caso area/multi/multiline (Solo si tiene comas para ser lista)
             if raw.hasPrefix("area:") || raw.hasPrefix("multiline:") || raw.hasPrefix("multi:") {
-                let name = raw.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? raw
-                return TemplateVariable(id: raw, name: name, type: .multiline)
+                let parts = raw.components(separatedBy: ":")
+                if parts.count == 2 {
+                    let optionsStr = parts[1]
+                    if optionsStr.contains(",") {
+                        let options = optionsStr.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                        let label = parts[0].replacingOccurrences(of: "area:", with: "")
+                                           .replacingOccurrences(of: "multiline:", with: "")
+                                           .replacingOccurrences(of: "multi:", with: "")
+                                           .trimmingCharacters(in: .whitespaces).uppercased()
+                        let finalName = label.isEmpty ? "SELECT" : label
+                        vars.append(TemplateVariable(id: raw, name: finalName, type: .selection(options: options)))
+                    } else {
+                        // "Impidelo": No lo agregamos como variable si no tiene comas
+                        continue
+                    }
+                }
+                continue
             }
             
-            // 2. Selection with Label (e.g., {{Label:Op1,Op2}})
+            // 2. Selección con Label estándar (e.g., {{Label:Op1,Op2}})
             if raw.contains(":") {
                 let parts = raw.components(separatedBy: ":")
                 if parts.count == 2 {
@@ -65,25 +85,29 @@ struct VariableFillView: View {
                     
                     if optionsStr.contains(",") {
                         let options = optionsStr.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-                        return TemplateVariable(id: raw, name: label, type: .selection(options: options))
+                        vars.append(TemplateVariable(id: raw, name: label, type: .selection(options: options)))
                     } else {
-                        // Single value after colon: {{Label:Default}}
-                        // We use the label as name, and during init we'll set the default value
-                        return TemplateVariable(id: raw, name: label, type: .text)
+                        // Valor único con label: {{Label:Default}}
+                        vars.append(TemplateVariable(id: raw, name: label, type: .text))
                     }
                 }
+                continue
             }
             
-            // 3. Selection without Label (e.g., {{Op1,Op2}})
+            // 3. Selección sin Label: {{Op1,Op2}}
             if raw.contains(",") {
                 let options = raw.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                 if options.count > 1 {
-                    return TemplateVariable(id: raw, name: "SELECT_OPTION".localized(for: preferences.language), type: .selection(options: options))
+                    vars.append(TemplateVariable(id: raw, name: "SELECT_OPTION".localized(for: preferences.language), type: .selection(options: options)))
                 }
+                continue
             }
             
-            return TemplateVariable(id: raw, name: raw, type: .text)
+            // 4. Texto normal: {{Variable}}
+            vars.append(TemplateVariable(id: raw, name: raw, type: .text))
         }
+        
+        return vars
     }
     
     private var hasPremiumVariables: Bool {
