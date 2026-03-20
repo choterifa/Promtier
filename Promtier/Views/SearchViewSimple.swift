@@ -63,39 +63,9 @@ struct SearchViewSimple: View {
             case .main:
                 VStack(spacing: 0) {
                     if let suggestedContent = menuBarManager.suggestedClipboardContent {
-                        HStack {
-                            Text("Do you want to create a prompt from clipboard?")
-                                .font(.system(size: 12))
-                            Spacer()
-                            Button("Yes") {
-                                // Create new prompt with clipboard content
-                                let newPrompt = Prompt(title: "", content: suggestedContent, folder: nil, tags: [])
-                                // We don't save immediately, we just open the editor with it
-                                // For now just use DraftService
-                                DraftService.shared.saveDraft(prompt: newPrompt, isEditing: false)
-                                menuBarManager.activeViewState = .newPrompt
-                                menuBarManager.isModalActive = true
-                                menuBarManager.suggestedClipboardContent = nil
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.small)
-                            
-                            Button(action: {
-                                menuBarManager.suggestedClipboardContent = nil
-                            }) {
-                                Image(systemName: "xmark")
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.leading, 8)
-                        }
-                        .padding(12)
-                        .background(Color.blue.opacity(0.1))
-                        .background(
-                            VStack {
-                                Spacer()
-                                Rectangle().fill(Color.primary.opacity(0.1)).frame(height: 1)
-                            }
-                        )
+                        ClipboardSuggestionBanner(content: suggestedContent)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .zIndex(60)
                     }
                     mainView
                 }
@@ -1178,5 +1148,95 @@ struct AccessibilityBanner: View {
                 .foregroundColor(.orange.opacity(0.15)),
             alignment: .bottom
         )
+    }
+}
+
+// MARK: - Banner de Sugerencia de Portapapeles (Premium)
+struct ClipboardSuggestionBanner: View {
+    let content: String
+    @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var menuBarManager: MenuBarManager
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icono Accent con resplandor
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.blue.opacity(0.12))
+                    .frame(width: 42, height: 42)
+                
+                Image(systemName: "doc.on.clipboard.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.blue)
+                    .shadow(color: .blue.opacity(0.4), radius: 6)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("clipboard_banner_title".localized(for: preferences.language))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.primary.opacity(0.9))
+                
+                // Truncado del contenido original
+                Text(content)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            // Acción principal
+            Button(action: {
+                let newPrompt = Prompt(title: "", content: content, folder: nil, tags: [])
+                DraftService.shared.saveDraft(prompt: newPrompt, isEditing: false)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .newPrompt
+                    menuBarManager.isModalActive = true
+                    menuBarManager.suggestedClipboardContent = nil
+                }
+                HapticService.shared.playLight()
+            }) {
+                Text("clipboard_banner_action".localized(for: preferences.language))
+                    .font(.system(size: 10, weight: .black))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(LinearGradient(colors: [.blue, .blue.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .shadow(color: .blue.opacity(0.4), radius: 8, y: 4)
+                    )
+            }
+            .buttonStyle(.plain)
+            
+            // Botón cerrar
+            Button(action: {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    menuBarManager.suggestedClipboardContent = nil
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .frame(width: 26, height: 26)
+                    .background(Circle().fill(Color.primary.opacity(0.04)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.12), radius: 15, y: 8)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 4)
     }
 }

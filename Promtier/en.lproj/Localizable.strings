@@ -76,6 +76,8 @@
 "clipboard_suggestions_subtitle" = "Show a creation banner if there's text on the clipboard";
 "clipboard_only_browsers" = "Suggest Only from Browsers";
 "clipboard_only_browsers_subtitle" = "Only show suggestions for content copied from Safari, Chrome, Firefox, etc.";
+"clipboard_banner_title" = "New content found on clipboard";
+"clipboard_banner_action" = "Create Prompt";
 "accessibility" = "Accessibility";
 "accessibility_granted" = "Permissions granted ✅";
 "accessibility_required" = "Permissions required ⚠️";
