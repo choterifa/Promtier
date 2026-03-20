@@ -270,39 +270,40 @@ struct NewPromptView: View {
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
 
-                    if preferences.isPremiumActive {
-                        HStack {
-                            Text("global_shortcut_copy".localized(for: preferences.language))
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.primary.opacity(0.8))
-                            Spacer()
-                            ReusableShortcutRecorderView(title: "", shortcutString: $customShortcut)
-                        }
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.primary.opacity(0.03))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                )
-                        )
-                    } else {
-                        // Mostrar locked state para transparencia
-                        HStack {
-                            Label("global_shortcut_copy".localized(for: preferences.language), systemImage: "lock.fill")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("unlock".localized(for: preferences.language)) {
-                                showingPremiumFor = "global_shortcut_copy".localized(for: preferences.language)
+                    VStack(alignment: .leading, spacing: 12) {
+                        if preferences.isPremiumActive {
+                            HStack {
+                                Text("global_shortcut_copy".localized(for: preferences.language))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.primary.opacity(0.8))
+                                Spacer()
+                                ReusableShortcutRecorderView(title: "", shortcutString: $customShortcut)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                        } else {
+                            // Mostrar locked state para transparencia
+                            HStack {
+                                Label("global_shortcut_copy".localized(for: preferences.language), systemImage: "lock.fill")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Button("unlock".localized(for: preferences.language)) {
+                                    showingPremiumFor = "global_shortcut_copy".localized(for: preferences.language)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
                         }
-                        .padding(16)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.03)))
                     }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.primary.opacity(0.03))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                            )
+                    )
                 }
                 
                 // Contextual Awareness (App Association)
@@ -1105,9 +1106,6 @@ struct NewPromptView: View {
                 .padding(.vertical, 12)
                 .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
                 .contentShape(Rectangle())
-                .onTapGesture {
-                    selectImages()
-                }
             }
             .onPasteCommand(of: [.image]) { providers in
                 handleGalleryDrop(providers: providers)
@@ -1897,30 +1895,27 @@ struct PlaceholderSlotView: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        Button(action: onSelect) {
-            VStack(spacing: 8) {
-                Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
-                    .font(.system(size: 24))
-                    .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
-                
-                Text("add_prompt_results".localized(for: preferences.language))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
-            }
-            .frame(width: 180, height: 120)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: isTargeted ? [] : [4]))
-                            .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.2))
-                    )
-            )
-            .scaleEffect(isTargeted ? 1.05 : 1.0)
-            .animation(.spring(response: 0.3), value: isTargeted)
+        VStack(spacing: 8) {
+            Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
+                .font(.system(size: 24))
+                .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
+            
+            Text("add_prompt_results".localized(for: preferences.language))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
         }
-        .buttonStyle(.plain)
+        .frame(width: 180, height: 120)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: isTargeted ? [] : [4]))
+                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.2))
+                )
+        )
+        .scaleEffect(isTargeted ? 1.05 : 1.0)
+        .animation(.spring(response: 0.3), value: isTargeted)
         .onDrop(of: [.image, .fileURL, .url], isTargeted: $isTargeted) { providers in
             onDrop(providers)
             return true
