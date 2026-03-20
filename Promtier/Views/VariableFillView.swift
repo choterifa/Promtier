@@ -66,7 +66,7 @@ struct VariableFillView: View {
                                            .replacingOccurrences(of: "multiline:", with: "")
                                            .replacingOccurrences(of: "multi:", with: "")
                                            .trimmingCharacters(in: .whitespaces).uppercased()
-                        let finalName = label.isEmpty ? "SELECT" : label
+                        let finalName = label.isEmpty ? "SELECT OPTION".localized(for: preferences.language) : label
                         vars.append(TemplateVariable(id: raw, name: finalName, type: .selection(options: options)))
                     } else {
                         // "Impidelo": No lo agregamos como variable si no tiene comas
@@ -98,7 +98,7 @@ struct VariableFillView: View {
             if raw.contains(",") {
                 let options = raw.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                 if options.count > 1 {
-                    vars.append(TemplateVariable(id: raw, name: "SELECT_OPTION".localized(for: preferences.language), type: .selection(options: options)))
+                    vars.append(TemplateVariable(id: raw, name: "SELECT OPTION".localized(for: preferences.language), type: .selection(options: options)))
                 }
                 continue
             }
