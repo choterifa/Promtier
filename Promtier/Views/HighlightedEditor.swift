@@ -121,15 +121,47 @@ struct HighlightedEditor: NSViewRepresentable {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
             
-            // PREVENCIÓN DE ANIDAMIENTO: Si ya estamos seleccionando "variable" dentro de {{}}, no insertar otra
-            if toInsert == "{{variable}}" && selectedRange.length > 0 {
-                let currentText = nsString.substring(with: selectedRange)
-                if currentText == "variable" || currentText == "{{variable}}" {
-                    // Ya está seleccionado, simplemente ignorar la nueva petición para evitar {{ {{variable}} }}
-                    DispatchQueue.main.async {
-                        self.insertionRequest = nil
+            // PREVENCIÓN DE ANIDAMIENTO ROBUSTA: Si ya estamos dentro de un bloque {{...}}
+            if toInsert.hasPrefix("{{") {
+                let text = textView.string as NSString
+                let sel = textView.selectedRange()
+                let lineRange = text.lineRange(for: sel)
+                let line = text.substring(with: lineRange) as NSString
+                let relLoc = sel.location - lineRange.location
+                
+                // 1. Buscar hacia atrás el {{ en la misma línea
+                var foundStart = false
+                if relLoc >= 2 {
+                    for i in (0...(relLoc - 2)).reversed() {
+                        let sub = line.substring(with: NSRange(location: i, length: 2))
+                        if sub == "{{" {
+                            foundStart = true
+                            break
+                        }
+                        if sub == "}}" { break } // Cierre previo, estamos fuera
                     }
-                    return
+                }
+                
+                if foundStart {
+                    // 2. Buscar hacia adelante el }} en la misma línea
+                    var foundEnd = false
+                    let checkEndFrom = relLoc + sel.length
+                    if checkEndFrom <= line.length - 2 {
+                        for i in checkEndFrom...(line.length - 2) {
+                            let sub = line.substring(with: NSRange(location: i, length: 2))
+                            if sub == "}}" {
+                                foundEnd = true
+                                break
+                            }
+                            if sub == "{{" { break } // Nueva apertura antes de cierre, algo raro
+                        }
+                    }
+                    
+                    if foundEnd {
+                        // YA ESTAMOS DENTRO DE UNA VARIABLE, cancelar inserción para evitar anidamiento
+                        DispatchQueue.main.async { self.insertionRequest = nil }
+                        return
+                    }
                 }
             }
             
@@ -151,9 +183,13 @@ struct HighlightedEditor: NSViewRepresentable {
             // Insertar el texto
             textView.insertText(actualInsert, replacementRange: selectedRange)
             
-            // Si insertamos una variable {{variable}}, posicionar el cursor adentro
+            // Si insertamos una variable, posicionar el cursor adentro seleccionando el nombre
             if toInsert == "{{variable}}" {
                 let newLocation = selectedRange.location + 2 + shiftFocus
+                let newRange = NSRange(location: newLocation, length: 8) // Seleccionar "variable"
+                textView.setSelectedRange(newRange)
+            } else if toInsert == "{{area:variable}}" {
+                let newLocation = selectedRange.location + 7 + shiftFocus // "{{area:" es 7
                 let newRange = NSRange(location: newLocation, length: 8) // Seleccionar "variable"
                 textView.setSelectedRange(newRange)
             }

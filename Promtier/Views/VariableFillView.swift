@@ -18,6 +18,7 @@ struct VariableFillView: View {
     
     enum VariableType: Equatable {
         case text
+        case multiline
         case selection(options: [String])
         case date
         case time
@@ -55,6 +56,11 @@ struct VariableFillView: View {
                     let options = parts[1].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                     return TemplateVariable(id: raw, name: label, type: .selection(options: options))
                 }
+            }
+            
+            if raw.hasPrefix("area:") || raw.hasPrefix("multiline:") || raw.hasPrefix("multi:") {
+                let name = raw.components(separatedBy: ":").last ?? raw
+                return TemplateVariable(id: raw, name: name, type: .multiline)
             }
             
             return TemplateVariable(id: raw, name: raw, type: .text)
@@ -296,6 +302,16 @@ struct VariableFillView: View {
                 .focused($focusedField, equals: variable.id)
                 .onSubmit { handleSubmission(for: variable.id) }
                 
+            case .multiline:
+                TextEditor(text: Binding(
+                    get: { variableValues[variable.id, default: ""] },
+                    set: { variableValues[variable.id] = $0 }
+                ))
+                .frame(minHeight: 80)
+                .font(.system(size: 13, design: .monospaced))
+                .scrollContentBackground(.hidden)
+                .focused($focusedField, equals: variable.id)
+                
             case .selection(let options):
                 Picker("", selection: Binding(
                     get: { variableValues[variable.id, default: options.first ?? ""] },
@@ -341,7 +357,7 @@ struct VariableFillView: View {
     
     private func statusText(for type: VariableType) -> String {
         switch type {
-        case .text: return "typing".localized(for: preferences.language)
+        case .text, .multiline: return "typing".localized(for: preferences.language)
         case .selection: return "selecting".localized(for: preferences.language)
         case .date, .time: return "choosing".localized(for: preferences.language)
         }

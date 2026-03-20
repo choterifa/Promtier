@@ -98,6 +98,8 @@
 "apple_intelligence" = "Apple Intelligence";
 "apple_intelligence_subtitle" = "Show AI tools (Writing Tools) in editor";
 "launch_at_login" = "Launch at Login";
+"variable_simple" = "Variable";
+"variable_multiline" = "Multivariable";
 "launch_at_login_subtitle" = "Open Promtier when you log in";
 "updates" = "Updates";
 "updates_subtitle" = "Check for new versions of Promtier";

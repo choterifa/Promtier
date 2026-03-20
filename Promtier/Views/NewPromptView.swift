@@ -1444,13 +1444,23 @@ struct EditorCard: View {
                             Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         }
 
-                        Button(action: { 
-                            if preferences.isPremiumActive {
-                                insertionRequest = "{{variable}}"
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                        Menu {
+                            Button("variable_simple".localized(for: preferences.language)) {
+                                if preferences.isPremiumActive {
+                                    insertionRequest = "{{variable}}"
+                                } else {
+                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                                }
                             }
-                        }) {
+                            
+                            Button("variable_multiline".localized(for: preferences.language)) {
+                                if preferences.isPremiumActive {
+                                    insertionRequest = "{{area:variable}}"
+                                } else {
+                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                                }
+                            }
+                        } label: {
                             Image(systemName: "curlybraces")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(currentCategoryColor)
@@ -1633,13 +1643,23 @@ struct SecondaryEditorCard<Actions: View>: View {
                             Divider().frame(height: 14).background(color.opacity(0.2))
                         }
 
-                        Button(action: { 
-                            if preferences.isPremiumActive {
-                                insertionRequest = "{{variable}}"
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                        Menu {
+                            Button("variable_simple".localized(for: preferences.language)) {
+                                if preferences.isPremiumActive {
+                                    insertionRequest = "{{variable}}"
+                                } else {
+                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                                }
                             }
-                        }) {
+                            
+                            Button("variable_multiline".localized(for: preferences.language)) {
+                                if preferences.isPremiumActive {
+                                    insertionRequest = "{{area:variable}}"
+                                } else {
+                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                                }
+                            }
+                        } label: {
                             Image(systemName: "curlybraces")
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(color)
