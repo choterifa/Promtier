@@ -176,7 +176,7 @@ struct SearchViewSimple: View {
                 .zIndex(400)
             
             // Overlay de Ghost Tips
-            if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main {
+            if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main && menuBarManager.suggestedClipboardContent == nil {
                 VStack {
                     Spacer()
                     GhostTipView(tip: tip) {
@@ -1205,7 +1205,7 @@ struct ClipboardSuggestionBanner: View {
                     .textCase(.uppercase)
                     .tracking(0.5)
                     .foregroundColor(.white)
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, 10) // Shorten from 14
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
@@ -1230,6 +1230,7 @@ struct ClipboardSuggestionBanner: View {
             .buttonStyle(.plain)
         }
         .padding(12)
+        .frame(maxWidth: 420) // Centered and limited width
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)
@@ -1239,7 +1240,6 @@ struct ClipboardSuggestionBanner: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)
         )
-        .padding(.horizontal, 32)
         .padding(.bottom, 8)
     }
 }
