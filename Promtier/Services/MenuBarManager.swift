@@ -20,6 +20,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var ghostWindow: NSPanel?
+    private var eventMonitor: Any?
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main {
@@ -170,6 +171,7 @@ class MenuBarManager: NSObject, ObservableObject {
                                            accessibilityDescription: "Promtier Activo")
         
         isPopoverShown = true
+        startEventMonitoring()
     }
     
     /// Muestra el popover
@@ -191,6 +193,7 @@ class MenuBarManager: NSObject, ObservableObject {
         
         // Limpiar estado modal si existiera al cerrar
         isModalActive = false
+        stopEventMonitoring()
     }
     
     /// Repara el comportamiento transitorio del popover tras cerrar un modal o sheet
@@ -409,6 +412,26 @@ class MenuBarManager: NSObject, ObservableObject {
         // para que se cierre con ESC o clic fuera, pero mantenemos el estado
         // en activeViewState para que al reabrir regrese a la misma pantalla.
         popover.behavior = .transient
+    }
+
+    // MARK: - Event Monitoring
+
+    private func startEventMonitoring() {
+        guard eventMonitor == nil else { return }
+        
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self, let popover = self.popover, popover.isShown else { return }
+            
+            // Si el click no es en el popover, cerrarlo
+            self.closePopover()
+        }
+    }
+
+    private func stopEventMonitoring() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
     }
 }
 
