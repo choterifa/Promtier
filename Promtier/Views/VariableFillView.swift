@@ -92,6 +92,12 @@ struct VariableFillView: View {
         }
         return result
     }
+    private var currentCategoryColor: Color {
+        if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+            return category.color
+        }
+        return .blue
+    }
     
     private var canCopy: Bool {
         let allIds = variables.map { $0.id }
@@ -120,28 +126,46 @@ struct VariableFillView: View {
             
             Divider().padding(.horizontal, 24)
             
-            ScrollViewReader { proxy in
-                ScrollView {
-                    variablesGrid(proxy: proxy)
-                }
-                .onChange(of: focusedField) { _, newValue in
-                    if let id = newValue {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            proxy.scrollTo(id, anchor: .center)
+            HStack(spacing: 0) {
+                // Columna Izquierda: Formulario de Variables
+                VStack(spacing: 0) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            variablesGrid(proxy: proxy)
+                        }
+                        .scrollIndicators(.never)
+                        .onChange(of: focusedField) { _, newValue in
+                            if let id = newValue {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
+                            }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
+                
+                Divider().frame(width: 1).background(Color.primary.opacity(0.05))
+                
+                // Columna Derecha: Preview en Tiempo Real
+                VStack(spacing: 0) {
+                    previewArea
+                }
+                .frame(width: 320)
+                .background(Color.primary.opacity(0.01))
             }
-            
-            previewArea
             
             Divider().padding(.horizontal, 24)
             
             footerSection
         }
-        .frame(width: 520, height: preferences.windowHeight * 0.90)
+        .frame(width: 780, height: preferences.windowHeight * 0.85)
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(24)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+        )
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 focusedField = variables.first?.id
@@ -155,7 +179,7 @@ struct VariableFillView: View {
         }
     }
     
-    // MARK: - Sections r
+    // MARK: - Sections
     
     private var headerSection: some View {
         HStack {
@@ -181,13 +205,13 @@ struct VariableFillView: View {
     
     @ViewBuilder
     private func variablesGrid(proxy: ScrollViewProxy) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             ForEach(variables) { variable in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text(variable.name.uppercased())
                             .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(currentCategoryColor)
                             .tracking(1.2)
                         
                         Spacer()
@@ -195,7 +219,7 @@ struct VariableFillView: View {
                         if focusedField == variable.id {
                             Text(statusText(for: variable.type))
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.blue.opacity(0.6))
+                                .foregroundColor(currentCategoryColor.opacity(0.6))
                         }
                     }
                     
@@ -204,49 +228,64 @@ struct VariableFillView: View {
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(focusedField == variable.id ? Color.blue.opacity(0.02) : Color.primary.opacity(0.03))
+                                .fill(focusedField == variable.id ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.02))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(focusedField == variable.id ? Color.blue.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1.5)
+                                .stroke(focusedField == variable.id ? currentCategoryColor.opacity(0.4) : Color.primary.opacity(0.06), lineWidth: 1.5)
                         )
                 }
                 .id(variable.id)
-                .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .bottom)), removal: .opacity))
             }
         }
         .padding(28)
     }
     
     private var previewArea: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Label("preview".localized(for: preferences.language).uppercased(), systemImage: "eye.fill")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.8))
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundColor(currentCategoryColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(currentCategoryColor.opacity(0.1))
+                    .cornerRadius(6)
+                
                 Spacer()
+                
+                HStack(spacing: 4) {
+                    Circle().fill(Color.green).frame(width: 6, height: 6)
+                        .shadow(color: .green.opacity(0.5), radius: 2)
+                    Text("LIVE")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.primary.opacity(0.04))
+                .cornerRadius(6)
             }
             
             ScrollView {
                 Text(processedContent.isEmpty ? "preview_placeholder".localized(for: preferences.language) : processedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                    .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.8))
+                    .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.85))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .multilineTextAlignment(.leading)
-                    .padding(12)
+                    .padding(16)
             }
-            .frame(maxHeight: 120)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.primary.opacity(0.02))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                    )
+                ZStack {
+                    VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                    Color.primary.opacity(0.01)
+                }
             )
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
         }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 24)
+        .padding(24)
+        .frame(maxHeight: .infinity)
     }
     
     private var footerSection: some View {
@@ -275,8 +314,8 @@ struct VariableFillView: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(canCopy ? Color.blue : Color.gray.opacity(0.3))
-                        .shadow(color: canCopy ? .blue.opacity(0.3) : .clear, radius: 8, y: 4)
+                        .fill(canCopy ? currentCategoryColor : Color.gray.opacity(0.3))
+                        .shadow(color: canCopy ? currentCategoryColor.opacity(0.3) : .clear, radius: 8, y: 4)
                 )
             }
             .buttonStyle(ScaleButtonStyle())
@@ -307,7 +346,7 @@ struct VariableFillView: View {
                     get: { variableValues[variable.id, default: ""] },
                     set: { variableValues[variable.id] = $0 }
                 ))
-                .frame(minHeight: 80)
+                .frame(minHeight: 100) // Un poco más alto ahora que hay espacio
                 .font(.system(size: 13, design: .monospaced))
                 .scrollContentBackground(.hidden)
                 .focused($focusedField, equals: variable.id)
