@@ -441,40 +441,9 @@ struct SearchViewSimple: View {
                                             )
                                     )
                             }
-                            .buttonStyle(.plain)
-                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
-                            
-                            // Botón de Ordenamiento de Prompts
-                            Menu {
-                                Button { promptService.promptSortMode = .manual } label: {
-                                    Label("sort_manual".localized(for: preferences.language), systemImage: promptService.promptSortMode == .manual ? "checkmark" : "clock")
-                                }
-                                Button { promptService.promptSortMode = .name } label: {
-                                    Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
-                                }
-                                Button { promptService.promptSortMode = .newest } label: {
-                                    Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
-                                }
-                                Button { promptService.promptSortMode = .mostUsed } label: {
-                                    Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
-                                }
-                            } label: {
-                                Image(systemName: "arrow.up.arrow.down.circle")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.primary.opacity(0.7))
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.primary.opacity(0.04))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                            )
-                                    )
-                            }
                             .menuStyle(.borderlessButton)
                             .fixedSize()
-                            .help("sort_prompts_help".localized(for: preferences.language))
+                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                         }
                     }
                     .padding(.horizontal, 24)

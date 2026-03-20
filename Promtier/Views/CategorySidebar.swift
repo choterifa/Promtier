@@ -53,6 +53,30 @@ struct CategorySidebar: View {
                 
                 Spacer()
                 
+                // Botón de Ordenamiento de Prompts (Redirigido desde cabecera principal)
+                Menu {
+                    Button { promptService.promptSortMode = .manual } label: {
+                        Label("sort_manual".localized(for: preferences.language), systemImage: promptService.promptSortMode == .manual ? "checkmark" : "clock")
+                    }
+                    Button { promptService.promptSortMode = .name } label: {
+                        Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
+                    }
+                    Button { promptService.promptSortMode = .newest } label: {
+                        Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
+                    }
+                    Button { promptService.promptSortMode = .mostUsed } label: {
+                        Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("sort_prompts_help".localized(for: preferences.language))
+                .padding(.trailing, 4)
+                
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         menuBarManager.activeViewState = .folderManager
