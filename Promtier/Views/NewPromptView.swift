@@ -262,7 +262,7 @@ struct NewPromptView: View {
                         Image(systemName: "keyboard.fill")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.secondary)
-                        Text("shortcut_settings".localized(for: preferences.language).uppercased())
+                        Text("shortcut".uppercased())
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
                             .tracking(1)
@@ -298,10 +298,10 @@ struct NewPromptView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.primary.opacity(0.03))
+                            .fill(currentCategoryColor.opacity(0.04))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                    .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
                             )
                     )
                 }
@@ -397,10 +397,10 @@ struct NewPromptView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.primary.opacity(0.03))
+                            .fill(currentCategoryColor.opacity(0.04))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                    .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
                             )
                     )
                 }
@@ -1189,11 +1189,25 @@ struct NewPromptView: View {
     private var backgroundView: some View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
+            
+            // Círculos decorativos para efecto mesh (Neón sutil)
+            Circle()
+                .fill(currentCategoryColor.opacity(0.12))
+                .frame(width: 400, height: 400)
+                .blur(radius: 80)
+                .offset(x: 250, y: -180)
+            
+            Circle()
+                .fill(currentCategoryColor.opacity(0.08))
+                .frame(width: 320, height: 320)
+                .blur(radius: 70)
+                .offset(x: -280, y: 220)
+                
+            // Brillo ambiental central
             Circle()
                 .fill(Color.blue.opacity(0.02))
-                .frame(width: 300, height: 300)
-                .blur(radius: 50)
-                .offset(x: -250, y: 200)
+                .frame(width: 500, height: 500)
+                .blur(radius: 100)
         }
     }
     
