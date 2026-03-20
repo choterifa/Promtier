@@ -528,6 +528,12 @@ class PreferencesManager: ObservableObject {
         return true
     }
     
+    func addAppToWhitelist(bundleID: String) -> Bool {
+        if customAllowedAppBundleIDs.contains(bundleID) { return true }
+        customAllowedAppBundleIDs.insert(bundleID)
+        return true
+    }
+    
     func removeAppFromWhitelist(bundleID: String) {
         customAllowedAppBundleIDs.remove(bundleID)
     }

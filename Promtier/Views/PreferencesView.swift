@@ -154,6 +154,8 @@ struct PreferencesView: View {
         .onAppear {
             preferences.previewWidth = preferences.windowWidth
             preferences.previewHeight = preferences.windowHeight
+            // Desactivar restricción de navegadores por petición del usuario
+            preferences.onlySuggestFromBrowsers = false
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingExportSheet) { ExportView() }
@@ -460,6 +462,7 @@ struct AppearanceTab: View {
 struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @ObservedObject private var shortcutManager = ShortcutManager.shared
+    @State private var showingAppPicker = false
     
     var body: some View {
         VStack(spacing: 32) {
@@ -504,12 +507,6 @@ struct BehaviorTab: View {
                         .toggleStyle(.switch)
                 }
                 
-                if preferences.clipboardSuggestions {
-                    SettingsRow("clipboard_only_browsers", subtitle: "clipboard_only_browsers_subtitle", icon: "safari.fill", iconColor: .blue) {
-                        Toggle("", isOn: $preferences.onlySuggestFromBrowsers)
-                            .toggleStyle(.switch)
-                    }
-                    .padding(.leading, 20)
                     
                     // Lista de aplicaciones personalizadas
                     VStack(alignment: .leading, spacing: 12) {
@@ -517,11 +514,28 @@ struct BehaviorTab: View {
                             Text("custom_apps".localized(for: preferences.language))
                                 .font(.system(size: 13, weight: .bold))
                             Spacer()
-                            Button(action: selectApplication) {
+                            Button(action: { showingAppPicker = true }) {
                                 Label("add_app".localized(for: preferences.language), systemImage: "plus.circle.fill")
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+                            .popover(isPresented: $showingAppPicker, arrowEdge: .top) {
+                                AppPickerPopover(
+                                    runningApps: NSWorkspace.shared.getRelevantRunningApps(),
+                                    currentAppID: nil,
+                                    titleKey: "custom_apps",
+                                    onSelect: { bundleID in
+                                        _ = preferences.addAppToWhitelist(bundleID: bundleID)
+                                        showingAppPicker = false
+                                    },
+                                    onBrowse: {
+                                        showingAppPicker = false
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            selectApplication()
+                                        }
+                                    }
+                                )
+                            }
                         }
                         
                         if !preferences.customAllowedAppBundleIDs.isEmpty {
@@ -554,7 +568,6 @@ struct BehaviorTab: View {
                     }
                     .padding(.leading, 40)
                     .padding(.top, 4)
-                }
                 
                 Divider().padding(.leading, 20)
                 
