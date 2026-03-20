@@ -33,6 +33,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var isFocused: Bool
     var focusRequest: Binding<Bool>? = nil
     var fontSize: CGFloat
+    var themeColor: NSColor = .systemOrange // Color por defecto si no se provee
     
     // Autocompletado (Snippets)
     @Binding var showSnippets: Bool
@@ -475,17 +476,23 @@ struct HighlightedEditor: NSViewRepresentable {
                     let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: [])
                     let bracketMatches = bracketRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
                     
-                    // 3. Encontrar pareja de brackets si el cursor está en uno
+                    // 3. Encontrar pareja de brackets si el cursor está en uno (Xcode style)
                     var matchingBracketRange: NSRange? = nil
                     var currentBracketRange: NSRange? = nil
+                    let nsText = text as NSString
                     
-                    if cursorLocation > 0 && cursorLocation <= text.count {
-                        let charRange = NSRange(location: cursorLocation - 1, length: 1)
-                        let char = (text as NSString).substring(with: charRange)
+                    // Comprobar posición inmediata izquierda y derecha para encontrar un bracket
+                    // Xcode prioriza el que el cursor acaba de pasar o está por tocar
+                    let positionsToCheck = [cursorLocation - 1, cursorLocation].filter { $0 >= 0 && $0 < nsText.length }
+                    
+                    for pos in positionsToCheck {
+                        let charRange = NSRange(location: pos, length: 1)
+                        let char = nsText.substring(with: charRange)
                         if "{}[]()".contains(char) {
-                            currentBracketRange = charRange
-                            if let partner = self.findMatchingBracket(in: text, for: char, at: cursorLocation - 1) {
+                            if let partner = self.findMatchingBracket(in: text, for: char, at: pos) {
+                                currentBracketRange = charRange
                                 matchingBracketRange = NSRange(location: partner, length: 1)
+                                break // Detenerse al encontrar el primer bracket válido
                             }
                         }
                     }
@@ -516,9 +523,10 @@ struct HighlightedEditor: NSViewRepresentable {
                             }
                         }
                         
-                        // Aplicar resaltado de brackets individuales
+                        // Aplicar resaltado de brackets individuales (CON EL COLOR DE LA CATEGORÍA)
                         for match in bracketMatches {
-                            safeAddAttribute(.foregroundColor, value: NSColor.systemOrange.withAlphaComponent(0.8), range: match.range)
+                            safeAddAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: match.range)
                         }
                         
                         // Aplicar resaltado de variables {{...}}
@@ -529,14 +537,21 @@ struct HighlightedEditor: NSViewRepresentable {
                             safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
                         }
                         
-                        // Aplicar resaltado de Bracket Matching (VS Code style)
+                        // Aplicar resaltado de Bracket Matching (Xcode Style - Force Click style)
+                        let glowShadow = NSShadow()
+                        glowShadow.shadowBlurRadius = 5
+                        glowShadow.shadowColor = self.parent.themeColor
+                        glowShadow.shadowOffset = NSSize(width: 0, height: 0)
+                        
                         if let current = currentBracketRange {
-                            safeAddAttribute(.backgroundColor, value: NSColor.systemGray.withAlphaComponent(0.3), range: current)
-                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: current)
+                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: current)
+                            safeAddAttribute(.shadow, value: glowShadow, range: current)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: current)
                         }
                         if let matching = matchingBracketRange {
-                            safeAddAttribute(.backgroundColor, value: NSColor.systemGray.withAlphaComponent(0.3), range: matching)
-                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: matching)
+                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: matching)
+                            safeAddAttribute(.shadow, value: glowShadow, range: matching)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: matching)
                         }
                         
                         textStorage.endEditing()
