@@ -233,6 +233,15 @@ class MenuBarManager: NSObject, ObservableObject {
             guard !DraftService.shared.hasDraft else { return }
             
             self.suggestedClipboardContent = text
+            
+            // Auto-hide suggestion after 4 seconds to be less intrusive
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                if self.suggestedClipboardContent == text {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        self.suggestedClipboardContent = nil
+                    }
+                }
+            }
         }
     }
     
