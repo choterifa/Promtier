@@ -30,6 +30,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     let editorID: String
+    @Binding var isFocused: Bool
     var focusRequest: Binding<Bool>? = nil
     var fontSize: CGFloat
     
@@ -73,10 +74,14 @@ struct HighlightedEditor: NSViewRepresentable {
             textView.writingToolsBehavior = .complete
         }
         
-        // Optimizar para scrolling suave
+        // Optimizar para scrolling suave y performance
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        
+        // Optimización de renderizado para evitar parpadeos
+        textView.layoutManager?.allowsNonContiguousLayout = true
+        textView.layerContentsRedrawPolicy = .onSetNeedsDisplay
         
         scrollView.documentView = textView
         
@@ -243,6 +248,18 @@ struct HighlightedEditor: NSViewRepresentable {
             applyHighlighting(textView) // Re-aplicar para actualizar el bracket matching
         }
         
+        func textDidBeginEditing(_ notification: Notification) {
+            DispatchQueue.main.async {
+                self.parent.isFocused = true
+            }
+        }
+        
+        func textDidEndEditing(_ notification: Notification) {
+            DispatchQueue.main.async {
+                self.parent.isFocused = false
+            }
+        }
+        
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if self.parent.showSnippets {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
@@ -388,8 +405,8 @@ struct HighlightedEditor: NSViewRepresentable {
         func applyHighlighting(_ textView: NSTextView) {
             highlightTimer?.invalidate()
             
-            // Debounce de 150ms para evitar lag al escribir rápido
-            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self, weak textView] _ in
+            // Debounce de 50ms para evitar lag al escribir rápido pero ser responsive
+            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { [weak self, weak textView] _ in
                 guard let self = self, let textView = textView else { return }
                 
                 let text = textView.string
@@ -437,11 +454,12 @@ struct HighlightedEditor: NSViewRepresentable {
                         
                         textStorage.beginEditing()
                         
-                        // Resetear estilos base
-                        textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
-                        textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize), range: fullRange)
-                        textStorage.removeAttribute(.backgroundColor, range: fullRange)
-                        textStorage.removeAttribute(.underlineStyle, range: fullRange)
+                        // Resetear estilos base de forma atómica (más rápido que múltiples removeAttribute)
+                        let baseAttributes: [NSAttributedString.Key: Any] = [
+                            .foregroundColor: NSColor.labelColor,
+                            .font: NSFont.systemFont(ofSize: fontSize)
+                        ]
+                        textStorage.setAttributes(baseAttributes, range: fullRange)
                         
                         // Función helper interna para aplicar atributos de forma segura
                         func safeAddAttribute(_ name: NSAttributedString.Key, value: Any, range: NSRange) {

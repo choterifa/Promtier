@@ -92,6 +92,10 @@ struct ZenEditorView: View {
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     editorID: "zen", // Or we could pass the actual target ID if needed
+                    isFocused: Binding(
+                        get: { isEditorFocused },
+                        set: { isEditorFocused = $0 }
+                    ),
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

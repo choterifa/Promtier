@@ -61,8 +61,45 @@ struct SearchViewSimple: View {
         ZStack {
             switch menuBarManager.activeViewState {
             case .main:
-                mainView
-                    .transition(.opacity)
+                VStack(spacing: 0) {
+                    if let suggestedContent = menuBarManager.suggestedClipboardContent {
+                        HStack {
+                            Text("Do you want to create a prompt from clipboard?")
+                                .font(.system(size: 12))
+                            Spacer()
+                            Button("Yes") {
+                                // Create new prompt with clipboard content
+                                let newPrompt = Prompt(title: "", content: suggestedContent, folder: nil, tags: [])
+                                // We don't save immediately, we just open the editor with it
+                                // For now just use DraftService
+                                DraftService.shared.saveDraft(prompt: newPrompt, isEditing: false)
+                                menuBarManager.activeViewState = .newPrompt
+                                menuBarManager.isModalActive = true
+                                menuBarManager.suggestedClipboardContent = nil
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                            
+                            Button(action: {
+                                menuBarManager.suggestedClipboardContent = nil
+                            }) {
+                                Image(systemName: "xmark")
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 8)
+                        }
+                        .padding(12)
+                        .background(Color.blue.opacity(0.1))
+                        .background(
+                            VStack {
+                                Spacer()
+                                Rectangle().fill(Color.primary.opacity(0.1)).frame(height: 1)
+                            }
+                        )
+                    }
+                    mainView
+                }
+                .transition(.opacity)
             case .newPrompt:
                 NewPromptView(prompt: selectedPrompt, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {

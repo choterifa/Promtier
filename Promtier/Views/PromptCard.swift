@@ -62,6 +62,40 @@ struct PromptCard: View {
         "\(variableCount)"
     }
     
+    private var shortcutDisplay: String? {
+        guard let shortcutStr = prompt.customShortcut else { return nil }
+        let parts = shortcutStr.split(separator: ":")
+        guard parts.count == 2,
+              let kc = UInt32(parts[0]),
+              let mods = UInt(parts[1]) else { return nil }
+        
+        var display = ""
+        let flags = NSEvent.ModifierFlags(rawValue: mods)
+        if flags.contains(.control) { display += "⌃" }
+        if flags.contains(.option) { display += "⌥" }
+        if flags.contains(.shift) { display += "⇧" }
+        if flags.contains(.command) { display += "⌘" }
+        
+        if let char = keyMap[Int(kc)] {
+            display += char
+        } else {
+            display += "?"
+        }
+        
+        return display
+    }
+    
+    private let keyMap: [Int: String] = [
+        0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X", 8: "C", 9: "V",
+        11: "B", 12: "Q", 13: "W", 14: "E", 15: "R", 16: "Y", 17: "T", 18: "1", 19: "2",
+        20: "3", 21: "4", 22: "6", 23: "5", 24: "=", 25: "9", 26: "7", 27: "-", 28: "8",
+        29: "0", 30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P", 37: "L", 38: "J",
+        39: "'", 40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: ".",
+        50: "`", 65: ".", 67: "*", 69: "+", 71: "Clear", 75: "/", 76: "Enter", 78: "-",
+        81: "=", 82: "0", 83: "1", 84: "2", 85: "3", 86: "4", 87: "5", 88: "6", 89: "7",
+        91: "8", 92: "9", 123: "←", 124: "→", 125: "↓", 126: "↑"
+    ]
+    
     private func getFolderColor(for folderName: String) -> Color {
         if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
             return Color(hex: customFolder.displayColor)
@@ -156,6 +190,21 @@ struct PromptCard: View {
             
             // Indicadores de estado
             HStack(spacing: 12) {
+                // Indicador de Imagen (lazy-load friendly) - Prioridad alta como solicitó el usuario
+                if prompt.showcaseImageCount > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 8))
+                        Text("\(prompt.showcaseImageCount)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.cyan.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.cyan.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+
                 if prompt.useCount > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "doc.on.doc.fill")
@@ -181,21 +230,6 @@ struct PromptCard: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                
-                // Indicador de Imagen (lazy-load friendly)
-                if prompt.showcaseImageCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "photo.fill")
-                            .font(.system(size: 8))
-                        Text("\(prompt.showcaseImageCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.cyan.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.cyan.opacity(0.1))
                     .clipShape(Capsule())
                 }
                 
@@ -234,6 +268,21 @@ struct PromptCard: View {
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
                         .shadow(color: .yellow.opacity(0.3), radius: 2)
+                }
+                
+                // Indicador de Atajo Personalizado (Movido al final como se solicitó)
+                if let display = shortcutDisplay {
+                    Text(display)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundColor(.blue.opacity(0.8))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.08))
+                        .cornerRadius(4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.blue.opacity(0.15), lineWidth: 1)
+                        )
                 }
                 
                 if let onCopy = onCopy {

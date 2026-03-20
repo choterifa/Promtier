@@ -29,6 +29,7 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     @Published var folderToEdit: Folder? = nil
+    @Published var suggestedClipboardContent: String? = nil
     @Published var isModalActive: Bool = false {
         didSet {
             updatePopoverBehavior()
@@ -63,6 +64,7 @@ class MenuBarManager: NSObject, ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, self.popover?.isShown == true else { return }
+                if self.isModalActive { return }
                 self.closePopover()
             }
             .store(in: &cancellables)
@@ -98,8 +100,8 @@ class MenuBarManager: NSObject, ObservableObject {
             button.action = #selector(togglePopover)
             button.target = self
             
-            // CONFIGURABLE: Solo permitir click izquierdo para mayor estabilidad
-            button.sendAction(on: [.leftMouseUp])
+            // CONFIGURABLE: Permitir click izquierdo y derecho
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             
             // Tooltip informativo
             button.toolTip = "Promtier - Gestor de Prompts (⌘⇧P)"
@@ -110,12 +112,19 @@ class MenuBarManager: NSObject, ObservableObject {
     @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
         
+        let isRightClick = NSApp.currentEvent?.type == .rightMouseUp
+        
+        if isRightClick {
+            showContextMenu()
+            return
+        }
+        
         if let popover = popover, popover.isShown {
             closePopover()
         } else {
             // Si estábamos en NewPrompt pero se cerró (clic fuera o ESC), reabrimos ahí.
             // Solo forzamos .main si no había borradores y ya estábamos ahí.
-            if !DraftService.shared.hasDraft && activeViewState == .main {
+            if !DraftService.shared.hasDraft && activeViewState == .newPrompt && suggestedClipboardContent == nil {
                 activeViewState = .main
             }
             showPopover(relativeTo: button.bounds, of: button)
@@ -177,7 +186,13 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Muestra el popover
     func showPopover() {
         guard let button = statusItem?.button else { return }
-        activeViewState = .main
+        
+        if suggestedClipboardContent != nil {
+            activeViewState = .main
+        } else if !DraftService.shared.hasDraft {
+            activeViewState = .main
+        }
+        
         showPopover(relativeTo: button.bounds, of: button)
     }
     
@@ -202,7 +217,7 @@ class MenuBarManager: NSObject, ObservableObject {
         // Forzar un ciclo de actualización del comportamiento para reactivar los monitores de eventos internos de AppKit
         popover.behavior = .applicationDefined
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            popover.behavior = .transient
+            self.updatePopoverBehavior()
             NSApp.activate(ignoringOtherApps: true)
             popover.contentViewController?.view.window?.makeKey()
         }
@@ -231,6 +246,8 @@ class MenuBarManager: NSObject, ObservableObject {
         let menu = NSMenu()
         
         // CONFIGURABLE: Opciones del menú contextual
+        menu.addItem(NSMenuItem(title: "Add Prompt", action: #selector(showAddPrompt), keyEquivalent: "n"))
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Mostrar Promtier", action: #selector(togglePopover), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Preferencias...", action: #selector(showPreferences), keyEquivalent: ","))
@@ -242,6 +259,16 @@ class MenuBarManager: NSObject, ObservableObject {
         statusItem?.menu = menu
         statusItem?.button?.performClick(nil)
         statusItem?.menu = nil
+    }
+    
+    @objc private func showAddPrompt() {
+        // Force the app to open the new prompt view
+        self.activeViewState = .newPrompt
+        self.isModalActive = true
+        guard let button = statusItem?.button else { return }
+        if let popover = popover, !popover.isShown {
+            showPopover(relativeTo: button.bounds, of: button)
+        }
     }
     
     @objc private func showPreferences() {
@@ -408,10 +435,13 @@ class MenuBarManager: NSObject, ObservableObject {
     private func updatePopoverBehavior() {
         guard let popover = popover else { return }
         
-        // CAMBIO: Ahora permitimos que el popover siempre sea transitorio (.transient)
-        // para que se cierre con ESC o clic fuera, pero mantenemos el estado
-        // en activeViewState para que al reabrir regrese a la misma pantalla.
-        popover.behavior = .transient
+        if isModalActive {
+            // BLOQUEO: Evita que el popover se cierre al hacer clic fuera o cambiar de app
+            popover.behavior = .applicationDefined
+        } else {
+            // NORMAL: Se cierra automáticamente al perder el foco
+            popover.behavior = .transient
+        }
     }
 
     // MARK: - Event Monitoring
@@ -421,6 +451,8 @@ class MenuBarManager: NSObject, ObservableObject {
         
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
             guard let self = self, let popover = self.popover, popover.isShown else { return }
+            
+            if self.isModalActive { return }
             
             // Si el click no es en el popover, cerrarlo
             self.closePopover()

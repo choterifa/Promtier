@@ -258,18 +258,25 @@ struct NewPromptView: View {
                             .tracking(1)
                     }
                     .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
 
                     if preferences.isPremiumActive {
-                        ReusableShortcutRecorderView(title: "global_shortcut_copy".localized(for: preferences.language), shortcutString: $customShortcut)
-                            .padding(16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.primary.opacity(0.03))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                    )
-                            )
+                        HStack {
+                            Text("global_shortcut_copy".localized(for: preferences.language))
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary.opacity(0.8))
+                            Spacer()
+                            ReusableShortcutRecorderView(title: "", shortcutString: $customShortcut)
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.primary.opacity(0.03))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                )
+                        )
                     } else {
                         // Mostrar locked state para transparencia
                         HStack {
@@ -338,12 +345,12 @@ struct NewPromptView: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.arrow.down")
-                            Text("Swap").font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.blue)
-                    .help("Swap")
+                    .help("Swap with main prompt")
                     
                     // Action: Merge
                     Button(action: {
@@ -358,12 +365,12 @@ struct NewPromptView: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down.to.line.compact")
-                            Text("Merge").font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.blue)
-                    .help("Merge")
+                    .help("Merge into main prompt")
                     
                     // Action: Branching
                     Button(action: {
@@ -387,12 +394,12 @@ struct NewPromptView: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.uturn.right")
-                            Text("Branching").font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.purple)
-                    .help("Branching")
+                    .help("Create a new prompt from this alternative")
 
                     // Action: Diff
                     Button(action: {
@@ -400,12 +407,12 @@ struct NewPromptView: View {
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.left.and.right.text.vertical")
-                            Text("Diff").font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.orange)
-                    .help("Diff")
+                    .help("Compare with main prompt")
                 }
                 
                 // Action: Remove
@@ -420,7 +427,7 @@ struct NewPromptView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.red.opacity(0.6))
-                .help("Remove")
+                .help("Remove alternative")
             }
         }
     }
@@ -483,6 +490,12 @@ struct NewPromptView: View {
                         .frame(width: targetWidth)
                         .frame(maxWidth: .infinity)
                 }
+                .onTapGesture {
+                    // Click outside any focused field should resign focus
+                    if let window = NSApp.keyWindow {
+                        window.makeFirstResponder(nil)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -511,7 +524,8 @@ struct NewPromptView: View {
         }
         .onChange(of: draftState) { _, newValue in
             saveCurrentDraft()
-            MenuBarManager.shared.isModalActive = !newValue.isContentEmpty
+            // Maintain the lock on the modal so clicking outside doesn't close it
+            MenuBarManager.shared.isModalActive = true
             debounceAutoSave()
         }
     }
@@ -638,6 +652,14 @@ struct NewPromptView: View {
                 
                 // Si no hay overlays críticos abiertos, cerrar la vista
                 if self.zenTarget == nil && !self.showingIconPicker {
+                    // Try to resign first responder to lose focus
+                    if let window = NSApp.keyWindow, let fr = window.firstResponder as? NSTextView {
+                        DispatchQueue.main.async {
+                            window.makeFirstResponder(nil)
+                        }
+                        return nil // Just lose focus, don't close
+                    }
+                    
                     DispatchQueue.main.async {
                         self.onClose()
                     }
@@ -711,6 +733,9 @@ struct NewPromptView: View {
     }
 
     private func setupOnAppear() {
+        // ALWAYS lock modal so clicking outside doesn't close the editor
+        MenuBarManager.shared.isModalActive = true
+        
         if let prompt = prompt {
             self.originalPrompt = prompt
             title = prompt.title
@@ -775,10 +800,6 @@ struct NewPromptView: View {
             if !negativePrompt.isEmpty { showNegativeField = true }
             if !alternatives.isEmpty { showAlternativeField = true }
             
-            // Activar bloqueo de popover si el borrador restaurado no está vacío
-            if !isContentEmpty {
-                MenuBarManager.shared.isModalActive = true
-            }
         } else if let activeCategory = promptService.selectedCategory {
             // Autoseleccionar la categoría activa al crear uno nuevo
             selectedFolder = activeCategory
@@ -877,34 +898,32 @@ struct NewPromptView: View {
         .frame(maxWidth: .infinity)
     }
     
-    private var imageGallery: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "photo.stack.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.secondary)
-                Text("prompt_results".localized(for: preferences.language).uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 4)
-                
-            if showcaseImages.count < 3 {
-                Button(action: selectImages) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.blue)
-                }
-                .buttonStyle(ScaleButtonStyle())
-                .help("add_image".localized(for: preferences.language))
-            }
-            
-            Spacer()
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                private var imageGallery: some View {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "photo.stack.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.secondary)
+                            Text("prompt_results".localized(for: preferences.language).uppercased())
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.secondary)
+                                .tracking(1)
+        
+                            if showcaseImages.count < 3 {
+                                Button(action: selectImages) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.blue)
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                .help("add_image".localized(for: preferences.language))
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 4)
+        
+                        ScrollView(.horizontal, showsIndicators: false) {                HStack(spacing: 12) {
                     // Imágenes actuales
                     ForEach(0..<showcaseImages.count, id: \.self) { index in
                         ImageSlotView(
@@ -1197,7 +1216,8 @@ struct EditorCard: View {
     
     let currentCategoryColor: Color
     @EnvironmentObject var preferences: PreferencesManager
-    
+    @State private var isEditorFocused: Bool = false
+
     var body: some View {
         VStack(spacing: 0) {
             // Título e Icono (Header del Documento)
@@ -1316,6 +1336,7 @@ struct EditorCard: View {
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     editorID: editorID,
+                    isFocused: $isEditorFocused,
                     fontSize: 16 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
@@ -1332,9 +1353,15 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            .stroke(isEditorFocused ? Color.blue.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
                     )
             )
+            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .onTapGesture {
+                // Not ideal, but we can't easily force focus into AppKit view from SwiftUI without focusRequest binding.
+                // It is already focusable by clicking inside. We will just ensure the view handles its own focus.
+                isEditorFocused = true
+            }
         }
     }
 }
@@ -1363,6 +1390,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     let actions: Actions
     
     @EnvironmentObject var preferences: PreferencesManager
+    @State private var isEditorFocused: Bool = false
     
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
@@ -1405,6 +1433,11 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
+                
+                if String(describing: actions) != "EmptyView" {
+                    actions
+                        .padding(.leading, 4)
+                }
                 
                 Spacer()
                 
@@ -1475,8 +1508,6 @@ struct SecondaryEditorCard<Actions: View>: View {
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                    
-                    actions
                 }
             }
             
@@ -1488,6 +1519,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     editorID: editorID,
+                    isFocused: $isEditorFocused,
                     focusRequest: focusRequest,
                     fontSize: 14 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
@@ -1517,9 +1549,13 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                            .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.06), lineWidth: isEditorFocused ? 2 : 1)
                     )
             )
+            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .onTapGesture {
+                isEditorFocused = true
+            }
         }
     }
 }
