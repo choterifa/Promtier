@@ -211,9 +211,11 @@ struct PromptCard: View {
                     HStack(spacing: 4) {
                         if hasNegative {
                             Circle().fill(Color.red.opacity(0.8)).frame(width: 6, height: 6)
+                                .help("tooltip_negative_prompt".localized(for: preferences.language))
                         }
                         if hasAlternativeField {
                             Circle().fill(Color.green.opacity(0.8)).frame(width: 6, height: 6)
+                                .help("tooltip_alternative_prompt".localized(for: preferences.language))
                         }
                     }
                     .padding(.trailing, 4)
@@ -232,6 +234,7 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.teal.opacity(0.1))
                     .clipShape(Capsule())
+                    .help("tooltip_alternatives".localized(for: preferences.language))
                 }
                 
                 // 3. Indicador de Variables (Cubo)
@@ -247,6 +250,7 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.blue.opacity(0.1))
                     .clipShape(Capsule())
+                    .help("tooltip_variables".localized(for: preferences.language))
                 }
 
                 // 4. Indicador de Imagen
@@ -262,6 +266,7 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.cyan.opacity(0.1))
                     .clipShape(Capsule())
+                    .help("tooltip_images".localized(for: preferences.language))
                 }
 
                 // 5. Veces copiado (A LA DERECHA DE LOS ANTERIORES)
@@ -277,6 +282,7 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.primary.opacity(0.04))
                     .clipShape(Capsule())
+                    .help("tooltip_use_count".localized(for: preferences.language))
                 }
                 
                 // 6. Indicador de Versiones (Premium)
@@ -292,6 +298,7 @@ struct PromptCard: View {
                     .padding(.vertical, 2)
                     .background(Color.purple.opacity(0.1))
                     .clipShape(Capsule())
+                    .help("tooltip_versions".localized(for: preferences.language))
                 }
 
                 if prompt.isFavorite {
