@@ -1230,7 +1230,7 @@ struct ClipboardSuggestionBanner: View {
             .buttonStyle(.plain)
         }
         .padding(12)
-        .frame(maxWidth: 420) // Centered and limited width
+        .frame(maxWidth: 430) // Centered and limited width
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)
