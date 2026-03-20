@@ -116,17 +116,29 @@ struct HighlightedEditor: NSViewRepresentable {
             context.coordinator.applyHighlighting(textView)
         }
         
-        // Manejar petición de inserción
+            // Manejar petición de inserción
         if let toInsert = insertionRequest {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
+            
+            // PREVENCIÓN DE ANIDAMIENTO: Si ya estamos seleccionando "variable" dentro de {{}}, no insertar otra
+            if toInsert == "{{variable}}" && selectedRange.length > 0 {
+                let currentText = nsString.substring(with: selectedRange)
+                if currentText == "variable" || currentText == "{{variable}}" {
+                    // Ya está seleccionado, simplemente ignorar la nueva petición para evitar {{ {{variable}} }}
+                    DispatchQueue.main.async {
+                        self.insertionRequest = nil
+                    }
+                    return
+                }
+            }
             
             var actualInsert = toInsert
             var shiftFocus = 0
             
             // Asegurar espacio antes si es una variable {{...}}
             if toInsert.hasPrefix("{{") {
-                if selectedRange.location > 0 {
+                if selectedRange.location > 0 && selectedRange.length == 0 { // Solo si es inserción en punto, no reemplazo
                     let prevCharRange = NSRange(location: selectedRange.location - 1, length: 1)
                     let prevChar = nsString.substring(with: prevCharRange)
                     if prevChar != " " && prevChar != "\n" {
