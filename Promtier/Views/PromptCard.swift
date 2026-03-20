@@ -157,7 +157,7 @@ struct PromptCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(prompt.title)
-                        .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
+                        .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .blue : .primary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
