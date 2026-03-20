@@ -42,25 +42,44 @@ struct VariableFillView: View {
                 return TemplateVariable(id: raw, name: raw, type: .text)
             }
             
-            if raw.lowercased() == "date" || raw.lowercased() == "fecha" {
+            let lower = raw.lowercased()
+            if lower == "date" || lower == "fecha" {
                 return TemplateVariable(id: raw, name: raw, type: .date)
             }
-            if raw.lowercased() == "time" || raw.lowercased() == "hora" {
+            if lower == "time" || lower == "hora" {
                 return TemplateVariable(id: raw, name: raw, type: .time)
             }
             
-            if raw.contains(":") && raw.contains(",") {
+            // 1. Multiline/Area (e.g., {{area:Name}} or {{multiline:Name}})
+            if raw.hasPrefix("area:") || raw.hasPrefix("multiline:") || raw.hasPrefix("multi:") {
+                let name = raw.components(separatedBy: ":").last?.trimmingCharacters(in: .whitespaces) ?? raw
+                return TemplateVariable(id: raw, name: name, type: .multiline)
+            }
+            
+            // 2. Selection with Label (e.g., {{Label:Op1,Op2}})
+            if raw.contains(":") {
                 let parts = raw.components(separatedBy: ":")
                 if parts.count == 2 {
-                    let label = parts[0].trimmingCharacters(in: .whitespaces)
-                    let options = parts[1].components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                    return TemplateVariable(id: raw, name: label, type: .selection(options: options))
+                    let label = parts[0].trimmingCharacters(in: .whitespaces).uppercased()
+                    let optionsStr = parts[1]
+                    
+                    if optionsStr.contains(",") {
+                        let options = optionsStr.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                        return TemplateVariable(id: raw, name: label, type: .selection(options: options))
+                    } else {
+                        // Single value after colon: {{Label:Default}}
+                        // We use the label as name, and during init we'll set the default value
+                        return TemplateVariable(id: raw, name: label, type: .text)
+                    }
                 }
             }
             
-            if raw.hasPrefix("area:") || raw.hasPrefix("multiline:") || raw.hasPrefix("multi:") {
-                let name = raw.components(separatedBy: ":").last ?? raw
-                return TemplateVariable(id: raw, name: name, type: .multiline)
+            // 3. Selection without Label (e.g., {{Op1,Op2}})
+            if raw.contains(",") {
+                let options = raw.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                if options.count > 1 {
+                    return TemplateVariable(id: raw, name: "SELECT_OPTION".localized(for: preferences.language), type: .selection(options: options))
+                }
             }
             
             return TemplateVariable(id: raw, name: raw, type: .text)
@@ -167,6 +186,25 @@ struct VariableFillView: View {
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
         .onAppear {
+            // Inicializar valores por defecto para selecciones y variables con valor predefinido
+            for variable in variables {
+                if variableValues[variable.id] == nil {
+                    switch variable.type {
+                    case .selection(let options):
+                        variableValues[variable.id] = options.first ?? ""
+                    case .text:
+                        // Si es del tipo {{Label:Valor}}, extraer el Valor como valor inicial
+                        if variable.id.contains(":") {
+                            let parts = variable.id.components(separatedBy: ":")
+                            if parts.count == 2 {
+                                variableValues[variable.id] = parts[1].trimmingCharacters(in: .whitespaces)
+                            }
+                        }
+                    default: break
+                    }
+                }
+            }
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 focusedField = variables.first?.id
             }
