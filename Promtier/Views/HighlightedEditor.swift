@@ -8,6 +8,21 @@
 import SwiftUI
 import AppKit
 
+class PassThroughScrollView: NSScrollView {
+    override func scrollWheel(with event: NSEvent) {
+        guard let textView = documentView as? NSTextView else {
+            super.scrollWheel(with: event)
+            return
+        }
+        
+        if textView.window?.firstResponder == textView {
+            super.scrollWheel(with: event)
+        } else {
+            nextResponder?.scrollWheel(with: event)
+        }
+    }
+}
+
 struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var insertionRequest: String?
@@ -30,7 +45,7 @@ struct HighlightedEditor: NSViewRepresentable {
     }
     
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
+        let scrollView = PassThroughScrollView()
         scrollView.hasVerticalScroller = true 
         scrollView.drawsBackground = false
         scrollView.autohidesScrollers = false // Siempre visible

@@ -87,6 +87,7 @@ struct NewPromptView: View {
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
+    @State private var autoSaveWorkItem: DispatchWorkItem? = nil
     
     private var zenBindingContent: Binding<String> {
         Binding(
@@ -511,7 +512,21 @@ struct NewPromptView: View {
         .onChange(of: draftState) { _, newValue in
             saveCurrentDraft()
             MenuBarManager.shared.isModalActive = !newValue.isContentEmpty
+            debounceAutoSave()
         }
+    }
+    
+    private func debounceAutoSave() {
+        autoSaveWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            // Solo auto-guardar si estamos editando un prompt existente
+            // Y no guardar si el prompt está vacío
+            if originalPrompt != nil && !title.trimmingCharacters(in: .whitespaces).isEmpty && !content.trimmingCharacters(in: .whitespaces).isEmpty {
+                savePrompt(closeAfter: false, isAutoSave: true)
+            }
+        }
+        autoSaveWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
     
     @ViewBuilder
@@ -575,6 +590,45 @@ struct NewPromptView: View {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             
+            // Cmd + S -> Save
+            if modifiers.contains(.command) && event.keyCode == 1 { // 'S' is key code 1
+                DispatchQueue.main.async {
+                    if self.showingZenEditor {
+                        self.savePrompt(closeAfter: false)
+                        withAnimation(.spring()) {
+                            self.zenTarget = nil
+                            self.showingZenEditor = false
+                        }
+                    } else {
+                        self.savePrompt()
+                    }
+                }
+                return nil // consume the event
+            }
+            
+            // Cmd + V -> Paste Image globally
+            if modifiers == .command && event.keyCode == 9 { // 'V' is keyCode 9
+                let pb = NSPasteboard.general
+                // Check if the primary item is an image
+                if let types = pb.types, types.contains(where: { $0.rawValue.starts(with: "public.image") || $0 == .png || $0 == .tiff }) {
+                    if let image = pb.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage,
+                       let tiffData = image.tiffRepresentation,
+                       let bitmap = NSBitmapImageRep(data: tiffData),
+                       let pngData = bitmap.representation(using: .png, properties: [:]) {
+                        
+                        DispatchQueue.main.async {
+                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
+                                if self.showcaseImages.count < 3 {
+                                    self.showcaseImages.append(optimizedData)
+                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                                }
+                            }
+                        }
+                        return nil // Consume event
+                    }
+                }
+            }
+
             // ESC (KeyCode 53) -> Cerrar o salir de overlays
             if event.keyCode == 53 && modifiers.isEmpty {
                 if self.showSnippets {
@@ -801,7 +855,7 @@ struct NewPromptView: View {
             
             Spacer()
             
-            Button(action: savePrompt) {
+            Button(action: { savePrompt() }) {
                 Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
@@ -897,18 +951,16 @@ struct NewPromptView: View {
         }
         
         for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url, let data = try? Data(contentsOf: url),
-                       let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+            if provider.canLoadObject(ofClass: NSImage.self) {
+                _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
+                    if let nsImage = image as? NSImage, 
+                       let tiffData = nsImage.tiffRepresentation,
+                       let bitmap = NSBitmapImageRep(data: tiffData),
+                       let pngData = bitmap.representation(using: .png, properties: [:]) {
+                        
                         DispatchQueue.main.async {
-                            if showcaseImages.count < 3 {
-                                if let targetIndex = index, targetIndex < showcaseImages.count {
-                                    showcaseImages.insert(optimizedData, at: targetIndex)
-                                } else {
-                                    showcaseImages.append(optimizedData)
-                                }
-                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
+                                self.insertImage(optimizedData, at: index)
                             }
                         }
                     }
@@ -917,18 +969,44 @@ struct NewPromptView: View {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                     if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
                         DispatchQueue.main.async {
-                            if showcaseImages.count < 3 {
-                                if let targetIndex = index, targetIndex < showcaseImages.count {
-                                    showcaseImages.insert(optimizedData, at: targetIndex)
-                                } else {
-                                    showcaseImages.append(optimizedData)
+                            self.insertImage(optimizedData, at: index)
+                        }
+                    }
+                }
+            } else if provider.canLoadObject(ofClass: URL.self) {
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    if let url = url {
+                        if url.isFileURL {
+                            if let data = try? Data(contentsOf: url),
+                               let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                                DispatchQueue.main.async {
+                                    self.insertImage(optimizedData, at: index)
                                 }
-                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                             }
+                        } else {
+                            // Descargar imagen de web URL (Chrome/Safari drag)
+                            URLSession.shared.dataTask(with: url) { data, _, _ in
+                                if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                                    DispatchQueue.main.async {
+                                        self.insertImage(optimizedData, at: index)
+                                    }
+                                }
+                            }.resume()
                         }
                     }
                 }
             }
+        }
+    }
+
+    private func insertImage(_ data: Data, at index: Int?) {
+        if showcaseImages.count < 3 {
+            if let targetIndex = index, targetIndex < showcaseImages.count {
+                showcaseImages.insert(data, at: targetIndex)
+            } else {
+                showcaseImages.append(data)
+            }
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
     }
     
@@ -943,12 +1021,16 @@ struct NewPromptView: View {
         }
     }
     
-    private func savePrompt() {
-        isSaving = true
+    private func savePrompt(closeAfter: Bool = true, isAutoSave: Bool = false) {
+        if !isAutoSave {
+            isSaving = true
+        }
         
-        // Limpiar borrador al guardar con éxito
-        DraftService.shared.clearDraft()
-        MenuBarManager.shared.isModalActive = false
+        // Limpiar borrador al guardar con éxito (solo si cerramos o es explícito)
+        if closeAfter {
+            DraftService.shared.clearDraft()
+            MenuBarManager.shared.isModalActive = false
+        }
 
         let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
         
@@ -967,14 +1049,14 @@ struct NewPromptView: View {
                              existingPrompt.customShortcut != customShortcut
             
             if !basicChanges {
-                onClose()
+                if closeAfter { onClose() }
                 return
             }
 
             var updated = existingPrompt
             
             // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
-            if preferences.isPremiumActive {
+            if preferences.isPremiumActive && !isAutoSave {
                 let coreChanges = existingPrompt.title != title || 
                                  existingPrompt.content != content ||
                                  existingPrompt.negativePrompt != newNegativePrompt ||
@@ -1006,6 +1088,10 @@ struct NewPromptView: View {
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
+            
+            if isAutoSave {
+                DispatchQueue.main.async { self.originalPrompt = updated }
+            }
         } else {
             var new = Prompt(
                 title: title,
@@ -1021,15 +1107,21 @@ struct NewPromptView: View {
             )
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
+            
+            if isAutoSave {
+                DispatchQueue.main.async { self.originalPrompt = new }
+            }
         }
         
-        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
-            showParticles = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        if closeAfter {
+            if preferences.isPremiumActive && preferences.visualEffectsEnabled && !isAutoSave {
+                showParticles = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    onClose()
+                }
+            } else {
                 onClose()
             }
-        } else {
-            onClose()
         }
     }
     
@@ -1477,7 +1569,7 @@ struct ImageSlotView: View {
                 .offset(x: 6, y: -6)
             }
         }
-        .onDrop(of: [.image, .fileURL], isTargeted: $isTargeted) { providers in
+        .onDrop(of: [.image, .fileURL, .url], isTargeted: $isTargeted) { providers in
             onDrop(providers)
             return true
         }
@@ -1516,7 +1608,7 @@ struct PlaceholderSlotView: View {
             .animation(.spring(response: 0.3), value: isTargeted)
         }
         .buttonStyle(.plain)
-        .onDrop(of: [.image, .fileURL], isTargeted: $isTargeted) { providers in
+        .onDrop(of: [.image, .fileURL, .url], isTargeted: $isTargeted) { providers in
             onDrop(providers)
             return true
         }
