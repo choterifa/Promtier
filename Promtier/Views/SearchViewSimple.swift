@@ -441,8 +441,7 @@ struct SearchViewSimple: View {
                                             )
                                     )
                             }
-                            .menuStyle(.borderlessButton)
-                            .fixedSize()
+                            .buttonStyle(.plain)
                             .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                         }
                     }
@@ -450,6 +449,9 @@ struct SearchViewSimple: View {
                     .padding(.vertical, 20)
                 }
                 .background(Color(NSColor.windowBackgroundColor))
+                .onTapGesture {
+                    isSearchFocused = false
+                }
                 
                 Divider().padding(.horizontal, 24)
                 
@@ -499,6 +501,10 @@ struct SearchViewSimple: View {
                         }
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            isSearchFocused = false
+                        }
                         .onChange(of: selectedPrompt?.id) { _, newId in
                             if let id = newId {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
