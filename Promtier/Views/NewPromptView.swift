@@ -74,6 +74,7 @@ struct NewPromptView: View {
     
     @State private var triggerAIRequest: String? = nil
     @State private var isAIActive: Bool = false
+    @State private var isAIGenerating: Bool = false
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
@@ -90,6 +91,7 @@ struct NewPromptView: View {
     @State private var branchMessage: String? = nil
     @State private var showingAppPicker = false
     
+    @State private var cancellables = Set<AnyCancellable>()
     
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -1574,19 +1576,36 @@ struct EditorCard: View {
                 // Toolbar de Acciones (Header)
                 HStack(spacing: 8) {
                     HStack(spacing: 0) {
-                        if preferences.appleIntelligenceEnabled {
-                            Button(action: {
-                                triggerAIRequest = editorID
-                                HapticService.shared.playLight()
-                            }) {
-                                Image(systemName: "apple.intelligence")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .symbolRenderingMode(.monochrome)
+                        if preferences.ollamaEnabled {
+                            Menu {
+                                Button(action: { performAIAction(.enhance) }) {
+                                    Label("ai_action_enhance", systemImage: "wand.and.stars")
+                                }
+                                Button(action: { performAIAction(.fix) }) {
+                                    Label("ai_action_fix", systemImage: "checkmark.bubble")
+                                }
+                                Button(action: { performAIAction(.concise) }) {
+                                    Label("ai_action_concise", systemImage: "text.alignleft")
+                                }
+                                Button(action: { performAIAction(.creative) }) {
+                                    Label("ai_action_creative", systemImage: "lightbulb")
+                                }
+                            } label: {
+                                Image(systemName: "llama.fill")
+                                    .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(currentCategoryColor)
                                     .frame(width: 32, height: 32)
-                                    .background(isAIActive ? currentCategoryColor.opacity(0.2) : currentCategoryColor.opacity(0.1))
+                                    .background(isAIGenerating ? Color.purple.opacity(0.2) : currentCategoryColor.opacity(0.1))
+                                    .overlay(
+                                        Group {
+                                            if isAIGenerating {
+                                                ProgressView().controlSize(.small).scaleEffect(0.6)
+                                            }
+                                        }
+                                    )
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                            .buttonStyle(.plain)
+                            .padding(.trailing, 4)
                             
                             Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         }
@@ -1701,6 +1720,19 @@ struct EditorCard: View {
     }
 }
 
+enum AIAction {
+    case enhance, fix, concise, creative
+    
+    var systemPrompt: String {
+        switch self {
+        case .enhance: return "Enhance the following prompt to be more descriptive and effective, keeping the variables {{...}} exactly as they are. Respond ONLY with the improved prompt text."
+        case .fix: return "Fix grammar and spelling errors in the following prompt, keeping variables {{...}} exactly as they are. Respond ONLY with the corrected text."
+        case .concise: return "Make the following prompt more concise and direct, keeping variables {{...}} exactly as they are. Respond ONLY with the concise text."
+        case .creative: return "Make the following prompt more creative and inspiring, keeping variables {{...}} exactly as they are. Respond ONLY with the creative text."
+        }
+    }
+}
+
 struct SecondaryEditorCard<Actions: View>: View {
     let title: String
     let placeholder: String
@@ -1729,6 +1761,8 @@ struct SecondaryEditorCard<Actions: View>: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
+    @State private var isAIGenerating: Bool = false
+    @State private var cancellables = Set<AnyCancellable>()
     
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
@@ -1786,19 +1820,35 @@ struct SecondaryEditorCard<Actions: View>: View {
                 
                 HStack(spacing: 12) {
                     HStack(spacing: 0) {
-                        if preferences.appleIntelligenceEnabled {
-                            Button(action: {
-                                triggerAIRequest = editorID
-                                HapticService.shared.playLight()
-                            }) {
-                                Image(systemName: "apple.intelligence")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .symbolRenderingMode(.monochrome)
+                        if preferences.ollamaEnabled && preferences.localAIToolsEnabled {
+                            Menu {
+                                Button(action: { performAIAction(.enhance) }) {
+                                    Label("ai_action_enhance", systemImage: "wand.and.stars")
+                                }
+                                Button(action: { performAIAction(.fix) }) {
+                                    Label("ai_action_fix", systemImage: "checkmark.bubble")
+                                }
+                                Button(action: { performAIAction(.concise) }) {
+                                    Label("ai_action_concise", systemImage: "text.alignleft")
+                                }
+                                Button(action: { performAIAction(.creative) }) {
+                                    Label("ai_action_creative", systemImage: "lightbulb")
+                                }
+                            } label: {
+                                Image(systemName: "llama.fill")
+                                    .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(color)
                                     .frame(width: 24, height: 24)
-                                    .background(isAIActive ? color.opacity(0.2) : color.opacity(0.1))
+                                    .background(isAIGenerating ? Color.purple.opacity(0.2) : color.opacity(0.1))
+                                    .overlay(
+                                        Group {
+                                            if isAIGenerating {
+                                                ProgressView().controlSize(.small).scaleEffect(0.5)
+                                            }
+                                        }
+                                    )
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                            .buttonStyle(.plain)
                             
                             Divider().frame(height: 14).background(color.opacity(0.2))
                         }
@@ -1915,6 +1965,35 @@ struct SecondaryEditorCard<Actions: View>: View {
                 isEditorFocused = true
             }
         }
+    }
+    
+    private func performAIAction(_ action: AIAction) {
+        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
+        
+        isAIGenerating = true
+        HapticService.shared.playImpact()
+        
+        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(text)"
+        
+        var fullResponse = ""
+        OllamaService.shared.generate(prompt: fullPrompt, model: model)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                isAIGenerating = false
+                if case .failure = completion {
+                    HapticService.shared.playError()
+                } else {
+                    HapticService.shared.playSuccess()
+                    if !fullResponse.isEmpty {
+                        withAnimation {
+                            text = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
+                }
+            }, receiveValue: { chunk in
+                fullResponse += chunk
+            })
+            .store(in: &cancellables)
     }
 }
 
@@ -2044,6 +2123,35 @@ struct CategoryChip: View {
             .foregroundColor(isSelected ? .white : color.opacity(0.9))
         }
         .buttonStyle(.plain)
+    }
+    
+    private func performAIAction(_ action: AIAction) {
+        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
+        
+        isAIGenerating = true
+        HapticService.shared.playImpact()
+        
+        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(content)"
+        
+        var fullResponse = ""
+        OllamaService.shared.generate(prompt: fullPrompt, model: model)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                isAIGenerating = false
+                if case .failure = completion {
+                    HapticService.shared.playError()
+                } else {
+                    HapticService.shared.playSuccess()
+                    if !fullResponse.isEmpty {
+                        withAnimation {
+                            content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
+                }
+            }, receiveValue: { chunk in
+                fullResponse += chunk
+            })
+            .store(in: &cancellables)
     }
 }
 

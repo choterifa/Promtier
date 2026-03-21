@@ -97,8 +97,8 @@
 "haptic_medium" = "Medio";
 "haptic_strong" = "Fuerte 🪄";
 "haptic_note" = "Nota: Requiere Force Touch o Magic Trackpad.";
-"apple_intelligence" = "Apple Intelligence";
-"apple_intelligence_subtitle" = "Mostrar herramientas de IA en el editor";
+"apple_intelligence" = "Herramientas de IA Local";
+"apple_intelligence_subtitle" = "Usa Ollama para mejorar y pulir tus prompts en el editor";
 "launch_at_login" = "Inicio automático";
 "variable_simple" = "Variable";
 "variable_multiline" = "Multivariable";
@@ -443,3 +443,7 @@
 "apply_ai_changes" = "Aplicar cambios";
 "no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";
 "ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";
+"ai_action_enhance" = "Mejorar Prompt";
+"ai_action_fix" = "Corregir Gramática";
+"ai_action_concise" = "Hacer Conciso";
+"ai_action_creative" = "Hacer Creativo";

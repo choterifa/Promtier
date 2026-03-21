@@ -69,17 +69,8 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.textColor = .labelColor
         textView.insertionPointColor = .controlAccentColor
         
-        // Configuraciones de comportamiento para Prompts (evitar cambios automáticos molestos)
+        // Smart behavior settings
         textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticLinkDetectionEnabled = false
-        textView.isAutomaticSpellingCorrectionEnabled = false
-        textView.smartInsertDeleteEnabled = true
-        
-        // Activar Apple Intelligence Writing Tools (macOS 15.0+)
-        if #available(macOS 15.0, *) {
-            textView.writingToolsBehavior = .complete
-        }
         
         // Optimizar para scrolling suave y performance
         textView.textContainerInset = NSSize(width: 0, height: 0)
@@ -231,23 +222,7 @@ struct HighlightedEditor: NSViewRepresentable {
             }
         }
         
-        // Manejar petición de Inteligencia de Apple (Targeted)
-        if let targetID = triggerAIRequest, targetID == editorID {
-            if #available(macOS 15.0, *) {
-                if isAIActive {
-                    textView.doCommand(by: #selector(NSResponder.cancelOperation(_:)))
-                } else {
-                    if textView.selectedRange().length == 0 {
-                        textView.selectAll(nil)
-                    }
-                    textView.showWritingTools(nil)
-                }
-            }
-            
-            DispatchQueue.main.async {
-                self.triggerAIRequest = nil
-            }
-        }
+        // triggerAIRequest is now handled by the parent view for Ollama integration
         
         // Actualizar fuente si cambió
         if textView.font?.pointSize != fontSize {

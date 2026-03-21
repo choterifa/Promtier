@@ -205,9 +205,9 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var appleIntelligenceEnabled: Bool {
+    @Published var localAIToolsEnabled: Bool {
         didSet {
-            userDefaults.set(appleIntelligenceEnabled, forKey: "appleIntelligenceEnabled")
+            userDefaults.set(localAIToolsEnabled, forKey: "localAIToolsEnabled")
         }
     }
     
@@ -324,7 +324,13 @@ class PreferencesManager: ObservableObject {
         self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
         
         // Apple Intelligence por defecto en true
-        self.appleIntelligenceEnabled = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true
+        // Migration from old key if it exists
+        if let oldVal = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool {
+            self.localAIToolsEnabled = oldVal
+            userDefaults.removeObject(forKey: "appleIntelligenceEnabled")
+        } else {
+            self.localAIToolsEnabled = userDefaults.object(forKey: "localAIToolsEnabled") as? Bool ?? true
+        }
         
         // Consejos Ghost por defecto en true
         if userDefaults.object(forKey: "ghostTipsEnabled") != nil {
@@ -453,7 +459,7 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = false
         self.suppressAccessibilityWarning = false
         self.isPremiumActive = false
-        self.appleIntelligenceEnabled = true
+        self.localAIToolsEnabled = true
         self.ghostTipsEnabled = true
         self.gestureHintsEnabled = true
         self.previewImagesFirst = true

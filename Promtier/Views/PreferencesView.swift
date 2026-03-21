@@ -604,7 +604,7 @@ struct BehaviorTab: View {
             
             SettingsSection(title: "intelligence", icon: "sparkles") {
                 SettingsRow("apple_intelligence", subtitle: "apple_intelligence_subtitle") {
-                    Toggle("", isOn: $preferences.appleIntelligenceEnabled)
+                    Toggle("", isOn: $preferences.localAIToolsEnabled)
                         .toggleStyle(.switch)
                 }
                 

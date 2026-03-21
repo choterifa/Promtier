@@ -95,8 +95,8 @@
 "haptic_medium" = "Medium";
 "haptic_strong" = "Strong 🪄";
 "haptic_note" = "Note: Requires Force Touch or Magic Trackpad.";
-"apple_intelligence" = "Apple Intelligence";
-"apple_intelligence_subtitle" = "Show AI tools (Writing Tools) in editor";
+"apple_intelligence" = "Local AI Tools";
+"apple_intelligence_subtitle" = "Show Ollama-powered refinement tools in the editor";
 "launch_at_login" = "Launch at Login";
 "variable_simple" = "Variable";
 "variable_multiline" = "Multivariable";
@@ -420,3 +420,7 @@
 "apply_ai_changes" = "Apply changes";
 "no_models_found" = "No models found. Run 'ollama run llama3' in terminal.";
 "ai_improvement_placeholder" = "Improvement command (e.g. 'Make it formal')...";
+"ai_action_enhance" = "Enhance Prompt";
+"ai_action_fix" = "Fix Grammar & Spelling";
+"ai_action_concise" = "Make Concise";
+"ai_action_creative" = "Make Creative";
