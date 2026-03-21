@@ -385,7 +385,7 @@ struct VariableFillView: View {
             if showAIPlayground && preferences.ollamaEnabled {
                 AIPlaygroundView(prompt: processedContent)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .frame(height: 250)
+                    .frame(height: 280)
             }
         }
         .padding(24)

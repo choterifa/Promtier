@@ -22,9 +22,10 @@ struct AIPlaygroundView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Label("local_ai_ollama".localized(for: preferences.language), systemImage: "sparkles")
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
                     .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.purple)
                 
                 Spacer()
                 
@@ -40,7 +41,8 @@ struct AIPlaygroundView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .frame(width: 150)
+                        .frame(width: 120)
+                        .controlSize(.small)
                         
                         Button(action: generateResponse) {
                             if isGenerating {
@@ -51,6 +53,7 @@ struct AIPlaygroundView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                         .disabled(isGenerating || ollama.selectedModel == nil)
                     }
                 } else {
@@ -64,9 +67,9 @@ struct AIPlaygroundView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color.primary.opacity(0.03))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color.primary.opacity(0.04))
             
             Divider()
             
@@ -87,7 +90,7 @@ struct AIPlaygroundView: View {
                             .textSelection(.enabled)
                     }
                 }
-                .padding(20)
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .background(Color.primary.opacity(0.01))
