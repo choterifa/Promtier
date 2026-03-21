@@ -607,6 +607,39 @@ struct BehaviorTab: View {
                     Toggle("", isOn: $preferences.appleIntelligenceEnabled)
                         .toggleStyle(.switch)
                 }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("local_ai_ollama", subtitle: "ollama_subtitle") {
+                    Toggle("", isOn: $preferences.ollamaEnabled)
+                        .toggleStyle(.switch)
+                }
+                
+                if preferences.ollamaEnabled {
+                    Divider().padding(.leading, 20)
+                    
+                    SettingsRow("ollama_url", subtitle: "ollama_url_subtitle") {
+                        TextField("http://localhost:11434", text: $preferences.ollamaURL)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 250)
+                    }
+                    
+                    Divider().padding(.leading, 20)
+                    
+                    SettingsRow("ollama_status", subtitle: OllamaService.shared.isOllamaRunning ? "ollama_active" : "ollama_inactive") {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(OllamaService.shared.isOllamaRunning ? Color.green : Color.red)
+                                .frame(width: 8, height: 8)
+                            
+                            Button(action: { OllamaService.shared.checkStatus() }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 10))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
             
             SettingsSection(title: "system", icon: "macwindow") {

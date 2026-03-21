@@ -211,6 +211,24 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var ollamaEnabled: Bool {
+        didSet {
+            userDefaults.set(ollamaEnabled, forKey: "ollamaEnabled")
+        }
+    }
+    
+    @Published var ollamaURL: String {
+        didSet {
+            userDefaults.set(ollamaURL, forKey: "ollamaURL")
+        }
+    }
+    
+    @Published var ollamaDefaultModel: String {
+        didSet {
+            userDefaults.set(ollamaDefaultModel, forKey: "ollamaDefaultModel")
+        }
+    }
+    
     @Published var ghostTipsEnabled: Bool {
         didSet {
             userDefaults.set(ghostTipsEnabled, forKey: "ghostTipsEnabled")
@@ -343,6 +361,11 @@ class PreferencesManager: ObservableObject {
             ]
         }
         
+        // Ollama
+        self.ollamaEnabled = userDefaults.object(forKey: "ollamaEnabled") as? Bool ?? true
+        self.ollamaURL = userDefaults.string(forKey: "ollamaURL") ?? "http://localhost:11434"
+        self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? "llama3"
+        
         // Aplicar configuración inicial
         applyAppearance()
         applyDockPolicy()
@@ -436,6 +459,9 @@ class PreferencesManager: ObservableObject {
         self.previewImagesFirst = true
         self.disableImageAnimations = false
         self.showAdvancedFields = true
+        self.ollamaEnabled = true
+        self.ollamaURL = "http://localhost:11434"
+        self.ollamaDefaultModel = "llama3"
         
         applyAppearance()
     }

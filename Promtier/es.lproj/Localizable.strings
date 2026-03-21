@@ -428,3 +428,17 @@
 "sort_newest" = "Más reciente";
 "sort_most_used" = "Más usados";
 "sort_prompts_help" = "Cambiar orden de los prompts";
+
+/* Ollama AI */
+"local_ai_ollama" = "IA Local (Ollama)";
+"ollama_subtitle" = "Ejecuta modelos de IA localmente en tu Mac";
+"ollama_url" = "URL de la API de Ollama";
+"ollama_url_subtitle" = "Por defecto: http://localhost:11434";
+"ollama_status" = "Estado del Servidor";
+"ollama_active" = "Activo";
+"ollama_inactive" = "No detectado";
+"ollama_models" = "Modelos Disponibles";
+"generate_test" = "Probar Prompt";
+"ai_response" = "Respuesta de la IA";
+"apply_ai_changes" = "Aplicar cambios";
+"no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";

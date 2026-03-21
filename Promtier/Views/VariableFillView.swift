@@ -15,6 +15,7 @@ struct VariableFillView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var variableValues: [String: String] = [:]
     @FocusState private var focusedField: String?
+    @State private var showAIPlayground: Bool = false
     
     enum VariableType: Equatable {
         case text
@@ -344,6 +345,24 @@ struct VariableFillView: View {
                 .padding(.vertical, 4)
                 .background(Color.primary.opacity(0.04))
                 .cornerRadius(6)
+                
+                if preferences.ollamaEnabled {
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            showAIPlayground.toggle()
+                        }
+                    }) {
+                        Image(systemName: showAIPlayground ? "sparkles.rectangle.stack.fill" : "sparkles")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(showAIPlayground ? .purple : currentCategoryColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(showAIPlayground ? Color.purple.opacity(0.1) : currentCategoryColor.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("local_ai_ollama".localized(for: preferences.language))
+                }
             }
             
             ScrollView {
@@ -362,6 +381,12 @@ struct VariableFillView: View {
             )
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+            
+            if showAIPlayground && preferences.ollamaEnabled {
+                AIPlaygroundView(prompt: processedContent)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .frame(height: 250)
+            }
         }
         .padding(24)
         .frame(maxHeight: .infinity)
