@@ -373,6 +373,7 @@ struct VariableFillView: View {
                     .multilineTextAlignment(.leading)
                     .padding(16)
             }
+            .frame(maxHeight: showAIPlayground ? 160 : .infinity)
             .background(
                 ZStack {
                     VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)

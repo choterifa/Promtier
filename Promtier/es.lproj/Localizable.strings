@@ -442,3 +442,4 @@
 "ai_response" = "Respuesta de la IA";
 "apply_ai_changes" = "Aplicar cambios";
 "no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";
+"ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";

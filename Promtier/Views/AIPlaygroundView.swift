@@ -14,10 +14,11 @@ struct AIPlaygroundView: View {
     @ObservedObject var ollama = OllamaService.shared
     @EnvironmentObject var preferences: PreferencesManager
     
+    @State private var cancellable: AnyCancellable?
     @State private var responseText: String = ""
     @State private var isGenerating: Bool = false
     @State private var error: String?
-    @State private var cancellable: AnyCancellable?
+    @State private var improvementText: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -70,6 +71,28 @@ struct AIPlaygroundView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(Color.primary.opacity(0.04))
+            
+            Divider()
+            
+            // Improvement Field
+            HStack(spacing: 8) {
+                TextField("ai_improvement_placeholder".localized(for: preferences.language), text: $improvementText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .padding(8)
+                    .background(Color.primary.opacity(0.03))
+                    .cornerRadius(8)
+                
+                if !improvementText.isEmpty {
+                    Button(action: { improvementText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             
             Divider()
             
@@ -130,7 +153,9 @@ struct AIPlaygroundView: View {
         error = nil
         HapticService.shared.playImpact()
         
-        cancellable = ollama.generate(prompt: prompt, model: model)
+        let finalPrompt = improvementText.isEmpty ? prompt : "\(prompt)\n\n[Instruction: \(improvementText)]"
+        
+        cancellable = ollama.generate(prompt: finalPrompt, model: model)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
                 isGenerating = false

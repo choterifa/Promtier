@@ -419,3 +419,4 @@
 "ai_response" = "AI Response";
 "apply_ai_changes" = "Apply changes";
 "no_models_found" = "No models found. Run 'ollama run llama3' in terminal.";
+"ai_improvement_placeholder" = "Improvement command (e.g. 'Make it formal')...";
