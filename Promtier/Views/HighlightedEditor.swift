@@ -40,6 +40,12 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    
+    // Autocompletado (Variables)
+    @Binding var showVariables: Bool
+    @Binding var variablesSelectedIndex: Int
+    @Binding var triggerVariablesSelection: Bool
+    
     var isPremium: Bool
     
     func makeCoordinator() -> Coordinator {
@@ -310,6 +316,30 @@ struct HighlightedEditor: NSViewRepresentable {
         }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if self.parent.showVariables {
+                if commandSelector == #selector(NSResponder.moveUp(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.variablesSelectedIndex = max(0, self.parent.variablesSelectedIndex - 1)
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.moveDown(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.variablesSelectedIndex += 1
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.insertNewline(_:)) || commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)) {
+                    DispatchQueue.main.async {
+                        self.parent.triggerVariablesSelection = true
+                    }
+                    return true
+                } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) { // ESC
+                    DispatchQueue.main.async {
+                        self.parent.showVariables = false
+                    }
+                    return true
+                }
+            }
+            
             if self.parent.showSnippets {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
                     DispatchQueue.main.async {

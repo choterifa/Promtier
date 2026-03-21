@@ -1,0 +1,90 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Promtier.xcodeproj -scheme Promtier build
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.9.0
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00008103-000C15190AE2001E, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00008103-000C15190AE2001E, name:My Mac }
+{ platform:macOS, name:Any Mac }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'Promtier' in project 'Promtier'
+        ➜ Explicit dependency on target 'Sparkle' in project 'Sparkle'
+    Target 'Sparkle' in project 'Sparkle' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/momc --dry-run --action generate --swift-version 5.0 --sdkroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk --macosx-deployment-target 15.6 --module Promtier /Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Core/Promtier.xcdatamodeld /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/CoreDataGenerated/Promtier
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 4d648ffc891544e2acabe3aaf7c936e8
+Build description path: /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/XCBuildData/4d648ffc891544e2acabe3aaf7c936e8.xcbuilddata
+note: Disabling hardened runtime with ad-hoc codesigning. (in target 'Promtier' from project 'Promtier')
+ProcessProductPackaging /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.entitlements /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    
+    Entitlements:
+    
+    {
+    "com.apple.security.automation.apple-events" = 1;
+    "com.apple.security.cs.disable-library-validation" = 1;
+    "com.apple.security.get-task-allow" = 1;
+}
+    
+    builtin-productPackagingUtility /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.entitlements -entitlements -format xml -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent
+
+ProcessProductPackagingDER /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent.der (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    /usr/bin/derq query -f xml -i /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent.der --raw
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -o /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+
+ProcessInfoPlistFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Info.plist /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/empty-Promtier.plist (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    builtin-infoPlistUtility /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/empty-Promtier.plist -producttype com.apple.product-type.application -genpkginfo /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Info.plist
+
+CodeSign /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --entitlements /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent --timestamp\=none --generate-entitlement-der /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app
+/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app: replacing existing signature
+
+Validate /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    builtin-validationUtility /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app
+
+** BUILD SUCCEEDED **
+

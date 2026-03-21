@@ -21,6 +21,9 @@ struct ZenEditorView: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    @Binding var showVariables: Bool
+    @Binding var variablesSelectedIndex: Int
+    @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     @Binding var showingPremiumFor: String?
@@ -43,7 +46,13 @@ struct ZenEditorView: View {
                 
                 Button(action: { 
                     if preferences.isPremiumActive {
-                        insertionRequest = "{{variable}}" 
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            showVariables = true
+                            variablesSelectedIndex = 0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isEditorFocused = true
+                        }
                     } else {
                         showingPremiumFor = "advanced_variables".localized(for: preferences.language)
                     }
@@ -101,6 +110,9 @@ struct ZenEditorView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive
                 )
                 .focused($isEditorFocused)

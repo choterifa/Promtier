@@ -699,6 +699,9 @@ struct NewPromptView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     showingPremiumFor: $showingPremiumFor
@@ -795,9 +798,13 @@ struct NewPromptView: View {
             }
 
             // ESC (KeyCode 53) -> Cerrar o salir de overlays
-            if event.keyCode == 53 && modifiers.isEmpty {
+            if event.keyCode == 53 {
                 if self.showSnippets {
                     DispatchQueue.main.async { withAnimation { self.showSnippets = false } }
+                    return nil
+                }
+                if self.showVariables {
+                    DispatchQueue.main.async { withAnimation { self.showVariables = false } }
                     return nil
                 }
                 
@@ -857,11 +864,14 @@ struct NewPromptView: View {
                 return nil
             }
             
-            // Option + V -> Insert Variable
+            // Option + V -> Insert Variable Popup
             if modifiers == .option && event.keyCode == 9 { // keyCode 9 is 'V'
                 DispatchQueue.main.async {
                     if self.preferences.isPremiumActive {
-                        self.insertionRequest = "{{variable}}"
+                        withAnimation {
+                            self.showVariables = true
+                            self.variablesSelectedIndex = 0
+                        }
                     } else {
                         self.showingPremiumFor = "dynamic_variables".localized(for: self.preferences.language)
                     }
@@ -1583,8 +1593,13 @@ struct EditorCard: View {
 
                         Button(action: {
                             if preferences.isPremiumActive {
-                                showVariables = true
-                                variablesSelectedIndex = 0
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showVariables = true
+                                    variablesSelectedIndex = 0
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isEditorFocused = true
+                                }
                             } else {
                                 showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
                             }
@@ -1601,8 +1616,13 @@ struct EditorCard: View {
                         
                         Button(action: {
                             if preferences.isPremiumActive {
-                                showSnippets = true
-                                snippetSearchQuery = ""
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showSnippets = true
+                                    snippetSearchQuery = ""
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isEditorFocused = true
+                                }
                             } else {
                                 showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                             }
@@ -1654,6 +1674,9 @@ struct EditorCard: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive
                 )
                 .padding(12)
@@ -1782,8 +1805,13 @@ struct SecondaryEditorCard<Actions: View>: View {
 
                         Button(action: {
                             if preferences.isPremiumActive {
-                                showVariables = true
-                                variablesSelectedIndex = 0
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showVariables = true
+                                    variablesSelectedIndex = 0
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isEditorFocused = true
+                                }
                             } else {
                                 showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
                             }
@@ -1800,8 +1828,13 @@ struct SecondaryEditorCard<Actions: View>: View {
                         
                         Button(action: {
                             if preferences.isPremiumActive {
-                                showSnippets = true
-                                snippetSearchQuery = ""
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    showSnippets = true
+                                    snippetSearchQuery = ""
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    isEditorFocused = true
+                                }
                             } else {
                                 showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                             }
@@ -1848,6 +1881,9 @@ struct SecondaryEditorCard<Actions: View>: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive
                 )
                 .padding(12)

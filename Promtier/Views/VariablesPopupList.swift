@@ -36,8 +36,8 @@ struct VariablesPopupList: View {
             VariableOption(
                 id: "multivar",
                 title: "variable_multiline".localized(for: preferences.language),
-                subtitle: "{{area:variable}}",
-                insertionText: "{{area:variable}}",
+                subtitle: "{{variable,varia2}}",
+                insertionText: "{{variable,varia2}}",
                 icon: "{…}"
             )
         ]
@@ -84,10 +84,12 @@ struct VariablesPopupList: View {
         )
         // Add implicit animation to the row when selection state changes
         .onChange(of: selectedIndex) { newIndex in
-            if newIndex >= options.count {
-                selectedIndex = options.count - 1
-            } else if newIndex < 0 {
-                selectedIndex = 0
+            DispatchQueue.main.async {
+                if newIndex >= options.count {
+                    selectedIndex = options.count - 1
+                } else if newIndex < 0 {
+                    selectedIndex = 0
+                }
             }
         }
         .onChange(of: triggerSelection) { triggered in
