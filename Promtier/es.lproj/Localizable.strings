@@ -443,6 +443,8 @@
 "apply_ai_changes" = "Aplicar cambios";
 "no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";
 "ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";
+"ai_thinking" = "La IA está pensando...";
+"ai_crafting_message" = "Diseñando tu mensaje a la perfección";
 "ai_action_enhance" = "Mejorar Prompt";
 "ai_action_fix" = "Corregir Gramática";
 "ai_action_concise" = "Hacer Conciso";

@@ -420,6 +420,8 @@
 "apply_ai_changes" = "Apply changes";
 "no_models_found" = "No models found. Run 'ollama run llama3' in terminal.";
 "ai_improvement_placeholder" = "Improvement command (e.g. 'Make it formal')...";
+"ai_thinking" = "AI is thinking...";
+"ai_crafting_message" = "Designing your prompt for perfection";
 "ai_action_enhance" = "Enhance Prompt";
 "ai_action_fix" = "Fix Grammar & Spelling";
 "ai_action_concise" = "Make Concise";

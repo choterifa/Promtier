@@ -1578,41 +1578,36 @@ struct EditorCard: View {
                 Spacer()
                 
                 // Toolbar de Acciones (Header)
-                HStack(spacing: 8) {
-                    HStack(spacing: 0) {
+                HStack(spacing: 0) {
                         if preferences.ollamaEnabled {
                             Menu {
                                 Button(action: { performAIAction(.enhance) }) {
-                                    Label("ai_action_enhance", systemImage: "wand.and.stars")
+                                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
                                 }
                                 Button(action: { performAIAction(.fix) }) {
-                                    Label("ai_action_fix", systemImage: "checkmark.bubble")
+                                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
                                 }
                                 Button(action: { performAIAction(.concise) }) {
-                                    Label("ai_action_concise", systemImage: "text.alignleft")
+                                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
                                 }
                                 Button(action: { performAIAction(.creative) }) {
-                                    Label("ai_action_creative", systemImage: "lightbulb")
+                                    Label("ai_action_creative".localized(for: preferences.language), systemImage: "lightbulb")
                                 }
                             } label: {
-                                Image(systemName: "llama.fill")
+                                Image(systemName: "sparkles")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(currentCategoryColor)
                                     .frame(width: 32, height: 32)
                                     .background(isAIGenerating ? Color.purple.opacity(0.2) : currentCategoryColor.opacity(0.1))
-                                    .overlay(
-                                        Group {
-                                            if isAIGenerating {
-                                                ProgressView().controlSize(.small).scaleEffect(0.6)
-                                            }
-                                        }
-                                    )
                             }
+                            .menuStyle(.button)
                             .buttonStyle(.plain)
-                            .padding(.trailing, 4)
+                            .menuIndicator(.hidden)
                             
                             Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         }
+                        
+                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
 
                         Button(action: {
                             if preferences.isPremiumActive {
@@ -1676,8 +1671,7 @@ struct EditorCard: View {
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                }
-            }
+                } // Closes HStack(1550)
             .padding(.horizontal, 8)
             .padding(.bottom, 24)
             
@@ -1705,6 +1699,12 @@ struct EditorCard: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(currentCategoryColor.opacity(0.05)) // Color profesional sutil
+                .overlay {
+                    if isAIGenerating {
+                        AIGeneratingOverlay(accentColor: currentCategoryColor)
+                            .transition(.opacity)
+                    }
+                }
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
@@ -1716,13 +1716,11 @@ struct EditorCard: View {
             )
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .onTapGesture {
-                // Not ideal, but we can't easily force focus into AppKit view from SwiftUI without focusRequest binding.
-                // It is already focusable by clicking inside. We will just ensure the view handles its own focus.
                 isEditorFocused = true
             }
         }
     }
-    
+
     private func performAIAction(_ action: AIAction) {
         guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
         
@@ -1751,8 +1749,8 @@ struct EditorCard: View {
             })
             .store(in: &cancellables)
     }
-}
 
+}
 enum AIAction {
     case enhance, fix, concise, creative
     
@@ -1849,39 +1847,31 @@ struct SecondaryEditorCard<Actions: View>: View {
                         .padding(.leading, 4)
                 }
                 
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    HStack(spacing: 0) {
+                HStack(spacing: 0) {
                         if preferences.ollamaEnabled && preferences.localAIToolsEnabled {
                             Menu {
                                 Button(action: { performAIAction(.enhance) }) {
-                                    Label("ai_action_enhance", systemImage: "wand.and.stars")
+                                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
                                 }
                                 Button(action: { performAIAction(.fix) }) {
-                                    Label("ai_action_fix", systemImage: "checkmark.bubble")
+                                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
                                 }
                                 Button(action: { performAIAction(.concise) }) {
-                                    Label("ai_action_concise", systemImage: "text.alignleft")
+                                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
                                 }
                                 Button(action: { performAIAction(.creative) }) {
-                                    Label("ai_action_creative", systemImage: "lightbulb")
+                                    Label("ai_action_creative".localized(for: preferences.language), systemImage: "lightbulb")
                                 }
                             } label: {
-                                Image(systemName: "llama.fill")
+                                Image(systemName: "sparkles")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(color)
                                     .frame(width: 24, height: 24)
                                     .background(isAIGenerating ? Color.purple.opacity(0.2) : color.opacity(0.1))
-                                    .overlay(
-                                        Group {
-                                            if isAIGenerating {
-                                                ProgressView().controlSize(.small).scaleEffect(0.5)
-                                            }
-                                        }
-                                    )
                             }
+                            .menuStyle(.button)
                             .buttonStyle(.plain)
+                            .menuIndicator(.hidden)
                             
                             Divider().frame(height: 14).background(color.opacity(0.2))
                         }
@@ -1942,11 +1932,12 @@ struct SecondaryEditorCard<Actions: View>: View {
                             }
                             .buttonStyle(ScaleButtonStyle())
                         }
+                        
+                        actions
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                }
-            }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 12)
+                } // Closes HStack(1831)
             
             VStack(spacing: 0) {
                 HighlightedEditor(
@@ -1984,6 +1975,12 @@ struct SecondaryEditorCard<Actions: View>: View {
                         }
                     }
                 )
+                .overlay {
+                    if isAIGenerating {
+                        AIGeneratingOverlay(accentColor: color, compact: true)
+                            .transition(.opacity)
+                    }
+                }
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
@@ -2028,10 +2025,10 @@ struct SecondaryEditorCard<Actions: View>: View {
             })
             .store(in: &cancellables)
     }
-}
 
 // MARK: - Componentes de Soporte de Galería
 
+}
 struct ImageSlotView: View {
     let imageData: Data
     let onRemove: () -> Void
@@ -2166,7 +2163,94 @@ struct CategoryChip: View {
         .environmentObject(PreferencesManager.shared)
 }
 
-// Helper para convertir String a Identifiable para .sheet
+// MARK: - AIGeneratingOverlay
+
+struct AIGeneratingOverlay: View {
+    let accentColor: Color
+    var compact: Bool = false
+    
+    @State private var pulse = false
+    @State private var shimmer = false
+    @EnvironmentObject var preferences: PreferencesManager
+    
+    var body: some View {
+        ZStack {
+            // Capa de vidrio esmerilado
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    accentColor.opacity(0.03)
+                )
+            
+            // Efectos de luz ambiente
+            ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(pulse ? 0.3 : 0.1))
+                    .frame(width: compact ? 100 : 200, height: compact ? 100 : 200)
+                    .blur(radius: compact ? 30 : 60)
+                    .scaleEffect(pulse ? 1.2 : 0.8)
+                
+                Circle()
+                    .fill(accentColor.opacity(pulse ? 0.1 : 0.2))
+                    .frame(width: compact ? 80 : 150, height: compact ? 80 : 150)
+                    .blur(radius: compact ? 25 : 50)
+                    .offset(x: pulse ? 20 : -20, y: pulse ? -10 : 10)
+            }
+            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: pulse)
+            
+            VStack(spacing: compact ? 12 : 16) {
+                // Icono animado
+                ZStack {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: compact ? 24 : 32, weight: .bold))
+                        .foregroundColor(.purple)
+                        .symbolEffect(.variableColor.reversing.iterative)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: compact ? 24 : 32, weight: .bold))
+                        .foregroundColor(.purple)
+                        .blur(radius: 8)
+                        .opacity(pulse ? 0.8 : 0.3)
+                }
+                
+                VStack(spacing: 4) {
+                    Text("ai_thinking".localized(for: preferences.language))
+                        .font(.system(size: compact ? 13 : 15, weight: .bold))
+                        .foregroundColor(.primary.opacity(0.8))
+                    
+                    if !compact {
+                        Text("ai_crafting_message".localized(for: preferences.language))
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Barra de progreso elegante
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.05))
+                        .frame(width: compact ? 100 : 160, height: 4)
+                    
+                    Capsule()
+                        .fill(LinearGradient(colors: [.purple, accentColor], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: shimmer ? (compact ? 100 : 160) : 0, height: 4)
+                }
+                .mask(
+                    Rectangle()
+                        .fill(LinearGradient(colors: [.clear, .white, .clear], startPoint: .leading, endPoint: .trailing))
+                        .offset(x: shimmer ? (compact ? 150 : 250) : (compact ? -150 : -250))
+                )
+            }
+        }
+        .onAppear {
+            pulse = true
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                shimmer = true
+            }
+        }
+    }
+}
+
 struct IdentifiableString: Identifiable {
     let id = UUID()
     let value: String
