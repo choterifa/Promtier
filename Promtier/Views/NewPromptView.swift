@@ -8,6 +8,7 @@
 
 import SwiftUI
 import Foundation
+import Combine
 import UniformTypeIdentifiers
 
 struct NewPromptView: View {
@@ -187,6 +188,7 @@ struct NewPromptView: View {
                 triggerVariablesSelection: $triggerVariablesSelection,
                 triggerAIRequest: $triggerAIRequest,
                 isAIActive: $isAIActive,
+                isAIGenerating: $isAIGenerating,
                 editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
@@ -1534,11 +1536,13 @@ struct EditorCard: View {
     @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
+    @Binding var isAIGenerating: Bool
     let editorID: String
     
     let currentCategoryColor: Color
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1717,6 +1721,35 @@ struct EditorCard: View {
                 isEditorFocused = true
             }
         }
+    }
+    
+    private func performAIAction(_ action: AIAction) {
+        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
+        
+        isAIGenerating = true
+        HapticService.shared.playImpact()
+        
+        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(content)"
+        
+        var fullResponse = ""
+        OllamaService.shared.generate(prompt: fullPrompt, model: model)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                isAIGenerating = false
+                if case .failure = completion {
+                    HapticService.shared.playError()
+                } else {
+                    HapticService.shared.playSuccess()
+                    if !fullResponse.isEmpty {
+                        withAnimation {
+                            content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
+                }
+            }, receiveValue: { chunk in
+                fullResponse += chunk
+            })
+            .store(in: &cancellables)
     }
 }
 
@@ -2123,35 +2156,6 @@ struct CategoryChip: View {
             .foregroundColor(isSelected ? .white : color.opacity(0.9))
         }
         .buttonStyle(.plain)
-    }
-    
-    private func performAIAction(_ action: AIAction) {
-        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
-        
-        isAIGenerating = true
-        HapticService.shared.playImpact()
-        
-        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(content)"
-        
-        var fullResponse = ""
-        OllamaService.shared.generate(prompt: fullPrompt, model: model)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                isAIGenerating = false
-                if case .failure = completion {
-                    HapticService.shared.playError()
-                } else {
-                    HapticService.shared.playSuccess()
-                    if !fullResponse.isEmpty {
-                        withAnimation {
-                            content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                    }
-                }
-            }, receiveValue: { chunk in
-                fullResponse += chunk
-            })
-            .store(in: &cancellables)
     }
 }
 
