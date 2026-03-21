@@ -22,6 +22,7 @@ struct VariableFillView: View {
         case selection(options: [String])
         case date
         case time
+        case smart(placeholder: String)
     }
     
     struct TemplateVariable: Identifiable, Hashable {
@@ -103,7 +104,13 @@ struct VariableFillView: View {
                 continue
             }
             
-            // 4. Texto normal: {{Variable}}
+            // 4. Smart Placeholders (clipboard, date, etc)
+            if PlaceholderResolver.isSmart(raw) {
+                vars.append(TemplateVariable(id: raw, name: raw.uppercased(), type: .smart(placeholder: raw)))
+                continue
+            }
+            
+            // 5. Texto normal: {{Variable}}
             vars.append(TemplateVariable(id: raw, name: raw, type: .text))
         }
         
@@ -216,6 +223,10 @@ struct VariableFillView: View {
                     switch variable.type {
                     case .selection(let options):
                         variableValues[variable.id] = options.first ?? ""
+                    case .smart(let id):
+                        if let resolved = PlaceholderResolver.shared.resolve(id) {
+                            variableValues[variable.id] = resolved
+                        }
                     case .text:
                         // Si es del tipo {{Label:Valor}}, extraer el Valor como valor inicial
                         if variable.id.contains(":") {
@@ -229,8 +240,14 @@ struct VariableFillView: View {
                 }
             }
             
+            // Determinar el primer campo manual para el foco
+            let firstManualField = variables.first { variable in
+                if case .smart = variable.type { return false }
+                return true
+            }
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                focusedField = variables.first?.id
+                focusedField = firstManualField?.id ?? variables.first?.id
             }
         }
         .onCommand(#selector(NSText.copy(_:))) {
@@ -434,6 +451,15 @@ struct VariableFillView: View {
                 .labelsHidden()
                 .datePickerStyle(.field)
                 .focused($focusedField, equals: variable.id)
+                
+            case .smart:
+                TextField(String(format: "value_for".localized(for: preferences.language), variable.name), text: Binding(
+                    get: { variableValues[variable.id, default: ""] },
+                    set: { variableValues[variable.id] = $0 }
+                ))
+                .textFieldStyle(.plain)
+                .focused($focusedField, equals: variable.id)
+                .onSubmit { handleSubmission(for: variable.id) }
             }
         }
     }
@@ -461,6 +487,7 @@ struct VariableFillView: View {
         case .text, .multiline: return "typing".localized(for: preferences.language)
         case .selection: return "selecting".localized(for: preferences.language)
         case .date, .time: return "choosing".localized(for: preferences.language)
+        case .smart: return "Auto-filled".localized(for: preferences.language)
         }
     }
     

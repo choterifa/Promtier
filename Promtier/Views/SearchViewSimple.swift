@@ -795,13 +795,21 @@ struct SearchViewSimple: View {
     private func usePrompt(_ prompt: Prompt) {
         // Si tiene variables, mostrar el formulario primero
         if prompt.hasTemplateVariables() {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                fillingVariablesFor = prompt
+            // EXCEPCIÓN: Si todas las variables son Inteligentes (Auto-resolvibles),
+            // resolvemos y copiamos directamente sin abrir el formulario.
+            if prompt.isSmartOnly() {
+                let resolvedContent = PlaceholderResolver.shared.resolveAll(in: prompt.content)
+                self.promptService.usePrompt(prompt, contentOverride: resolvedContent)
+                // Continuar con la lógica de post-copia después del bloque de variables
+            } else {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    fillingVariablesFor = prompt
+                }
+                return
             }
-            return
+        } else {
+            self.promptService.usePrompt(prompt)
         }
-        
-        self.promptService.usePrompt(prompt)
         
         // Lógica de Post-Copia: Sonido, Háptica, Cerrar y Preview
         if self.preferences.soundEnabled {

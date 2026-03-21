@@ -194,6 +194,19 @@ struct Prompt: Identifiable, Codable {
         return variables
     }
     
+    /// Verifica si un prompt contiene únicamente variables inteligentes (que se autorresuelven)
+    func isSmartOnly() -> Bool {
+        let vars = extractTemplateVariables()
+        if vars.isEmpty { return false }
+        return vars.allSatisfy { PlaceholderResolver.isSmart($0) }
+    }
+    
+    /// Verifica si tiene al menos una variable inteligente
+    func hasAnySmartVariable() -> Bool {
+        let vars = extractTemplateVariables()
+        return vars.contains { PlaceholderResolver.isSmart($0) }
+    }
+    
     /// True si está en la papelera
     var isInTrash: Bool { deletedAt != nil }
     

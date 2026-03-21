@@ -1525,9 +1525,10 @@ class PromptService: ObservableObject {
     }
     
     /// Registra uso de prompt y lo copia al clipboard (Versión estándar)
-    func usePrompt(_ prompt: Prompt) {
+    func usePrompt(_ prompt: Prompt, contentOverride: String? = nil) {
+        let contentToCopy = contentOverride ?? prompt.content
         recordPromptUse(prompt)
-        clipboardService.copyToClipboard(prompt.content)
+        clipboardService.copyToClipboard(contentToCopy)
     }
     
     /// Copia prompt con variables de plantilla (Legacy/Internal)
