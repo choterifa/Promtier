@@ -68,6 +68,10 @@ struct NewPromptView: View {
     @State private var snippetSelectedIndex: Int = 0
     @State private var triggerSnippetSelection: Bool = false
     
+    @State private var showVariables: Bool = false
+    @State private var variablesSelectedIndex: Int = 0
+    @State private var triggerVariablesSelection: Bool = false
+    
     @State private var triggerAIRequest: String? = nil
     @State private var isAIActive: Bool = false
     @State private var showParticles: Bool = false
@@ -176,6 +180,9 @@ struct NewPromptView: View {
                 snippetSearchQuery: $snippetSearchQuery,
                 snippetSelectedIndex: $snippetSelectedIndex,
                 triggerSnippetSelection: $triggerSnippetSelection,
+                showVariables: $showVariables,
+                variablesSelectedIndex: $variablesSelectedIndex,
+                triggerVariablesSelection: $triggerVariablesSelection,
                 triggerAIRequest: $triggerAIRequest,
                 isAIActive: $isAIActive,
                 editorID: "main",
@@ -205,6 +212,9 @@ struct NewPromptView: View {
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
                     triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
                     showingPremiumFor: $showingPremiumFor,
@@ -431,6 +441,9 @@ struct NewPromptView: View {
             snippetSearchQuery: $snippetSearchQuery,
             snippetSelectedIndex: $snippetSelectedIndex,
             triggerSnippetSelection: $triggerSnippetSelection,
+            showVariables: $showVariables,
+            variablesSelectedIndex: $variablesSelectedIndex,
+            triggerVariablesSelection: $triggerVariablesSelection,
             triggerAIRequest: $triggerAIRequest,
             isAIActive: $isAIActive,
             showingPremiumFor: $showingPremiumFor,
@@ -703,6 +716,16 @@ struct NewPromptView: View {
                         removal: .opacity.combined(with: .scale(scale: 0.98))
                     ))
                     .zIndex(200)
+            }
+            if showVariables {
+                variablesOverlay
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.95, anchor: .bottom)
+                            .combined(with: .opacity)
+                            .combined(with: .move(edge: .bottom)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
+                    .zIndex(201)
             }
             if showParticles {
                 ParticleSystemView(accentColor: currentCategoryColor)
@@ -1446,6 +1469,36 @@ struct NewPromptView: View {
             }
         }
     }
+    
+    private var variablesOverlay: some View {
+        VStack {
+            Spacer()
+            if !preferences.isPremiumActive {
+                PremiumUpsellView(
+                    featureName: "dynamic_variables".localized(for: preferences.language),
+                    onCancel: {
+                        withAnimation { showVariables = false }
+                    }
+                )
+                .cornerRadius(24)
+                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
+                .padding(.bottom, 24)
+            } else {
+                VariablesPopupList(
+                    selectedIndex: $variablesSelectedIndex,
+                    triggerSelection: $triggerVariablesSelection,
+                    onSelect: { option in
+                        insertionRequest = option.insertionText
+                        withAnimation { showVariables = false }
+                    },
+                    onDismiss: {
+                        withAnimation { showVariables = false }
+                    }
+                )
+                .padding(.bottom, 24)
+            }
+        }
+    }
 }
 
 struct EditorCard: View {
@@ -1464,6 +1517,9 @@ struct EditorCard: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    @Binding var showVariables: Bool
+    @Binding var variablesSelectedIndex: Int
+    @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     let editorID: String
@@ -1525,23 +1581,14 @@ struct EditorCard: View {
                             Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
                         }
 
-                        Menu {
-                            Button("variable_simple".localized(for: preferences.language)) {
-                                if preferences.isPremiumActive {
-                                    insertionRequest = "{{variable}}"
-                                } else {
-                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                                }
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showVariables = true
+                                variablesSelectedIndex = 0
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
                             }
-                            
-                            Button("variable_multiline".localized(for: preferences.language)) {
-                                if preferences.isPremiumActive {
-                                    insertionRequest = "{{area:variable}}"
-                                } else {
-                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                                }
-                            }
-                        } label: {
+                        }) {
                             Image(systemName: "curlybraces")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(currentCategoryColor)
@@ -1647,6 +1694,9 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
+    @Binding var showVariables: Bool
+    @Binding var variablesSelectedIndex: Int
+    @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     @Binding var showingPremiumFor: String?
@@ -1662,6 +1712,8 @@ struct SecondaryEditorCard<Actions: View>: View {
          insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>,
          showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
          snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>,
+         showVariables: Binding<Bool>, variablesSelectedIndex: Binding<Int>,
+         triggerVariablesSelection: Binding<Bool>,
          triggerAIRequest: Binding<String?>, 
           isAIActive: Binding<Bool>,
           showingPremiumFor: Binding<String?>,
@@ -1680,6 +1732,9 @@ struct SecondaryEditorCard<Actions: View>: View {
         self._snippetSearchQuery = snippetSearchQuery
         self._snippetSelectedIndex = snippetSelectedIndex
         self._triggerSnippetSelection = triggerSnippetSelection
+        self._showVariables = showVariables
+        self._variablesSelectedIndex = variablesSelectedIndex
+        self._triggerVariablesSelection = triggerVariablesSelection
         self._triggerAIRequest = triggerAIRequest
         self._isAIActive = isAIActive
         self._showingPremiumFor = showingPremiumFor
@@ -1725,23 +1780,14 @@ struct SecondaryEditorCard<Actions: View>: View {
                             Divider().frame(height: 14).background(color.opacity(0.2))
                         }
 
-                        Menu {
-                            Button("variable_simple".localized(for: preferences.language)) {
-                                if preferences.isPremiumActive {
-                                    insertionRequest = "{{variable}}"
-                                } else {
-                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                                }
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showVariables = true
+                                variablesSelectedIndex = 0
+                            } else {
+                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
                             }
-                            
-                            Button("variable_multiline".localized(for: preferences.language)) {
-                                if preferences.isPremiumActive {
-                                    insertionRequest = "{{area:variable}}"
-                                } else {
-                                    showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                                }
-                            }
-                        } label: {
+                        }) {
                             Image(systemName: "curlybraces")
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(color)
