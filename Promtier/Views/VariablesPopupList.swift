@@ -83,7 +83,7 @@ struct VariablesPopupList: View {
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
         // Add implicit animation to the row when selection state changes
-        .onChange(of: selectedIndex) { newIndex in
+        .onChange(of: selectedIndex) { _, newIndex in
             DispatchQueue.main.async {
                 if newIndex >= options.count {
                     selectedIndex = options.count - 1
@@ -92,7 +92,7 @@ struct VariablesPopupList: View {
                 }
             }
         }
-        .onChange(of: triggerSelection) { triggered in
+        .onChange(of: triggerSelection) { _, triggered in
             if triggered {
                 let clampedIndex = min(max(0, selectedIndex), options.count - 1)
                 onSelect(options[clampedIndex])

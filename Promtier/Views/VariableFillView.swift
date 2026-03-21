@@ -233,7 +233,7 @@ struct VariableFillView: View {
                 focusedField = variables.first?.id
             }
         }
-        .onCommand(Selector(("copy:"))) {
+        .onCommand(#selector(NSText.copy(_:))) {
             if canCopy {
                 HapticService.shared.playImpact()
                 onCopy(processedContent)

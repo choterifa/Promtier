@@ -164,18 +164,20 @@ struct Prompt: Identifiable, Codable {
         modifiedAt = Date()
     }
     
+    // Statically cached Regex patterns to avoid compiling on every view redra
+    static let variableExtractRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    static let variableCheckRegex = try? NSRegularExpression(pattern: "\\{\\{[^}]+\\}\\}", options: [])
+    
     /// Verifica si el prompt contiene variables de plantilla {{variable}}
     func hasTemplateVariables() -> Bool {
-        let pattern = "\\{\\{[^}]+\\}\\}"
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let regex = Self.variableCheckRegex
         let range = NSRange(content.startIndex..<content.endIndex, in: content)
         return regex?.firstMatch(in: content, options: [], range: range) != nil
     }
     
     /// Extrae los nombres de las variables de plantilla del contenido
     func extractTemplateVariables() -> [String] {
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let regex = Self.variableExtractRegex
         let range = NSRange(content.startIndex..<content.endIndex, in: content)
         
         var variables: [String] = []

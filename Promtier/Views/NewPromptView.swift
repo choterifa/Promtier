@@ -460,7 +460,7 @@ struct NewPromptView: View {
                             branchMessage = "Content swapped!"
                         }
                         HapticService.shared.playLight()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { _ = withAnimation { branchMessage = nil } }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.arrow.down")
@@ -480,7 +480,7 @@ struct NewPromptView: View {
                             branchMessage = "Merged into main!"
                         }
                         HapticService.shared.playLight()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { _ = withAnimation { branchMessage = nil } }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down.to.line.compact")
@@ -537,7 +537,7 @@ struct NewPromptView: View {
                 // Action: Remove
                 Button(action: {
                     withAnimation(.easeOut(duration: 0.2)) {
-                        alternatives.remove(at: index)
+                        _ = alternatives.remove(at: index)
                     }
                     HapticService.shared.playLight()
                 }) {
@@ -611,7 +611,7 @@ struct NewPromptView: View {
                         mainScrollViewContent(geometry: geometry)
                             .frame(width: targetWidth)
                             .frame(maxWidth: .infinity)
-                            .onChange(of: focusNegative) { isFocused in
+                            .onChange(of: focusNegative) { _, isFocused in
                                 if isFocused {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
@@ -620,7 +620,7 @@ struct NewPromptView: View {
                                     }
                                 }
                             }
-                            .onChange(of: focusAlternative) { isFocused in
+                            .onChange(of: focusAlternative) { _, isFocused in
                                 if isFocused {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                                         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
@@ -1052,7 +1052,7 @@ struct NewPromptView: View {
             
             Spacer()
             
-            if let existing = originalPrompt ?? prompt {
+            if (originalPrompt ?? prompt) != nil {
                 Button(action: { branchPrompt() }) {
                     Image(systemName: "arrow.branch")
                         .font(.system(size: 14, weight: .bold))

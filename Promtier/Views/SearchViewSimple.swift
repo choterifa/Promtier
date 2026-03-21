@@ -199,7 +199,7 @@ struct SearchViewSimple: View {
             handleFileDrop(providers: providers)
             return true
         }
-        .onChange(of: menuBarManager.suggestedClipboardContent) { newValue in
+        .onChange(of: menuBarManager.suggestedClipboardContent) { _, newValue in
             if newValue == nil {
                 // El banner de sugerencia desapareció (por tiempo o manual)
                 // Suprimimos los Ghost Tips por 20 segundos para no saturar al usuario
@@ -242,7 +242,7 @@ struct SearchViewSimple: View {
         } message: {
             Text("import_confirmation_message".localized(for: preferences.language))
         }
-        .onChange(of: preferences.windowWidth) { oldWidth, newWidth in
+        .onChange(of: preferences.windowWidth) { _, newWidth in
             let threshold: CGFloat = 565
             
             // Solo auto-ocultar/mostrar en la vista principal

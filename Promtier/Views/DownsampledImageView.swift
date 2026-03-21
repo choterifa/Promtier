@@ -20,7 +20,8 @@ struct DownsampledImageView: View {
                     .fill(Color.primary.opacity(0.06))
                     .overlay {
                         ProgressView()
-                            .scaleEffect(0.7)
+                            .controlSize(.small)
+                            .fixedSize()
                             .opacity(0.85)
                     }
             }

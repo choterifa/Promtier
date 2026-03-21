@@ -1238,11 +1238,10 @@ class PromptService: ObservableObject {
             let imagesRoot = bundleRoot.appendingPathComponent("Images", isDirectory: true)
 
             let context: NSManagedObjectContext = dataController.backgroundContext
-            var successCount = 0
-            var failedCount = 0
-            var foldersCreated = 0
-
-            context.performAndWaitCompat { [self] in
+            let (successCount, failedCount, foldersCreated) = context.performAndWaitCompat { [self] in
+                var sCount = 0
+                var fCount = 0
+                var cCount = 0
                 do {
                     // Cache de existentes por ID para evitar fetch por item.
                     let existingPromptIds = try self.fetchExistingPromptIds(in: context)
@@ -1257,7 +1256,7 @@ class PromptService: ObservableObject {
                     for folder in archive.folders {
                         if folderIdSet.contains(folder.id) || folderNameSet.contains(folder.name) { continue }
                         _ = FolderEntity.create(from: folder, in: context)
-                        foldersCreated += 1
+                        cCount += 1
                         folderIdSet.insert(folder.id)
                         folderNameSet.insert(folder.name)
                     }
@@ -1265,7 +1264,7 @@ class PromptService: ObservableObject {
                     // 2) Prompts
                     for prompt in archive.prompts {
                         if promptIdSet.contains(prompt.id) {
-                            failedCount += 1
+                            fCount += 1
                             continue
                         }
 
@@ -1308,10 +1307,10 @@ class PromptService: ObservableObject {
 
                         entity.showcaseImageCount = Int16(paths.count)
 
-                        successCount += 1
+                        sCount += 1
                         promptIdSet.insert(prompt.id)
 
-                        if successCount % 50 == 0, context.hasChanges {
+                        if sCount % 50 == 0, context.hasChanges {
                             try context.save()
                         }
                     }
@@ -1322,6 +1321,8 @@ class PromptService: ObservableObject {
                 } catch {
                     print("❌ Error importando backup ZIP: \(error)")
                 }
+                
+                return (sCount, fCount, cCount)
             }
 
             DispatchQueue.main.async {

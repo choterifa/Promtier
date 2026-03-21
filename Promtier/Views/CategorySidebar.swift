@@ -9,7 +9,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-private struct SidebarDragPayload: Codable, Sendable {
+@preconcurrency struct SidebarDragPayload: Codable, Sendable {
     let kind: String
     let ids: [String]?
     let id: String?
@@ -19,6 +19,7 @@ struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var batchService: BatchOperationsService
+    @EnvironmentObject var menuBarManager: MenuBarManager
     
     @State private var showingFolderManager = false
     @State private var draggedFolder: Folder? = nil
@@ -26,7 +27,6 @@ struct CategorySidebar: View {
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
     @State private var isTargetedPapelera = false
-    @EnvironmentObject var menuBarManager: MenuBarManager
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
@@ -53,7 +53,7 @@ struct CategorySidebar: View {
                 
                 Spacer()
                 
-                // Botón de Ordenamiento de Prompts (Redirigido desde cabecera principal)
+                // Botón de Ordenamiento de Prompts
                 Menu {
                     Button { promptService.promptSortMode = .manual } label: {
                         Label("sort_manual".localized(for: preferences.language), systemImage: promptService.promptSortMode == .manual ? "checkmark" : "clock")
@@ -160,79 +160,8 @@ struct CategorySidebar: View {
                 .padding(.vertical, 16)
                 .padding(.horizontal, 24)
             
-            // Lista de categorías
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 4) {
-                    ForEach(promptService.folders) { folder in
-                        let count = categoryCounts[folder.name] ?? 0
-                        
-                        SidebarItem(
-                            title: LocalizedStringKey(folder.name),
-                            icon: folder.icon ?? "folder.fill",
-                            color: Color(hex: folder.displayColor),
-                            count: count,
-                            isSelected: promptService.selectedCategory == folder.name,
-                            isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
-                            action: {
-                                promptService.selectedCategory = folder.name
-                            }
-                        )
-                        .overlay(
-                            VStack {
-                                if dropTargetFolderId == folder.id && draggedFolder != nil {
-                                    Rectangle()
-                                        .fill(Color.blue)
-                                        .frame(height: 2)
-                                        .transition(.scale.combined(with: .opacity))
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 12)
-                            .offset(y: -2)
-                        )
-                        .onDrag {
-                            self.draggedFolder = folder
-                            menuBarManager.isModalActive = true // Evitar cierre automático
-                            let provider = NSItemProvider()
-                            let payload = SidebarDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
-                            if let data = try? JSONEncoder().encode(payload) {
-                                provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
-                                    completion(data, nil)
-                                    return nil
-                                }
-                            }
-                            return provider
-                        }
-                        .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
-                            folder: folder,
-                            promptService: promptService,
-                            menuBarManager: menuBarManager,
-                            draggedFolder: $draggedFolder,
-                            dropTargetFolderId: $dropTargetFolderId,
-                            onMove: { source, dest in reorderFolder(source, to: dest) },
-                            onPromptMove: { pIds, fName in movePrompts(ids: pIds, to: fName) }
-                        ))
-                        .contextMenu {
-                            Button {
-                                menuBarManager.folderToEdit = folder
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    menuBarManager.activeViewState = .folderManager
-                                }
-                            } label: {
-                                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
-                            }
-                            
-                            Button(role: .destructive) {
-                                _ = promptService.deleteFolder(folder)
-                            } label: {
-                                Label("delete".localized(for: preferences.language), systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 24)
-            }
+            // Lista de categorías (Extraído para reducir complejidad)
+            foldersListView
             
             Divider()
                 .padding(.vertical, 8)
@@ -266,6 +195,86 @@ struct CategorySidebar: View {
         )
     }
     
+    @ViewBuilder
+    private var foldersListView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 4) {
+                ForEach(promptService.folders, id: \.id) { folder in
+                    let count: Int = categoryCounts[folder.name] ?? 0
+                    
+                    SidebarItem(
+                        title: LocalizedStringKey(folder.name),
+                        icon: folder.icon ?? "folder.fill",
+                        color: Color(hex: folder.displayColor),
+                        count: count,
+                        isSelected: promptService.selectedCategory == folder.name,
+                        isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
+                        action: {
+                            promptService.selectedCategory = folder.name
+                        }
+                    )
+                    .overlay(
+                        VStack {
+                            if dropTargetFolderId == folder.id && draggedFolder != nil {
+                                Rectangle()
+                                    .fill(Color.blue)
+                                    .frame(height: 2)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .offset(y: -2)
+                    )
+                    .onDrag {
+                        self.draggedFolder = folder
+                        menuBarManager.isModalActive = true
+                        let provider = NSItemProvider()
+                        let payload = SidebarDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
+                        if let data = try? JSONEncoder().encode(payload) {
+                            provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
+                                completion(data, nil)
+                                return nil
+                            }
+                        }
+                        return provider
+                    }
+                    .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
+                        folder: folder,
+                        promptService: promptService,
+                        menuBarManager: menuBarManager,
+                        draggedFolder: $draggedFolder,
+                        dropTargetFolderId: $dropTargetFolderId,
+                        onMove: { source, destination in
+                            reorderFolder(source, to: destination)
+                        },
+                        onPromptMove: { ids, folderName in
+                            movePrompts(ids: ids, to: folderName)
+                        }
+                    ))
+                    .contextMenu {
+                        Button {
+                            menuBarManager.folderToEdit = folder
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                menuBarManager.activeViewState = .folderManager
+                            }
+                        } label: {
+                            Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            _ = promptService.deleteFolder(folder)
+                        } label: {
+                            Label("delete".localized(for: preferences.language), systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
+        }
+    }
+    
     // MARK: - Helpers de Drag & Drop
     
     private func movePrompt(id: String, to folderName: String?) {
@@ -283,10 +292,6 @@ struct CategorySidebar: View {
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
     
-    private func markAsFavorite(id: String) {
-        markAsFavorite(ids: [id])
-    }
-
     private func markAsFavorite(ids: [String]) {
         let uuids = ids.compactMap(UUID.init(uuidString:))
         guard !uuids.isEmpty else { return }
@@ -295,6 +300,10 @@ struct CategorySidebar: View {
             batchService.clearSelection()
         }
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+
+    private func markAsFavorite(id: String) {
+        markAsFavorite(ids: [id])
     }
 
     private func moveToTrash(ids: [String]) {
@@ -311,12 +320,14 @@ struct CategorySidebar: View {
         let jsonType = UTType.json.identifier
         guard provider.hasItemConformingToTypeIdentifier(jsonType) else { return false }
         _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
-            guard let data,
-                  let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
-                  payload.kind == "promtier.prompt.ids",
-                  let ids = payload.ids,
-                  !ids.isEmpty else { return }
-            completion(ids)
+            Task { @MainActor in
+                guard let data,
+                      let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
+                      payload.kind == "promtier.prompt.ids",
+                      let ids = payload.ids,
+                      !ids.isEmpty else { return }
+                completion(ids)
+            }
         }
         return true
     }
@@ -332,8 +343,6 @@ struct CategorySidebar: View {
             let folder = folders.remove(at: sourceIndex)
             folders.insert(folder, at: destIndex)
             promptService.reorderFolders(folders)
-            
-            // Forzar actualización de UI
             promptService.loadFolders()
         }
         
@@ -341,7 +350,6 @@ struct CategorySidebar: View {
         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
     
-    // Helper para los botones superiores de drop
     private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
         for provider in providers {
             if decodeDraggedPromptIds(from: provider, completion: { ids in
@@ -388,11 +396,9 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        // Si estamos arrastrando una carpeta para reordenar, usamos .move
         if draggedFolder != nil {
             return DropProposal(operation: .move)
         }
-        // Si es un prompt siendo categorizado, usamos .copy para mostrar el "+"
         return DropProposal(operation: .copy)
     }
     
@@ -403,26 +409,26 @@ struct FolderDropDelegate: DropDelegate {
     
     func performDrop(info: DropInfo) -> Bool {
         dropTargetFolderId = nil
-        menuBarManager.isModalActive = false // Ya se puede cerrar
+        menuBarManager.isModalActive = false
         
-        // 1. Manejar reordenado de Carpeta
         if let dragged = draggedFolder {
             onMove(dragged, folder)
             draggedFolder = nil
             return true
         }
         
-        // 2. Manejar movimiento de Prompt (JSON)
         let jsonType = UTType.json.identifier
         for provider in info.itemProviders(for: [.json, .plainText]) {
             if provider.hasItemConformingToTypeIdentifier(jsonType) {
                 _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
-                    guard let data,
-                        let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
-                          payload.kind == "promtier.prompt.ids",
-                          let ids = payload.ids,
-                          !ids.isEmpty else { return }
-                    DispatchQueue.main.async { onPromptMove(ids, folder.name) }
+                    Task { @MainActor in
+                        guard let data,
+                              let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
+                              payload.kind == "promtier.prompt.ids",
+                              let ids = payload.ids,
+                              !ids.isEmpty else { return }
+                        onPromptMove(ids, folder.name)
+                    }
                 }
                 return true
             }
@@ -441,7 +447,6 @@ struct SidebarItem: View {
     var isDropTarget: Bool = false
     let action: () -> Void
     
-    // Configuración opcional para Drop
     var dropAllowed: Bool = true
     var dropHandler: ((String) -> Void)? = nil
     
@@ -494,16 +499,4 @@ struct SidebarItem: View {
             isHovered = hovering
         }
     }
-}
-
-#Preview {
-    HStack(spacing: 0) {
-        CategorySidebar()
-            .environmentObject(PromptService())
-        
-        Rectangle()
-            .fill(Color.gray.opacity(0.1))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    .frame(width: 600, height: 400)
 }

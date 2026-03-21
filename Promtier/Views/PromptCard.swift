@@ -31,14 +31,20 @@ struct PromptCard: View {
     
     @State private var isTargetedForDrop = false
     
+    // Statically cached Regex patterns to prevent massive main-thread blocking during scroll
+    static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
+    static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    
     private var highlightedContent: AttributedString {
-        var attrString = AttributedString(prompt.content)
+        // Truncate the content to a reasonable length for a preview card (e.g. 500 characters max)
+        // This is the #1 fix for performance issues on massive prompts during scroll.
+        let previewText = String(prompt.content.prefix(500))
+        var attrString = AttributedString(previewText)
         
         // 1. Resaltado de Brackets
-        let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
-        if let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: []) {
-            let nsRange = NSRange(prompt.content.startIndex..., in: prompt.content)
-            let matches = bracketRegex.matches(in: prompt.content, options: [], range: nsRange)
+        if let bracketRegex = Self.bracketRegex {
+            let nsRange = NSRange(previewText.startIndex..., in: previewText)
+            let matches = bracketRegex.matches(in: previewText, options: [], range: nsRange)
             for match in matches {
                 if let range = Range(match.range, in: attrString) {
                     attrString[range].foregroundColor = currentCategoryColor.opacity(0.8)
@@ -47,20 +53,16 @@ struct PromptCard: View {
         }
         
         // 2. Resaltado de Variables
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return attrString
-        }
-        
-        let nsRange = NSRange(prompt.content.startIndex..., in: prompt.content)
-        let matches = regex.matches(in: prompt.content, options: [], range: nsRange)
-        
-        for match in matches.reversed() {
-            if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = .blue
-                attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
-                attrString[range].backgroundColor = Color.blue.opacity(0.08)
+        if let variableRegex = Self.variableRegex {
+            let nsRange = NSRange(previewText.startIndex..., in: previewText)
+            let matches = variableRegex.matches(in: previewText, options: [], range: nsRange)
+            
+            for match in matches.reversed() {
+                if let range = Range(match.range, in: attrString) {
+                    attrString[range].foregroundColor = .blue
+                    attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
+                    attrString[range].backgroundColor = Color.blue.opacity(0.08)
+                }
             }
         }
         
@@ -152,7 +154,7 @@ struct PromptCard: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(color)
                 }
-            } else if let folder = prompt.folder {
+            } else if prompt.folder != nil {
                 let color = currentCategoryColor
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)

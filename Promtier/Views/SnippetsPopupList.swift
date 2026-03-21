@@ -72,7 +72,7 @@ struct SnippetsPopupList: View {
                         .padding(8)
                     }
                     .frame(maxHeight: 250)
-                    .onChange(of: selectedIndex) { newIndex in
+                    .onChange(of: selectedIndex) { _, newIndex in
                         withAnimation {
                             proxy.scrollTo(newIndex, anchor: .center)
                         }
@@ -91,12 +91,12 @@ struct SnippetsPopupList: View {
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
         // Add implicit animation to the row when selection state changes
-        .onChange(of: selectedIndex) { newIndex in
+        .onChange(of: selectedIndex) { _, newIndex in
             if newIndex >= filteredSnippets.count && !filteredSnippets.isEmpty {
                 selectedIndex = filteredSnippets.count - 1
             }
         }
-        .onChange(of: triggerSelection) { triggered in
+        .onChange(of: triggerSelection) { _, triggered in
             if triggered {
                 if !filteredSnippets.isEmpty {
                     let clampedIndex = min(max(0, selectedIndex), filteredSnippets.count - 1)
@@ -109,7 +109,7 @@ struct SnippetsPopupList: View {
         .onAppear {
             self.selectedIndex = 0
         }
-        .onChange(of: query) { _ in
+        .onChange(of: query) { _, _ in
             self.selectedIndex = 0
         }
         // Evitar que el ESC cierre la ventana principal
