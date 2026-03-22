@@ -1385,7 +1385,7 @@ class PromptService: ObservableObject {
         
         var rows: [String] = []
         // Cabecera
-        rows.append("id,title,content,folder,icon,isFavorite,useCount,createdAt,modifiedAt")
+        rows.append("id,title,content,folder,icon,isFavorite,useCount,createdAt,modifiedAt,lastUsedAt")
         
         for p in prompts {
             let row = [
@@ -1397,7 +1397,8 @@ class PromptService: ObservableObject {
                 p.isFavorite ? "true" : "false",
                 "\(p.useCount)",
                 csv(iso.string(from: p.createdAt)),
-                csv(iso.string(from: p.modifiedAt))
+                csv(iso.string(from: p.modifiedAt)),
+                csv(p.lastUsedAt != nil ? iso.string(from: p.lastUsedAt!) : "")
             ].joined(separator: ",")
             rows.append(row)
         }
