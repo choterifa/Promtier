@@ -31,6 +31,7 @@ struct SearchViewSimple: View {
     @State private var currentGhostTip: GhostTip? = nil
     @State private var nextTipIndex: Int = 0
     @State private var isGhostTipSuppressedByClipboard = false
+    @State private var ghostTipTask: Task<Void, Never>? = nil
     private var ghostTips: [GhostTip] {
         [
             // Navegación y Lista
@@ -207,6 +208,17 @@ struct SearchViewSimple: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
                     isGhostTipSuppressedByClipboard = false
                 }
+            }
+        }
+        .onChange(of: menuBarManager.activeViewState) { _, newValue in
+            if newValue == .main {
+                // Darle tiempo antes de aparecer cuando regresa a main
+                scheduleNextGhostTip(initialDelay: 10.0)
+            } else {
+                // Ocultar si sale de main
+                withAnimation { currentGhostTip = nil }
+                ghostTipTask?.cancel()
+                ghostTipTask = nil
             }
         }
         .overlay {
@@ -1021,40 +1033,53 @@ struct SearchViewSimple: View {
         }
     }
     
-    /// Programa la aparición de un Ghost Tip de forma secuencial
-    private func scheduleNextGhostTip(initialDelay: Double? = nil) {
-        guard preferences.ghostTipsEnabled else { return }
-        
-        // Usar delay inicial (ej: 3s) si se solicita, si no, uno aleatorio normal
-        let delay = initialDelay ?? Double.random(in: 25...45)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            // Solo mostrar si seguimos en la pantalla principal y están activados
-            if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    // Seleccionar el siguiente consejo en la lista de forma circular
-                    let tips = self.ghostTips
-                    if !tips.isEmpty {
-                        self.currentGhostTip = tips[self.nextTipIndex % tips.count]
-                        self.nextTipIndex = (self.nextTipIndex + 1) % tips.count
-                    }
-                }
+        /// Programa la aparición de un Ghost Tip de forma secuencial
+        private func scheduleNextGhostTip(initialDelay: Double? = nil) {
+            ghostTipTask?.cancel()
+            
+            guard preferences.ghostTipsEnabled else { return }
+    
+            // Usar delay inicial si se solicita, si no, uno aleatorio normal
+            let delay = initialDelay ?? Double.random(in: 25...45)
+    
+            ghostTipTask = Task {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                if Task.isCancelled { return }
                 
-                // ⏱️ Auto-ocultar después de 6.5 segundos (ajustado por petición)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
-                    if self.currentGhostTip != nil {
-                        withAnimation(.easeOut(duration: 0.4)) {
-                            self.currentGhostTip = nil
+                await MainActor.run {
+                    // Solo mostrar si seguimos en la pantalla principal y están activados
+                    if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                            // Seleccionar el siguiente consejo en la lista de forma circular
+                            let tips = self.ghostTips
+                            if !tips.isEmpty {
+                                self.currentGhostTip = tips[self.nextTipIndex % tips.count]
+                                self.nextTipIndex = (self.nextTipIndex + 1) % tips.count
+                            }
                         }
+    
+                        // ⏱️ Auto-ocultar después de 6.5 segundos (ajustado por petición)
+                        Task {
+                            try? await Task.sleep(nanoseconds: 6_500_000_000)
+                            if !Task.isCancelled {
+                                await MainActor.run {
+                                    if self.currentGhostTip != nil {
+                                        withAnimation(.easeOut(duration: 0.4)) {
+                                            self.currentGhostTip = nil
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+    
+                    if !Task.isCancelled {
+                        // Programar el siguiente tip (sin delay inicial forzado)
+                        self.scheduleNextGhostTip()
                     }
                 }
             }
-            
-            // Programar el siguiente tip (sin delay inicial forzado)
-            self.scheduleNextGhostTip()
-        }
-    }
-}
+        }}
 
 // MARK: - Guía Visual de Redimensionado HUD
 struct ResizingGuideView: View {
