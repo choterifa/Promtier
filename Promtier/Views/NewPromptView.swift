@@ -256,83 +256,101 @@ struct NewPromptView: View {
             )
             .frame(minHeight: 380)
             
-            // SECTION 2: ADVANCED FIELDS
-            VStack(spacing: 24) {
-                // 2.1: NEGATIVE PROMPT
-                SecondaryEditorCard(
-                    title: "negative_prompt".localized(for: preferences.language),
-                    placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
-                    text: $negativePrompt,
-                    icon: "minus.circle.fill",
-                    color: .red,
-                    focusRequest: $focusNegative,
-                    onZenMode: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            zenTarget = .negative
-                            showingZenEditor = true
-                        }
-                    },
-                    insertionRequest: $insertionRequest,
-                    replaceSnippetRequest: $replaceSnippetRequest,
-                    showSnippets: $showSnippets,
-                    snippetSearchQuery: $snippetSearchQuery,
-                    snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection,
-                    showVariables: $showVariables,
-                    variablesSelectedIndex: $variablesSelectedIndex,
-                    triggerVariablesSelection: $triggerVariablesSelection,
-                    triggerAIRequest: $triggerAIRequest,
-                    isAIActive: $isAIActive,
-                    isAIGenerating: Binding(
-                        get: { activeGeneratingID == "negative" },
-                        set: { val in activeGeneratingID = val ? "negative" : nil }
-                    ),
-                    selectedRange: $selectedNegativeRange,
-                    aiResult: $aiNegativeResult,
-                    showingPremiumFor: $showingPremiumFor,
-                    originalPrompt: originalPrompt,
-                    prompt: prompt,
-                    branchMessage: $branchMessage,
-                    editorID: "negative",
-                    currentCategoryColor: currentCategoryColor
-                ) {
-                    EmptyView()
+            // SECTION 2: ADVANCED FIELDS (Unified Group)
+            VStack(alignment: .leading, spacing: 16) {
+                // Header de sección unificado
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.purple)
+                    Text("show_advanced_fields".localized(for: preferences.language).uppercased())
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .tracking(1)
                 }
-                .id("negative_prompt_section")
+                .padding(.horizontal, 8)
                 
-                // 2.2: ALTERNATIVE PROMPTS
-                VStack(alignment: .leading, spacing: 16) {
-                    if !alternatives.isEmpty {
-                        VStack(spacing: 16) {
-                            ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
-                                alternativeRow(index: index)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                VStack(spacing: 24) {
+                    // 2.1: NEGATIVE PROMPT
+                    SecondaryEditorCard(
+                        title: "negative_prompt".localized(for: preferences.language),
+                        placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
+                        text: $negativePrompt,
+                        icon: "minus.circle.fill",
+                        color: .red,
+                        focusRequest: $focusNegative,
+                        onZenMode: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                zenTarget = .negative
+                                showingZenEditor = true
                             }
-                        }
+                        },
+                        insertionRequest: $insertionRequest,
+                        replaceSnippetRequest: $replaceSnippetRequest,
+                        showSnippets: $showSnippets,
+                        snippetSearchQuery: $snippetSearchQuery,
+                        snippetSelectedIndex: $snippetSelectedIndex,
+                        triggerSnippetSelection: $triggerSnippetSelection,
+                        showVariables: $showVariables,
+                        variablesSelectedIndex: $variablesSelectedIndex,
+                        triggerVariablesSelection: $triggerVariablesSelection,
+                        triggerAIRequest: $triggerAIRequest,
+                        isAIActive: $isAIActive,
+                        isAIGenerating: Binding(
+                            get: { activeGeneratingID == "negative" },
+                            set: { val in activeGeneratingID = val ? "negative" : nil }
+                        ),
+                        selectedRange: $selectedNegativeRange,
+                        aiResult: $aiNegativeResult,
+                        showingPremiumFor: $showingPremiumFor,
+                        originalPrompt: originalPrompt,
+                        prompt: prompt,
+                        branchMessage: $branchMessage,
+                        editorID: "negative",
+                        currentCategoryColor: currentCategoryColor
+                    ) {
+                        EmptyView()
                     }
+                    .id("negative_prompt_section")
                     
-                    if alternatives.count < 10 {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                alternatives.append("")
+                    // 2.2: ALTERNATIVE PROMPTS
+                    VStack(alignment: .leading, spacing: 16) {
+                        if !alternatives.isEmpty {
+                            VStack(spacing: 16) {
+                                ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
+                                    alternativeRow(index: index)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
                             }
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("add_alternative".localized(for: preferences.language))
-                            }
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.blue.opacity(0.08))
-                            .cornerRadius(10)
                         }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        if alternatives.count < 10 {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    alternatives.append("")
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("add_alternative".localized(for: preferences.language))
+                                }
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.blue.opacity(0.08))
+                                .cornerRadius(10)
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
                     }
+                    .id("alternatives_section")
                 }
-                .id("alternatives_section")
+                .padding(16)
+                .background(Color.primary.opacity(0.04))
+                .cornerRadius(24)
+                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.primary.opacity(0.06), lineWidth: 1))
             }
             
             // SECTION 3: UTILITIES
@@ -1705,7 +1723,7 @@ struct EditorCard: View {
                                     Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                                 }
                             } label: {
-                                Image(systemName: "brain.fill")
+                                Image(systemName: "sparkles")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(currentCategoryColor)
                                     .frame(width: 32, height: 32)
@@ -2071,7 +2089,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                                     Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                                 }
                             } label: {
-                                Image(systemName: "brain.fill")
+                                Image(systemName: "sparkles")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(color)
                                     .frame(width: 24, height: 24)
