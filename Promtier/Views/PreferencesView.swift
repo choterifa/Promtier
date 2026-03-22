@@ -610,6 +610,23 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
+                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
+                    Toggle("", isOn: $preferences.geminiEnabled)
+                        .toggleStyle(.switch)
+                }
+                
+                if preferences.geminiEnabled {
+                    Divider().padding(.leading, 20)
+                    
+                    SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
+                        SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 250)
+                    }
+                }
+                
+                Divider().padding(.leading, 20)
+                
                 SettingsRow("local_ai_ollama", subtitle: "ollama_subtitle") {
                     Toggle("", isOn: $preferences.ollamaEnabled)
                         .toggleStyle(.switch)

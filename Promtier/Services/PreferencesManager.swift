@@ -229,6 +229,18 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var geminiEnabled: Bool {
+        didSet {
+            userDefaults.set(geminiEnabled, forKey: "geminiEnabled")
+        }
+    }
+    
+    @Published var geminiAPIKey: String {
+        didSet {
+            userDefaults.set(geminiAPIKey, forKey: "geminiAPIKey")
+        }
+    }
+    
     @Published var ghostTipsEnabled: Bool {
         didSet {
             userDefaults.set(ghostTipsEnabled, forKey: "ghostTipsEnabled")
@@ -372,6 +384,10 @@ class PreferencesManager: ObservableObject {
         self.ollamaURL = userDefaults.string(forKey: "ollamaURL") ?? "http://localhost:11434"
         self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? "llama3"
         
+        // Gemini
+        self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
+        self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
+        
         // Aplicar configuración inicial
         applyAppearance()
         applyDockPolicy()
@@ -468,6 +484,8 @@ class PreferencesManager: ObservableObject {
         self.ollamaEnabled = true
         self.ollamaURL = "http://localhost:11434"
         self.ollamaDefaultModel = "llama3"
+        self.geminiEnabled = false
+        self.geminiAPIKey = ""
         
         applyAppearance()
     }

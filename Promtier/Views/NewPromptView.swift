@@ -1829,53 +1829,64 @@ struct EditorCard: View {
         }
     }
 
-    private func performAIAction(_ action: AIAction) {
-        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
-        
-        isAIGenerating = true
-        HapticService.shared.playImpact()
-        
-        // Determinar qué fragmento procesar (selección o todo)
-        let textToProcess: String
-        let rangeToProcess: NSRange
-        let fullNSString = content as NSString
-        
-        if let sel = selectedRange, sel.length > 0 {
-            textToProcess = fullNSString.substring(with: sel)
-            rangeToProcess = sel
-        } else {
-            textToProcess = content
-            rangeToProcess = NSRange(location: 0, length: fullNSString.length)
-        }
-        
-        guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            isAIGenerating = false
-            return
-        }
-        
-        let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
-        let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
-        
-        var fullResponse = ""
-        OllamaService.shared.generate(prompt: fullPrompt, model: model)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
+        private func performAIAction(_ action: AIAction) {
+            let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+            let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
+            
+            guard useGemini || useOllama else { return }
+    
+            isAIGenerating = true
+            HapticService.shared.playImpact()
+    
+            // Determinar qué fragmento procesar (selección o todo)
+            let textToProcess: String
+            let rangeToProcess: NSRange
+            let fullNSString = content as NSString
+    
+            if let sel = selectedRange, sel.length > 0 {
+                textToProcess = fullNSString.substring(with: sel)
+                rangeToProcess = sel
+            } else {
+                textToProcess = content
+                rangeToProcess = NSRange(location: 0, length: fullNSString.length)
+            }
+    
+            guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 isAIGenerating = false
-                if case .failure = completion {
-                    HapticService.shared.playError()
-                } else {
-                    HapticService.shared.playSuccess()
-                    if !fullResponse.isEmpty {
-                        let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        aiResult = AIResult(result: resultString, range: rangeToProcess)
+                return
+            }
+    
+            let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
+            let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
+    
+            var fullResponse = ""
+            let publisher: AnyPublisher<String, Error>
+            
+            if useGemini {
+                publisher = GeminiService.shared.generate(prompt: fullPrompt)
+            } else {
+                let model = OllamaService.shared.selectedModel!
+                publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
+            }
+            
+            publisher
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { completion in
+                    isAIGenerating = false
+                    if case .failure = completion {
+                        HapticService.shared.playError()
+                    } else {
+                        HapticService.shared.playSuccess()
+                        if !fullResponse.isEmpty {
+                            let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            aiResult = AIResult(result: resultString, range: rangeToProcess)
+                        }
                     }
-                }
-            }, receiveValue: { chunk in
-                fullResponse += chunk
-            })
-            .store(in: &cancellables)
-    }
-
+                }, receiveValue: { chunk in
+                    fullResponse += chunk
+                })
+                .store(in: &cancellables)
+        }
     private func createNewPromptFromEditor() {
         let newTitle = "New Prompt from Editor"
         let newPrompt = Prompt(
@@ -2171,53 +2182,64 @@ struct SecondaryEditorCard<Actions: View>: View {
         }
     }
     
-    private func performAIAction(_ action: AIAction) {
-        guard preferences.ollamaEnabled, let model = OllamaService.shared.selectedModel else { return }
-        
-        isAIGenerating = true
-        HapticService.shared.playImpact()
-        
-        // Determinar qué fragmento procesar
-        let textToProcess: String
-        let rangeToProcess: NSRange
-        let fullNSString = text as NSString
-        
-        if let sel = selectedRange, sel.length > 0 {
-            textToProcess = fullNSString.substring(with: sel)
-            rangeToProcess = sel
-        } else {
-            textToProcess = text
-            rangeToProcess = NSRange(location: 0, length: fullNSString.length)
-        }
-        
-        guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            isAIGenerating = false
-            return
-        }
-        
-        let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
-        let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
-        
-        var fullResponse = ""
-        OllamaService.shared.generate(prompt: fullPrompt, model: model)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
+        private func performAIAction(_ action: AIAction) {
+            let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+            let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
+            
+            guard useGemini || useOllama else { return }
+    
+            isAIGenerating = true
+            HapticService.shared.playImpact()
+    
+            // Determinar qué fragmento procesar
+            let textToProcess: String
+            let rangeToProcess: NSRange
+            let fullNSString = text as NSString
+    
+            if let sel = selectedRange, sel.length > 0 {
+                textToProcess = fullNSString.substring(with: sel)
+                rangeToProcess = sel
+            } else {
+                textToProcess = text
+                rangeToProcess = NSRange(location: 0, length: fullNSString.length)
+            }
+    
+            guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 isAIGenerating = false
-                if case .failure = completion {
-                    HapticService.shared.playError()
-                } else {
-                    HapticService.shared.playSuccess()
-                    if !fullResponse.isEmpty {
-                        let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        aiResult = AIResult(result: resultString, range: rangeToProcess)
+                return
+            }
+    
+            let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
+            let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
+    
+            var fullResponse = ""
+            let publisher: AnyPublisher<String, Error>
+            
+            if useGemini {
+                publisher = GeminiService.shared.generate(prompt: fullPrompt)
+            } else {
+                let model = OllamaService.shared.selectedModel!
+                publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
+            }
+            
+            publisher
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { completion in
+                    isAIGenerating = false
+                    if case .failure = completion {
+                        HapticService.shared.playError()
+                    } else {
+                        HapticService.shared.playSuccess()
+                        if !fullResponse.isEmpty {
+                            let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            aiResult = AIResult(result: resultString, range: rangeToProcess)
+                        }
                     }
-                }
-            }, receiveValue: { chunk in
-                fullResponse += chunk
-            })
-            .store(in: &cancellables)
-    }
-
+                }, receiveValue: { chunk in
+                    fullResponse += chunk
+                })
+                .store(in: &cancellables)
+        }
     private func createNewPromptFromEditor() {
         let newTitle = "New Prompt from Editor"
         let newPrompt = Prompt(

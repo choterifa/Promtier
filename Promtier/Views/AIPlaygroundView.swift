@@ -30,7 +30,27 @@ struct AIPlaygroundView: View {
                 
                 Spacer()
                 
-                if ollama.isOllamaRunning {
+                let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+                
+                if useGemini {
+                    HStack(spacing: 8) {
+                        Text("Google Gemini")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                        
+                        Button(action: generateResponse) {
+                            if isGenerating {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Text("generate_test".localized(for: preferences.language))
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(isGenerating)
+                    }
+                } else if ollama.isOllamaRunning {
                     HStack(spacing: 8) {
                         Picker("", selection: $ollama.selectedModel) {
                             if ollama.availableModels.isEmpty {
@@ -146,7 +166,9 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
-        guard let model = ollama.selectedModel else { return }
+        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        
+        guard useGemini || ollama.selectedModel != nil else { return }
         
         responseText = ""
         isGenerating = true
@@ -155,7 +177,16 @@ struct AIPlaygroundView: View {
         
         let finalPrompt = improvementText.isEmpty ? prompt : "\(prompt)\n\n[Instruction: \(improvementText)]"
         
-        cancellable = ollama.generate(prompt: finalPrompt, model: model)
+        let publisher: AnyPublisher<String, Error>
+        
+        if useGemini {
+            publisher = GeminiService.shared.generate(prompt: finalPrompt)
+        } else {
+            let model = ollama.selectedModel!
+            publisher = ollama.generate(prompt: finalPrompt, model: model)
+        }
+        
+        cancellable = publisher
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
                 isGenerating = false
