@@ -1,0 +1,114 @@
+import SwiftUI
+
+struct EditorToolbar: View {
+    @EnvironmentObject var preferences: PreferencesManager
+    let color: Color
+    var vertical: Bool = false
+    
+    // AI Actions
+    var isAIGenerating: Bool
+    var onAIAction: (AIAction) -> Void
+    var ollamaEnabled: Bool
+    
+    // Snippets & Variables
+    var onShowVariables: () -> Void
+    var onShowSnippets: () -> Void
+    
+    // Zen Mode & Other
+    var onZenMode: () -> Void
+    var onFloatingMode: (() -> Void)? = nil
+    
+    var body: some View {
+        Group {
+            if vertical {
+                VStack(spacing: 8) {
+                    buttons
+                }
+            } else {
+                HStack(spacing: 8) {
+                    buttons
+                }
+            }
+        }
+        .padding(vertical ? 6 : 4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
+    }
+    
+    @ViewBuilder
+    private var buttons: some View {
+        if ollamaEnabled {
+            Menu {
+                Button(action: { onAIAction(.enhance) }) {
+                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
+                }
+                Button(action: { onAIAction(.fix) }) {
+                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
+                }
+                Button(action: { onAIAction(.concise) }) {
+                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
+                }
+                Divider()
+                Button(action: { onAIAction(.instruct) }) {
+                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
+                }
+            } label: {
+                toolbarButton(icon: "sparkles", isSpecial: true, active: isAIGenerating)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+        }
+        
+        Button(action: onShowVariables) {
+            toolbarButton(icon: "curlybraces")
+        }
+        .buttonStyle(.plain)
+        .help("Insert Variable")
+        
+        Button(action: onShowSnippets) {
+            toolbarButton(text: "/")
+        }
+        .buttonStyle(.plain)
+        .help("Insert Snippet")
+
+        if let onFloating = onFloatingMode {
+            Button(action: onFloating) {
+                toolbarButton(icon: "pip.enter")
+            }
+            .buttonStyle(.plain)
+            .help("Floating Zen Mode")
+        }
+        
+        Button(action: onZenMode) {
+            toolbarButton(icon: "arrow.up.left.and.arrow.down.right")
+        }
+        .buttonStyle(.plain)
+        .help("Zen Mode")
+    }
+    
+    @ViewBuilder
+    private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
+        ZStack {
+            Circle()
+                .fill(active ? Color.purple.opacity(0.2) : (isSpecial ? color.opacity(0.12) : Color.primary.opacity(0.04)))
+                .frame(width: 28, height: 28)
+            
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(active ? .purple : color)
+            } else if let text = text {
+                Text(text)
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundColor(color)
+            }
+        }
+        .scaleEffect(active ? 1.1 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
+    }
+}

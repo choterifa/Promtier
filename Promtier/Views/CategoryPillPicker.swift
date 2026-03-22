@@ -63,9 +63,9 @@ struct CategoryPillPicker: View {
     }
     
     private var scrollViewContent: some View {
-        ScrollViewReader { proxy in
+            ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: 14) {
                     // Opción: Sin categoría / General
                     pillView(
                         title: "uncategorized".localized(for: preferences.language),
@@ -103,16 +103,16 @@ struct CategoryPillPicker: View {
                         }
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20) // Aumentado para evitar corte de sombras
             }
             .mask(
                 HStack(spacing: 0) {
                     LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .leading, endPoint: .trailing)
-                        .frame(width: 25)
+                        .frame(width: 40)
                     Rectangle()
                     LinearGradient(gradient: Gradient(colors: [.black, .clear]), startPoint: .leading, endPoint: .trailing)
-                        .frame(width: 25)
+                        .frame(width: 40)
                 }
             )
             .onAppear {
@@ -126,7 +126,7 @@ struct CategoryPillPicker: View {
     }
     
     private func selectCategory(_ name: String?, id: String) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
             selectedCategory = name
             scrollTo(id)
         }
@@ -134,7 +134,7 @@ struct CategoryPillPicker: View {
     }
     
     private func scrollTo(_ id: String) {
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
             scrollProxy?.scrollTo(id, anchor: .center)
         }
     }
@@ -144,32 +144,38 @@ struct CategoryPillPicker: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .bold))
                 
                 Text(title)
                     .font(.system(size: 13, weight: .bold))
             }
             .id(id)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .foregroundColor(isSelected ? .white : .primary.opacity(0.7))
+            .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
             .background(
                 ZStack {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 20)
+                        // Resplandor de Selección (Glow Pro)
+                        RoundedRectangle(cornerRadius: 24)
                             .fill(color)
-                            .shadow(color: color.opacity(0.4), radius: 8, x: 0, y: 4)
-                    } else {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.primary.opacity(0.05))
+                            .shadow(color: color.opacity(0.45), radius: 10, x: 0, y: 5)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 24)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
+                            )
+                    } else {
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color.primary.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24)
+                                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                             )
                     }
                 }
             )
-            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .scaleEffect(isSelected ? 1.04 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(.plain)
     }

@@ -276,7 +276,7 @@ struct NewPromptView: View {
                         title: "negative_prompt".localized(for: preferences.language),
                         placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
                         text: $negativePrompt,
-                        icon: "minus.circle.fill",
+                        icon: "hand.raised.fill",
                         color: .red,
                         focusRequest: $focusNegative,
                         onZenMode: {
@@ -521,7 +521,7 @@ struct NewPromptView: View {
                 get: { alternatives.indices.contains(index) ? alternatives[index] : "" },
                 set: { if alternatives.indices.contains(index) { alternatives[index] = $0 } }
             ),
-            icon: "text.bubble.fill",
+            icon: "arrow.triangle.2.circlepath",
             color: .green,
             onZenMode: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -655,7 +655,7 @@ struct NewPromptView: View {
                         .font(.system(size: 11, weight: .bold))
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.red.opacity(0.6))
+                .foregroundColor(.secondary)
                 .help("Remove alternative")
             }
         }
@@ -1166,6 +1166,21 @@ struct NewPromptView: View {
                     }
                     
                     if (originalPrompt ?? prompt) != nil {
+                        Button(action: {
+                            // Extract title and content to floating manager
+                            FloatingZenManager.shared.show(title: title, content: content, promptId: nil, isEditing: true)
+                            // Close popover
+                            MenuBarManager.shared.closePopover()
+                        }) {
+                            Image(systemName: "pip.enter")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(currentCategoryColor)
+                                .frame(width: 32, height: 32)
+                                .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Floating Zen Mode")
+
                         Button(action: { branchPrompt() }) {
                             Image(systemName: "arrow.branch")
                                 .font(.system(size: 14, weight: .bold))
@@ -1676,160 +1691,48 @@ struct EditorCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Título e Icono (Header del Documento)
-            HStack(alignment: .top, spacing: 16) {
-                Button(action: { showingIconPicker.toggle() }) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(currentCategoryColor.opacity(0.1))
-                            .frame(width: 44, height: 44)
-                        
-                        Image(systemName: selectedIcon ?? fallbackIconName)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
-                    }
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
-                    IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
-                    
-                    TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                // Toolbar de Acciones (Header)
-                HStack(spacing: 0) {
-                        if preferences.ollamaEnabled {
-                            Menu {
-                                Button(action: { performAIAction(.enhance) }) {
-                                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
-                                }
-                                Button(action: { performAIAction(.fix) }) {
-                                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
-                                }
-                                Button(action: { performAIAction(.concise) }) {
-                                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: { performAIAction(.instruct) }) {
-                                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
-                                }
-                            } label: {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(currentCategoryColor)
-                                    .frame(width: 32, height: 32)
-                                    .background(isAIGenerating ? Color.purple.opacity(0.2) : currentCategoryColor.opacity(0.1))
-                            }
-                            .menuStyle(.button)
-                            .buttonStyle(.plain)
-                            .menuIndicator(.hidden)
+            // Título, Icono y Descripción (Header Expandido)
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .top, spacing: 20) {
+                    Button(action: { showingIconPicker.toggle() }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(currentCategoryColor.opacity(0.1))
+                                .frame(width: 56, height: 56)
                             
-                            Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
-                        }
-                        
-                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
-
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showVariables = true
-                                    variablesSelectedIndex = 0
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    isEditorFocused = true
-                                }
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                            }
-                        }) {
-                            Image(systemName: "curlybraces")
-                                .font(.system(size: 11, weight: .bold))
+                            Image(systemName: selectedIcon ?? fallbackIconName)
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(currentCategoryColor)
-                                .frame(width: 32, height: 32)
-                                .background(currentCategoryColor.opacity(0.1))
                         }
-                        .buttonStyle(ScaleButtonStyle())
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
+                        IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 0) {
+                        TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
+                            .lineLimit(2)
+                            .padding(.bottom, 12)
+                            .fixedSize(horizontal: false, vertical: true)
                         
-                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
-                        
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showSnippets = true
-                                    snippetSearchQuery = ""
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    isEditorFocused = true
-                                }
-                            } else {
-                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
-                            }
-                        }) {
-                            Text("/")
-                                .font(.system(size: 14, weight: .black, design: .monospaced))
-                                .foregroundColor(currentCategoryColor)
-                                .frame(width: 32, height: 32)
-                                .background(currentCategoryColor.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-
-                        Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
-
-                                                Button(action: {
-                                                    // Extract title and content to floating manager
-                                                    FloatingZenManager.shared.show(title: title, content: content, promptId: nil, isEditing: true)
-                                                    // Close popover
-                                                    MenuBarManager.shared.closePopover()
-                                                }) {
-                                                    Image(systemName: "pip.enter")
-                                                        .font(.system(size: 11, weight: .bold))
-                                                        .foregroundColor(currentCategoryColor)
-                                                        .frame(width: 32, height: 32)
-                                                        .background(currentCategoryColor.opacity(0.1))
-                                                }
-                                                .buttonStyle(ScaleButtonStyle())
-                                                .help("Floating Zen Mode")
-                        
-                                                Button(action: {
-                                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                                        showingZenEditor = true
-                                                        zenTarget = .main
-                                                    }
-                                                }) {
-                                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                                        .font(.system(size: 11, weight: .bold))
-                                                        .foregroundColor(currentCategoryColor)
-                                                        .frame(width: 32, height: 32)
-                                                        .background(currentCategoryColor.opacity(0.1))
-                                                }
-                                                .buttonStyle(ScaleButtonStyle())                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                } // Closes HStack(1550)
-            .padding(.horizontal, 8)
-            .padding(.bottom, 16)
+                        TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(minHeight: 36, alignment: .topLeading) // Reserve space
+                    }
+                    .padding(.top, 6)
+                }
+            } // Cierre de la cabecera (VStack en 1695)
             
-            // ✅ Selector de Categoría (Integrado en la tarjeta para un look premium)
-            CategoryPillPicker(selectedCategory: $selectedFolder, showLabel: false)
-                .padding(.horizontal, 8)
-                .padding(.bottom, 20)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            
-            // Área de Texto
-            VStack(spacing: 0) {
+            // ✅ Editor Principal con Herramientas Inteligentes (Floating Pro Toolbar)
+            ZStack(alignment: .topTrailing) {
+                // El Editor
                 HighlightedEditor(
                     text: $content,
                     insertionRequest: $insertionRequest,
@@ -1852,14 +1755,43 @@ struct EditorCard: View {
                     isPremium: preferences.isPremiumActive
                 )   
                 .padding(12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(currentCategoryColor.opacity(0.05)) // Color profesional sutil
-                .overlay {
-                    if isAIGenerating {
-                        AIGeneratingOverlay(accentColor: currentCategoryColor)
-                            .transition(.opacity)
+                .frame(maxWidth: .infinity, minHeight: 200)
+                
+                // Barra Flotante Vertical
+                EditorToolbar(
+                    color: currentCategoryColor,
+                    vertical: true,
+                    isAIGenerating: isAIGenerating,
+                    onAIAction: { performAIAction($0) },
+                    ollamaEnabled: preferences.ollamaEnabled,
+                    onShowVariables: {
+                        if preferences.isPremiumActive {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showVariables = true
+                                variablesSelectedIndex = 0
+                            }
+                        } else {
+                            showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                        }
+                    },
+                    onShowSnippets: {
+                        if preferences.isPremiumActive {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            }
+                        } else {
+                            showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                        }
+                    },
+                    onZenMode: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            showingZenEditor = true
+                            zenTarget = .main
+                        }
                     }
-                }
+                )
+                .padding(8)
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
@@ -1869,13 +1801,24 @@ struct EditorCard: View {
                             .stroke(isEditorFocused ? Color.blue.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
                     )
             )
+            .overlay {
+                if isAIGenerating {
+                    AIGeneratingOverlay(accentColor: currentCategoryColor)
+                        .transition(.opacity)
+                }
+            }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .onTapGesture {
                 isEditorFocused = true
             }
+            
+            // ✅ Selector de Categoría (Independiente abajo)
+            CategoryPillPicker(selectedCategory: $selectedFolder, showLabel: false)
+                .padding(.horizontal, 8)
+                .padding(.top, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
-
         private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
@@ -1954,8 +1897,8 @@ struct EditorCard: View {
             }
         }
     }
-
 }
+
 enum AIAction {
     case enhance, fix, concise, instruct
     
@@ -2058,7 +2001,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
@@ -2074,161 +2017,107 @@ struct SecondaryEditorCard<Actions: View>: View {
                         .padding(.leading, 4)
                 }
                 
-                HStack(spacing: 0) {
-                        if preferences.ollamaEnabled && preferences.localAIToolsEnabled {
-                            Menu {
-                                Button(action: { performAIAction(.enhance) }) {
-                                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
-                                }
-                                Button(action: { performAIAction(.fix) }) {
-                                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
-                                }
-                                Button(action: { performAIAction(.concise) }) {
-                                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: { performAIAction(.instruct) }) {
-                                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
-                                }
-                            } label: {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(color)
-                                    .frame(width: 24, height: 24)
-                                    .background(isAIGenerating ? Color.purple.opacity(0.2) : color.opacity(0.1))
-                            }
-                            .menuStyle(.button)
-                            .buttonStyle(.plain)
-                            .menuIndicator(.hidden)
-                            
-                            Divider().frame(height: 14).background(color.opacity(0.2))
-                        }
-
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showVariables = true
-                                    variablesSelectedIndex = 0
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    isEditorFocused = true
-                                }
-                            } else {
-                                showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
-                            }
-                        }) {
-                            Image(systemName: "curlybraces")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(color)
-                                .frame(width: 24, height: 24)
-                                .background(color.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        
-                        Divider().frame(height: 14).background(color.opacity(0.2))
-                        
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    showSnippets = true
-                                    snippetSearchQuery = ""
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    isEditorFocused = true
-                                }
-                            } else {
-                                showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
-                            }
-                        }) {
-                            Text("/")
-                                .font(.system(size: 12, weight: .black, design: .monospaced))
-                                .foregroundColor(color)
-                                .frame(width: 24, height: 24)
-                                .background(color.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        
-                        if let onZen = onZenMode {
-                            Divider().frame(height: 14).background(color.opacity(0.2))
-                            
-                            Button(action: onZen) {
-                                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(color)
-                                    .frame(width: 24, height: 24)
-                                    .background(color.opacity(0.1))
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                        }
-                        
-                        actions
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 12)
-                } // Closes HStack(1831)
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 2)
             
-            VStack(spacing: 0) {
-                HighlightedEditor(
-                    text: $text,
-                    insertionRequest: $insertionRequest,
-                    replaceSnippetRequest: $replaceSnippetRequest,
-                    triggerAIRequest: $triggerAIRequest,
-                    isAIActive: $isAIActive,
-                    editorID: editorID,
-                    isFocused: $isEditorFocused,
-                    focusRequest: focusRequest,
-                    selectedRange: $selectedRange,
-                    aiResult: $aiResult,
-                    fontSize: 14 * preferences.fontSize.scale,
-                    themeColor: NSColor(color),
-                    showSnippets: $showSnippets,
-                    snippetSearchQuery: $snippetSearchQuery,
-                    snippetSelectedIndex: $snippetSelectedIndex,
-                    triggerSnippetSelection: $triggerSnippetSelection,
-                    showVariables: $showVariables,
-                    variablesSelectedIndex: $variablesSelectedIndex,
-                    triggerVariablesSelection: $triggerVariablesSelection,
-                    isPremium: preferences.isPremiumActive
-                )
-                .padding(12)
-                .frame(minHeight: 120)
-                .background(
-                    ZStack(alignment: .topLeading) {
-                        color.opacity(0.06) // Rojo/Verde sutil profesional
-                        
-                        if text.isEmpty {
-                            Text(placeholder)
-                                .font(.system(size: 14 * preferences.fontSize.scale))
-                                .foregroundColor(.secondary.opacity(0.4))
-                                .padding(12)
-                                .padding(.top, 4)
+            // ✅ Editor Secundario con Herramientas Flotantes
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 0) {
+                    HighlightedEditor(
+                        text: $text,
+                        insertionRequest: $insertionRequest,
+                        replaceSnippetRequest: $replaceSnippetRequest,
+                        triggerAIRequest: $triggerAIRequest,
+                        isAIActive: $isAIActive,
+                        editorID: editorID,
+                        isFocused: $isEditorFocused,
+                        focusRequest: focusRequest,
+                        selectedRange: $selectedRange,
+                        aiResult: $aiResult,
+                        fontSize: 14 * preferences.fontSize.scale,
+                        themeColor: NSColor(color),
+                        showSnippets: $showSnippets,
+                        snippetSearchQuery: $snippetSearchQuery,
+                        snippetSelectedIndex: $snippetSelectedIndex,
+                        triggerSnippetSelection: $triggerSnippetSelection,
+                        showVariables: $showVariables,
+                        variablesSelectedIndex: $variablesSelectedIndex,
+                        triggerVariablesSelection: $triggerVariablesSelection,
+                        isPremium: preferences.isPremiumActive
+                    )
+                    .padding(12)
+                    .frame(minHeight: 120)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(color.opacity(0.06))
+                            .overlay(alignment: .topLeading) {
+                                if text.isEmpty {
+                                    Text(placeholder)
+                                        .font(.system(size: 14 * preferences.fontSize.scale))
+                                        .foregroundColor(.secondary.opacity(0.4))
+                                        .padding(12)
+                                        .padding(.top, 4)
+                                }
+                            }
+                    )
+                    .overlay {
+                        if isAIGenerating {
+                            AIGeneratingOverlay(accentColor: color, compact: true)
+                                .transition(.opacity)
                         }
-                    }
-                )
-                .overlay {
-                    if isAIGenerating {
-                        AIGeneratingOverlay(accentColor: color, compact: true)
-                            .transition(.opacity)
                     }
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.06), lineWidth: isEditorFocused ? 2 : 1)
+                        )
+                )
+                
+                // Herramientas Flotantes (Compactas)
+                EditorToolbar(
+                    color: color,
+                    vertical: false,
+                    isAIGenerating: isAIGenerating,
+                    onAIAction: { performAIAction($0) },
+                    ollamaEnabled: preferences.ollamaEnabled && preferences.localAIToolsEnabled,
+                    onShowVariables: {
+                        if preferences.isPremiumActive {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showVariables = true
+                                variablesSelectedIndex = 0
+                            }
+                        } else {
+                            showingPremiumFor = "dynamic_variables".localized(for: preferences.language)
+                        }
+                    },
+                    onShowSnippets: {
+                        if preferences.isPremiumActive {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showSnippets = true
+                                snippetSearchQuery = ""
+                            }
+                        } else {
+                            showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
+                        }
+                    },
+                    onZenMode: {
+                        onZenMode?()
+                    }
+                )
+                .scaleEffect(0.85)
+                .padding(6)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.06), lineWidth: isEditorFocused ? 2 : 1)
-                    )
-            )
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .onTapGesture {
                 isEditorFocused = true
             }
         }
     }
-    
         private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
@@ -2304,7 +2193,8 @@ struct SecondaryEditorCard<Actions: View>: View {
 
 // MARK: - Componentes de Soporte de Galería
 
-}
+    }
+
 struct ImageSlotView: View {
     let imageData: Data
     let onRemove: () -> Void
