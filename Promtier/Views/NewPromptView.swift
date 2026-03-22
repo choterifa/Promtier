@@ -1746,8 +1746,8 @@ struct EditorCard: View {
                 }
             } // Cierre de la cabecera (VStack en 1695)
             
-            // ✅ Editor Principal con Herramientas Inteligentes (Floating Pro Toolbar)
-            ZStack(alignment: .topTrailing) {
+            // ✅ Editor Principal con Herramientas Inteligentes (Sidebar Layout)
+            HStack(alignment: .top, spacing: 0) {
                 // El Editor
                 HighlightedEditor(
                     text: $content,
@@ -1773,7 +1773,7 @@ struct EditorCard: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
                 
-                // Barra Flotante Vertical
+                // Barra de Herramientas Lateral
                 EditorToolbar(
                     color: currentCategoryColor,
                     vertical: true,
@@ -1807,7 +1807,8 @@ struct EditorCard: View {
                         }
                     }
                 )
-                .padding(8)
+                .padding(.vertical, 8)
+                .padding(.trailing, 8)
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
