@@ -57,13 +57,9 @@ class PromptService: ObservableObject {
     init() {
         // Observar cambios en búsqueda para filtrar automáticamente
         $searchQuery
-            .debounce(for: .milliseconds(150), scheduler: RunLoop.main) // CONFIGURABLE: Debounce de búsqueda
+            .debounce(for: .milliseconds(150), scheduler: RunLoop.main) 
             .sink { [weak self] query in
-                // VALIDACIÓN: Limitar a 40 caracteres
-                if query.count > 40 {
-                    self?.searchQuery = String(query.prefix(40))
-                }
-                self?.filterPrompts(query: self?.searchQuery ?? "")
+                self?.filterPrompts(query: query)
             }
             .store(in: &cancellables)
             

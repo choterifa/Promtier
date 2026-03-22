@@ -365,6 +365,7 @@ struct SearchViewSimple: View {
                             TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
                                 .textFieldStyle(.plain)
                                 .font(.system(size: 15 * preferences.fontSize.scale))
+                                .disableAutocorrection(true)
                                 .focused($isSearchFocused)
                                 .onExitCommand {
                                     isSearchFocused = false
