@@ -363,10 +363,10 @@ struct CategoryRow: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(hex: folder.displayColor).opacity(0.1))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 28, height: 28)
                     
                     Image(systemName: folder.icon ?? "folder.fill")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                         .foregroundColor(Color(hex: folder.displayColor))
                 }
             }

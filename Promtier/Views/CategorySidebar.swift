@@ -22,7 +22,6 @@ struct CategorySidebar: View {
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     @State private var showingFolderManager = false
-    @State private var draggedFolder: Folder? = nil
     @State private var dropTargetFolderId: UUID? = nil
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
@@ -54,9 +53,6 @@ struct CategorySidebar: View {
                 
                 // Botón de Ordenamiento de Prompts
                 Menu {
-                    Button { promptService.promptSortMode = .manual } label: {
-                        Label("sort_manual".localized(for: preferences.language), systemImage: promptService.promptSortMode == .manual ? "checkmark" : "clock")
-                    }
                     Button { promptService.promptSortMode = .name } label: {
                         Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
                     }
@@ -67,8 +63,8 @@ struct CategorySidebar: View {
                         Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
                     }
                 } label: {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 12))
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
                 .menuStyle(.borderlessButton)
@@ -82,7 +78,7 @@ struct CategorySidebar: View {
                     }
                 } label: {
                     Image(systemName: "plus.circle")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                         .foregroundColor(.blue.opacity(0.8))
                 }
                 .buttonStyle(.plain)
@@ -185,46 +181,16 @@ struct CategorySidebar: View {
                         color: Color(hex: folder.displayColor),
                         count: count,
                         isSelected: promptService.selectedCategory == folder.name,
-                        isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
+                        isDropTarget: dropTargetFolderId == folder.id,
                         action: {
                             promptService.selectedCategory = folder.name
                         }
                     )
-                    .overlay(
-                        VStack {
-                            if dropTargetFolderId == folder.id && draggedFolder != nil {
-                                Rectangle()
-                                    .fill(Color.blue)
-                                    .frame(height: 2)
-                                    .transition(.scale.combined(with: .opacity))
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 12)
-                        .offset(y: -2)
-                    )
-                    .onDrag {
-                        self.draggedFolder = folder
-                        menuBarManager.isModalActive = true
-                        let provider = NSItemProvider()
-                        let payload = SidebarDragPayload(kind: "promtier.folder.id", ids: nil, id: folder.id.uuidString)
-                        if let data = try? JSONEncoder().encode(payload) {
-                            provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
-                                completion(data, nil)
-                                return nil
-                            }
-                        }
-                        return provider
-                    }
                     .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
                         folder: folder,
                         promptService: promptService,
                         menuBarManager: menuBarManager,
-                        draggedFolder: $draggedFolder,
                         dropTargetFolderId: $dropTargetFolderId,
-                        onMove: { source, destination in
-                            reorderFolder(source, to: destination)
-                        },
                         onPromptMove: { ids, folderName in
                             movePrompts(ids: ids, to: folderName)
                         }
@@ -309,24 +275,6 @@ struct CategorySidebar: View {
         return true
     }
     
-    private func reorderFolder(_ source: Folder, to destination: Folder) {
-        var folders = promptService.folders
-        guard let sourceIndex = folders.firstIndex(where: { $0.id == source.id }),
-              let destIndex = folders.firstIndex(where: { $0.id == destination.id }) else { return }
-        
-        if sourceIndex == destIndex { return }
-        
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            let folder = folders.remove(at: sourceIndex)
-            folders.insert(folder, at: destIndex)
-            promptService.reorderFolders(folders)
-            promptService.loadFolders()
-        }
-        
-        self.draggedFolder = nil
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-    }
-    
     private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
         for provider in providers {
             if decodeDraggedPromptIds(from: provider, completion: { ids in
@@ -352,10 +300,8 @@ struct FolderDropDelegate: DropDelegate {
     let folder: Folder
     let promptService: PromptService
     let menuBarManager: MenuBarManager
-    @Binding var draggedFolder: Folder?
     @Binding var dropTargetFolderId: UUID?
     
-    var onMove: (Folder, Folder) -> Void
     var onPromptMove: ([String], String) -> Void
     
     func dropEntered(info: DropInfo) {
@@ -373,26 +319,16 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        if draggedFolder != nil {
-            return DropProposal(operation: .move)
-        }
         return DropProposal(operation: .copy)
     }
     
     func validateDrop(info: DropInfo) -> Bool {
-        if draggedFolder != nil { return true }
         return info.hasItemsConforming(to: [.json, .plainText])
     }
     
     func performDrop(info: DropInfo) -> Bool {
         dropTargetFolderId = nil
         menuBarManager.isModalActive = false
-        
-        if let dragged = draggedFolder {
-            onMove(dragged, folder)
-            draggedFolder = nil
-            return true
-        }
         
         let jsonType = UTType.json.identifier
         for provider in info.itemProviders(for: [.json, .plainText]) {
@@ -435,9 +371,9 @@ struct SidebarItem: View {
         
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
+                .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
                 .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                .frame(width: 20 * preferences.fontSize.scale)
+                .frame(width: 18 * preferences.fontSize.scale)
             
             Text(title)
                 .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))

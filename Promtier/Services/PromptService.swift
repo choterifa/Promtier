@@ -28,12 +28,11 @@ class PromptService: ObservableObject {
     @Published var activeAppBundleID: String? = nil
     
     enum FolderSortMode: String, Codable, CaseIterable {
-        case manual
         case name
         case newest
     }
     
-    @Published var folderSortMode: FolderSortMode = .manual {
+    @Published var folderSortMode: FolderSortMode = .name {
         didSet {
             UserDefaults.standard.set(folderSortMode.rawValue, forKey: "folderSortMode_preference")
             loadFolders()
@@ -41,13 +40,12 @@ class PromptService: ObservableObject {
     }
     
     enum PromptSortMode: String, Codable, CaseIterable {
-        case manual
         case name
         case newest
         case mostUsed
     }
     
-    @Published var promptSortMode: PromptSortMode = .manual {
+    @Published var promptSortMode: PromptSortMode = .newest {
         didSet {
             UserDefaults.standard.set(promptSortMode.rawValue, forKey: "promptSortMode_preference")
             filterPrompts(query: searchQuery)
@@ -466,21 +464,6 @@ class PromptService: ObservableObject {
             var loadedFolders = entities.map { $0.toFolder() }
             
             switch folderSortMode {
-            case .manual:
-                // Aplicar orden personalizado guardado en UserDefaults
-                if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder") {
-                    loadedFolders.sort { folder1, folder2 in
-                        let index1 = savedOrder.firstIndex(of: folder1.id.uuidString) ?? Int.max
-                        let index2 = savedOrder.firstIndex(of: folder2.id.uuidString) ?? Int.max
-                        
-                        if index1 != index2 {
-                            return index1 < index2
-                        }
-                        return folder1.name.localizedCompare(folder2.name) == .orderedAscending
-                    }
-                } else {
-                    loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
-                }
             case .name:
                 loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
             case .newest:
@@ -1018,11 +1001,6 @@ class PromptService: ObservableObject {
         // --- Terminal Global Sort ---
         if query.isEmpty {
             switch promptSortMode {
-            case .manual:
-                // If it's a specific folder, we might have a manual order,
-                // but currently manual order is only for folders.
-                // For prompts, we use most recent as default if manual selected.
-                filtered.sort { $0.modifiedAt > $1.modifiedAt }
             case .name:
                 filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
             case .newest:
