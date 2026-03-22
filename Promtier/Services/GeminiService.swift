@@ -20,18 +20,18 @@ struct GeminiRequest: Codable {
     }
 }
 
-struct GeminiResponse: Codable {
+struct GeminiResponse: Codable, Sendable {
     let candidates: [GeminiCandidate]?
     
-    struct GeminiCandidate: Codable {
+    struct GeminiCandidate: Codable, Sendable {
         let content: GeminiContent?
     }
     
-    struct GeminiContent: Codable {
+    struct GeminiContent: Codable, Sendable {
         let parts: [GeminiPart]?
     }
     
-    struct GeminiPart: Codable {
+    struct GeminiPart: Codable, Sendable {
         let text: String?
     }
 }

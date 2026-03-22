@@ -284,7 +284,7 @@
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Promtier/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Promtier;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -334,7 +334,7 @@
 				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Promtier/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Promtier;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";

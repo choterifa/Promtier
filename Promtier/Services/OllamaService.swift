@@ -19,7 +19,7 @@ struct OllamaTagsResponse: Codable {
     let models: [OllamaModel]
 }
 
-struct OllamaGenerateResponse: Codable {
+struct OllamaGenerateResponse: Codable, Sendable {
     let model: String?
     let created_at: String?
     let response: String?
@@ -37,8 +37,13 @@ class OllamaService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
-        checkStatus()
-        fetchModels()
+        // Checking status only if Ollama is enabled to prevent networking errors when not used
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if PreferencesManager.shared.ollamaEnabled {
+                self.checkStatus()
+                self.fetchModels()
+            }
+        }
     }
     
     /// Verifica si el servidor local de Ollama está activo

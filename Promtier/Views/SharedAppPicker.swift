@@ -150,11 +150,13 @@ extension NSWorkspace {
     func getRelevantRunningApps() -> [RunningApp] {
         let running = self.runningApplications
         return running.compactMap { app in
-            guard let bundleID = app.bundleIdentifier,
+            // Filter first to avoid querying properties on unauthorized apps
+            guard app.activationPolicy == .regular,
+                  let bundleID = app.bundleIdentifier,
+                  bundleID != Bundle.main.bundleIdentifier,
+                  !bundleID.hasPrefix("com.apple."), // Ignore most Apple system apps to avoid task name port right errors
                   let name = app.localizedName,
-                  let icon = app.icon,
-                  app.activationPolicy == .regular,
-                  bundleID != Bundle.main.bundleIdentifier else { return nil }
+                  let icon = app.icon else { return nil }
             return RunningApp(id: bundleID, name: name, icon: icon)
         }
     }
