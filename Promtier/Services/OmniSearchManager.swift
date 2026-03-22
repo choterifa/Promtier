@@ -37,19 +37,23 @@ class OmniSearchManager: NSObject, ObservableObject {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, self.isVisible else { return event }
             
-            switch event.keyCode {
-            case 125: // Down
+            // Log de depuración interna (invisible para el usuario)
+            let keyCode = event.keyCode
+            
+            if keyCode == 125 { // Down
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
-                return nil
-            case 126: // Up
+                return nil // Bloquear para que el TextField no mueva el cursor
+            } else if keyCode == 126 { // Up
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
-                return nil
-            case 53: // Esc
-                // Ya no cerramos la ventana con Esc, dejamos que SwiftUI maneje el foco
-                return event
-            default:
-                break
+                return nil // Bloquear
+            } else if keyCode == 36 || keyCode == 76 { // Enter / Return
+                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchSubmit"), object: nil)
+                return nil // Capturar para procesar en la vista
+            } else if keyCode == 53 { // Esc
+                // Ya no cerramos con Esc por petición del usuario, sino que quitamos foco en la vista
+                return event 
             }
+            
             return event
         }
     }

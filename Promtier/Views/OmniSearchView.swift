@@ -173,11 +173,6 @@ struct OmniSearchView: View {
                 }
                 
                 Spacer()
-                
-                Text("Promtier Spotlight")
-                    .font(.system(size: 10, weight: .black))
-                    .italic()
-                    .opacity(0.3)
             }
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(.secondary.opacity(0.6))
@@ -208,7 +203,29 @@ struct OmniSearchView: View {
                 isFocused = true
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
+            guard let direction = notification.object as? String else { return }
+            let count = filteredPrompts.count
+            
+            if direction == "down" {
+                if selectedIndex < count - 1 {
+                    selectedIndex += 1
+                    HapticService.shared.playLight()
+                }
+            } else if direction == "up" {
+                if selectedIndex > 0 {
+                    selectedIndex -= 1
+                    HapticService.shared.playLight()
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchSubmit"))) { _ in
+            if !filteredPrompts.isEmpty {
+                copyAndClose(filteredPrompts[selectedIndex])
+            }
+        }
         .onMoveCommand { direction in
+            // Mantener como backup pero priorizar notificaciones
             let count = filteredPrompts.count
             guard count > 0 else { return }
             
