@@ -259,18 +259,6 @@ struct NewPromptView: View {
             
             // SECTION 2: ADVANCED FIELDS (Unified Group)
             VStack(alignment: .leading, spacing: 16) {
-                // Header de sección unificado
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.purple)
-                    Text("show_advanced_fields".localized(for: preferences.language).uppercased())
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .tracking(1)
-                }
-                .padding(.horizontal, 8)
-                
                 VStack(spacing: 24) {
                     // 2.1: NEGATIVE PROMPT
                     SecondaryEditorCard(
@@ -1727,9 +1715,9 @@ struct EditorCard: View {
                     VStack(alignment: .leading, spacing: 0) {
                         TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
+                            .font(.system(size: 20 * preferences.fontSize.scale, weight: .bold)) // Reducido de 24 a 20
                             .lineLimit(2)
-                            .padding(.bottom, 4) // Reduced from 12 to be closer to description
+                            .padding(.bottom, 4)
                             .fixedSize(horizontal: false, vertical: true)
                         
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
@@ -1767,7 +1755,9 @@ struct EditorCard: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive
                 )   
-                .padding(12)
+                .padding(.vertical, 12)
+                .padding(.leading, 12)
+                .padding(.trailing, 0)
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
                 
                 // Barra de Herramientas Lateral
@@ -1805,7 +1795,7 @@ struct EditorCard: View {
                     }
                 )
                 .padding(.vertical, 8)
-                .padding(.trailing, 8)
+                .padding(.trailing, 4) // Ajustado para dar más espacio al texto
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
@@ -2065,7 +2055,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                         isPremium: preferences.isPremiumActive
                     )
                     .padding(12)
-                    .frame(maxWidth: .infinity, minHeight: 120)
+                    .padding(.trailing, 0) // Remove extra trailing padding from text view
+                    .frame(maxWidth: .infinity, minHeight: 180) // Aumentado para que sea más espacioso
                     
                     if text.isEmpty {
                         Text(placeholder)
@@ -2110,7 +2101,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                 )
                 .scaleEffect(0.9)
                 .padding(.vertical, 8)
-                .padding(.trailing, 6)
+                .padding(.trailing, 4) // Ajustado para ahorrar espacio lateral
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
