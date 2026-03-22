@@ -379,6 +379,10 @@ struct NewPromptView: View {
                 }
             }
 
+            // Prompt Results (Moved here for better focus)
+            imageGallery(width: geometry.size.width * 0.9)
+                .padding(.horizontal, 4)
+
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 20) {
                 // Atajo Individual (Movido aquí para mayor visibilidad)
@@ -530,8 +534,6 @@ struct NewPromptView: View {
                             )
                     )
                 }
-
-                imageGallery
             }
             .padding(.bottom, 40)
         }
@@ -1310,8 +1312,11 @@ struct NewPromptView: View {
         .padding(.bottom, 12)
     }
 
-                private var imageGallery: some View {
-                    VStack(alignment: .leading, spacing: 12) {
+                private func imageGallery(width: CGFloat) -> some View {
+                    let slotWidth = (width - 52) / 3
+                    let slotHeight = slotWidth * 0.66
+                    
+                    return VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 8) {
                             Image(systemName: "photo.stack.fill")
                                 .font(.system(size: 12, weight: .bold))
@@ -1340,6 +1345,8 @@ struct NewPromptView: View {
                     ForEach(0..<showcaseImages.count, id: \.self) { index in
                         ImageSlotView(
                             imageData: showcaseImages[index],
+                            slotWidth: slotWidth,
+                            slotHeight: slotHeight,
                             onRemove: { showcaseImages.remove(at: index) },
                             onPreview: { showingFullScreenImage = showcaseImages[index] },
                             onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
@@ -1350,6 +1357,8 @@ struct NewPromptView: View {
                     // Placeholders para completar hasta 3
                     ForEach(showcaseImages.count..<3, id: \.self) { index in
                         PlaceholderSlotView(
+                            slotWidth: slotWidth,
+                            slotHeight: slotHeight,
                             onSelect: selectImages,
                             onDrop: { providers in handleGalleryDrop(providers: providers, at: index) }
                         )
@@ -2312,6 +2321,8 @@ struct SecondaryEditorCard<Actions: View>: View {
 
 struct ImageSlotView: View {
     let imageData: Data
+    let slotWidth: CGFloat
+    let slotHeight: CGFloat
     let onRemove: () -> Void
     let onPreview: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
@@ -2325,7 +2336,7 @@ struct ImageSlotView: View {
                 Image(nsImage: nsImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 180, height: 120, alignment: .center)
+                    .frame(width: slotWidth, height: slotHeight, alignment: .center)
                     .clipped()
                     .background(Color.primary.opacity(0.03))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -2361,9 +2372,11 @@ struct ImageSlotView: View {
 }
 
 struct PlaceholderSlotView: View {
+    let slotWidth: CGFloat
+    let slotHeight: CGFloat
     let onSelect: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
-
+    
     @State private var isTargeted = false
     @EnvironmentObject var preferences: PreferencesManager
 
@@ -2377,7 +2390,7 @@ struct PlaceholderSlotView: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
         }
-        .frame(width: 180, height: 120)
+        .frame(width: slotWidth, height: slotHeight)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
