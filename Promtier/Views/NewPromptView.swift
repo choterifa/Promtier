@@ -339,15 +339,16 @@ struct NewPromptView: View {
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.primary.opacity(0.04))
+                        .fill(currentCategoryColor.opacity(0.06))
                         .background(
                             VisualEffectView(material: .popover, blendingMode: .withinWindow)
                                 .clipShape(RoundedRectangle(cornerRadius: 24))
+                                .opacity(0.6)
                         )
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
                 )
             }
             

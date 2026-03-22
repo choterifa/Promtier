@@ -150,37 +150,23 @@ struct ShortcutFormatter {
         case 125: return "↓"
         case 126: return "↑"
         default:
-            // Simplificado: obtener carácter legible para la UI según el Key Code
-            switch keyCode {
-            case 0: return "A"
-            case 1: return "S"
-            case 2: return "D"
-            case 3: return "F"
-            case 4: return "H"
-            case 5: return "G"
-            case 6: return "Z"
-            case 7: return "X"
-            case 8: return "C"
-            case 9: return "V"
-            case 11: return "B"
-            case 12: return "Q"
-            case 13: return "W"
-            case 14: return "E"
-            case 15: return "R"
-            case 16: return "Y"
-            case 17: return "T"
-            case 31: return "O"
-            case 32: return "U"
-            case 34: return "I"
-            case 35: return "P"
-            case 37: return "L"
-            case 38: return "J"
-            case 40: return "K"
-            case 45: return "N"
-            case 46: return "M"
-            default: return String(format: "%X", keyCode)
+            return translateKeyCode(keyCode)
+        }
+    }
+    
+    private static func translateKeyCode(_ keyCode: Int) -> String {
+        // La traducción de key codes a caracteres legibles debe hacerse usando CGEvent
+        // para que macOS aplique el layout de teclado actual (español, inglés, etc.).
+        let source = CGEventSource(stateID: .combinedSessionState)
+        if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true) {
+            let nsEvent = NSEvent(cgEvent: cgEvent)
+            if let chars = nsEvent?.charactersIgnoringModifiers, !chars.isEmpty {
+                return chars.uppercased()
             }
         }
+        
+        // Si falla la traducción, devolvemos el código en decimal (no hexadecimal) para evitar confusión
+        return "\(keyCode)"
     }
 }
 
