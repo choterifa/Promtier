@@ -69,7 +69,7 @@
 "show_advanced_fields" = "Campos avanzados";
 "show_advanced_fields_subtitle" = "Mostrar campos de Negative y Alternative prompt";
 "view_negative" = "Ver Negative";
-"view_alternative" = "Ver Alternative";
+"view_alternative" = "Ver Prompt Alternativo";
 "global_shortcut_copy" = "Atajo personalizado (global)";
 "gesture_hints" = "Sugerencias de gestos";
 "gesture_hints_subtitle" = "Muestra animaciones de zoom al abrir imágenes";
@@ -379,7 +379,7 @@
 "negative_prompt" = "Prompt Negativo";
 "negative_prompt_placeholder" = "Lo que la IA NO debe hacer (ej: sin desenfoque, sin texto)...";
 "alternatives" = "Alternativas";
-"alternative" = "Alternativa";
+"alternative" = "Prompt Alternativo";
 "add_alternative" = "Añadir Alternativa";
 "no_alternatives_hint" = "Aún no hay prompts alternativos añadidos.";
 "alternative_prompt" = "Prompt Alternativo";

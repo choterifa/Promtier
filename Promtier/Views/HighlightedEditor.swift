@@ -76,6 +76,7 @@ struct HighlightedEditor: NSViewRepresentable {
         
         // Optimizar para scrolling suave y performance
         textView.textContainerInset = NSSize(width: 0, height: 0)
+        textView.textContainer?.lineFragmentPadding = 0
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
         

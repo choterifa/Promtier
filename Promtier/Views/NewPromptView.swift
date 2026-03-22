@@ -266,7 +266,7 @@ struct NewPromptView: View {
                         placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
                         text: $negativePrompt,
                         icon: "hand.raised.fill",
-                        color: currentCategoryColor,
+                        color: .red,
                         focusRequest: $focusNegative,
                         onZenMode: {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -1715,18 +1715,16 @@ struct EditorCard: View {
                     VStack(alignment: .leading, spacing: 0) {
                         TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 20 * preferences.fontSize.scale, weight: .bold)) // Reducido de 24 a 20
+                            .font(.system(size: 23 * preferences.fontSize.scale, weight: .bold))
                             .lineLimit(2)
-                            .padding(.bottom, 4)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 2)
                         
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondary.opacity(0.8))
                             .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(minHeight: 36, alignment: .topLeading) // Reserve space
+                            .frame(minHeight: 32, alignment: .topLeading)
                     }
                 }
             } // Cierre de la cabecera (VStack en 1695)
@@ -1757,7 +1755,7 @@ struct EditorCard: View {
                 )   
                 .padding(.vertical, 12)
                 .padding(.leading, 12)
-                .padding(.trailing, 0)
+                .padding(.trailing, 5) // Espacio sutil de 5px
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
                 
                 // Barra de Herramientas Lateral
@@ -1802,7 +1800,8 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(isEditorFocused ? currentCategoryColor.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
+                            .stroke(currentCategoryColor.opacity(isEditorFocused ? 0.8 : 0.3), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: currentCategoryColor.opacity(isEditorFocused ? 0.4 : 0.1), radius: isEditorFocused ? 10 : 4)
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
@@ -2054,14 +2053,15 @@ struct SecondaryEditorCard<Actions: View>: View {
                         triggerVariablesSelection: $triggerVariablesSelection,
                         isPremium: preferences.isPremiumActive
                     )
-                    .padding(12)
-                    .padding(.trailing, 0) // Remove extra trailing padding from text view
+                    .padding(.vertical, 12)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 5) // Espacio sutil de 5px
                     .frame(maxWidth: .infinity, minHeight: 180) // Aumentado para que sea más espacioso
                     
                     if text.isEmpty {
                         Text(placeholder)
                             .font(.system(size: 14 * preferences.fontSize.scale))
-                            .foregroundColor(.secondary.opacity(0.4))
+                            .foregroundColor(.secondary.opacity(0.7))
                             .padding(12)
                             .padding(.top, 4)
                             .allowsHitTesting(false)
@@ -2108,7 +2108,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
+                            .stroke(color.opacity(isEditorFocused ? 0.8 : 0.3), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: color.opacity(isEditorFocused ? 0.4 : 0.1), radius: isEditorFocused ? 10 : 4)
                     )
             )
             .overlay {
@@ -2273,8 +2274,8 @@ struct PlaceholderSlotView: View {
                 .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: isTargeted ? [] : [4]))
-                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.2))
+                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: isTargeted ? [] : [6, 4]))
+                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.8))
                 )
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)

@@ -356,7 +356,7 @@
 "negative_prompt" = "Negative Prompt";
 "negative_prompt_placeholder" = "What the AI should NOT do (ex: no blur, no text)...";
 "alternatives" = "Alternatives";
-"alternative" = "Alternative";
+"alternative" = "Alternative Prompt";
 "add_alternative" = "Add Alternative";
 "no_alternatives_hint" = "No alternative prompts added yet.";
 "alternative_prompt" = "Alternative Prompt";
