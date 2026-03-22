@@ -1721,6 +1721,7 @@ struct EditorCard: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
+    @State private var isHovering: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
@@ -1832,8 +1833,8 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(currentCategoryColor.opacity(isEditorFocused ? 0.8 : 0.3), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: currentCategoryColor.opacity(isEditorFocused ? 0.4 : 0.1), radius: isEditorFocused ? 10 : 4)
+                            .stroke(currentCategoryColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: currentCategoryColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)), radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
@@ -1844,8 +1845,14 @@ struct EditorCard: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .animation(.easeInOut(duration: 0.2), value: isHovering)
+            .onHover { hovering in
+                isHovering = hovering
+            }
             .onTapGesture {
-                isEditorFocused = true
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isEditorFocused = true
+                }
             }
             
             // ✅ Selector de Categoría (Independiente abajo)
@@ -1985,6 +1992,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var isEditorFocused: Bool = false
+    @State private var isHovering: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
     
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
@@ -2140,8 +2148,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(color.opacity(isEditorFocused ? 0.8 : 0.3), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: color.opacity(isEditorFocused ? 0.4 : 0.1), radius: isEditorFocused ? 10 : 4)
+                            .stroke(color.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: color.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)), radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .overlay {
@@ -2151,8 +2159,14 @@ struct SecondaryEditorCard<Actions: View>: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .animation(.easeInOut(duration: 0.2), value: isHovering)
+            .onHover { hovering in
+                isHovering = hovering
+            }
             .onTapGesture {
-                isEditorFocused = true
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isEditorFocused = true
+                }
             }
         }
     }
