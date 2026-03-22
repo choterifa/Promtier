@@ -1817,7 +1817,7 @@ struct EditorCard: View {
                     variablesSelectedIndex: $variablesSelectedIndex,
                     triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive
-                )
+                )   
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(currentCategoryColor.opacity(0.05)) // Color profesional sutil

@@ -5,7 +5,12 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 ## ✨ Funciones Principales
 
 ### 🔍 Navegación y Organización
-- **Búsqueda Inteligente**: Algoritmo híbrido (Fuzzy + Phrasal + Weighted) que prioriza títulos y uso frecuente.
+- **OmniSearch (Spotlight Style)**: 
+    - **Atajo Maestro**: `Cmd + Shift + Space` para abrir un buscador global tipo Spotlight.
+    - **Navegación Fluida**: Control total mediante flechas (`↑ / ↓`), `Enter` para copiar y `Esc` para salir.
+    - **Foco Inteligente**: Al cerrar el buscador, el foco vuelve automáticamente a la aplicación donde estabas trabajando (ej. Chrome, Slack).
+    - **Búsqueda Pesada**: Algoritmo que prioriza títulos sobre contenido y descripciones.
+- **Búsqueda Inteligente**: Algoritmo híbrido (Fuzzy + Phrasal + Weighted) que prioriza títulos y uso frecuente en la ventana principal.
 - **Categorías por Defecto (Rediseñadas)**:
     - **Code**: Icono terminal, color verde.
     - **Writing**: Icono lápiz, color azul.

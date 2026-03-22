@@ -15,33 +15,67 @@ struct OmniSearchView: View {
     
     @State private var query: String = ""
     @State private var selectedIndex: Int = 0
-    @State private var eventMonitor: Any?
     @FocusState private var isFocused: Bool
     
     private var filteredPrompts: [Prompt] {
-        if query.isEmpty {
-            return Array(promptService.prompts.prefix(8))
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedQuery.isEmpty {
+            // Mostrar últimos usados o favoritos si no hay búsqueda
+            return Array(promptService.prompts
+                .sorted(by: { ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) })
+                .prefix(8))
         } else {
-            return promptService.prompts.filter {
-                $0.title.localizedCaseInsensitiveContains(query) ||
-                $0.content.localizedCaseInsensitiveContains(query) ||
-                ($0.promptDescription?.localizedCaseInsensitiveContains(query) ?? false)
-            }.prefix(10).map { $0 }
+            let searchTerms = trimmedQuery.lowercased().components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+            
+            let scored = promptService.prompts.compactMap { prompt -> (Prompt, Int)? in
+                var score = 0
+                let title = prompt.title.lowercased()
+                let content = prompt.content.lowercased()
+                let desc = (prompt.promptDescription ?? "").lowercased()
+                
+                for term in searchTerms {
+                    if title.contains(term) {
+                        score += 100
+                        if title.hasPrefix(term) { score += 50 }
+                    }
+                    if desc.contains(term) { score += 40 }
+                    if content.contains(term) { score += 20 }
+                }
+                
+                guard score > 0 else { return nil }
+                
+                // Bonus por reciencia
+                if let lastUsed = prompt.lastUsedAt, lastUsed > Date().addingTimeInterval(-86400 * 7) {
+                    score += 10
+                }
+                
+                return (prompt, score)
+            }
+            
+            return Array(scored
+                .sorted(by: { $0.1 > $1.1 })
+                .map { $0.0 }
+                .prefix(12))
         }
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            // Barra de Búsqueda
+            // Barra de Búsqueda Premium
             HStack(spacing: 15) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.blue)
+                    .shadow(color: .blue.opacity(0.3), radius: 4)
                 
                 TextField("gt_search_prompts".localized(for: preferences.language), text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundColor(.primary)
                     .focused($isFocused)
+                    .onExitCommand {
+                        manager.hide()
+                    }
                     .onChange(of: query) { _, _ in
                         selectedIndex = 0
                     }
@@ -54,19 +88,23 @@ struct OmniSearchView: View {
                 if !query.isEmpty {
                     Button(action: { query = "" }) {
                         Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
                             .foregroundColor(.secondary.opacity(0.5))
                     }
                     .buttonStyle(.plain)
                 }
                 
+                // Badge de atajo
                 Text("Esc")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.05)))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.08)))
                     .foregroundColor(.secondary)
             }
-            .padding(20)
+            .padding(.horizontal, 25)
+            .padding(.vertical, 22)
+            .background(Color.primary.opacity(0.03))
             
             if !filteredPrompts.isEmpty {
                 Divider().opacity(0.1)
@@ -74,7 +112,7 @@ struct OmniSearchView: View {
                 // Lista de Resultados
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 6) {
                             ForEach(Array(filteredPrompts.enumerated()), id: \.element.id) { index, prompt in
                                 OmniSearchRow(
                                     prompt: prompt,
@@ -86,108 +124,90 @@ struct OmniSearchView: View {
                                 .id(index)
                             }
                         }
-                        .padding(8)
+                        .padding(12)
                     }
-                    .frame(maxHeight: 350)
+                    .background(Color.black.opacity(0.001))
+                    .frame(maxHeight: 380)
                     .onChange(of: selectedIndex) { _, newValue in
-                        withAnimation(.easeOut(duration: 0.1)) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             proxy.scrollTo(newValue, anchor: .center)
                         }
                     }
                 }
             } else if !query.isEmpty {
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 32))
-                        .foregroundColor(.secondary.opacity(0.3))
+                        .font(.system(size: 42))
+                        .foregroundColor(.secondary.opacity(0.2))
                     Text("no_results".localized(for: preferences.language))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 150)
+                .frame(height: 200)
             }
             
-            // Footer con atajos
-            HStack {
-                HStack(spacing: 12) {
-                    Label {
-                        Text("move_selection".localized(for: preferences.language))
-                    } icon: {
-                        Image(systemName: "arrow.up.arrow.down")
-                    }
-                    
-                    Label {
-                        Text("copy_and_close".localized(for: preferences.language))
-                    } icon: {
-                        Image(systemName: "return")
-                    }
+            // Footer Informativo
+            HStack(spacing: 20) {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.arrow.down")
+                    Text("move_selection".localized(for: preferences.language))
                 }
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.secondary.opacity(0.6))
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "return")
+                    Text("copy_and_close".localized(for: preferences.language))
+                }
                 
                 Spacer()
                 
-                Image("AppIconPlaceholder")
-                    .resizable()
-                    .frame(width: 16, height: 16)
-                    .opacity(0.5)
+                Text("Promtier Spotlight")
+                    .font(.system(size: 10, weight: .black))
+                    .italic()
+                    .opacity(0.3)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Color.primary.opacity(0.02))
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.secondary.opacity(0.6))
+            .padding(.horizontal, 25)
+            .padding(.vertical, 14)
+            .background(Color.primary.opacity(0.04))
         }
         .background(
             VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 22))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
                 )
         )
         .onAppear {
-            setupEventMonitor()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Delay extra para asegurar que la ventana es KEY antes de enfocar el TextField
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isFocused = true
-            }
-        }
-        .onDisappear {
-            if let monitor = eventMonitor {
-                NSEvent.removeMonitor(monitor)
-                eventMonitor = nil
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchOpened"))) { _ in
             query = ""
             selectedIndex = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isFocused = true
             }
         }
-    }
-    
-    private func setupEventMonitor() {
-        if eventMonitor != nil { return }
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            switch event.keyCode {
-            case 125: // Down
-                if selectedIndex < filteredPrompts.count - 1 {
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
+            guard let direction = notification.object as? String else { return }
+            let count = filteredPrompts.count
+            
+            if direction == "down" {
+                if selectedIndex < count - 1 {
                     selectedIndex += 1
                     HapticService.shared.playLight()
-                    return nil
                 }
-            case 126: // Up
+            } else if direction == "up" {
                 if selectedIndex > 0 {
                     selectedIndex -= 1
                     HapticService.shared.playLight()
-                    return nil
                 }
-            case 53: // Esc
-                manager.hide()
-                return nil
-            default:
-                break
             }
-            return event
         }
     }
     
@@ -201,56 +221,82 @@ struct OmniSearchView: View {
     }
 }
 
+// MARK: - OmniSearchRow
 struct OmniSearchRow: View {
     let prompt: Prompt
     let isSelected: Bool
     let onTap: () -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
+    @State private var isHovered = false
+    
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.white.opacity(0.2) : Color.blue.opacity(0.1))
-                    .frame(width: 32, height: 32)
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // Icono del Prompt
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.05))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: prompt.icon ?? "doc.text.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(isSelected ? .white : .blue)
+                }
                 
-                Image(systemName: prompt.icon ?? "doc.text.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(isSelected ? .white : .blue)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(prompt.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : .primary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(prompt.title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(isSelected ? .white : .primary)
+                    
+                    if let desc = prompt.promptDescription, !desc.isEmpty {
+                        Text(desc)
+                            .font(.system(size: 13))
+                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                            .lineLimit(1)
+                    } else {
+                        Text(prompt.content)
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary.opacity(0.8))
+                            .lineLimit(1)
+                    }
+                }
                 
-                if let desc = prompt.promptDescription, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 11))
-                        .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
-                        .lineLimit(1)
-                } else {
-                    Text(prompt.content)
-                        .font(.system(size: 11))
-                        .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
-                        .lineLimit(1)
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "return")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundColor(.white.opacity(0.6))
+                        .padding(8)
+                        .background(Circle().fill(Color.white.opacity(0.1)))
+                } else if isHovered {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.5))
                 }
             }
-            
-            Spacer()
-            
-            if isSelected {
-                Image(systemName: "return")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white.opacity(0.8))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
+            )
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .focusable(false)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Color.blue : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
+    }
+}
+
+// Extension para identificar la vista root en el NSPanel
+extension NSView {
+    var hostingView: NSHostingView<AnyView>? {
+        return self as? NSHostingView<AnyView>
     }
 }

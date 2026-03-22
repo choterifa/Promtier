@@ -9,16 +9,49 @@ import SwiftUI
 import AppKit
 import Combine
 
+class OmniSearchPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+    
+    // Spotlight-like windows often override this
+    override var acceptsFirstResponder: Bool { true }
+}
+
 class OmniSearchManager: NSObject, ObservableObject {
     static let shared = OmniSearchManager()
     
-    private var panel: NSPanel?
+    private var panel: OmniSearchPanel?
     private var cancellables = Set<AnyCancellable>()
+    private var eventMonitor: Any?
+    private var previousApp: NSRunningApplication?
     
     @Published var isVisible: Bool = false
     
     private override init() {
         super.init()
+        setupGlobalMonitor()
+    }
+    
+    private func setupGlobalMonitor() {
+        // Monitor local para capturar flechas y escape globalmente cuando el panel esté activo
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, self.isVisible else { return event }
+            
+            switch event.keyCode {
+            case 125: // Down
+                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
+                return nil
+            case 126: // Up
+                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
+                return nil
+            case 53: // Esc
+                self.hide()
+                return nil
+            default:
+                break
+            }
+            return event
+        }
     }
     
     func toggle() {
@@ -34,7 +67,13 @@ class OmniSearchManager: NSObject, ObservableObject {
             createPanel()
         }
         
-        // Posicionar siempre en el centro de la pantalla actual
+        // Guardar la app activa anterior para devolver el foco al cerrar
+        if let frontApp = NSWorkspace.shared.frontmostApplication, 
+           frontApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+            previousApp = frontApp
+        }
+        
+        // Centrar en pantalla
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let panelSize = panel?.frame.size ?? NSSize(width: 650, height: 450)
@@ -47,15 +86,17 @@ class OmniSearchManager: NSObject, ObservableObject {
             panel?.setFrame(newFrame, display: true)
         }
         
-        // IMPORTANTE: Primero activar la app, luego mostrar ventana
+        // ACTIVACIÓN AGRESIVA: 
+        // 1. Asegurar que la app sea activa
         NSApp.activate(ignoringOtherApps: true)
+        
+        // 2. Mostrar y forzar "Key" window
         panel?.makeKeyAndOrderFront(nil)
         
-        // Pequeño delay para asegurar que el sistema otorgó el foco antes de marcar como visible
+        // 3. Pequeño delay para re-asegurar el foco tras la animación de orden frontal
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             self.panel?.makeKey()
             self.isVisible = true
-            // Notificar para resetear búsqueda
             NotificationCenter.default.post(name: NSNotification.Name("OmniSearchOpened"), object: nil)
         }
     }
@@ -63,18 +104,24 @@ class OmniSearchManager: NSObject, ObservableObject {
     func hide() {
         panel?.orderOut(nil)
         isVisible = false
+        
+        // Devolver el foco a la aplicación anterior
+        if let previousApp = previousApp {
+            previousApp.activate(options: .activateIgnoringOtherApps)
+            self.previousApp = nil
+        }
     }
     
     private func createPanel() {
-        let newPanel = NSPanel(
+        let newPanel = OmniSearchPanel(
             contentRect: NSRect(x: 0, y: 0, width: 650, height: 450),
-            styleMask: [.borderless, .nonactivatingPanel], // Regresamos a nonactivating pero con manejo manual de foco
+            styleMask: [.borderless], 
             backing: .buffered,
             defer: false
         )
         
         newPanel.isFloatingPanel = true
-        newPanel.level = .mainMenu + 1 // Nivel de Spotlight
+        newPanel.level = .mainMenu + 1
         newPanel.becomesKeyOnlyIfNeeded = false
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         newPanel.isOpaque = false
@@ -83,6 +130,8 @@ class OmniSearchManager: NSObject, ObservableObject {
         newPanel.delegate = self
         newPanel.hidesOnDeactivate = true 
         newPanel.isReleasedWhenClosed = false
+        newPanel.acceptsMouseMovedEvents = true
+        
         let view = OmniSearchView()
             .environmentObject(self)
             .environmentObject(PreferencesManager.shared)
@@ -95,6 +144,7 @@ class OmniSearchManager: NSObject, ObservableObject {
 
 extension OmniSearchManager: NSWindowDelegate {
     func windowDidResignKey(_ notification: Notification) {
+        // Cerrar si pierde el foco (clic fuera)
         hide()
     }
 }

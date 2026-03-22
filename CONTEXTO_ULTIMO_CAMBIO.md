@@ -1,28 +1,33 @@
-# 🧭 Contexto / Último Cambio (Handoff)
+# 🧠 Registro de Último Cambio - 21 de Marzo de 2026
 
-*Fecha: 19 de Marzo de 2026*
+## 🛠️ OmniSearch (Spotlight Style) - Rediseño y Mejoras Críticas de UX
 
-## ✅ Lo último implementado
+Se ha rediseñado el buscador global (OmniSearch) para ofrecer una experiencia nativa idéntica a Spotlight de macOS.
 
-### 1) Categorías y Organización Base
-- **Nuevas Categorías por Defecto**: Rediseño total de las categorías iniciales: **Code, Writing, Image Generation, Marketing, Productivity, Automation**. 
-- **SF Symbols e Iconos**: Cada categoría tiene ahora un icono y color único (ej: Terminal para Code, Megáfono para Marketing).
-- **Sembrado (Seeding) V22**: Incremento de versión para forzar la creación de estas nuevas categorías en instalaciones existentes.
+### ✅ Cambios Implementados
 
-### 2) Interacción y Atajos de Teclado (Maestría)
-- **Drag & Drop Inteligente**: Se ha mejorado el `onDrag` en `PromptCard` para permitir la **categorización interna**. Ahora la ventana solo se cierra si el arrastre sale fuera de los límites del popover (delay de 150ms de validación).
-- **Shortcuts Globales y Locales**:
-    - **Guardar**: `Cmd + S` ahora guarda el prompt activamente.
-    - **Modo Zen**: `Cmd + ⇧ + Z` para alternar el editor a pantalla completa.
-    - **Copia Final**: `Cmd + Enter` (además de `Cmd + C`) para copiar el resultado tras rellenar variables.
-    - **Navegación**: Consolidación de tips de flechas (`↑ / ↓`) en un solo Ghost Tip.
+1.  **⚙️ Arquitectura de Foco y Panel:**
+    *   **Cambio:** Se eliminó el flag `.nonactivatingPanel` del `OmniSearchPanel`.
+    *   **Razón:** macOS bloqueaba las interacciones del ratón y el foco del teclado en sub-vistas (como el `TextField`) en paneles no activables. Ahora el panel es una ventana de utilidad estándar que acepta clics y foco correctamente.
+    *   **Mejora:** Ahora se puede hacer clic en los resultados de búsqueda con el ratón sin que la ventana pierda el foco erráticamente.
 
-### 3) UX y Sistema
-- **Ghost Tips**: Actualización masiva de los consejos flotantes para enseñar todos los atajos de teclado disponibles.
-- **Localización**: Actualización completa de `Localizable.strings` (EN/ES) con las nuevas categorías y descripciones de atajos.
-- **Estabilidad**: Se corrigieron referencias a categorías obsoletas en el generador de prompts de ejemplo.
+2.  **⌨️ Navegación por Teclado Robusta:**
+    *   **Cambio:** Se movió el monitor de eventos `NSEvent` de la vista (`OmniSearchView`) al gestor (`OmniSearchManager`).
+    *   **Razón:** SwiftUI a veces consumía las flechas Arriba/Abajo dentro del campo de texto. El monitor global en el Manager intercepta estas teclas antes que el sistema de foco de SwiftUI, garantizando que la navegación por la lista siempre funcione.
+    *   **Notificaciones:** Se implementó un sistema de notificaciones (`OmniSearchMove`) para comunicar el Manager con la Vista de forma desacoplada y persistente.
 
-## 🧪 Próximos pasos sugeridos
-- **CloudKit Dashboard**: Verificación visual de la sincronización entre dispositivos.
-- **Quick Action Bar**: Barra de herramientas flotante al seleccionar texto en el editor.
-- **Auto-Sync Icons**: Sincronizar el icono del prompt con el de su categoría automáticamente si no tiene uno personalizado.
+3.  **🔄 Restauración de Contexto (Focus Return):**
+    *   **Cambio:** El `OmniSearchManager` ahora captura la `previousApp` (`NSRunningApplication`) justo antes de mostrarse.
+    *   **Acción:** Al ocultar el buscador (Esc o Copiar), se llama a `previousApp.activate(options: .activateIgnoringOtherApps)`.
+    *   **Resultado:** El foco vuelve automáticamente a la app donde el usuario estaba trabajando (Chrome, Slack, etc.), eliminando la necesidad de un clic manual tras copiar un prompt.
+
+4.  **⚡ Algoritmo de Búsqueda Pesada:**
+    *   **Cambio:** Se implementó una lógica de puntuación (`scoredPrompts`) en lugar de un simple `.contains`.
+    *   **Pesos:** El Título tiene peso 100, la Descripción 40 y el Contenido 20. Se añade un bonus por coincidencia de prefijo (comienzo de palabra) y reciencia de uso.
+
+### 🏗️ Notas Técnicas para el Futuro
+*   Si el teclado deja de responder, verificar que `manager.isVisible` sea true en el monitor de `NSEvent` de `OmniSearchManager`.
+*   Las filas de la lista (`OmniSearchRow`) se marcaron como `.focusable(false)` para que las flechas no intenten mover el foco azul de SwiftUI entre botones, sino que cambien el `selectedIndex` del buscador.
+
+---
+*Cambio realizado por el Agente de Air CLI.*
