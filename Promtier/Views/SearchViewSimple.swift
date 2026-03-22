@@ -28,6 +28,16 @@ struct SearchViewSimple: View {
     @State private var lastPrewarmedPromptId: UUID? = nil
     
     // Ghost Tips logic
+    private var selectedPromptCategoryColor: Color {
+        guard let p = selectedPrompt, let folderName = p.folder else {
+            return .blue // Fallback
+        }
+        if let folder = promptService.folders.first(where: { $0.name == folderName }) {
+            return Color(hex: folder.displayColor)
+        }
+        return .blue
+    }
+    
     @State private var currentGhostTip: GhostTip? = nil
     @State private var nextTipIndex: Int = 0
     @State private var isGhostTipSuppressedByClipboard = false
@@ -175,7 +185,7 @@ struct SearchViewSimple: View {
             if let tip = currentGhostTip, preferences.ghostTipsEnabled && menuBarManager.activeViewState == .main && menuBarManager.suggestedClipboardContent == nil && !isGhostTipSuppressedByClipboard {
                 VStack {
                     Spacer()
-                    GhostTipView(tip: tip) {
+                    GhostTipView(tip: tip, highlightColor: selectedPromptCategoryColor) {
                         currentGhostTip = nil
                     }
                     .transition(.asymmetric(
