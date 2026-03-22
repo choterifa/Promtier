@@ -254,7 +254,7 @@ struct NewPromptView: View {
                 editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
-            .frame(minHeight: 380)
+            .frame(minHeight: geometry.size.height * 0.85)
             
             // SECTION 2: ADVANCED FIELDS (Unified Group)
             VStack(alignment: .leading, spacing: 16) {
@@ -1715,7 +1715,7 @@ struct EditorCard: View {
                             .textFieldStyle(.plain)
                             .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                             .lineLimit(2)
-                            .padding(.bottom, 12)
+                            .padding(.bottom, 4) // Reduced from 12 to be closer to description
                             .fixedSize(horizontal: false, vertical: true)
                         
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
@@ -1754,7 +1754,7 @@ struct EditorCard: View {
                     isPremium: preferences.isPremiumActive
                 )   
                 .padding(12)
-                .frame(maxWidth: .infinity, minHeight: 200)
+                .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
                 
                 // Barra Flotante Vertical
                 EditorToolbar(
@@ -1800,6 +1800,7 @@ struct EditorCard: View {
                             .stroke(isEditorFocused ? Color.blue.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
                     )
             )
+            .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
             .overlay {
                 if isAIGenerating {
                     AIGeneratingOverlay(accentColor: currentCategoryColor)
