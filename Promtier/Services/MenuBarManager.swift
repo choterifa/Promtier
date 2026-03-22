@@ -489,7 +489,9 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     private func updatePopoverSize(width: CGFloat, height: CGFloat) {
-        popover?.contentSize = NSSize(width: width, height: height)
+        let size = NSSize(width: width, height: height)
+        popover?.contentSize = size
+        popover?.contentViewController?.preferredContentSize = size
     }
     
     /// Actualiza el comportamiento del popover basado en el estado

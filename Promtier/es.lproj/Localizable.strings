@@ -55,6 +55,8 @@
 "reset_size" = "Restablecer tamaño";
 "reset_size_subtitle" = "Volver al tamaño por defecto (800 × 570)";
 "reset" = "Resetear";
+"target_size" = "TAMAÑO OBJETIVO";
+"release_to_apply" = "Soltar para aplicar";
 
 /* Behavior Tab */
 "interaction" = "Interacción";

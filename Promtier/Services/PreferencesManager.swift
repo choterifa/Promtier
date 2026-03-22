@@ -414,6 +414,10 @@ class PreferencesManager: ObservableObject {
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
         self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
         
+        // Sincronizar dimensiones para el HUD
+        self.previewWidth = self.windowWidth
+        self.previewHeight = self.windowHeight
+        
         // Aplicar configuración inicial
         applyAppearance()
         applyDockPolicy()

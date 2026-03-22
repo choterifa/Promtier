@@ -55,6 +55,8 @@
 "reset_size" = "Reset Size";
 "reset_size_subtitle" = "Return to default size (800 × 570)";
 "reset" = "Reset";
+"target_size" = "TARGET SIZE";
+"release_to_apply" = "Release to apply";
 
 /* Behavior Tab */
 "interaction" = "Interaction";

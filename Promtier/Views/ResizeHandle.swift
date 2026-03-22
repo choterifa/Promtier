@@ -48,9 +48,17 @@ struct ResizeHandle: View {
                         
                         preferences.windowWidth = newWidth
                         preferences.windowHeight = newHeight
+                        
+                        // Mostrar HUD de redimensionado
+                        preferences.isResizingVisible = true
+                        
+                        // Sincronizar previsualización para el HUD y Sliders
+                        preferences.previewWidth = newWidth
+                        preferences.previewHeight = newHeight
                     }
                     .onEnded { _ in
                         initialSize = .zero
+                        preferences.isResizingVisible = false
                         preferences.saveWindowDimensions()
                         HapticService.shared.playAlignment()
                     }
