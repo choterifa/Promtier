@@ -26,7 +26,11 @@ struct ZenEditorView: View {
     @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
+    @Binding var isAIGenerating: Bool
+    @Binding var selectedRange: NSRange?
     @Binding var showingPremiumFor: String?
+    var originalPrompt: Prompt?
+    @Binding var branchMessage: String?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -100,11 +104,12 @@ struct ZenEditorView: View {
                     replaceSnippetRequest: $replaceSnippetRequest,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
-                    editorID: "zen", // Or we could pass the actual target ID if needed
+                    editorID: "zen",
                     isFocused: Binding(
                         get: { isEditorFocused },
                         set: { isEditorFocused = $0 }
                     ),
+                    selectedRange: $selectedRange,
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

@@ -32,6 +32,7 @@ struct HighlightedEditor: NSViewRepresentable {
     let editorID: String
     @Binding var isFocused: Bool
     var focusRequest: Binding<Bool>? = nil
+    @Binding var selectedRange: NSRange?
     var fontSize: CGFloat
     var themeColor: NSColor = .systemOrange // Color por defecto si no se provee
     
@@ -251,6 +252,7 @@ struct HighlightedEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             self.parent.text = textView.string
+            self.parent.selectedRange = textView.selectedRange()
             applyHighlighting(textView)
             
             // Actualizar búsqueda de snippets si está activo

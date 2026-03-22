@@ -443,6 +443,9 @@
 "apply_ai_changes" = "Aplicar cambios";
 "no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";
 "ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";
+"ai_action_create_from_text" = "Crear como nuevo Prompt";
+"prompt_created_success" = "¡Nuevo prompt creado!";
+"ai_action_instruct" = "Ejecutar como Comando";
 "ai_thinking" = "La IA está pensando...";
 "ai_crafting_message" = "Diseñando tu mensaje a la perfección";
 "ai_action_enhance" = "Mejorar Prompt";

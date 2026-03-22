@@ -74,6 +74,9 @@ struct NewPromptView: View {
     @State private var triggerVariablesSelection: Bool = false
     
     @State private var triggerAIRequest: String? = nil
+    @State private var selectedRange: NSRange? = nil
+    @State private var selectedNegativeRange: NSRange? = nil
+    @State private var selectedAlternativeRanges: [NSRange?] = Array(repeating: nil, count: 10)
     @State private var isAIActive: Bool = false
     @State private var isAIGenerating: Bool = false
     @State private var showParticles: Bool = false
@@ -138,6 +141,27 @@ struct NewPromptView: View {
         )
     }
     
+    private var zenBindingSelection: Binding<NSRange?> {
+        Binding(
+            get: {
+                switch zenTarget {
+                case .main: return selectedRange
+                case .negative: return selectedNegativeRange
+                case .alternative(let i): return i < selectedAlternativeRanges.count ? selectedAlternativeRanges[i] : nil
+                case .none: return nil
+                }
+            },
+            set: { val in
+                switch zenTarget {
+                case .main: selectedRange = val
+                case .negative: selectedNegativeRange = val
+                case .alternative(let i): if i < selectedAlternativeRanges.count { selectedAlternativeRanges[i] = val }
+                case .none: break
+                }
+            }
+        )
+    }
+    
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
@@ -189,10 +213,14 @@ struct NewPromptView: View {
                 triggerAIRequest: $triggerAIRequest,
                 isAIActive: $isAIActive,
                 isAIGenerating: $isAIGenerating,
+                selectedRange: $selectedRange,
+                originalPrompt: originalPrompt,
+                prompt: prompt,
+                branchMessage: $branchMessage,
                 editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
-            .frame(minHeight: 380) // Usar minHeight en lugar de frame fijo basado en % para mejor scroll
+            .frame(minHeight: 380)
             
             // SECTION 2: ADVANCED FIELDS
             VStack(spacing: 24) {
@@ -221,8 +249,14 @@ struct NewPromptView: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
+                    isAIGenerating: $isAIGenerating,
+                    selectedRange: $selectedNegativeRange,
                     showingPremiumFor: $showingPremiumFor,
-                    editorID: "negative"
+                    originalPrompt: originalPrompt,
+                    prompt: prompt,
+                    branchMessage: $branchMessage,
+                    editorID: "negative",
+                    currentCategoryColor: currentCategoryColor
                 ) {
                     EmptyView()
                 }
@@ -450,8 +484,17 @@ struct NewPromptView: View {
             triggerVariablesSelection: $triggerVariablesSelection,
             triggerAIRequest: $triggerAIRequest,
             isAIActive: $isAIActive,
+            isAIGenerating: $isAIGenerating,
+            selectedRange: Binding(
+                get: { index < selectedAlternativeRanges.count ? selectedAlternativeRanges[index] : nil },
+                set: { if index < selectedAlternativeRanges.count { selectedAlternativeRanges[index] = $0 } }
+            ),
             showingPremiumFor: $showingPremiumFor,
-            editorID: "alt-\(index)"
+            originalPrompt: originalPrompt,
+            prompt: prompt,
+            branchMessage: $branchMessage,
+            editorID: "alt-\(index)",
+            currentCategoryColor: currentCategoryColor
         ) {
             HStack(spacing: 10) {
                 if !alternatives[index].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -708,7 +751,11 @@ struct NewPromptView: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
-                    showingPremiumFor: $showingPremiumFor
+                    isAIGenerating: $isAIGenerating,
+                    selectedRange: zenBindingSelection,
+                    showingPremiumFor: $showingPremiumFor,
+                    originalPrompt: originalPrompt,
+                    branchMessage: $branchMessage
                 )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1260,8 +1307,8 @@ struct NewPromptView: View {
         // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
         if let existingPrompt = originalPrompt ?? prompt {
             // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
-            let basicChanges = existingPrompt.title != title ||
-                             existingPrompt.content != content ||
+            let basicChanges = existingPrompt.title != title || 
+                             existingPrompt.content != content || 
                              existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
                              existingPrompt.folder != selectedFolder ||
                              existingPrompt.isFavorite != isFavorite ||
@@ -1537,9 +1584,14 @@ struct EditorCard: View {
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
     @Binding var isAIGenerating: Bool
+    @Binding var selectedRange: NSRange?
+    var originalPrompt: Prompt?
+    var prompt: Prompt?
+    @Binding var branchMessage: String?
     let editorID: String
     
     let currentCategoryColor: Color
+    @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
@@ -1590,11 +1642,14 @@ struct EditorCard: View {
                                 Button(action: { performAIAction(.concise) }) {
                                     Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
                                 }
-                                Button(action: { performAIAction(.creative) }) {
-                                    Label("ai_action_creative".localized(for: preferences.language), systemImage: "lightbulb")
+                                
+                                Divider()
+                                
+                                Button(action: { performAIAction(.instruct) }) {
+                                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                                 }
                             } label: {
-                                Image(systemName: "sparkles")
+                                Image(systemName: "brain.fill")
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(currentCategoryColor)
                                     .frame(width: 32, height: 32)
@@ -1685,6 +1740,7 @@ struct EditorCard: View {
                     isAIActive: $isAIActive,
                     editorID: editorID,
                     isFocused: $isEditorFocused,
+                    selectedRange: $selectedRange,
                     fontSize: 16 * preferences.fontSize.scale,
                     themeColor: NSColor(currentCategoryColor),
                     showSnippets: $showSnippets,
@@ -1727,7 +1783,26 @@ struct EditorCard: View {
         isAIGenerating = true
         HapticService.shared.playImpact()
         
-        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(content)"
+        // Determinar qué fragmento procesar (selección o todo)
+        let textToProcess: String
+        let rangeToProcess: NSRange
+        let fullNSString = content as NSString
+        
+        if let sel = selectedRange, sel.length > 0 {
+            textToProcess = fullNSString.substring(with: sel)
+            rangeToProcess = sel
+        } else {
+            textToProcess = content
+            rangeToProcess = NSRange(location: 0, length: fullNSString.length)
+        }
+        
+        guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            isAIGenerating = false
+            return
+        }
+        
+        let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
+        let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
         
         var fullResponse = ""
         OllamaService.shared.generate(prompt: fullPrompt, model: model)
@@ -1740,7 +1815,8 @@ struct EditorCard: View {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
                         withAnimation {
-                            content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            content = (content as NSString).replacingCharacters(in: rangeToProcess, with: result)
                         }
                     }
                 }
@@ -1750,16 +1826,37 @@ struct EditorCard: View {
             .store(in: &cancellables)
     }
 
+    private func createNewPromptFromEditor() {
+        let newTitle = "New Prompt from Editor"
+        let newPrompt = Prompt(
+            title: newTitle,
+            content: content,
+            folder: (originalPrompt ?? prompt)?.folder,
+            icon: (originalPrompt ?? prompt)?.icon ?? "doc.text.fill",
+            tags: (originalPrompt ?? prompt)?.tags ?? []
+        )
+        
+        if promptService.createPrompt(newPrompt) {
+            HapticService.shared.playSuccess()
+            withAnimation {
+                branchMessage = "prompt_created_success".localized(for: preferences.language)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                withAnimation { branchMessage = nil }
+            }
+        }
+    }
+
 }
 enum AIAction {
-    case enhance, fix, concise, creative
+    case enhance, fix, concise, instruct
     
     var systemPrompt: String {
         switch self {
         case .enhance: return "Enhance the following prompt to be more descriptive and effective, keeping the variables {{...}} exactly as they are. Respond ONLY with the improved prompt text."
         case .fix: return "Fix grammar and spelling errors in the following prompt, keeping variables {{...}} exactly as they are. Respond ONLY with the corrected text."
         case .concise: return "Make the following prompt more concise and direct, keeping variables {{...}} exactly as they are. Respond ONLY with the concise text."
-        case .creative: return "Make the following prompt more creative and inspiring, keeping variables {{...}} exactly as they are. Respond ONLY with the creative text."
+        case .instruct: return ""
         }
     }
 }
@@ -1785,14 +1882,21 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var triggerVariablesSelection: Bool
     @Binding var triggerAIRequest: String?
     @Binding var isAIActive: Bool
+    @Binding var isAIGenerating: Bool
+    @Binding var selectedRange: NSRange?
     @Binding var showingPremiumFor: String?
+    var originalPrompt: Prompt?
+    var prompt: Prompt?
+    @Binding var branchMessage: String?
     let editorID: String
+    let currentCategoryColor: Color
     
     let actions: Actions
     
+    @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
+    
     @State private var isEditorFocused: Bool = false
-    @State private var isAIGenerating: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
     
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
@@ -1803,10 +1907,16 @@ struct SecondaryEditorCard<Actions: View>: View {
          showVariables: Binding<Bool>, variablesSelectedIndex: Binding<Int>,
          triggerVariablesSelection: Binding<Bool>,
          triggerAIRequest: Binding<String?>, 
-          isAIActive: Binding<Bool>,
-          showingPremiumFor: Binding<String?>,
-          editorID: String,
-          @ViewBuilder actions: () -> Actions = { EmptyView() }) {
+         isAIActive: Binding<Bool>,
+         isAIGenerating: Binding<Bool>,
+         selectedRange: Binding<NSRange?>,
+         showingPremiumFor: Binding<String?>,
+         originalPrompt: Prompt?,
+         prompt: Prompt?,
+         branchMessage: Binding<String?>,
+         editorID: String,
+         currentCategoryColor: Color,
+         @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
         self.placeholder = placeholder
         self._text = text
@@ -1825,8 +1935,14 @@ struct SecondaryEditorCard<Actions: View>: View {
         self._triggerVariablesSelection = triggerVariablesSelection
         self._triggerAIRequest = triggerAIRequest
         self._isAIActive = isAIActive
+        self._isAIGenerating = isAIGenerating
+        self._selectedRange = selectedRange
         self._showingPremiumFor = showingPremiumFor
+        self.originalPrompt = originalPrompt
+        self.prompt = prompt
+        self._branchMessage = branchMessage
         self.editorID = editorID
+        self.currentCategoryColor = currentCategoryColor
         self.actions = actions()
     }
     
@@ -1859,11 +1975,14 @@ struct SecondaryEditorCard<Actions: View>: View {
                                 Button(action: { performAIAction(.concise) }) {
                                     Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
                                 }
-                                Button(action: { performAIAction(.creative) }) {
-                                    Label("ai_action_creative".localized(for: preferences.language), systemImage: "lightbulb")
+                                
+                                Divider()
+                                
+                                Button(action: { performAIAction(.instruct) }) {
+                                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                                 }
                             } label: {
-                                Image(systemName: "sparkles")
+                                Image(systemName: "brain.fill")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(color)
                                     .frame(width: 24, height: 24)
@@ -1949,6 +2068,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     editorID: editorID,
                     isFocused: $isEditorFocused,
                     focusRequest: focusRequest,
+                    selectedRange: $selectedRange,
                     fontSize: 14 * preferences.fontSize.scale,
                     themeColor: NSColor(color),
                     showSnippets: $showSnippets,
@@ -2003,7 +2123,26 @@ struct SecondaryEditorCard<Actions: View>: View {
         isAIGenerating = true
         HapticService.shared.playImpact()
         
-        let fullPrompt = "\(action.systemPrompt)\n\nPrompt:\n\(text)"
+        // Determinar qué fragmento procesar
+        let textToProcess: String
+        let rangeToProcess: NSRange
+        let fullNSString = text as NSString
+        
+        if let sel = selectedRange, sel.length > 0 {
+            textToProcess = fullNSString.substring(with: sel)
+            rangeToProcess = sel
+        } else {
+            textToProcess = text
+            rangeToProcess = NSRange(location: 0, length: fullNSString.length)
+        }
+        
+        guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            isAIGenerating = false
+            return
+        }
+        
+        let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
+        let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
         
         var fullResponse = ""
         OllamaService.shared.generate(prompt: fullPrompt, model: model)
@@ -2016,7 +2155,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
                         withAnimation {
-                            text = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            text = (text as NSString).replacingCharacters(in: rangeToProcess, with: result)
                         }
                     }
                 }
@@ -2024,6 +2164,21 @@ struct SecondaryEditorCard<Actions: View>: View {
                 fullResponse += chunk
             })
             .store(in: &cancellables)
+    }
+
+    private func createNewPromptFromEditor() {
+        let newTitle = "New Prompt from Editor"
+        let newPrompt = Prompt(
+            title: newTitle,
+            content: text,
+            folder: (originalPrompt ?? prompt)?.folder,
+            icon: "doc.text.fill",
+            tags: []
+        )
+        
+        if promptService.createPrompt(newPrompt) {
+            HapticService.shared.playSuccess()
+        }
     }
 
 // MARK: - Componentes de Soporte de Galería
