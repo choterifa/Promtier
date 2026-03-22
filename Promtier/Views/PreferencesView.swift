@@ -1286,23 +1286,6 @@ struct SupportTab: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            // Glosario de Iconos
-            SettingsSection(title: "icon_glossary", icon: "info.circle.fill") {
-                VStack(spacing: 0) {
-                    GlossaryRow(icon: "curlybraces", color: .blue, title: "glossary_variable_title", description: "glossary_variables_desc")
-                    Divider().padding(.leading, 50)
-                    GlossaryRow(icon: "cube.transparent.fill", color: .blue, title: "glossary_variable_indicator_title", description: "glossary_variable_indicator_desc")
-                    Divider().padding(.leading, 50)
-                    GlossaryRow(icon: "slash.circle.fill", color: .orange, title: "snippets_tab", description: "glossary_snippets_trigger_desc")
-                    Divider().padding(.leading, 50)
-                    GlossaryRow(icon: "clock.arrow.circlepath", color: .purple, title: "glossary_versions_indicator_title", description: "glossary_versions_indicator_desc")
-                    Divider().padding(.leading, 50)
-                    GlossaryRow(icon: "circle.fill", color: .red, title: "glossary_negative_dot_title", description: "glossary_negative_dot_desc")
-                    Divider().padding(.leading, 50)
-                    GlossaryRow(icon: "circle.fill", color: .green, title: "glossary_alternative_dot_title", description: "glossary_alternative_dot_desc")
-                }
-            }
-            
             SettingsSection(title: "contact_help", icon: "envelope.fill") {
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Consulta Promtier") }) {
                     SettingsRow("email_support", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
@@ -1345,6 +1328,23 @@ struct SupportTab: View {
                     }
                 }
                 .buttonStyle(.plain)
+            }
+            
+            // Glosario de Iconos (Movido al final)
+            SettingsSection(title: "icon_glossary", icon: "info.circle.fill") {
+                VStack(spacing: 0) {
+                    GlossaryRow(icon: "curlybraces", color: .blue, title: "glossary_variable_title", description: "glossary_variables_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "cube.transparent.fill", color: .blue, title: "glossary_variable_indicator_title", description: "glossary_variable_indicator_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "slash.circle.fill", color: .orange, title: "snippets_tab", description: "glossary_snippets_trigger_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "clock.arrow.circlepath", color: .purple, title: "glossary_versions_indicator_title", description: "glossary_versions_indicator_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "circle.fill", color: .red, title: "glossary_negative_dot_title", description: "glossary_negative_dot_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "circle.fill", color: .green, title: "glossary_alternative_dot_title", description: "glossary_alternative_dot_desc")
+                }
             }
             
             VStack(spacing: 8) {
