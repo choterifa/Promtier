@@ -1693,7 +1693,7 @@ struct EditorCard: View {
         VStack(spacing: 0) {
             // Título, Icono y Descripción (Header Expandido)
             VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 20) {
+                HStack(alignment: .center, spacing: 20) {
                     Button(action: { showingIconPicker.toggle() }) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
@@ -1726,7 +1726,6 @@ struct EditorCard: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(minHeight: 36, alignment: .topLeading) // Reserve space
                     }
-                    .padding(.top, 6)
                 }
             } // Cierre de la cabecera (VStack en 1695)
             
