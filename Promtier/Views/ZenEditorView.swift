@@ -36,15 +36,17 @@ struct ZenEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header minimalista
-            HStack {
+            HStack(alignment: .top) {
                 if isTitleEditable {
-                    TextField("zen_title_placeholder".localized(for: preferences.language), text: $title)
+                    TextField("zen_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                         .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                         .textFieldStyle(.plain)
+                        .lineLimit(2)
                 } else {
                     Text(title)
                         .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(.secondary)
+                        .lineLimit(2)
                 }
                 
                 Spacer()
@@ -52,7 +54,7 @@ struct ZenEditorView: View {
                 Button(action: { 
                     if preferences.isPremiumActive {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            showVariables = true
+                            showVariables.toggle()
                             variablesSelectedIndex = 0
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

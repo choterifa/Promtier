@@ -16,27 +16,37 @@ struct FloatingZenEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Cabecera arrastrable
-            HStack {
-                TextField("zen_title_placeholder".localized(for: preferences.language), text: $manager.title)
-                    .font(.system(size: 16, weight: .bold))
-                    .textFieldStyle(.plain)
-                
-                Spacer()
-                
-                Button(action: {
-                    manager.hide()
-                    // Si el usuario quiere guardar inmediatamente y abrir la app
-                    MenuBarManager.shared.showPopover()
-                }) {
-                    Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .padding(6)
-                        .background(Color.primary.opacity(0.05))
-                        .cornerRadius(6)
+            VStack(spacing: 8) {
+                HStack(alignment: .top) {
+                    TextField("zen_title_placeholder".localized(for: preferences.language), text: $manager.title, axis: .vertical)
+                        .font(.system(size: 16, weight: .bold))
+                        .textFieldStyle(.plain)
+                        .lineLimit(2)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        manager.hide()
+                        // Si el usuario quiere guardar inmediatamente y abrir la app
+                        MenuBarManager.shared.showPopover()
+                    }) {
+                        Image(systemName: "arrow.down.right.and.arrow.up.left")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .padding(6)
+                            .background(Color.primary.opacity(0.05))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("back_to_app".localized(for: preferences.language))
+                    .padding(.top, 2)
                 }
-                .buttonStyle(.plain)
-                .help("back_to_app".localized(for: preferences.language))
+                
+                TextField("short_desc_placeholder".localized(for: preferences.language), text: $manager.promptDescription, axis: .vertical)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .textFieldStyle(.plain)
+                    .lineLimit(2)
             }
             .padding(16)
             .background(Color(NSColor.windowBackgroundColor).opacity(0.5))

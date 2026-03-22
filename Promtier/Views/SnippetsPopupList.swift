@@ -112,10 +112,6 @@ struct SnippetsPopupList: View {
         .onChange(of: query) { _, _ in
             self.selectedIndex = 0
         }
-        // Evitar que el ESC cierre la ventana principal
-        .onExitCommand {
-            onDismiss()
-        }
     }
 }
 

@@ -803,6 +803,11 @@ struct NewPromptView: View {
             MenuBarManager.shared.isModalActive = true
             debounceAutoSave()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FloatingZenDraftUpdated"))) { _ in
+            DispatchQueue.main.async {
+                self.setupOnAppear()
+            }
+        }
     }
     
     private func debounceAutoSave() {
@@ -952,16 +957,23 @@ struct NewPromptView: View {
                     return nil
                 }
                 
-                // Si no hay overlays críticos abiertos, cerrar la vista
+                // Si no hay overlays críticos abiertos, primero perdemos foco. Si no hay foco, cerramos
                 if self.zenTarget == nil && !self.showingIconPicker {
-                    // Try to resign first responder to lose focus
-                    if let window = NSApp.keyWindow, let _ = window.firstResponder as? NSTextView {
-                        DispatchQueue.main.async {
-                            window.makeFirstResponder(nil)
+                    if let window = NSApp.keyWindow, let firstResponder = window.firstResponder {
+                        // In SwiftUI text fields, the firstResponder is often an NSTextView known as the field editor
+                        let isEditingText = firstResponder is NSTextView || firstResponder.className.contains("TextEditor")
+                        
+                        // We check if it's actually editing something by seeing if making it resign does anything
+                        if isEditingText {
+                            DispatchQueue.main.async {
+                                // This attempts to commit any current text editing and resign focus
+                                _ = window.makeFirstResponder(nil)
+                            }
+                            return nil // We consumed the event, just losing focus, NO closing the window
                         }
-                        return nil // Just lose focus, don't close
                     }
                     
+                    // Si no estamos editando nada y presionan ESC, cerramos la ventana
                     DispatchQueue.main.async {
                         self.onClose()
                     }
@@ -1013,7 +1025,7 @@ struct NewPromptView: View {
                 DispatchQueue.main.async {
                     if self.preferences.isPremiumActive {
                         withAnimation {
-                            self.showVariables = true
+                            self.showVariables.toggle()
                             self.variablesSelectedIndex = 0
                         }
                     } else {
@@ -1041,7 +1053,59 @@ struct NewPromptView: View {
         // ALWAYS lock modal so clicking outside doesn't close the editor
         MenuBarManager.shared.isModalActive = true
         
-        if let prompt = prompt {
+        let draft = DraftService.shared.loadDraft()
+        
+        // Determinar si debemos cargar el draft en lugar del prompt original
+        var shouldLoadDraft = false
+        if let draft = draft {
+            if prompt == nil {
+                shouldLoadDraft = true // Draft de un nuevo prompt (asumimos que si no hay prompt activo en UI, queremos el draft)
+            } else if let prompt = prompt, draft.prompt.id == prompt.id {
+                shouldLoadDraft = true // Draft corresponde al prompt que estamos editando
+            } else if draft.isEditing {
+                // If it's a draft from editing, and we just got the notification, force load it
+                shouldLoadDraft = true
+            }
+        }
+        
+        if shouldLoadDraft, let draft = draft {
+            // Restore draft if it exists and matches the current context
+            let draftPrompt = draft.prompt
+            
+            if draft.isEditing {
+                if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
+                    self.originalPrompt = original
+                } else if let p = prompt {
+                    self.originalPrompt = p
+                }
+            }
+            
+            DispatchQueue.main.async {
+                self.title = draftPrompt.title
+                self.content = draftPrompt.content
+                self.negativePrompt = draftPrompt.negativePrompt ?? ""
+                
+                var draftAlternatives = draftPrompt.alternatives
+                if draftAlternatives.isEmpty, let legacy = draftPrompt.alternativePrompt, !legacy.isEmpty {
+                    draftAlternatives = [legacy]
+                }
+                self.alternatives = draftAlternatives
+                
+                self.promptDescription = draftPrompt.promptDescription ?? ""
+                self.selectedFolder = draftPrompt.folder
+                self.isFavorite = draftPrompt.isFavorite
+                self.selectedIcon = draftPrompt.icon
+                self.showcaseImages = draftPrompt.showcaseImages
+                self.tags = draftPrompt.tags
+                self.targetAppBundleIDs = draftPrompt.targetAppBundleIDs
+                self.customShortcut = draftPrompt.customShortcut
+                self.isDraftRestored = true
+                
+                if !self.negativePrompt.isEmpty { self.showNegativeField = true }
+                if !self.alternatives.isEmpty { self.showAlternativeField = true }
+            }
+            
+        } else if let prompt = prompt {
             self.originalPrompt = prompt
             title = prompt.title
             content = prompt.content
@@ -1062,13 +1126,12 @@ struct NewPromptView: View {
             if !negativePrompt.isEmpty { showNegativeField = true }
             if !alternatives.isEmpty { showAlternativeField = true }
 
-            // Lazy-load de imágenes (la lista ya no carga blobs para mejorar rendimiento).
+            // Lazy-load de imágenes
             if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
                 Task(priority: .userInitiated) {
                     if let full = await promptService.fetchPrompt(byId: prompt.id, includeImages: true) {
                         await MainActor.run {
                             self.originalPrompt = full
-                            // Evitar pisar cambios del usuario si ya añadió imágenes manualmente.
                             if self.showcaseImages.isEmpty {
                                 self.showcaseImages = full.showcaseImages
                             }
@@ -1076,37 +1139,6 @@ struct NewPromptView: View {
                     }
                 }
             }
-        } else if let draft = DraftService.shared.loadDraft() {
-            // Restaurar borrador si existe y no estamos editando uno específico pasado por parámetro
-            let draftPrompt = draft.prompt
-            
-            // Si el borrador era una edición, intentamos recuperar el original
-            if draft.isEditing {
-                if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
-                    self.originalPrompt = original
-                }
-            }
-            
-            title = draftPrompt.title
-            content = draftPrompt.content
-            negativePrompt = draftPrompt.negativePrompt ?? ""
-            alternatives = draftPrompt.alternatives
-            if alternatives.isEmpty, let legacy = draftPrompt.alternativePrompt, !legacy.isEmpty {
-                alternatives = [legacy]
-            }
-            promptDescription = draftPrompt.promptDescription ?? ""
-            selectedFolder = draftPrompt.folder
-            isFavorite = draftPrompt.isFavorite
-            selectedIcon = draftPrompt.icon
-            showcaseImages = draftPrompt.showcaseImages
-            tags = draftPrompt.tags
-            targetAppBundleIDs = draftPrompt.targetAppBundleIDs
-            customShortcut = draftPrompt.customShortcut
-            isDraftRestored = true
-            
-            if !negativePrompt.isEmpty { showNegativeField = true }
-            if !alternatives.isEmpty { showAlternativeField = true }
-            
         } else if let activeCategory = promptService.selectedCategory {
             // Autoseleccionar la categoría activa al crear uno nuevo
             selectedFolder = activeCategory
@@ -1206,8 +1238,11 @@ struct NewPromptView: View {
                         .help("favorite".localized(for: preferences.language))
                         
                         Button(action: {
+                            // Force save current draft state
+                            saveCurrentDraft()
+                            
                             // Extract title and content to floating manager
-                            FloatingZenManager.shared.show(title: title, content: content, promptId: nil, isEditing: true)
+                            FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
                             // Close popover
                             MenuBarManager.shared.closePopover()
                         }) {
@@ -1814,7 +1849,7 @@ struct EditorCard: View {
                     onShowVariables: {
                         if preferences.isPremiumActive {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                showVariables = true
+                                showVariables.toggle()
                                 variablesSelectedIndex = 0
                             }
                         } else {
@@ -1824,7 +1859,7 @@ struct EditorCard: View {
                     onShowSnippets: {
                         if preferences.isPremiumActive {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                showSnippets = true
+                                showSnippets.toggle()
                                 snippetSearchQuery = ""
                             }
                         } else {
@@ -2136,7 +2171,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     onShowVariables: {
                         if preferences.isPremiumActive {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                showVariables = true
+                                showVariables.toggle()
                                 variablesSelectedIndex = 0
                             }
                         } else {
@@ -2146,7 +2181,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     onShowSnippets: {
                         if preferences.isPremiumActive {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                showSnippets = true
+                                showSnippets.toggle()
                                 snippetSearchQuery = ""
                             }
                         } else {

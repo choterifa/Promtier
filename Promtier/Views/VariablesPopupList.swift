@@ -102,9 +102,6 @@ struct VariablesPopupList: View {
         .onAppear {
             self.selectedIndex = 0
         }
-        .onExitCommand {
-            onDismiss()
-        }
     }
 }
 

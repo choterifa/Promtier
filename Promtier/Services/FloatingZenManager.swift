@@ -16,6 +16,7 @@ class FloatingZenManager: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     @Published var title: String = ""
+    @Published var promptDescription: String = ""
     @Published var content: String = ""
     @Published var isVisible: Bool = false
     
@@ -42,10 +43,18 @@ class FloatingZenManager: NSObject, ObservableObject {
                 self?.scheduleAutoSave()
             }
             .store(in: &cancellables)
+            
+        $promptDescription
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.scheduleAutoSave()
+            }
+            .store(in: &cancellables)
     }
     
-    func show(title: String, content: String, promptId: UUID?, isEditing: Bool) {
+    func show(title: String, promptDescription: String, content: String, promptId: UUID?, isEditing: Bool) {
         self.title = title
+        self.promptDescription = promptDescription
         self.content = content
         self.originalPromptId = promptId
         self.isEditingExisting = isEditing
@@ -107,7 +116,7 @@ class FloatingZenManager: NSObject, ObservableObject {
             currentPrompt = Prompt(
                 title: title,
                 content: content,
-                promptDescription: existing.prompt.promptDescription,
+                promptDescription: promptDescription.isEmpty ? existing.prompt.promptDescription : promptDescription,
                 folder: existing.prompt.folder,
                 icon: existing.prompt.icon,
                 showcaseImages: existing.prompt.showcaseImages,
@@ -129,7 +138,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         } else {
             currentPrompt = Prompt(
                 title: title,
-                content: content
+                content: content,
+                promptDescription: promptDescription.isEmpty ? nil : promptDescription
             )
             if let originalId = originalPromptId {
                 currentPrompt.id = originalId
