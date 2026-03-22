@@ -59,7 +59,9 @@ struct GhostTipView: View {
         .background {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
+                // Efecto iluminado (glow) con la sombra azulada premium
+                .shadow(color: Color.blue.opacity(0.15), radius: 12, x: 0, y: 0)
+                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
         }
         .opacity(opacity)
         .offset(y: offset)
