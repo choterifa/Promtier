@@ -31,7 +31,7 @@ struct NewPromptView: View {
     @State private var showingZenEditor = false
     @State private var zenTarget: ZenEditorTarget? = nil
     
-    enum ZenEditorTarget: Identifiable {
+    enum ZenEditorTarget: Identifiable, Equatable {
         case main
         case negative
         case alternative(Int)
@@ -81,7 +81,7 @@ struct NewPromptView: View {
     @State private var aiNegativeResult: AIResult? = nil
     @State private var aiAlternativeResults: [AIResult?] = Array(repeating: nil, count: 10)
     @State private var isAIActive: Bool = false
-    @State private var isAIGenerating: Bool = false
+    @State private var activeGeneratingID: String? = nil
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
@@ -165,6 +165,11 @@ struct NewPromptView: View {
         )
     }
     
+    private var zenTargetIndex: Int {
+        if case .alternative(let i) = zenTarget { return i }
+        return 0
+    }
+    
     private var zenBindingAIResult: Binding<AIResult?> {
         Binding(
             get: {
@@ -236,7 +241,10 @@ struct NewPromptView: View {
                 triggerVariablesSelection: $triggerVariablesSelection,
                 triggerAIRequest: $triggerAIRequest,
                 isAIActive: $isAIActive,
-                isAIGenerating: $isAIGenerating,
+                isAIGenerating: Binding(
+                    get: { activeGeneratingID == "main" },
+                    set: { val in activeGeneratingID = val ? "main" : nil }
+                ),
                 selectedRange: $selectedRange,
                 aiResult: $aiResult,
                 originalPrompt: originalPrompt,
@@ -274,7 +282,10 @@ struct NewPromptView: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
-                    isAIGenerating: $isAIGenerating,
+                    isAIGenerating: Binding(
+                        get: { activeGeneratingID == "negative" },
+                        set: { val in activeGeneratingID = val ? "negative" : nil }
+                    ),
                     selectedRange: $selectedNegativeRange,
                     aiResult: $aiNegativeResult,
                     showingPremiumFor: $showingPremiumFor,
@@ -510,7 +521,10 @@ struct NewPromptView: View {
             triggerVariablesSelection: $triggerVariablesSelection,
             triggerAIRequest: $triggerAIRequest,
             isAIActive: $isAIActive,
-            isAIGenerating: $isAIGenerating,
+            isAIGenerating: Binding(
+                get: { activeGeneratingID == "alt-\(index)" },
+                set: { val in activeGeneratingID = val ? "alt-\(index)" : nil }
+            ),
             selectedRange: Binding(
                 get: { index < selectedAlternativeRanges.count ? selectedAlternativeRanges[index] : nil },
                 set: { if index < selectedAlternativeRanges.count { selectedAlternativeRanges[index] = $0 } }
@@ -781,7 +795,12 @@ struct NewPromptView: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     triggerAIRequest: $triggerAIRequest,
                     isAIActive: $isAIActive,
-                    isAIGenerating: $isAIGenerating,
+                    isAIGenerating: Binding(
+                        get: { activeGeneratingID == (zenTarget == .main ? "main" : (zenTarget == .negative ? "negative" : "alt-\(zenTargetIndex)")) },
+                        set: { val in 
+                            if !val { activeGeneratingID = nil }
+                        }
+                    ),
                     selectedRange: zenBindingSelection,
                     aiResult: zenBindingAIResult,
                     showingPremiumFor: $showingPremiumFor,
