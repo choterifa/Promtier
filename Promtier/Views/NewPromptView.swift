@@ -219,16 +219,12 @@ struct NewPromptView: View {
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 32) {
-            // SECTION 0: CATEGORY PICKER (New & Interactive)
-            CategoryPillPicker(selectedCategory: $selectedFolder)
-                .padding(.top, 8)
-                .transition(.move(edge: .top).combined(with: .opacity))
-
             // SECTION 1: MAIN PROMPT (Primary Focus)
             EditorCard(
                 title: $title,
                 content: $content,
                 promptDescription: $promptDescription,
+                selectedFolder: $selectedFolder,
                 selectedIcon: $selectedIcon,
                 fallbackIconName: selectedFolder.flatMap { PredefinedCategory.fromString($0)?.icon } ?? "doc.text.fill",
                 showingIconPicker: $showingIconPicker,
@@ -1624,6 +1620,7 @@ struct EditorCard: View {
     @Binding var title: String
     @Binding var content: String
     @Binding var promptDescription: String
+    @Binding var selectedFolder: String?
     @Binding var selectedIcon: String?
     let fallbackIconName: String
     @Binding var showingIconPicker: Bool
@@ -1801,7 +1798,13 @@ struct EditorCard: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                 } // Closes HStack(1550)
             .padding(.horizontal, 8)
-            .padding(.bottom, 24)
+            .padding(.bottom, 16)
+            
+            // ✅ Selector de Categoría (Integrado en la tarjeta para un look premium)
+            CategoryPillPicker(selectedCategory: $selectedFolder, showLabel: false)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 20)
+                .transition(.move(edge: .top).combined(with: .opacity))
             
             // Área de Texto
             VStack(spacing: 0) {
