@@ -261,120 +261,122 @@ struct NewPromptView: View {
             )
             .frame(minHeight: geometry.size.height * 0.85)
 
-            // SECTION 2: ADVANCED FIELDS (Unified Group)
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(spacing: 24) {
-                    // 2.1: NEGATIVE PROMPT
-                    SecondaryEditorCard(
-                        title: "negative_prompt".localized(for: preferences.language),
-                        placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
-                        text: $negativePrompt,
-                        icon: "hand.raised.fill",
-                        color: .red,
-                        focusRequest: $focusNegative,
-                        onZenMode: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                zenTarget = .negative
-                                showingZenEditor = true
-                            }
-                        },
-                        insertionRequest: $insertionRequest,
-                        replaceSnippetRequest: $replaceSnippetRequest,
-                        showSnippets: $showSnippets,
-                        snippetSearchQuery: $snippetSearchQuery,
-                        snippetSelectedIndex: $snippetSelectedIndex,
-                        triggerSnippetSelection: $triggerSnippetSelection,
-                        showVariables: $showVariables,
-                        variablesSelectedIndex: $variablesSelectedIndex,
-                        triggerVariablesSelection: $triggerVariablesSelection,
-                        triggerAIRequest: $triggerAIRequest,
-                        isAIActive: $isAIActive,
-                        isAIGenerating: Binding(
-                            get: { activeGeneratingID == "negative" },
-                            set: { val in activeGeneratingID = val ? "negative" : nil }
-                        ),
-                        selectedRange: $selectedNegativeRange,
-                        aiResult: $aiNegativeResult,
-                        showingPremiumFor: $showingPremiumFor,
-                        originalPrompt: originalPrompt,
-                        prompt: prompt,
-                        branchMessage: $branchMessage,
-                        editorID: "negative",
-                        currentCategoryColor: currentCategoryColor
-                    ) {
-                        EmptyView()
-                    }
-                    .id("negative_prompt_section")
-
-                    // 2.2: ALTERNATIVE PROMPTS
-                    VStack(alignment: .leading, spacing: 16) {
-                        if !alternatives.isEmpty {
-                            VStack(spacing: 16) {
-                                ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
-                                    alternativeRow(index: index)
-                                        .transition(.opacity.combined(with: .move(edge: .top)))
+            // SECTION 2: ADVANCED FIELDS (Unified Group) - Conditionally Visible
+            if preferences.showAdvancedFields || !negativePrompt.isEmpty || alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(spacing: 24) {
+                        // 2.1: NEGATIVE PROMPT
+                        SecondaryEditorCard(
+                            title: "negative_prompt".localized(for: preferences.language),
+                            placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
+                            text: $negativePrompt,
+                            icon: "hand.raised.fill",
+                            color: .red,
+                            focusRequest: $focusNegative,
+                            onZenMode: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    zenTarget = .negative
+                                    showingZenEditor = true
                                 }
-                            }
+                            },
+                            insertionRequest: $insertionRequest,
+                            replaceSnippetRequest: $replaceSnippetRequest,
+                            showSnippets: $showSnippets,
+                            snippetSearchQuery: $snippetSearchQuery,
+                            snippetSelectedIndex: $snippetSelectedIndex,
+                            triggerSnippetSelection: $triggerSnippetSelection,
+                            showVariables: $showVariables,
+                            variablesSelectedIndex: $variablesSelectedIndex,
+                            triggerVariablesSelection: $triggerVariablesSelection,
+                            triggerAIRequest: $triggerAIRequest,
+                            isAIActive: $isAIActive,
+                            isAIGenerating: Binding(
+                                get: { activeGeneratingID == "negative" },
+                                set: { val in activeGeneratingID = val ? "negative" : nil }
+                            ),
+                            selectedRange: $selectedNegativeRange,
+                            aiResult: $aiNegativeResult,
+                            showingPremiumFor: $showingPremiumFor,
+                            originalPrompt: originalPrompt,
+                            prompt: prompt,
+                            branchMessage: $branchMessage,
+                            editorID: "negative",
+                            currentCategoryColor: currentCategoryColor
+                        ) {
+                            EmptyView()
                         }
+                        .id("negative_prompt_section")
 
-                        if alternatives.count < 10 {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    alternatives.append("")
-                                }
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 13, weight: .bold))
-                                    Text("add_alternative".localized(for: preferences.language))
-                                }
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(themeColor)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 10)
-                                .background(
-                                    ZStack {
-                                        // Efecto de luz (brillo difuso)
-                                        if preferences.isHaloEffectEnabled {
-                                            currentCategoryColor.opacity(0.15)
-                                                .blur(radius: 12)
-                                        }
-
-                                        // Fondo traslúcido estilizado
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(themeColor.opacity(0.1))
-                                            .background(
-                                                VisualEffectView(material: .popover, blendingMode: .withinWindow)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                                    .opacity(0.6)
-                                            )
+                        // 2.2: ALTERNATIVE PROMPTS
+                        VStack(alignment: .leading, spacing: 16) {
+                            if !alternatives.isEmpty {
+                                VStack(spacing: 16) {
+                                    ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
+                                        alternativeRow(index: index)
+                                            .transition(.opacity.combined(with: .move(edge: .top)))
                                     }
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
-                                )
+                                }
                             }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, alignment: .center)
+
+                            if alternatives.count < 10 {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        alternatives.append("")
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 13, weight: .bold))
+                                        Text("add_alternative".localized(for: preferences.language))
+                                    }
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(themeColor)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        ZStack {
+                                            // Efecto de luz (brillo difuso)
+                                            if preferences.isHaloEffectEnabled {
+                                                currentCategoryColor.opacity(0.15)
+                                                    .blur(radius: 12)
+                                            }
+
+                                            // Fondo traslúcido estilizado
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .fill(themeColor.opacity(0.1))
+                                                .background(
+                                                    VisualEffectView(material: .popover, blendingMode: .withinWindow)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                                        .opacity(0.6)
+                                                )
+                                        }
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            }
                         }
+                        .id("alternatives_section")
                     }
-                    .id("alternatives_section")
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.06) : Color.primary.opacity(0.03))
+                            .background(
+                                VisualEffectView(material: .popover, blendingMode: .withinWindow)
+                                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                                    .opacity(0.6)
+                            )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.08), lineWidth: 1)
+                    )
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.06) : Color.primary.opacity(0.03))
-                        .background(
-                            VisualEffectView(material: .popover, blendingMode: .withinWindow)
-                                .clipShape(RoundedRectangle(cornerRadius: 24))
-                                .opacity(0.6)
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.08), lineWidth: 1)
-                )
             }
 
             // SECTION 3: UTILITIES
