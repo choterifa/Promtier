@@ -61,16 +61,15 @@ struct OmniSearchView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Barra de Búsqueda Premium
+            // Barra de Búsqueda Premium con distinción visual
             HStack(spacing: 15) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.blue)
-                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.3) : .clear, radius: 4)
                 
                 TextField("gt_search_prompts".localized(for: preferences.language), text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 22, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.primary)
                     .focused($isFocused)
                     .onExitCommand {
@@ -99,12 +98,22 @@ struct OmniSearchView: View {
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.08)))
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.1)))
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 25)
-            .padding(.vertical, 22)
-            .background(Color.primary.opacity(0.03))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.primary.opacity(0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(Color(NSColor.controlBackgroundColor))
             
             if !filteredPrompts.isEmpty {
                 Divider().opacity(0.1)
@@ -172,13 +181,15 @@ struct OmniSearchView: View {
             .padding(.vertical, 14)
             .background(Color.primary.opacity(0.04))
         }
+        .clipShape(RoundedRectangle(cornerRadius: 22))
         .background(
-            VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                .clipShape(RoundedRectangle(cornerRadius: 22))
+            RoundedRectangle(cornerRadius: 22)
+                .fill(Color(NSColor.windowBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22)
-                        .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                 )
+                .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
         )
         .onAppear {
             // Delay extra para asegurar que la ventana es KEY antes de enfocar el TextField
@@ -193,20 +204,23 @@ struct OmniSearchView: View {
                 isFocused = true
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
-            guard let direction = notification.object as? String else { return }
+        .onMoveCommand { direction in
             let count = filteredPrompts.count
+            guard count > 0 else { return }
             
-            if direction == "down" {
+            switch direction {
+            case .down:
                 if selectedIndex < count - 1 {
                     selectedIndex += 1
                     HapticService.shared.playLight()
                 }
-            } else if direction == "up" {
+            case .up:
                 if selectedIndex > 0 {
                     selectedIndex -= 1
                     HapticService.shared.playLight()
                 }
+            default:
+                break
             }
         }
     }
@@ -230,18 +244,25 @@ struct OmniSearchRow: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
     
+    private var categoryColor: Color {
+        guard let folderName = prompt.folder else { return .blue }
+        // Intentar obtener el color de la carpeta del servicio si está disponible (vía environment o singleton)
+        // Por ahora usamos el fallback de color predefinido o azul
+        return PredefinedCategory.fromString(folderName)?.color ?? .blue
+    }
+    
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                // Icono del Prompt
+                // Icono del Prompt con color dinámico
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.05))
-                        .frame(width: 44, height: 44)
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(isSelected ? Color.white.opacity(0.25) : categoryColor.opacity(0.12))
+                        .frame(width: 46, height: 46)
                     
                     Image(systemName: prompt.icon ?? "doc.text.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(isSelected ? .white : (preferences.isHaloEffectEnabled ? .blue : .primary.opacity(0.8)))
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(isSelected ? .white : categoryColor)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -251,13 +272,13 @@ struct OmniSearchRow: View {
                     
                     if let desc = prompt.promptDescription, !desc.isEmpty {
                         Text(desc)
-                            .font(.system(size: 13))
-                            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(isSelected ? .white.opacity(0.85) : .secondary)
                             .lineLimit(1)
                     } else {
                         Text(prompt.content)
-                            .font(.system(size: 13, design: .monospaced))
-                            .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary.opacity(0.8))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(isSelected ? .white.opacity(0.75) : .secondary.opacity(0.7))
                             .lineLimit(1)
                     }
                 }
@@ -266,21 +287,28 @@ struct OmniSearchRow: View {
                 
                 if isSelected {
                     Image(systemName: "return")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundColor(.white.opacity(0.8))
                         .padding(8)
-                        .background(Circle().fill(Color.white.opacity(0.1)))
-                } else if isHovered {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.15))
+                                .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        )
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color.blue)
+                    } else if isHovered {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color.primary.opacity(0.04))
+                    }
+                }
             )
         }
         .buttonStyle(.plain)

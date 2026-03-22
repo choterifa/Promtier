@@ -73,13 +73,13 @@ class OmniSearchManager: NSObject, ObservableObject {
             previousApp = frontApp
         }
         
-        // Centrar en pantalla
+        // Centrar en pantalla (Centro real 0.5)
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let panelSize = panel?.frame.size ?? NSSize(width: 650, height: 450)
             let newFrame = NSRect(
                 x: screenRect.origin.x + (screenRect.width - panelSize.width) / 2,
-                y: screenRect.origin.y + (screenRect.height - panelSize.height) * 0.7,
+                y: screenRect.origin.y + (screenRect.height - panelSize.height) / 2,
                 width: panelSize.width,
                 height: panelSize.height
             )
@@ -120,6 +120,7 @@ class OmniSearchManager: NSObject, ObservableObject {
             defer: false
         )
         
+        newPanel.isMovableByWindowBackground = true
         newPanel.isFloatingPanel = true
         newPanel.level = .mainMenu + 1
         newPanel.becomesKeyOnlyIfNeeded = false
