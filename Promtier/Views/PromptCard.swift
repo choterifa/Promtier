@@ -112,6 +112,10 @@ struct PromptCard: View {
         91: "8", 92: "9", 123: "←", 124: "→", 125: "↓", 126: "↑"
     ]
     
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
     private var currentCategoryColor: Color {
         if let folder = prompt.folder {
             return getFolderColor(for: folder)
@@ -414,8 +418,8 @@ struct PromptCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected || isHovered ? currentCategoryColor.opacity(0.08) : Color.clear)
-                        .blur(radius: isHovered ? 12 : 6)
+                        .fill(isSelected || isHovered ? themeColor.opacity(0.08) : Color.clear)
+                        .blur(radius: preferences.isHaloEffectEnabled ? (isHovered ? 12 : 6) : 0)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
@@ -565,9 +569,9 @@ struct PromptCard: View {
     
     private var cardBorderColor: Color {
         if isSelected {
-            return currentCategoryColor.opacity(0.5)
+            return themeColor.opacity(0.5)
         } else if isHovered {
-            return currentCategoryColor.opacity(0.2)
+            return themeColor.opacity(0.2)
         } else {
             return Color.primary.opacity(0.06)
         }

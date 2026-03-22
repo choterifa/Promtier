@@ -49,6 +49,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var triggerVariablesSelection: Bool
     
     var isPremium: Bool
+    var isHaloEffectEnabled: Bool = true
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -549,8 +550,9 @@ struct HighlightedEditor: NSViewRepresentable {
                         // Aplicar resaltado de variables {{...}}
                         for match in varMatches {
                             let range = match.range
-                            safeAddAttribute(.foregroundColor, value: NSColor.systemBlue, range: range)
-                            safeAddAttribute(.backgroundColor, value: NSColor.systemBlue.withAlphaComponent(0.08), range: range)
+                            let varColor = self.parent.isHaloEffectEnabled ? NSColor.systemBlue : self.parent.themeColor
+                            safeAddAttribute(.foregroundColor, value: varColor, range: range)
+                            safeAddAttribute(.backgroundColor, value: varColor.withAlphaComponent(0.08), range: range)
                             safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
                         }
                         
@@ -562,12 +564,16 @@ struct HighlightedEditor: NSViewRepresentable {
                         
                         if let current = currentBracketRange {
                             safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: current)
-                            safeAddAttribute(.shadow, value: glowShadow, range: current)
+                            if self.parent.isHaloEffectEnabled {
+                                safeAddAttribute(.shadow, value: glowShadow, range: current)
+                            }
                             safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: current)
                         }
                         if let matching = matchingBracketRange {
                             safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: matching)
-                            safeAddAttribute(.shadow, value: glowShadow, range: matching)
+                            if self.parent.isHaloEffectEnabled {
+                                safeAddAttribute(.shadow, value: glowShadow, range: matching)
+                            }
                             safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: matching)
                         }
                         

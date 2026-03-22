@@ -19,6 +19,8 @@ struct GhostTipView: View {
     var highlightColor: Color = .blue
     var onDismiss: () -> Void
     
+    @EnvironmentObject var preferences: PreferencesManager
+    
     @State private var opacity: Double = 0
     @State private var offset: CGFloat = 20
     
@@ -26,9 +28,9 @@ struct GhostTipView: View {
         HStack(spacing: 12) {
             Image(systemName: tip.icon)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundColor(highlightColor.opacity(0.8))
+                .foregroundColor(preferences.isHaloEffectEnabled ? highlightColor : .blue)
                 .frame(width: 32, height: 32)
-                .background(Circle().fill(highlightColor.opacity(0.1)))
+                .background(Circle().fill(preferences.isHaloEffectEnabled ? highlightColor.opacity(0.1) : Color.blue.opacity(0.1)))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(tip.title)
@@ -61,11 +63,11 @@ struct GhostTipView: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.windowBackgroundColor))
                 // Efecto iluminado (glow) dinámico
-                .shadow(color: highlightColor.opacity(0.15), radius: 12, x: 0, y: 0)
+                .shadow(color: preferences.isHaloEffectEnabled ? highlightColor.opacity(0.15) : .clear, radius: 12, x: 0, y: 0)
                 .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(highlightColor.opacity(0.12), lineWidth: 1)
+                        .stroke(preferences.isHaloEffectEnabled ? highlightColor.opacity(0.12) : Color.primary.opacity(0.1), lineWidth: 1)
                 )
         }
         .opacity(opacity)

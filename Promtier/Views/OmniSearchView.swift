@@ -66,7 +66,7 @@ struct OmniSearchView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.blue)
-                    .shadow(color: .blue.opacity(0.3), radius: 4)
+                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.3) : .clear, radius: 4)
                 
                 TextField("gt_search_prompts".localized(for: preferences.language), text: $query)
                     .textFieldStyle(.plain)
@@ -241,7 +241,7 @@ struct OmniSearchRow: View {
                     
                     Image(systemName: prompt.icon ?? "doc.text.fill")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(isSelected ? .white : .blue)
+                        .foregroundColor(isSelected ? .white : (preferences.isHaloEffectEnabled ? .blue : .primary.opacity(0.8)))
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {

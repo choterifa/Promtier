@@ -143,6 +143,10 @@ struct VariableFillView: View {
         }
         return result
     }
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
     private var currentCategoryColor: Color {
         if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
             return category.color
@@ -291,7 +295,7 @@ struct VariableFillView: View {
                     HStack {
                         Text(variable.name.uppercased())
                             .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
+                            .foregroundColor(themeColor)
                             .tracking(1.2)
                         
                         Spacer()
@@ -299,7 +303,7 @@ struct VariableFillView: View {
                         if focusedField == variable.id {
                             Text(statusText(for: variable.type))
                                 .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(currentCategoryColor.opacity(0.6))
+                                .foregroundColor(themeColor.opacity(0.6))
                         }
                     }
                     
@@ -308,11 +312,11 @@ struct VariableFillView: View {
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(focusedField == variable.id ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.02))
+                                .fill(focusedField == variable.id ? themeColor.opacity(0.04) : Color.primary.opacity(0.02))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(focusedField == variable.id ? currentCategoryColor.opacity(0.4) : Color.primary.opacity(0.06), lineWidth: 1.5)
+                                .stroke(focusedField == variable.id ? themeColor.opacity(0.4) : Color.primary.opacity(0.06), lineWidth: 1.5)
                         )
                 }
                 .id(variable.id)
@@ -326,17 +330,17 @@ struct VariableFillView: View {
             HStack {
                 Label("preview".localized(for: preferences.language).uppercased(), systemImage: "eye.fill")
                     .font(.system(size: 10, weight: .black))
-                    .foregroundColor(currentCategoryColor)
+                    .foregroundColor(themeColor)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(currentCategoryColor.opacity(0.1))
+                    .background(themeColor.opacity(0.1))
                     .cornerRadius(6)
                 
                 Spacer()
                 
                 HStack(spacing: 4) {
                     Circle().fill(Color.green).frame(width: 6, height: 6)
-                        .shadow(color: .green.opacity(0.5), radius: 2)
+                        .shadow(color: .green.opacity(preferences.isHaloEffectEnabled ? 0.5 : 0), radius: 2)
                     Text("LIVE")
                         .font(.system(size: 9, weight: .black))
                         .foregroundColor(.secondary)
@@ -354,10 +358,10 @@ struct VariableFillView: View {
                     }) {
                         Image(systemName: showAIPlayground ? "sparkles.rectangle.stack.fill" : "sparkles")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(showAIPlayground ? .purple : currentCategoryColor)
+                            .foregroundColor(showAIPlayground ? .purple : themeColor)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(showAIPlayground ? Color.purple.opacity(0.1) : currentCategoryColor.opacity(0.1))
+                            .background(showAIPlayground ? Color.purple.opacity(0.1) : themeColor.opacity(0.1))
                             .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
@@ -419,8 +423,8 @@ struct VariableFillView: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(canCopy ? currentCategoryColor : Color.gray.opacity(0.3))
-                        .shadow(color: canCopy ? currentCategoryColor.opacity(0.3) : .clear, radius: 8, y: 4)
+                        .fill(canCopy ? themeColor : Color.gray.opacity(0.3))
+                        .shadow(color: (canCopy && preferences.isHaloEffectEnabled) ? themeColor.opacity(0.3) : .clear, radius: 8, y: 4)
                 )
             }
             .buttonStyle(ScaleButtonStyle())

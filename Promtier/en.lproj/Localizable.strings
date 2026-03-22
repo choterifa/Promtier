@@ -57,6 +57,8 @@
 "reset" = "Reset";
 "target_size" = "TARGET SIZE";
 "release_to_apply" = "Release to apply";
+"halo_effects" = "Halo Effects";
+"halo_effects_subtitle" = "Show dynamic glow and accent shadows on elements";
 
 /* Behavior Tab */
 "interaction" = "Interaction";

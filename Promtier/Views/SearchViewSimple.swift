@@ -409,7 +409,7 @@ struct SearchViewSimple: View {
                                     .background(
                                         RoundedRectangle(cornerRadius: 10)
                                             .fill(Color.blue)
-                                            .shadow(color: Color.blue.opacity(0.3), radius: 4, y: 2)
+                                            .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -1268,7 +1268,7 @@ struct ClipboardSuggestionBanner: View {
                 Image(systemName: "doc.on.clipboard.fill")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.blue)
-                    .shadow(color: .blue.opacity(0.4), radius: 6)
+                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 6)
             }
             
             VStack(alignment: .leading, spacing: 2) {
@@ -1305,8 +1305,10 @@ struct ClipboardSuggestionBanner: View {
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(LinearGradient(colors: [.blue, .blue.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .shadow(color: .blue.opacity(0.4), radius: 8, y: 4)
+                            .fill(preferences.isHaloEffectEnabled ? 
+                                AnyShapeStyle(LinearGradient(colors: [.blue, .blue.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing)) :
+                                AnyShapeStyle(Color.blue))
+                            .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 8, y: 4)
                     )
             }
             .buttonStyle(.plain)

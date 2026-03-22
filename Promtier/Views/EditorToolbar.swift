@@ -91,21 +91,29 @@ struct EditorToolbar: View {
         .help("Zen Mode")
     }
     
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? color : .blue
+    }
+    
+    private var activeColor: Color {
+        preferences.isHaloEffectEnabled ? .purple : .blue
+    }
+    
     @ViewBuilder
     private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
         ZStack {
             Circle()
-                .fill(active ? Color.purple.opacity(0.2) : (isSpecial ? color.opacity(0.12) : Color.primary.opacity(0.04)))
+                .fill(active ? activeColor.opacity(0.2) : (isSpecial ? themeColor.opacity(0.12) : Color.primary.opacity(0.04)))
                 .frame(width: 28, height: 28)
             
             if let icon = icon {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(active ? .purple : color)
+                    .foregroundColor(active ? activeColor : themeColor)
             } else if let text = text {
                 Text(text)
                     .font(.system(size: 13, weight: .black, design: .monospaced))
-                    .foregroundColor(color)
+                    .foregroundColor(themeColor)
             }
         }
         .scaleEffect(active ? 1.1 : 1.0)

@@ -61,6 +61,10 @@ struct PromptGridCard: View {
     
     private var variableCount: Int { prompt.extractTemplateVariables().count }
     
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
     private var currentCategoryColor: Color {
         if let folder = prompt.folder {
             if let customFolder = promptService.folders.first(where: { $0.name == folder }) {
@@ -207,8 +211,8 @@ struct PromptGridCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected || isHovered ? currentCategoryColor.opacity(0.06) : Color.clear)
-                        .blur(radius: isHovered ? 12 : 6)
+                        .fill(isSelected || isHovered ? themeColor.opacity(0.06) : Color.clear)
+                        .blur(radius: preferences.isHaloEffectEnabled ? (isHovered ? 12 : 6) : 0)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
@@ -252,8 +256,8 @@ struct PromptGridCard: View {
     }
     
     private var cardBorderColor: Color {
-        if isSelected { return currentCategoryColor.opacity(0.5) }
-        else if isHovered { return currentCategoryColor.opacity(0.2) }
+        if isSelected { return themeColor.opacity(0.5) }
+        else if isHovered { return themeColor.opacity(0.2) }
         else { return Color.primary.opacity(0.06) }
     }
 }

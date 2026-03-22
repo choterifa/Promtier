@@ -174,9 +174,10 @@ struct CategoryPillPicker: View {
                 ZStack {
                     if isSelected {
                         // Resplandor de Selección (Glow Pro)
+                        let pillColor = preferences.isHaloEffectEnabled ? color : Color.blue.opacity(0.8)
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(color)
-                            .shadow(color: color.opacity(0.45), radius: 10, x: 0, y: 5)
+                            .fill(pillColor)
+                            .shadow(color: preferences.isHaloEffectEnabled ? pillColor.opacity(0.45) : .clear, radius: 10, x: 0, y: 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24)
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1.5)

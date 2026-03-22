@@ -393,6 +393,13 @@ struct AppearanceTab: View {
                     .frame(width: 240)
                 }
                 
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("halo_effects", subtitle: "halo_effects_subtitle") {
+                    Toggle("", isOn: $preferences.isHaloEffectEnabled)
+                        .toggleStyle(.switch)
+                }
+                
                 if preferences.isPremiumActive {
                     Divider().padding(.leading, 20)
                     

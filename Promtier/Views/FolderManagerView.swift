@@ -73,18 +73,20 @@ struct FolderManagerView: View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
             
-            // Círculos decorativos para efecto mesh
-            Circle()
-                .fill(selectedColor.opacity(0.04))
-                .frame(width: 400, height: 400)
-                .blur(radius: 60)
-                .offset(x: 200, y: -150)
-            
-            Circle()
-                .fill(Color.blue.opacity(0.02))
-                .frame(width: 300, height: 300)
-                .blur(radius: 50)
-                .offset(x: -250, y: 200)
+            if preferences.isHaloEffectEnabled {
+                // Círculos decorativos para efecto mesh
+                Circle()
+                    .fill(selectedColor.opacity(0.04))
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 60)
+                    .offset(x: 200, y: -150)
+                
+                Circle()
+                    .fill(Color.blue.opacity(0.02))
+                    .frame(width: 300, height: 300)
+                    .blur(radius: 50)
+                    .offset(x: -250, y: 200)
+            }
         }
         .ignoresSafeArea()
     }
@@ -126,10 +128,12 @@ struct FolderManagerView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
                     .background(
-                        LinearGradient(gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]), startPoint: .top, endPoint: .bottom)
+                        preferences.isHaloEffectEnabled ? 
+                        AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
+                        AnyShapeStyle(Color.blue)
                     )
                     .cornerRadius(10)
-                    .shadow(color: .blue.opacity(0.3), radius: 5, y: 2)
+                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.3) : .clear, radius: 5, y: 2)
             }
             .buttonStyle(.plain)
         }
@@ -215,7 +219,7 @@ struct FolderManagerView: View {
                                     )
                                     .foregroundColor(selectedColor)
                                     .cornerRadius(16)
-                                    .shadow(color: selectedColor.opacity(0.1), radius: 8, y: 4)
+                                    .shadow(color: preferences.isHaloEffectEnabled ? selectedColor.opacity(0.1) : .clear, radius: 8, y: 4)
                             }
                             .buttonStyle(.plain)
                         }
@@ -293,10 +297,12 @@ struct FolderManagerView: View {
                         .background(
                             newFolderName.isEmpty ? 
                                 AnyShapeStyle(Color.gray.opacity(0.3)) : 
-                                AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom))
+                                (preferences.isHaloEffectEnabled ? 
+                                    AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
+                                    AnyShapeStyle(Color.blue))
                         )
                         .cornerRadius(12)
-                        .shadow(color: selectedColor.opacity(newFolderName.isEmpty ? 0 : 0.25), radius: 8, y: 4)
+                        .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(0.25) : .clear, radius: 8, y: 4)
                     }
                     .buttonStyle(.plain)
                     .disabled(newFolderName.isEmpty)

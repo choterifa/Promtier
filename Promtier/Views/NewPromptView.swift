@@ -191,6 +191,10 @@ struct NewPromptView: View {
         )
     }
     
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
@@ -325,18 +329,20 @@ struct NewPromptView: View {
                                     Text("add_alternative".localized(for: preferences.language))
                                 }
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
+                                .foregroundColor(themeColor)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 10)
                                 .background(
                                     ZStack {
                                         // Efecto de luz (brillo difuso)
-                                        currentCategoryColor.opacity(0.15)
-                                            .blur(radius: 12)
+                                        if preferences.isHaloEffectEnabled {
+                                            currentCategoryColor.opacity(0.15)
+                                                .blur(radius: 12)
+                                        }
                                         
                                         // Fondo traslúcido estilizado
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(currentCategoryColor.opacity(0.1))
+                                            .fill(themeColor.opacity(0.1))
                                             .background(
                                                 VisualEffectView(material: .popover, blendingMode: .withinWindow)
                                                     .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -346,7 +352,7 @@ struct NewPromptView: View {
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .stroke(currentCategoryColor.opacity(0.2), lineWidth: 1.5)
+                                        .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
                                 )
                             }
                             .buttonStyle(.plain)
@@ -358,7 +364,7 @@ struct NewPromptView: View {
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 24)
-                        .fill(currentCategoryColor.opacity(0.06))
+                        .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.06) : Color.primary.opacity(0.03))
                         .background(
                             VisualEffectView(material: .popover, blendingMode: .withinWindow)
                                 .clipShape(RoundedRectangle(cornerRadius: 24))
@@ -367,7 +373,7 @@ struct NewPromptView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
-                        .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
+                        .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.08), lineWidth: 1)
                 )
             }
             
@@ -415,10 +421,10 @@ struct NewPromptView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(currentCategoryColor.opacity(0.04))
+                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.01))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
+                                    .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
                             )
                     )
                 }
@@ -482,10 +488,10 @@ struct NewPromptView: View {
                                 Text("assign_app".localized(for: preferences.language))
                             }
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.purple)
+                            .foregroundColor(themeColor)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(Color.purple.opacity(0.08))
+                            .background(themeColor.opacity(0.08))
                             .cornerRadius(10)
                         }
                         .buttonStyle(.plain)
@@ -515,10 +521,10 @@ struct NewPromptView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(currentCategoryColor.opacity(0.04))
+                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.01))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(currentCategoryColor.opacity(0.12), lineWidth: 1)
+                                    .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
                             )
                     )
                 }
@@ -1192,9 +1198,9 @@ struct NewPromptView: View {
                         }) {
                             Image(systemName: isFavorite ? "star.fill" : "star")
                                 .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(isFavorite ? .yellow : currentCategoryColor)
+                                .foregroundColor(isFavorite ? (preferences.isHaloEffectEnabled ? .yellow : .blue) : themeColor)
                                 .frame(width: 32, height: 32)
-                                .background(Circle().fill(isFavorite ? Color.yellow.opacity(0.1) : currentCategoryColor.opacity(0.1)))
+                                .background(Circle().fill(isFavorite ? (preferences.isHaloEffectEnabled ? Color.yellow.opacity(0.1) : Color.blue.opacity(0.1)) : themeColor.opacity(0.1)))
                         }
                         .buttonStyle(.plain)
                         .help("favorite".localized(for: preferences.language))
@@ -1207,9 +1213,9 @@ struct NewPromptView: View {
                         }) {
                             Image(systemName: "pip.enter")
                                 .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
+                                .foregroundColor(themeColor)
                                 .frame(width: 32, height: 32)
-                                .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                                .background(Circle().fill(themeColor.opacity(0.1)))
                         }
                         .buttonStyle(.plain)
                         .help("Floating Zen Mode")
@@ -1217,9 +1223,9 @@ struct NewPromptView: View {
                         Button(action: { branchPrompt() }) {
                             Image(systemName: "arrow.branch")
                                 .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
+                                .foregroundColor(themeColor)
                                 .frame(width: 32, height: 32)
-                                .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                                .background(Circle().fill(themeColor.opacity(0.1)))
                         }
                         .buttonStyle(.plain)
                         .help("create_branch".localized(for: preferences.language))
@@ -1233,8 +1239,8 @@ struct NewPromptView: View {
                             .padding(.vertical, 6)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : currentCategoryColor)
-                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : currentCategoryColor.opacity(0.2), radius: 4, y: 2)
+                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : (preferences.isHaloEffectEnabled ? currentCategoryColor : .blue))
+                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : (preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.2) : .clear), radius: 4, y: 2)
                             )
                     }
                     .buttonStyle(.plain)
@@ -1264,7 +1270,7 @@ struct NewPromptView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "photo.stack.fill")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
+                                .foregroundColor(themeColor)
                             Text("prompt_results".localized(for: preferences.language).uppercased())
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.secondary)
@@ -1391,20 +1397,21 @@ struct NewPromptView: View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
             
-            // Círculos decorativos para efecto mesh (Neón sutil y dinámico)
-            Circle()
-                .fill(currentCategoryColor.opacity(0.18))
-                .frame(width: 500, height: 500)
-                .blur(radius: 90)
-                .offset(x: 220, y: -150)
-                .animation(.easeInOut(duration: 1.2), value: selectedFolder)
-            
-            Circle()
-                .fill(currentCategoryColor.opacity(0.12))
-                .frame(width: 400, height: 400)
-                .blur(radius: 100)
-                .offset(x: -250, y: 200)
-                .animation(.easeInOut(duration: 1.5), value: selectedFolder)
+            if preferences.isHaloEffectEnabled {
+                // Círculos decorativos para efecto mesh (Neón sutil y dinámico)
+                Circle()
+                    .fill(currentCategoryColor.opacity(0.18))
+                    .frame(width: 500, height: 500)
+                    .blur(radius: 90)
+                    .offset(x: 220, y: -150)
+                    .animation(.easeInOut(duration: 1.2), value: selectedFolder)
+                
+                Circle()
+                    .fill(currentCategoryColor.opacity(0.12))
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 100)
+                    .offset(x: -250, y: 200)
+            }
             
             // Brillo ambiental central que cambia con la categoría
             Circle()
@@ -1718,6 +1725,11 @@ struct EditorCard: View {
     let editorID: String
     
     let currentCategoryColor: Color
+    
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? currentCategoryColor : .blue
+    }
+    
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
@@ -1776,7 +1788,7 @@ struct EditorCard: View {
                     selectedRange: $selectedRange,
                     aiResult: $aiResult,
                     fontSize: 16 * preferences.fontSize.scale,
-                    themeColor: NSColor(currentCategoryColor),
+                    themeColor: NSColor(themeColor),
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,
                     snippetSelectedIndex: $snippetSelectedIndex,
@@ -1784,7 +1796,8 @@ struct EditorCard: View {
                     showVariables: $showVariables,
                     variablesSelectedIndex: $variablesSelectedIndex,
                     triggerVariablesSelection: $triggerVariablesSelection,
-                    isPremium: preferences.isPremiumActive
+                    isPremium: preferences.isPremiumActive,
+                    isHaloEffectEnabled: preferences.isHaloEffectEnabled
                 )   
                 .padding(.vertical, 12)
                 .padding(.leading, 12)
@@ -1833,14 +1846,14 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(currentCategoryColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: currentCategoryColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)), radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
+                            .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
             .overlay {
                 if isAIGenerating {
-                    AIGeneratingOverlay(accentColor: currentCategoryColor)
+                    AIGeneratingOverlay(accentColor: themeColor)
                         .transition(.opacity)
                 }
             }
@@ -1961,6 +1974,10 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var text: String
     let icon: String
     let color: Color
+    
+    private var themeColor: Color {
+        preferences.isHaloEffectEnabled ? color : .blue
+    }
     var focusRequest: Binding<Bool>? = nil
     var onZenMode: (() -> Void)? = nil
     
@@ -2045,7 +2062,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     }
     
     var body: some View {
-        let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : color
+        let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : themeColor
         
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
@@ -2091,7 +2108,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                         showVariables: $showVariables,
                         variablesSelectedIndex: $variablesSelectedIndex,
                         triggerVariablesSelection: $triggerVariablesSelection,
-                        isPremium: preferences.isPremiumActive
+                        isPremium: preferences.isPremiumActive,
+                        isHaloEffectEnabled: preferences.isHaloEffectEnabled
                     )
                     .padding(.vertical, 12)
                     .padding(.leading, 12)
@@ -2148,13 +2166,13 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(color.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: color.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)), radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
+                            .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
+                            .shadow(color: preferences.isHaloEffectEnabled ? themeColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .overlay {
                 if isAIGenerating {
-                    AIGeneratingOverlay(accentColor: color, compact: true)
+                    AIGeneratingOverlay(accentColor: themeColor, compact: true)
                         .transition(.opacity)
                 }
             }
@@ -2450,7 +2468,9 @@ struct AIGeneratingOverlay: View {
                         .frame(width: compact ? 100 : 160, height: 4)
                     
                     Capsule()
-                        .fill(LinearGradient(colors: [.purple, accentColor], startPoint: .leading, endPoint: .trailing))
+                        .fill(preferences.isHaloEffectEnabled ? 
+                            AnyShapeStyle(LinearGradient(colors: [.purple, accentColor], startPoint: .leading, endPoint: .trailing)) : 
+                            AnyShapeStyle(accentColor))
                         .frame(width: shimmer ? (compact ? 100 : 160) : 0, height: 4)
                 }
                 .mask(

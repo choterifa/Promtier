@@ -431,6 +431,8 @@ struct SidebarItem: View {
     @State private var isHovered = false
     
     var body: some View {
+        let themeColor = preferences.isHaloEffectEnabled ? color : Color.blue
+        
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
@@ -461,7 +463,7 @@ struct SidebarItem: View {
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
-                .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+                .shadow(color: preferences.isHaloEffectEnabled && isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.blue, lineWidth: isDropTarget ? 2 : 0)

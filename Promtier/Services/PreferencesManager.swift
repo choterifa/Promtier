@@ -287,6 +287,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var isHaloEffectEnabled: Bool {
+        didSet {
+            userDefaults.set(isHaloEffectEnabled, forKey: "isHaloEffectEnabled")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
@@ -391,6 +397,13 @@ class PreferencesManager: ObservableObject {
             self.showAdvancedFields = userDefaults.bool(forKey: "showAdvancedFields")
         } else {
             self.showAdvancedFields = true
+        }
+        
+        // Efectos de halo por defecto en true
+        if userDefaults.object(forKey: "isHaloEffectEnabled") != nil {
+            self.isHaloEffectEnabled = userDefaults.bool(forKey: "isHaloEffectEnabled")
+        } else {
+            self.isHaloEffectEnabled = true
         }
         
         if let data = userDefaults.data(forKey: "savedSnippets"),
@@ -514,6 +527,7 @@ class PreferencesManager: ObservableObject {
         self.previewImagesFirst = true
         self.disableImageAnimations = false
         self.showAdvancedFields = true
+        self.isHaloEffectEnabled = true
         self.ollamaEnabled = true
         self.ollamaURL = "http://localhost:11434"
         self.ollamaDefaultModel = "llama3"
