@@ -771,12 +771,12 @@ struct ShortcutsTab: View {
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "open_snippets",        shortcut: "/")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "snippet_up",          shortcut: "↑")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "snippet_down",           shortcut: "↓")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "insert_snippet", shortcut: "↩ / Esc")
-                Divider().padding(.leading, 20)
+                // ShortcutRow(label: "snippet_up",          shortcut: "↑")
+                // Divider().padding(.leading, 20)
+                // ShortcutRow(label: "snippet_down",           shortcut: "↓")
+                // Divider().padding(.leading, 20)
+                // ShortcutRow(label: "insert_snippet", shortcut: "↩ / Esc")
+                // Divider().padding(.leading, 20)
                 ShortcutRow(label: "insert_variable",               shortcut: "⌥V")
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "focus_negative",               shortcut: "⌥N")
@@ -785,13 +785,13 @@ struct ShortcutsTab: View {
             }
             
             // Variables
-            SettingsSection(title: "fill_variables", icon: "curlybraces") {
-                ShortcutRow(label: "next_field",  shortcut: "↩ Enter")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "copy_final_prompt",         shortcut: "⌘↩")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "cancel_close",     shortcut: "Esc")
-            }
+            // SettingsSection(title: "fill_variables", icon: "curlybraces") {
+            //     ShortcutRow(label: "next_field",  shortcut: "↩ Enter")
+            //     Divider().padding(.leading, 20)
+            //     ShortcutRow(label: "copy_final_prompt",         shortcut: "⌘↩")
+            //     Divider().padding(.leading, 20)
+            //     ShortcutRow(label: "cancel_close",     shortcut: "Esc")
+            // }
             
             // Ventana
             SettingsSection(title: "window", icon: "macwindow") {
