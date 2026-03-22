@@ -337,6 +337,18 @@ struct NewPromptView: View {
                     .id("alternatives_section")
                 }
                 .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.primary.opacity(0.04))
+                        .background(
+                            VisualEffectView(material: .popover, blendingMode: .withinWindow)
+                                .clipShape(RoundedRectangle(cornerRadius: 24))
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
             }
             
             // SECTION 3: UTILITIES
