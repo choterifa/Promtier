@@ -73,7 +73,7 @@ struct OmniSearchView: View {
                     .foregroundColor(.primary)
                     .focused($isFocused)
                     .onExitCommand {
-                        manager.hide()
+                        isFocused = false
                     }
                     .onChange(of: query) { _, _ in
                         selectedIndex = 0
@@ -126,7 +126,11 @@ struct OmniSearchView: View {
                                 OmniSearchRow(
                                     prompt: prompt,
                                     isSelected: selectedIndex == index,
-                                    onTap: {
+                                    onSelect: {
+                                        selectedIndex = index
+                                        isFocused = false
+                                    },
+                                    onCopy: {
                                         copyAndClose(prompt)
                                     }
                                 )
@@ -239,7 +243,8 @@ struct OmniSearchView: View {
 struct OmniSearchRow: View {
     let prompt: Prompt
     let isSelected: Bool
-    let onTap: () -> Void
+    let onSelect: () -> Void
+    let onCopy: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
@@ -252,7 +257,7 @@ struct OmniSearchRow: View {
     }
     
     var body: some View {
-        Button(action: onTap) {
+        Button(action: onSelect) {
             HStack(spacing: 16) {
                 // Icono del Prompt con color dinámico
                 ZStack {
@@ -313,6 +318,9 @@ struct OmniSearchRow: View {
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
+        .onTapGesture(count: 2) {
+            onCopy()
+        }
         .focusable(false)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

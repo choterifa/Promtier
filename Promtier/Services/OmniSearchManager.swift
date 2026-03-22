@@ -45,8 +45,8 @@ class OmniSearchManager: NSObject, ObservableObject {
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
                 return nil
             case 53: // Esc
-                self.hide()
-                return nil
+                // Ya no cerramos la ventana con Esc, dejamos que SwiftUI maneje el foco
+                return event
             default:
                 break
             }
