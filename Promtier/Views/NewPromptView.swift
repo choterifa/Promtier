@@ -219,6 +219,11 @@ struct NewPromptView: View {
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 32) {
+            // SECTION 0: CATEGORY PICKER (New & Interactive)
+            CategoryPillPicker(selectedCategory: $selectedFolder)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+
             // SECTION 1: MAIN PROMPT (Primary Focus)
             EditorCard(
                 title: $title,
@@ -1320,24 +1325,27 @@ struct NewPromptView: View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
             
-            // Círculos decorativos para efecto mesh (Neón sutil)
+            // Círculos decorativos para efecto mesh (Neón sutil y dinámico)
+            Circle()
+                .fill(currentCategoryColor.opacity(0.18))
+                .frame(width: 500, height: 500)
+                .blur(radius: 90)
+                .offset(x: 220, y: -150)
+                .animation(.easeInOut(duration: 1.2), value: selectedFolder)
+            
             Circle()
                 .fill(currentCategoryColor.opacity(0.12))
                 .frame(width: 400, height: 400)
-                .blur(radius: 80)
-                .offset(x: 250, y: -180)
-            
-            Circle()
-                .fill(currentCategoryColor.opacity(0.08))
-                .frame(width: 320, height: 320)
-                .blur(radius: 70)
-                .offset(x: -280, y: 220)
-                
-            // Brillo ambiental central
-            Circle()
-                .fill(Color.blue.opacity(0.02))
-                .frame(width: 500, height: 500)
                 .blur(radius: 100)
+                .offset(x: -250, y: 200)
+                .animation(.easeInOut(duration: 1.5), value: selectedFolder)
+            
+            // Brillo ambiental central que cambia con la categoría
+            Circle()
+                .fill(currentCategoryColor.opacity(0.05))
+                .frame(width: 600, height: 600)
+                .blur(radius: 120)
+                .animation(.spring(response: 1.0, dampingFraction: 0.8), value: selectedFolder)
         }
     }
     
