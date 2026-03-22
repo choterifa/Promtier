@@ -154,8 +154,6 @@ struct PreferencesView: View {
         .onAppear {
             preferences.previewWidth = preferences.windowWidth
             preferences.previewHeight = preferences.windowHeight
-            // Desactivar restricción de navegadores por petición del usuario
-            preferences.onlySuggestFromBrowsers = false
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingExportSheet) { ExportView() }

@@ -220,13 +220,16 @@ class MenuBarManager: NSObject, ObservableObject {
            text.count > 10, text.count < 5000,
            text != suggestedClipboardContent {
             
-            // CONTEXTO: Si está activado 'solo desde navegadores', verificar el origen
-            if preferencesManager.onlySuggestFromBrowsers, let sourceID = ClipboardService.shared.lastSourceAppBundleID {
-                let isBrowser = preferencesManager.browserBundleIDs.contains(sourceID)
-                let isCustomAllowed = preferencesManager.customAllowedAppBundleIDs.contains(sourceID)
-                
+            // CONTEXTO: Filtrar origen (Navegadores o Apps permitidas)
+            // Obtenemos el ID de la app de donde viene el copiado
+            let sourceID = ClipboardService.shared.lastSourceAppBundleID ?? ""
+            let isBrowser = preferencesManager.browserBundleIDs.contains(sourceID)
+            let isCustomAllowed = preferencesManager.customAllowedAppBundleIDs.contains(sourceID)
+            
+            // Si la restricción está activa (por defecto true), bloqueamos si no es una app autorizada
+            if preferencesManager.onlySuggestFromBrowsers {
                 if !isBrowser && !isCustomAllowed {
-                    return // No es navegador ni app permitida, ignoramos
+                    return // No es una fuente autorizada, ignoramos la sugerencia
                 }
             }
             

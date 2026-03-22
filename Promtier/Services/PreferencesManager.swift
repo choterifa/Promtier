@@ -298,18 +298,15 @@ class PreferencesManager: ObservableObject {
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
-        // Sugerencias de portapapeles por defecto en true
+        // Sugerencias de portapapeles: Solo desde navegadores y apps de la lista por defecto
         if userDefaults.object(forKey: "clipboardSuggestions") != nil {
             self.clipboardSuggestions = userDefaults.bool(forKey: "clipboardSuggestions")
         } else {
             self.clipboardSuggestions = true
         }
 
-        if userDefaults.object(forKey: "onlySuggestFromBrowsers") != nil {
-            self.onlySuggestFromBrowsers = userDefaults.bool(forKey: "onlySuggestFromBrowsers")
-        } else {
-            self.onlySuggestFromBrowsers = true
-        }
+        // Siempre forzamos el filtrado por defecto como se solicitó
+        self.onlySuggestFromBrowsers = true
         
         // Custom apps
         if let savedCustomApps = userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] {
