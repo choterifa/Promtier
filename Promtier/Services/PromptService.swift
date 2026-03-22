@@ -890,7 +890,12 @@ class PromptService: ObservableObject {
         
         // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO (Fuzzy + Phrasal + Weighted)
         if !query.isEmpty {
-            let originalQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            // 0. SANITIZACIÓN Y NORMALIZACIÓN
+            // Limpiar caracteres de control y normalizar espacios múltiples (fuera de frases exactas)
+            let sanitized = query.replacingOccurrences(of: "[\\x00-\\x1F\\x7F]", with: "", options: .regularExpression)
+            let normalizedSpaces = sanitized.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            let originalQuery = normalizedSpaces.trimmingCharacters(in: .whitespacesAndNewlines)
+            
             guard !originalQuery.isEmpty else { 
                 filteredPrompts = filtered
                 return 
