@@ -978,6 +978,15 @@ class PromptService: ObservableObject {
                     score += Int(prompt.useCount) / 2
                     if prompt.isFavorite { score += 40 }
                     
+                    // Bonus por reciencia: Si se tocó en la última semana, impulsamos un poco
+                    let lastWeek = Date().addingTimeInterval(-7 * 86400)
+                    if prompt.modifiedAt > lastWeek {
+                        score += 30
+                    }
+                    if prompt.modifiedAt > Date().addingTimeInterval(-24 * 3600) {
+                        score += 20 // Acumulativo si es muy muy reciente
+                    }
+                    
                     // BONUS POR APP ACTIVA
                     if let activeApp = activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
                         score += 500 // Impulso masivo para matches de app
@@ -1004,7 +1013,8 @@ class PromptService: ObservableObject {
             case .name:
                 filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
             case .newest:
-                filtered.sort { $0.createdAt > $1.createdAt }
+                // Priorizar los más recientemente modificados para que reflejen la actividad real
+                filtered.sort { $0.modifiedAt > $1.modifiedAt }
             case .mostUsed:
                 filtered.sort { $0.useCount > $1.useCount }
             }

@@ -610,12 +610,6 @@ struct BehaviorTab: View {
             }
             
             SettingsSection(title: "intelligence", icon: "sparkles") {
-                SettingsRow("apple_intelligence", subtitle: "apple_intelligence_subtitle") {
-                    Toggle("", isOn: $preferences.localAIToolsEnabled)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
                 
                 SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
                     Toggle("", isOn: $preferences.geminiEnabled)
