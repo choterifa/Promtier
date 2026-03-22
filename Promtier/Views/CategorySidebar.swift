@@ -26,7 +26,6 @@ struct CategorySidebar: View {
     @State private var dropTargetFolderId: UUID? = nil
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
-    @State private var isTargetedPapelera = false
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
@@ -163,29 +162,7 @@ struct CategorySidebar: View {
             // Lista de categorías (Extraído para reducir complejidad)
             foldersListView
             
-            Divider()
-                .padding(.vertical, 8)
-                .padding(.horizontal, 24)
-            
-            // Papelera (Acceso rápido inferior)
-            SidebarItem(
-                title: "trash",
-                icon: "trash.fill",
-                color: .red,
-                count: promptService.trashedPrompts.count,
-                isSelected: menuBarManager.activeViewState == .trash,
-                isDropTarget: isTargetedPapelera
-            ) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .trash
-                }
             }
-            .onDrop(of: [.json, .plainText], isTargeted: $isTargetedPapelera) { providers in
-                handleQuickDrop(providers: providers, to: "trash")
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 16)
-        }
         .frame(width: 198)
         .background(
             ZStack {

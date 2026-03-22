@@ -8,20 +8,56 @@ struct TrashView: View {
     @State private var showingEmptyConfirm = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            header
+        VStack(alignment: .leading, spacing: 20) {
+            // Header for the Tab Content area (optional, as PreferencesView already has a header)
+            // But we need the 'Empty' button somewhere.
             
-            Divider()
-            
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Los prompts se eliminan tras 7 días")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                if !promptService.trashedPrompts.isEmpty {
+                    Button(action: { showingEmptyConfirm = true }) {
+                        Label("Vaciar papelera", systemImage: "trash.slash.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.bottom, 8)
+
             if promptService.trashedPrompts.isEmpty {
                 emptyState
+                    .padding(.vertical, 60)
             } else {
-                trashList
+                VStack(spacing: 8) {
+                    ForEach(promptService.trashedPrompts) { prompt in
+                        TrashItemRow(prompt: prompt) {
+                            withAnimation(.spring(response: 0.3)) {
+                                _ = promptService.restorePrompt(prompt)
+                            }
+                            HapticService.shared.playLight()
+                        } onDelete: {
+                            withAnimation(.spring(response: 0.3)) {
+                                _ = promptService.permanentlyDeletePrompt(prompt)
+                            }
+                            HapticService.shared.playStrong()
+                        }
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(backgroundView)
         .alert("Vaciar papelera", isPresented: $showingEmptyConfirm) {
             Button("Cancelar", role: .cancel) {}
             Button("Vaciar", role: .destructive) {
@@ -33,115 +69,22 @@ struct TrashView: View {
         }
     }
     
-    // MARK: - Header
-    
-    private var header: some View {
-        HStack(alignment: .center) {
-            Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    menuBarManager.activeViewState = .main
-                }
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .bold))
-                    Text("Volver")
-                        .font(.system(size: 13, weight: .medium))
-                }
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
-            }
-            .buttonStyle(.plain)
-            
-            Spacer()
-            
-            VStack(spacing: 2) {
-                HStack(spacing: 6) {
-                    Image(systemName: "trash.fill")
-                        .foregroundColor(.red.opacity(0.8))
-                    Text("Papelera")
-                        .font(.system(size: 15, weight: .bold))
-                }
-                Text("Los prompts se eliminan tras 7 días")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            if !promptService.trashedPrompts.isEmpty {
-                Button(action: { showingEmptyConfirm = true }) {
-                    Text("Vaciar")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.red.opacity(0.85)))
-                }
-                .buttonStyle(.plain)
-            } else {
-                // placeholder para mantener el centrado
-                Color.clear.frame(width: 70, height: 28)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 16)
-    }
-    
     // MARK: - Empty State
     
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Spacer()
             Image(systemName: "trash")
-                .font(.system(size: 52, weight: .ultraLight))
+                .font(.system(size: 48, weight: .ultraLight))
                 .foregroundColor(.secondary.opacity(0.35))
             Text("La papelera está vacía")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.secondary.opacity(0.5))
             Text("Los prompts eliminados aparecerán aquí\ndurante 7 días antes de borrarse.")
                 .font(.system(size: 13))
                 .foregroundColor(.secondary.opacity(0.35))
                 .multilineTextAlignment(.center)
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    // MARK: - Trash List
-    
-    private var trashList: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 8) {
-                ForEach(promptService.trashedPrompts) { prompt in
-                    TrashItemRow(prompt: prompt) {
-                        withAnimation(.spring(response: 0.3)) {
-                            _ = promptService.restorePrompt(prompt)
-                        }
-                        HapticService.shared.playLight()
-                    } onDelete: {
-                        withAnimation(.spring(response: 0.3)) {
-                            _ = promptService.permanentlyDeletePrompt(prompt)
-                        }
-                        HapticService.shared.playStrong()
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-        }
-    }
-    
-    // MARK: - Background
-    
-    private var backgroundView: some View {
-        ZStack {
-            Color(NSColor.windowBackgroundColor)
-            Color.primary.opacity(0.01)
-        }
+        .frame(maxWidth: .infinity)
     }
 }
 

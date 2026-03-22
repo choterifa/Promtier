@@ -104,12 +104,6 @@ struct SearchViewSimple: View {
                 .environmentObject(promptService)
                 .environmentObject(preferences)
                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
-            case .trash:
-                TrashView()
-                    .environmentObject(promptService)
-                    .environmentObject(preferences)
-                    .environmentObject(menuBarManager)
-                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
             }
             
             // Overlay de Variables Dinámicas

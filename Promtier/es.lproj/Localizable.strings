@@ -30,6 +30,7 @@
 "snippets_tab" = "Snippets";
 "data_tab" = "Datos";
 "support_tab" = "Soporte";
+"trash_tab" = "Papelera";
 
 /* Appearance Tab */
 "appearance" = "Apariencia";

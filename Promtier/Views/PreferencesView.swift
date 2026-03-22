@@ -31,7 +31,8 @@ struct PreferencesView: View {
         (title: "shortcuts_tab", icon: "keyboard.fill"),
         (title: "snippets_tab", icon: "text.quote"),
         (title: "data_tab", icon: "externaldrive.fill"),
-        (title: "support_tab", icon: "questionmark.circle.fill")
+        (title: "support_tab", icon: "questionmark.circle.fill"),
+        (title: "trash_tab", icon: "trash.fill")
     ]
     
     private var sidebarContent: some View {
@@ -179,6 +180,7 @@ struct PreferencesView: View {
         case 3: SnippetsManagerTab()
         case 4: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)
         case 5: SupportTab()
+        case 6: TrashView()
         default: EmptyView()
         }
     }
