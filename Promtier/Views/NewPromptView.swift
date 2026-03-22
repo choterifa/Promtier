@@ -223,7 +223,7 @@ struct NewPromptView: View {
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 32) {
-            // SECTION 1: MAIN PROMPT (Primary Focus)
+            // SEC 1: MAIN
             EditorCard(
                 title: $title,
                 content: $content,
@@ -261,7 +261,7 @@ struct NewPromptView: View {
             )
             .frame(minHeight: geometry.size.height * 0.85)
 
-            // SECTION 2: ADVANCED FIELDS (Unified Group) - Conditionally Visible
+            // SECTION 2: ADVANCED FIELDS
             if preferences.showAdvancedFields || !negativePrompt.isEmpty || alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(spacing: 24) {
@@ -378,10 +378,6 @@ struct NewPromptView: View {
                     )
                 }
             }
-
-            // Prompt Results (Moved here for better focus)
-            imageGallery(width: geometry.size.width * 0.9)
-                .padding(.horizontal, 4)
 
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 20) {
@@ -534,6 +530,10 @@ struct NewPromptView: View {
                             )
                     )
                 }
+
+                // Prompt Results (Moved here per user request)
+                imageGallery(width: geometry.size.width * 0.9)
+                    .padding(.horizontal, 4)
             }
             .padding(.bottom, 40)
         }
@@ -606,7 +606,7 @@ struct NewPromptView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .foregroundColor(.blue)
+                    .foregroundColor(themeColor)
                     .help("Swap with main prompt")
 
                     // Action: Merge
@@ -626,7 +626,7 @@ struct NewPromptView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .foregroundColor(.blue)
+                    .foregroundColor(themeColor)
                     .help("Merge into main prompt")
 
                     // Action: Branching
@@ -1330,7 +1330,7 @@ struct NewPromptView: View {
                                 Button(action: selectImages) {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.system(size: 14))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(themeColor)
                                 }
                                 .buttonStyle(ScaleButtonStyle())
                                 .help("add_image".localized(for: preferences.language))
@@ -1922,14 +1922,14 @@ struct EditorCard: View {
                 }
             }
 
-            // ✅ Selector de Categoría (Independiente abajo)
+            // ✅ Selector de Categoría (Restaurado aquí)
             CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
                 .padding(.horizontal, 8)
                 .padding(.top, 16)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
-        private func performAIAction(_ action: AIAction) {
+    private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
 

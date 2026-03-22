@@ -32,21 +32,30 @@ struct OmniSearchView: View {
                 let title = prompt.title.lowercased()
                 let content = prompt.content.lowercased()
                 let desc = (prompt.promptDescription ?? "").lowercased()
+                let folder = (prompt.folder ?? "").lowercased()
                 
                 for term in searchTerms {
+                    // PRIORIDAD ALTA: Título
                     if title.contains(term) {
-                        score += 100
-                        if title.hasPrefix(term) { score += 50 }
+                        score += 500 // Subimos mucho la prioridad del título
+                        if title.hasPrefix(term) { score += 100 }
                     }
+                    
+                    // PRIORIDAD MEDIA: Descripción y Contenido
                     if desc.contains(term) { score += 40 }
                     if content.contains(term) { score += 20 }
+                    
+                    // PRIORIDAD BAJA: Carpeta/Categoría
+                    if folder.contains(term) {
+                        score += 10 // Puntuación mínima para que aparezcan al final
+                    }
                 }
                 
                 guard score > 0 else { return nil }
                 
                 // Bonus por reciencia
                 if let lastUsed = prompt.lastUsedAt, lastUsed > Date().addingTimeInterval(-86400 * 7) {
-                    score += 10
+                    score += 5 // Bonus pequeño para no pisar el orden por título
                 }
                 
                 return (prompt, score)
