@@ -224,6 +224,7 @@ struct NewPromptView: View {
                 title: $title,
                 content: $content,
                 promptDescription: $promptDescription,
+                isFavorite: $isFavorite,
                 selectedFolder: $selectedFolder,
                 selectedIcon: $selectedIcon,
                 fallbackIconName: selectedFolder.flatMap { PredefinedCategory.fromString($0)?.icon } ?? "doc.text.fill",
@@ -1167,6 +1168,21 @@ struct NewPromptView: View {
                     
                     if (originalPrompt ?? prompt) != nil {
                         Button(action: {
+                            withAnimation(.spring()) {
+                                isFavorite.toggle()
+                            }
+                            HapticService.shared.playAlignment()
+                        }) {
+                            Image(systemName: isFavorite ? "star.fill" : "star")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(isFavorite ? .yellow : currentCategoryColor)
+                                .frame(width: 32, height: 32)
+                                .background(Circle().fill(isFavorite ? Color.yellow.opacity(0.1) : currentCategoryColor.opacity(0.1)))
+                        }
+                        .buttonStyle(.plain)
+                        .help("favorite".localized(for: preferences.language))
+                        
+                        Button(action: {
                             // Extract title and content to floating manager
                             FloatingZenManager.shared.show(title: title, content: content, promptId: nil, isEditing: true)
                             // Close popover
@@ -1657,6 +1673,7 @@ struct EditorCard: View {
     @Binding var title: String
     @Binding var content: String
     @Binding var promptDescription: String
+    @Binding var isFavorite: Bool
     @Binding var selectedFolder: String?
     @Binding var selectedIcon: String?
     let fallbackIconName: String
@@ -1813,7 +1830,7 @@ struct EditorCard: View {
             }
             
             // ✅ Selector de Categoría (Independiente abajo)
-            CategoryPillPicker(selectedCategory: $selectedFolder, showLabel: false)
+            CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
                 .padding(.horizontal, 8)
                 .padding(.top, 16)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
