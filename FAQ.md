@@ -50,6 +50,10 @@ No eliminies las anteriores simplemente agrega mas preguntas maximo 100 (.)
 **Para humanos:** La app viene configurada a **740x530px**, un tamaño balanceado para ver el editor avanzado y la lista de prompts sin scroll innecesario.
 **Técnico:** Dimensiones fijadas como constantes de inicialización en `PreferencesManager.swift`.
 
+## 12) ¿Cómo desactivo los efectos vibrantes y degradados (Halo Effects)?
+**Para humanos:** Si prefieres una interfaz más seria y minimalista, ve a **Ajustes** y desactiva la opción **"Efectos Halo"**. Esto neutralizará los fondos de colores, sombras vibrantes y degradados del editor, dejando una app oscura "sobria".
+**Técnico:** El sistema utiliza una propiedad reactiva `isHaloEffectEnabled` en `PreferencesManager` que conmuta dinámicamente entre `currentCategoryColor` y colores neutros (azul desaturado/gris) en todas las capas de `background`, `shadow` y `stroke` de la aplicación.
+
 ---
-*Última actualización: 19 de Marzo de 2026*
+*Última actualización: 22 de Marzo de 2026*
 

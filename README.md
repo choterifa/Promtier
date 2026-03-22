@@ -33,6 +33,10 @@ open "/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqu
 - ✅ **Feedback Premium**: Respuesta háptica fuerte en trackpad y efectos visuales de partículas.
 - ✅ **Backup/Restore**: Exportar a .md (Markdown), JSON, ZIP y CSV.
 - ✅ **Drag & Drop**: Soporte inteligente: se mantiene abierto para categorización interna y se cierra automáticamente al arrastrar hacia afuera.
+- ✅ **Modo Sobrio (Sober Mode)**: Opción para desactivar efectos "Halo", degradados vibrantes y acentos llamativos para una experiencia minimalista y ultra-limpia (manteniendo colores de categoría solo para clasificación).
+
+- ✅ **Modo Sobrio (Sober Mode)**: Opción para desactivar efectos "Halo", degradados vibrantes y acentos llamativos para una experiencia minimalista y ultra-limpia (manteniendo colores de categoría solo para clasificación).
+
 
 ## 🏗️ Arquitectura
 
