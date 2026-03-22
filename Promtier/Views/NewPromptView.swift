@@ -14,10 +14,10 @@ import UniformTypeIdentifiers
 struct NewPromptView: View {
     var prompt: Prompt?
     var onClose: () -> Void
-    
+
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
-    
+
     @State private var title = ""
     @State private var content = ""
     @State private var negativePrompt = ""
@@ -30,12 +30,12 @@ struct NewPromptView: View {
     @State private var isSaving = false
     @State private var showingZenEditor = false
     @State private var zenTarget: ZenEditorTarget? = nil
-    
+
     enum ZenEditorTarget: Identifiable, Equatable {
         case main
         case negative
         case alternative(Int)
-        
+
         var id: String {
             switch self {
             case .main: return "main"
@@ -43,7 +43,7 @@ struct NewPromptView: View {
             case .alternative(let i): return "alt-\(i)"
             }
         }
-        
+
         func title(for promptTitle: String, language: AppLanguage) -> String {
             switch self {
             case .main: return promptTitle.isEmpty ? "new_prompt".localized(for: language) : promptTitle
@@ -57,22 +57,22 @@ struct NewPromptView: View {
     @State private var isDragging = false
     @State private var draggedImageIndex: Int? = nil
     @State private var showingFullScreenImage: Data? = nil
-    
+
     @State private var tags: [String] = []
     @State private var newTag: String = ""
     @State private var showingTagEditor: Bool = false
-    
+
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
     @State private var showSnippets: Bool = false
     @State private var snippetSearchQuery: String = ""
     @State private var snippetSelectedIndex: Int = 0
     @State private var triggerSnippetSelection: Bool = false
-    
+
     @State private var showVariables: Bool = false
     @State private var variablesSelectedIndex: Int = 0
     @State private var triggerVariablesSelection: Bool = false
-    
+
     @State private var triggerAIRequest: String? = nil
     @State private var selectedRange: NSRange? = nil
     @State private var selectedNegativeRange: NSRange? = nil
@@ -85,11 +85,11 @@ struct NewPromptView: View {
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
     @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
-    
+
     @State private var showNegativeField: Bool = false
     @State private var showAlternativeField: Bool = false
     @State private var customShortcut: String? = nil
-    
+
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
     @State private var targetAppBundleIDs: [String] = []
@@ -97,14 +97,14 @@ struct NewPromptView: View {
     @State private var showingDiff: Bool = false
     @State private var branchMessage: String? = nil
     @State private var showingAppPicker = false
-    
+
     @State private var cancellables = Set<AnyCancellable>()
-    
+
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
     @State private var autoSaveWorkItem: DispatchWorkItem? = nil
-    
+
     private var zenBindingContent: Binding<String> {
         Binding(
             get: {
@@ -143,7 +143,7 @@ struct NewPromptView: View {
             }
         )
     }
-    
+
     private var zenBindingSelection: Binding<NSRange?> {
         Binding(
             get: {
@@ -164,12 +164,12 @@ struct NewPromptView: View {
             }
         )
     }
-    
+
     private var zenTargetIndex: Int {
         if case .alternative(let i) = zenTarget { return i }
         return 0
     }
-    
+
     private var zenBindingAIResult: Binding<AIResult?> {
         Binding(
             get: {
@@ -190,11 +190,11 @@ struct NewPromptView: View {
             }
         )
     }
-    
+
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
     }
-    
+
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
@@ -204,22 +204,22 @@ struct NewPromptView: View {
         }
         return .blue
     }
-    
+
     // Propiedad calculada para saber si el prompt está vacío
     private var isContentEmpty: Bool {
-        title.trimmingCharacters(in: .whitespaces).isEmpty && 
+        title.trimmingCharacters(in: .whitespaces).isEmpty &&
         content.trimmingCharacters(in: .whitespaces).isEmpty &&
         negativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
         alternatives.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }) &&
         promptDescription.trimmingCharacters(in: .whitespaces).isEmpty &&
         showcaseImages.isEmpty
     }
-    
+
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
     }
-    
+
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 32) {
@@ -260,7 +260,7 @@ struct NewPromptView: View {
                 currentCategoryColor: currentCategoryColor
             )
             .frame(minHeight: geometry.size.height * 0.85)
-            
+
             // SECTION 2: ADVANCED FIELDS (Unified Group)
             VStack(alignment: .leading, spacing: 16) {
                 VStack(spacing: 24) {
@@ -305,7 +305,7 @@ struct NewPromptView: View {
                         EmptyView()
                     }
                     .id("negative_prompt_section")
-                    
+
                     // 2.2: ALTERNATIVE PROMPTS
                     VStack(alignment: .leading, spacing: 16) {
                         if !alternatives.isEmpty {
@@ -316,7 +316,7 @@ struct NewPromptView: View {
                                 }
                             }
                         }
-                        
+
                         if alternatives.count < 10 {
                             Button(action: {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -339,7 +339,7 @@ struct NewPromptView: View {
                                             currentCategoryColor.opacity(0.15)
                                                 .blur(radius: 12)
                                         }
-                                        
+
                                         // Fondo traslúcido estilizado
                                         RoundedRectangle(cornerRadius: 14)
                                             .fill(themeColor.opacity(0.1))
@@ -376,7 +376,7 @@ struct NewPromptView: View {
                         .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.08), lineWidth: 1)
                 )
             }
-            
+
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 20) {
                 // Atajo Individual (Movido aquí para mayor visibilidad)
@@ -428,7 +428,7 @@ struct NewPromptView: View {
                             )
                     )
                 }
-                
+
                 // Contextual Awareness (App Association)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
@@ -459,10 +459,10 @@ struct NewPromptView: View {
                                                 .resizable()
                                                 .frame(width: 16, height: 16)
                                         }
-                                        
+
                                         Text(getAppName(bundleID))
                                             .font(.system(size: 12, weight: .medium))
-                                        
+
                                         Button(action: {
                                             withAnimation {
                                                 targetAppBundleIDs.removeAll { $0 == bundleID }
@@ -481,7 +481,7 @@ struct NewPromptView: View {
                                 }
                             }
                         }
-                        
+
                         Button(action: { showingAppPicker = true }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus.circle.fill")
@@ -528,7 +528,7 @@ struct NewPromptView: View {
                             )
                     )
                 }
-                
+
                 imageGallery
             }
             .padding(.bottom, 40)
@@ -604,7 +604,7 @@ struct NewPromptView: View {
                     .buttonStyle(.plain)
                     .foregroundColor(.blue)
                     .help("Swap with main prompt")
-                    
+
                     // Action: Merge
                     Button(action: {
                         withAnimation {
@@ -624,7 +624,7 @@ struct NewPromptView: View {
                     .buttonStyle(.plain)
                     .foregroundColor(.blue)
                     .help("Merge into main prompt")
-                    
+
                     // Action: Branching
                     Button(action: {
                         let newTitle = title.isEmpty ? "Alternative Branch" : "\(title) (Branch)"
@@ -637,7 +637,7 @@ struct NewPromptView: View {
                         _ = promptService.createPrompt(newPrompt)
                         HapticService.shared.playSuccess()
                         branchMessage = "Prompt branched successfully!"
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                             branchMessage = nil
                             DraftService.shared.clearDraft()
@@ -656,7 +656,7 @@ struct NewPromptView: View {
 
                     // Action: Diff
                     Button(action: {
-                        showingDiff = true 
+                        showingDiff = true
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.left.and.right.text.vertical")
@@ -667,7 +667,7 @@ struct NewPromptView: View {
                     .foregroundColor(.orange)
                     .help("Compare with main prompt")
                 }
-                
+
                 // Action: Remove
                 Button(action: {
                     withAnimation(.easeOut(duration: 0.2)) {
@@ -732,11 +732,11 @@ struct NewPromptView: View {
             isContentEmpty: isContentEmpty
         )
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             let targetWidth = geometry.size.width * 0.9
-            
+
             VStack(spacing: 0) {
                 header(width: targetWidth)
 
@@ -789,7 +789,7 @@ struct NewPromptView: View {
                     DiffView(text1: content, text2: alternatives.first ?? "")
                 }
                 .onAppear {
-                    setupOnAppear() 
+                    setupOnAppear()
                     setupKeyboardMonitor()
                 }        .onDisappear {
             if let monitor = localMonitor {
@@ -809,7 +809,7 @@ struct NewPromptView: View {
             }
         }
     }
-    
+
     private func debounceAutoSave() {
         autoSaveWorkItem?.cancel()
         let workItem = DispatchWorkItem {
@@ -822,7 +822,7 @@ struct NewPromptView: View {
         autoSaveWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
-    
+
     @ViewBuilder
     private var overlays: some View {
         Group {
@@ -845,7 +845,7 @@ struct NewPromptView: View {
                     isAIActive: $isAIActive,
                     isAIGenerating: Binding(
                         get: { activeGeneratingID == (zenTarget == .main ? "main" : (zenTarget == .negative ? "negative" : "alt-\(zenTargetIndex)")) },
-                        set: { val in 
+                        set: { val in
                             if !val { activeGeneratingID = nil }
                         }
                     ),
@@ -884,7 +884,7 @@ struct NewPromptView: View {
                     .allowsHitTesting(false)
                     .zIndex(300)
             }
-            
+
             if let msg = branchMessage {
                 VStack {
                     Spacer()
@@ -906,7 +906,7 @@ struct NewPromptView: View {
         if localMonitor != nil { return }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            
+
             // Cmd + S -> Save
             if modifiers.contains(.command) && event.keyCode == 1 { // 'S' is key code 1
                 DispatchQueue.main.async {
@@ -922,7 +922,7 @@ struct NewPromptView: View {
                 }
                 return nil // consume the event
             }
-            
+
             // Cmd + V -> Paste Image globally
             if modifiers == .command && event.keyCode == 9 { // 'V' is keyCode 9
                 let pb = NSPasteboard.general
@@ -932,7 +932,7 @@ struct NewPromptView: View {
                        let tiffData = image.tiffRepresentation,
                        let bitmap = NSBitmapImageRep(data: tiffData),
                        let pngData = bitmap.representation(using: .png, properties: [:]) {
-                        
+
                         DispatchQueue.main.async {
                             if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
                                 if self.showcaseImages.count < 3 {
@@ -956,13 +956,13 @@ struct NewPromptView: View {
                     DispatchQueue.main.async { withAnimation { self.showVariables = false } }
                     return nil
                 }
-                
+
                 // Si no hay overlays críticos abiertos, primero perdemos foco. Si no hay foco, cerramos
                 if self.zenTarget == nil && !self.showingIconPicker {
                     if let window = NSApp.keyWindow, let firstResponder = window.firstResponder {
                         // In SwiftUI text fields, the firstResponder is often an NSTextView known as the field editor
                         let isEditingText = firstResponder is NSTextView || firstResponder.className.contains("TextEditor")
-                        
+
                         // We check if it's actually editing something by seeing if making it resign does anything
                         if isEditingText {
                             DispatchQueue.main.async {
@@ -972,14 +972,14 @@ struct NewPromptView: View {
                             return nil // We consumed the event, just losing focus, NO closing the window
                         }
                     }
-                    
+
                     // Si no estamos editando nada y presionan ESC, cerramos la ventana
                     DispatchQueue.main.async {
                         self.onClose()
                     }
                     return nil
                 }
-                
+
                 // Si estamos en ZenMode, salir del modo con animación
                 if self.zenTarget != nil {
                     DispatchQueue.main.async {
@@ -991,7 +991,7 @@ struct NewPromptView: View {
                     return nil
                 }
             }
-            
+
             // Option + N -> Focus Negative Prompt
             if modifiers == .option && event.keyCode == 45 {
                 DispatchQueue.main.async {
@@ -1005,7 +1005,7 @@ struct NewPromptView: View {
                 }
                 return nil
             }
-            
+
             // Option + A -> Focus Alternative Prompt
             if modifiers == .option && event.keyCode == 0 { // keyCode 0 is 'A'
                 DispatchQueue.main.async {
@@ -1019,7 +1019,7 @@ struct NewPromptView: View {
                 }
                 return nil
             }
-            
+
             // Option + V -> Insert Variable Popup
             if modifiers == .option && event.keyCode == 9 { // keyCode 9 is 'V'
                 DispatchQueue.main.async {
@@ -1044,7 +1044,7 @@ struct NewPromptView: View {
                 }
                 return nil
             }
-            
+
             return event
         }
     }
@@ -1052,9 +1052,9 @@ struct NewPromptView: View {
     private func setupOnAppear() {
         // ALWAYS lock modal so clicking outside doesn't close the editor
         MenuBarManager.shared.isModalActive = true
-        
+
         let draft = DraftService.shared.loadDraft()
-        
+
         // Determinar si debemos cargar el draft en lugar del prompt original
         var shouldLoadDraft = false
         if let draft = draft {
@@ -1067,11 +1067,11 @@ struct NewPromptView: View {
                 shouldLoadDraft = true
             }
         }
-        
+
         if shouldLoadDraft, let draft = draft {
             // Restore draft if it exists and matches the current context
             let draftPrompt = draft.prompt
-            
+
             if draft.isEditing {
                 if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
                     self.originalPrompt = original
@@ -1079,18 +1079,18 @@ struct NewPromptView: View {
                     self.originalPrompt = p
                 }
             }
-            
+
             DispatchQueue.main.async {
                 self.title = draftPrompt.title
                 self.content = draftPrompt.content
                 self.negativePrompt = draftPrompt.negativePrompt ?? ""
-                
+
                 var draftAlternatives = draftPrompt.alternatives
                 if draftAlternatives.isEmpty, let legacy = draftPrompt.alternativePrompt, !legacy.isEmpty {
                     draftAlternatives = [legacy]
                 }
                 self.alternatives = draftAlternatives
-                
+
                 self.promptDescription = draftPrompt.promptDescription ?? ""
                 self.selectedFolder = draftPrompt.folder
                 self.isFavorite = draftPrompt.isFavorite
@@ -1100,11 +1100,11 @@ struct NewPromptView: View {
                 self.targetAppBundleIDs = draftPrompt.targetAppBundleIDs
                 self.customShortcut = draftPrompt.customShortcut
                 self.isDraftRestored = true
-                
+
                 if !self.negativePrompt.isEmpty { self.showNegativeField = true }
                 if !self.alternatives.isEmpty { self.showAlternativeField = true }
             }
-            
+
         } else if let prompt = prompt {
             self.originalPrompt = prompt
             title = prompt.title
@@ -1122,7 +1122,7 @@ struct NewPromptView: View {
             tags = prompt.tags
             targetAppBundleIDs = prompt.targetAppBundleIDs
             customShortcut = prompt.customShortcut
-            
+
             if !negativePrompt.isEmpty { showNegativeField = true }
             if !alternatives.isEmpty { showAlternativeField = true }
 
@@ -1144,12 +1144,12 @@ struct NewPromptView: View {
             selectedFolder = activeCategory
         }
     }
-    
+
     private func saveCurrentDraft() {
         // No guardar si el contenido es idéntico al original que estamos editando
         if let original = originalPrompt {
-            let hasChanges = title != original.title || 
-                             content != original.content || 
+            let hasChanges = title != original.title ||
+                             content != original.content ||
                              promptDescription != (original.promptDescription ?? "") ||
                              selectedFolder != original.folder ||
                              selectedIcon != original.icon ||
@@ -1160,7 +1160,7 @@ struct NewPromptView: View {
                              customShortcut != original.customShortcut
             if !hasChanges { return }
         }
-        
+
         // Crear un objeto prompt temporal para el borrador
         var draftPrompt = Prompt(
             title: title,
@@ -1175,17 +1175,17 @@ struct NewPromptView: View {
             alternatives: alternatives,
             customShortcut: customShortcut
         )
-        
+
         // Si estamos editando, mantenemos el ID original para poder actualizarlo al restaurar
         if let original = originalPrompt {
             draftPrompt.id = original.id
         }
-        
+
         DraftService.shared.saveDraft(prompt: draftPrompt, isEditing: prompt != nil || originalPrompt != nil)
     }
-    
+
     // MARK: - Subviews
-    
+
     private func header(width: CGFloat) -> some View {
         ZStack {
             // Botones laterales (Cancel y Acciones)
@@ -1206,9 +1206,9 @@ struct NewPromptView: View {
                         )
                 }
                 .buttonStyle(.plain)
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 12) {
                     if let msg = branchMessage {
                         Text(msg)
@@ -1220,41 +1220,41 @@ struct NewPromptView: View {
                             .cornerRadius(6)
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    
-                    if (originalPrompt ?? prompt) != nil {
-                        Button(action: {
-                            withAnimation(.spring()) {
-                                isFavorite.toggle()
-                            }
-                            HapticService.shared.playAlignment()
-                        }) {
-                            Image(systemName: isFavorite ? "star.fill" : "star")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(isFavorite ? (preferences.isHaloEffectEnabled ? .yellow : .blue) : themeColor)
-                                .frame(width: 32, height: 32)
-                                .background(Circle().fill(isFavorite ? (preferences.isHaloEffectEnabled ? Color.yellow.opacity(0.1) : Color.blue.opacity(0.1)) : themeColor.opacity(0.1)))
-                        }
-                        .buttonStyle(.plain)
-                        .help("favorite".localized(for: preferences.language))
-                        
-                        Button(action: {
-                            // Force save current draft state
-                            saveCurrentDraft()
-                            
-                            // Extract title and content to floating manager
-                            FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
-                            // Close popover
-                            MenuBarManager.shared.closePopover()
-                        }) {
-                            Image(systemName: "pip.enter")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(themeColor)
-                                .frame(width: 32, height: 32)
-                                .background(Circle().fill(themeColor.opacity(0.1)))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Floating Zen Mode")
 
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            isFavorite.toggle()
+                        }
+                        HapticService.shared.playAlignment()
+                    }) {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(isFavorite ? (preferences.isHaloEffectEnabled ? .yellow : .blue) : themeColor)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill(isFavorite ? (preferences.isHaloEffectEnabled ? Color.yellow.opacity(0.1) : Color.blue.opacity(0.1)) : themeColor.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    .help("favorite".localized(for: preferences.language))
+
+                    Button(action: {
+                        // Force save current draft state
+                        saveCurrentDraft()
+
+                        // Extract title and content to floating manager
+                        FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
+                        // Close popover
+                        MenuBarManager.shared.closePopover()
+                    }) {
+                        Image(systemName: "pip.enter")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(themeColor)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill(themeColor.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Floating Zen Mode")
+
+                    if (originalPrompt ?? prompt) != nil {
                         Button(action: { branchPrompt() }) {
                             Image(systemName: "arrow.branch")
                                 .font(.system(size: 14, weight: .bold))
@@ -1280,11 +1280,11 @@ struct NewPromptView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(title.isEmpty || content.isEmpty)
-                    .keyboardShortcut("s", modifiers: [.command]) 
+                    .keyboardShortcut("s", modifiers: [.command])
                 }
             }
             .padding(.horizontal, 16)
-            
+
             // Título central (Ajustado para estar siempre al centro real)
             VStack(spacing: 2) {
                 Text(prompt != nil ? "edit_prompt".localized(for: preferences.language) : "new_prompt".localized(for: preferences.language))
@@ -1299,7 +1299,7 @@ struct NewPromptView: View {
         .padding(.top, 16)
         .padding(.bottom, 12)
     }
-    
+
                 private var imageGallery: some View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 8) {
@@ -1310,7 +1310,7 @@ struct NewPromptView: View {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.secondary)
                                 .tracking(1)
-        
+
                             if showcaseImages.count < 3 {
                                 Button(action: selectImages) {
                                     Image(systemName: "plus.circle.fill")
@@ -1324,7 +1324,7 @@ struct NewPromptView: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.bottom, 4)
-        
+
                         ScrollView(.horizontal, showsIndicators: false) {                HStack(spacing: 12) {
                     // Imágenes actuales
                     ForEach(0..<showcaseImages.count, id: \.self) { index in
@@ -1336,7 +1336,7 @@ struct NewPromptView: View {
                             onDragStart: { self.draggedImageIndex = index }
                         )
                     }
-                    
+
                     // Placeholders para completar hasta 3
                     ForEach(showcaseImages.count..<3, id: \.self) { index in
                         PlaceholderSlotView(
@@ -1355,7 +1355,7 @@ struct NewPromptView: View {
         }
         .padding(.top, 16)
     }
-    
+
     private func handleGalleryDrop(providers: [NSItemProvider], at index: Int? = nil) {
         if let sourceIndex = draggedImageIndex {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -1367,15 +1367,15 @@ struct NewPromptView: View {
             draggedImageIndex = nil
             return
         }
-        
+
         for provider in providers {
             if provider.canLoadObject(ofClass: NSImage.self) {
                 _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let nsImage = image as? NSImage, 
+                    if let nsImage = image as? NSImage,
                        let tiffData = nsImage.tiffRepresentation,
                        let bitmap = NSBitmapImageRep(data: tiffData),
                        let pngData = bitmap.representation(using: .png, properties: [:]) {
-                        
+
                         DispatchQueue.main.async {
                             if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
                                 self.insertImage(optimizedData, at: index)
@@ -1427,11 +1427,11 @@ struct NewPromptView: View {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
     }
-    
+
     private var backgroundView: some View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
-            
+
             if preferences.isHaloEffectEnabled {
                 // Círculos decorativos para efecto mesh (Neón sutil y dinámico)
                 Circle()
@@ -1440,14 +1440,14 @@ struct NewPromptView: View {
                     .blur(radius: 90)
                     .offset(x: 220, y: -150)
                     .animation(.easeInOut(duration: 1.2), value: selectedFolder)
-                
+
                 Circle()
                     .fill(currentCategoryColor.opacity(0.12))
                     .frame(width: 400, height: 400)
                     .blur(radius: 100)
                     .offset(x: -250, y: 200)
             }
-            
+
             // Brillo ambiental central que cambia con la categoría
             Circle()
                 .fill(currentCategoryColor.opacity(0.05))
@@ -1456,12 +1456,12 @@ struct NewPromptView: View {
                 .animation(.spring(response: 1.0, dampingFraction: 0.8), value: selectedFolder)
         }
     }
-    
+
     private func savePrompt(closeAfter: Bool = true, isAutoSave: Bool = false) {
         if !isAutoSave {
             isSaving = true
         }
-        
+
         // Limpiar borrador al guardar con éxito (solo si cerramos o es explícito)
         if closeAfter {
             DraftService.shared.clearDraft()
@@ -1469,12 +1469,12 @@ struct NewPromptView: View {
         }
 
         let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
-        
+
         // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
         if let existingPrompt = originalPrompt ?? prompt {
             // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
-            let basicChanges = existingPrompt.title != title || 
-                             existingPrompt.content != content || 
+            let basicChanges = existingPrompt.title != title ||
+                             existingPrompt.content != content ||
                              existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
                              existingPrompt.folder != selectedFolder ||
                              existingPrompt.isFavorite != isFavorite ||
@@ -1484,21 +1484,21 @@ struct NewPromptView: View {
                              existingPrompt.alternatives != alternatives ||
                              existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
                              existingPrompt.customShortcut != customShortcut
-            
+
             if !basicChanges {
                 if closeAfter { onClose() }
                 return
             }
 
             var updated = existingPrompt
-            
+
             // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
             if preferences.isPremiumActive && !isAutoSave {
-                let coreChanges = existingPrompt.title != title || 
+                let coreChanges = existingPrompt.title != title ||
                                  existingPrompt.content != content ||
                                  existingPrompt.negativePrompt != newNegativePrompt ||
                                  existingPrompt.alternatives != alternatives
-                
+
                 if coreChanges {
                     let snapshot = PromptSnapshot(
                         title:     existingPrompt.title,
@@ -1511,7 +1511,7 @@ struct NewPromptView: View {
                     updated.versionHistory = history
                 }
             }
-            
+
             updated.title = title
             updated.content = content
             updated.promptDescription = promptDescription.isEmpty ? nil : promptDescription
@@ -1526,7 +1526,7 @@ struct NewPromptView: View {
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
-            
+
             if isAutoSave {
                 DispatchQueue.main.async { self.originalPrompt = updated }
             }
@@ -1546,12 +1546,12 @@ struct NewPromptView: View {
             )
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
-            
+
             if isAutoSave {
                 DispatchQueue.main.async { self.originalPrompt = new }
             }
         }
-        
+
         if closeAfter {
             if preferences.isPremiumActive && preferences.visualEffectsEnabled && !isAutoSave {
                 showParticles = true
@@ -1563,14 +1563,14 @@ struct NewPromptView: View {
             }
         }
     }
-    
-    
+
+
     private func branchPrompt() {
         // Asegurarnos de tener los datos actuales (usamos las variables de estado)
         let branchTitle = "\("branch_label".localized(for: preferences.language)): \(title)"
         let newContent = content
         let currentParentID = (originalPrompt ?? prompt)?.id
-        
+
         var newBranch = Prompt(
             title: branchTitle,
             content: newContent,
@@ -1584,10 +1584,10 @@ struct NewPromptView: View {
             alternatives: Array(alternatives.prefix(10)),
             customShortcut: nil // Las ramas no heredan el atajo para evitar conflictos
         )
-        
+
         newBranch.parentID = currentParentID
         newBranch.isFavorite = isFavorite
-        
+
         if promptService.createPrompt(newBranch) {
             HapticService.shared.playSuccess()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -1599,14 +1599,14 @@ struct NewPromptView: View {
             }
         }
     }
-    
+
     private func selectImages() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.image]
-        
+
         if panel.runModal() == .OK {
             for url in panel.urls {
                 if showcaseImages.count < 3 {
@@ -1618,9 +1618,9 @@ struct NewPromptView: View {
             }
         }
     }
-    
+
     // MARK: - App Association Helpers
-    
+
     private func getRunningApps() -> [RunningApp] {
         return NSWorkspace.shared.getRelevantRunningApps()
     }
@@ -1639,10 +1639,10 @@ struct NewPromptView: View {
         panel.allowedContentTypes = [.application, .aliasFile]
         panel.allowsMultipleSelection = true
         panel.message = "select_app_title".localized(for: preferences.language)
-        
+
         // Nivel de panel modal para que NO salga por detrás de la ventana de NewPromptView
         panel.level = .modalPanel
-        
+
         if panel.runModal() == .OK {
             for url in panel.urls {
                 if let bundleID = Bundle(url: url)?.bundleIdentifier {
@@ -1666,7 +1666,7 @@ struct NewPromptView: View {
             }
         }
     }
-    
+
     private var snippetOverlay: some View {
         VStack {
             Spacer()
@@ -1696,7 +1696,7 @@ struct NewPromptView: View {
             }
         }
     }
-    
+
     private var variablesOverlay: some View {
         VStack {
             Spacer()
@@ -1758,13 +1758,13 @@ struct EditorCard: View {
     var prompt: Prompt?
     @Binding var branchMessage: String?
     let editorID: String
-    
+
     let currentCategoryColor: Color
-    
+
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : .blue
     }
-    
+
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isEditorFocused: Bool = false
@@ -1781,7 +1781,7 @@ struct EditorCard: View {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(currentCategoryColor.opacity(0.1))
                                 .frame(width: 56, height: 56)
-                            
+
                             Image(systemName: selectedIcon ?? fallbackIconName)
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(currentCategoryColor)
@@ -1791,14 +1791,14 @@ struct EditorCard: View {
                     .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
                         IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 0) {
                         TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.system(size: 23 * preferences.fontSize.scale, weight: .bold))
                             .lineLimit(2)
                             .padding(.bottom, 2)
-                        
+
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
@@ -1808,7 +1808,7 @@ struct EditorCard: View {
                     }
                 }
             } // Cierre de la cabecera (VStack en 1695)
-            
+
             // ✅ Editor Principal con Herramientas Inteligentes (Sidebar Layout)
             HStack(alignment: .top, spacing: 0) {
                 // El Editor
@@ -1833,12 +1833,12 @@ struct EditorCard: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive,
                     isHaloEffectEnabled: preferences.isHaloEffectEnabled
-                )   
+                )
                 .padding(.vertical, 12)
                 .padding(.leading, 12)
                 .padding(.trailing, 5) // Espacio sutil de 5px
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
-                
+
                 // Barra de Herramientas Lateral
                 EditorToolbar(
                     color: currentCategoryColor,
@@ -1902,7 +1902,7 @@ struct EditorCard: View {
                     isEditorFocused = true
                 }
             }
-            
+
             // ✅ Selector de Categoría (Independiente abajo)
             CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
                 .padding(.horizontal, 8)
@@ -1913,17 +1913,17 @@ struct EditorCard: View {
         private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
-            
+
             guard useGemini || useOllama else { return }
-    
+
             isAIGenerating = true
             HapticService.shared.playImpact()
-    
+
             // Determinar qué fragmento procesar (selección o todo)
             let textToProcess: String
             let rangeToProcess: NSRange
             let fullNSString = content as NSString
-    
+
             if let sel = selectedRange, sel.length > 0 {
                 textToProcess = fullNSString.substring(with: sel)
                 rangeToProcess = sel
@@ -1931,25 +1931,25 @@ struct EditorCard: View {
                 textToProcess = content
                 rangeToProcess = NSRange(location: 0, length: fullNSString.length)
             }
-    
+
             guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 isAIGenerating = false
                 return
             }
-    
+
             let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
             let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
-    
+
             var fullResponse = ""
             let publisher: AnyPublisher<String, Error>
-            
+
             if useGemini {
                 publisher = GeminiService.shared.generate(prompt: fullPrompt)
             } else {
                 let model = OllamaService.shared.selectedModel!
                 publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
             }
-            
+
             publisher
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
@@ -1977,7 +1977,7 @@ struct EditorCard: View {
             icon: (originalPrompt ?? prompt)?.icon ?? "doc.text.fill",
             tags: (originalPrompt ?? prompt)?.tags ?? []
         )
-        
+
         if promptService.createPrompt(newPrompt) {
             HapticService.shared.playSuccess()
             withAnimation {
@@ -1992,7 +1992,7 @@ struct EditorCard: View {
 
 enum AIAction {
     case enhance, fix, concise, instruct
-    
+
     var systemPrompt: String {
         switch self {
         case .enhance: return "Enhance the following prompt to be more descriptive and effective, keeping the variables {{...}} exactly as they are. Respond ONLY with the improved prompt text."
@@ -2009,13 +2009,13 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var text: String
     let icon: String
     let color: Color
-    
+
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? color : .blue
     }
     var focusRequest: Binding<Bool>? = nil
     var onZenMode: (() -> Void)? = nil
-    
+
     // Bindings for standard actions
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
@@ -2037,24 +2037,24 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var branchMessage: String?
     let editorID: String
     let currentCategoryColor: Color
-    
+
     let actions: Actions
-    
+
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
-    
+
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
-    
-    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color, 
+
+    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
          insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>,
          showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
          snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>,
          showVariables: Binding<Bool>, variablesSelectedIndex: Binding<Int>,
          triggerVariablesSelection: Binding<Bool>,
-         triggerAIRequest: Binding<String?>, 
+         triggerAIRequest: Binding<String?>,
          isAIActive: Binding<Bool>,
          isAIGenerating: Binding<Bool>,
          selectedRange: Binding<NSRange?>,
@@ -2095,31 +2095,31 @@ struct SecondaryEditorCard<Actions: View>: View {
         self.currentCategoryColor = currentCategoryColor
         self.actions = actions()
     }
-    
+
     var body: some View {
         let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : themeColor
-        
+
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(iconColor)
-                
+
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                     .tracking(1)
-                
+
                 if String(describing: actions) != "EmptyView" {
                     actions
                         .padding(.leading, 4)
                 }
-                
+
                 Spacer()
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 2)
-            
+
             // ✅ Editor Secundario con Herramientas Inteligentes (Sidebar Layout)
             HStack(alignment: .top, spacing: 0) {
                 ZStack(alignment: .topLeading) {
@@ -2150,7 +2150,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .padding(.leading, 12)
                     .padding(.trailing, 5) // Espacio sutil de 5px
                     .frame(maxWidth: .infinity, minHeight: 180) // Aumentado para que sea más espacioso
-                    
+
                     if text.isEmpty {
                         Text(placeholder)
                             .font(.system(size: 14 * preferences.fontSize.scale))
@@ -2160,7 +2160,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                             .allowsHitTesting(false)
                     }
                 }
-                
+
                 // Herramientas Laterales (Compactas)
                 EditorToolbar(
                     color: color,
@@ -2226,17 +2226,17 @@ struct SecondaryEditorCard<Actions: View>: View {
         private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOllama = preferences.ollamaEnabled && OllamaService.shared.selectedModel != nil
-            
+
             guard useGemini || useOllama else { return }
-    
+
             isAIGenerating = true
             HapticService.shared.playImpact()
-    
+
             // Determinar qué fragmento procesar
             let textToProcess: String
             let rangeToProcess: NSRange
             let fullNSString = text as NSString
-    
+
             if let sel = selectedRange, sel.length > 0 {
                 textToProcess = fullNSString.substring(with: sel)
                 rangeToProcess = sel
@@ -2244,25 +2244,25 @@ struct SecondaryEditorCard<Actions: View>: View {
                 textToProcess = text
                 rangeToProcess = NSRange(location: 0, length: fullNSString.length)
             }
-    
+
             guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 isAIGenerating = false
                 return
             }
-    
+
             let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
             let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
-    
+
             var fullResponse = ""
             let publisher: AnyPublisher<String, Error>
-            
+
             if useGemini {
                 publisher = GeminiService.shared.generate(prompt: fullPrompt)
             } else {
                 let model = OllamaService.shared.selectedModel!
                 publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
             }
-            
+
             publisher
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
@@ -2290,7 +2290,7 @@ struct SecondaryEditorCard<Actions: View>: View {
             icon: "doc.text.fill",
             tags: []
         )
-        
+
         if promptService.createPrompt(newPrompt) {
             HapticService.shared.playSuccess()
         }
@@ -2306,9 +2306,9 @@ struct ImageSlotView: View {
     let onPreview: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
     let onDragStart: () -> Void
-    
+
     @State private var isTargeted = false
-    
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if let nsImage = NSImage(data: imageData) {
@@ -2331,7 +2331,7 @@ struct ImageSlotView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
                     .scaleEffect(isTargeted ? 1.05 : 1.0)
                     .animation(.spring(response: 0.3), value: isTargeted)
-                
+
                 Button(action: onRemove) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 16))
@@ -2353,16 +2353,16 @@ struct ImageSlotView: View {
 struct PlaceholderSlotView: View {
     let onSelect: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
-    
+
     @State private var isTargeted = false
     @EnvironmentObject var preferences: PreferencesManager
-    
+
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
                 .font(.system(size: 24))
                 .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
-            
+
             Text("add_prompt_results".localized(for: preferences.language))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
@@ -2402,7 +2402,7 @@ struct CategoryChip: View {
     let color: Color
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
@@ -2439,11 +2439,11 @@ struct CategoryChip: View {
 struct AIGeneratingOverlay: View {
     let accentColor: Color
     var compact: Bool = false
-    
+
     @State private var pulse = false
     @State private var shimmer = false
     @EnvironmentObject var preferences: PreferencesManager
-    
+
     var body: some View {
         ZStack {
             // Capa de vidrio esmerilado
@@ -2452,7 +2452,7 @@ struct AIGeneratingOverlay: View {
                 .overlay(
                     accentColor.opacity(0.03)
                 )
-            
+
             // Efectos de luz ambiente
             ZStack {
                 Circle()
@@ -2460,7 +2460,7 @@ struct AIGeneratingOverlay: View {
                     .frame(width: compact ? 100 : 200, height: compact ? 100 : 200)
                     .blur(radius: compact ? 30 : 60)
                     .scaleEffect(pulse ? 1.2 : 0.8)
-                
+
                 Circle()
                     .fill(accentColor.opacity(pulse ? 0.1 : 0.2))
                     .frame(width: compact ? 80 : 150, height: compact ? 80 : 150)
@@ -2468,7 +2468,7 @@ struct AIGeneratingOverlay: View {
                     .offset(x: pulse ? 20 : -20, y: pulse ? -10 : 10)
             }
             .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: pulse)
-            
+
             VStack(spacing: compact ? 12 : 16) {
                 // Icono animado
                 ZStack {
@@ -2476,35 +2476,35 @@ struct AIGeneratingOverlay: View {
                         .font(.system(size: compact ? 24 : 32, weight: .bold))
                         .foregroundColor(.purple)
                         .symbolEffect(.variableColor.reversing.iterative)
-                    
+
                     Image(systemName: "sparkles")
                         .font(.system(size: compact ? 24 : 32, weight: .bold))
                         .foregroundColor(.purple)
                         .blur(radius: 8)
                         .opacity(pulse ? 0.8 : 0.3)
                 }
-                
+
                 VStack(spacing: 4) {
                     Text("ai_thinking".localized(for: preferences.language))
                         .font(.system(size: compact ? 13 : 15, weight: .bold))
                         .foregroundColor(.primary.opacity(0.8))
-                    
+
                     if !compact {
                         Text("ai_crafting_message".localized(for: preferences.language))
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 // Barra de progreso elegante
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(Color.primary.opacity(0.05))
                         .frame(width: compact ? 100 : 160, height: 4)
-                    
+
                     Capsule()
-                        .fill(preferences.isHaloEffectEnabled ? 
-                            AnyShapeStyle(LinearGradient(colors: [.purple, accentColor], startPoint: .leading, endPoint: .trailing)) : 
+                        .fill(preferences.isHaloEffectEnabled ?
+                            AnyShapeStyle(LinearGradient(colors: [.purple, accentColor], startPoint: .leading, endPoint: .trailing)) :
                             AnyShapeStyle(accentColor))
                         .frame(width: shimmer ? (compact ? 100 : 160) : 0, height: 4)
                 }

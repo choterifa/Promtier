@@ -67,22 +67,6 @@ struct CategoryPillPicker: View {
             ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
-                    // Opción: Favoritos
-                    pillView(
-                        title: "favorites".localized(for: preferences.language),
-                        icon: isFavorite ? "star.fill" : "star",
-                        color: .yellow,
-                        isSelected: isFavorite,
-                        id: "favorites"
-                    ) {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            isFavorite.toggle()
-                        }
-                        HapticService.shared.playLight()
-                    }
-                    
-                    Divider().frame(height: 24)
-                    
                     // Opción: Sin categoría / General
                     pillView(
                         title: "uncategorized".localized(for: preferences.language),
