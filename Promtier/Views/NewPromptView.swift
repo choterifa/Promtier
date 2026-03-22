@@ -1131,37 +1131,72 @@ struct NewPromptView: View {
     // MARK: - Subviews
     
     private func header(width: CGFloat) -> some View {
-        HStack(alignment: .center) {
-            Button(action: {
-                DraftService.shared.clearDraft()
-                MenuBarManager.shared.isModalActive = false
-                onClose()
-            }) {
-                Text("cancel".localized(for: preferences.language))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.primary.opacity(0.05))
-                    )
+        ZStack {
+            // Botones laterales (Cancel y Acciones)
+            HStack(alignment: .center) {
+                Button(action: {
+                    DraftService.shared.clearDraft()
+                    MenuBarManager.shared.isModalActive = false
+                    onClose()
+                }) {
+                    Text("cancel".localized(for: preferences.language))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(0.05))
+                        )
+                }
+                .buttonStyle(.plain)
+                
+                Spacer()
+                
+                HStack(spacing: 12) {
+                    if let msg = branchMessage {
+                        Text(msg)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(6)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    
+                    if (originalPrompt ?? prompt) != nil {
+                        Button(action: { branchPrompt() }) {
+                            Image(systemName: "arrow.branch")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(currentCategoryColor)
+                                .frame(width: 32, height: 32)
+                                .background(Circle().fill(currentCategoryColor.opacity(0.1)))
+                        }
+                        .buttonStyle(.plain)
+                        .help("create_branch".localized(for: preferences.language))
+                    }
+
+                    Button(action: { savePrompt() }) {
+                        Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : currentCategoryColor)
+                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : currentCategoryColor.opacity(0.2), radius: 4, y: 2)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(title.isEmpty || content.isEmpty)
+                    .keyboardShortcut("s", modifiers: [.command]) 
+                }
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
             
-            Spacer()
-            
-            if let msg = branchMessage {
-                Text(msg)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(6)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-            
+            // Título central (Ajustado para estar siempre al centro real)
             VStack(spacing: 2) {
                 Text(prompt != nil ? "edit_prompt".localized(for: preferences.language) : "new_prompt".localized(for: preferences.language))
                     .font(.system(size: 15, weight: .bold))
@@ -1169,42 +1204,11 @@ struct NewPromptView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
-            
-            Spacer()
-            
-            if (originalPrompt ?? prompt) != nil {
-                Button(action: { branchPrompt() }) {
-                    Image(systemName: "arrow.branch")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(currentCategoryColor)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(currentCategoryColor.opacity(0.1)))
-                }
-                .buttonStyle(.plain)
-                .help("create_branch".localized(for: preferences.language))
-                .padding(.trailing, 8)
-            }
-
-            Button(action: { savePrompt() }) {
-                Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : currentCategoryColor)
-                            .shadow(color: title.isEmpty || content.isEmpty ? .clear : currentCategoryColor.opacity(0.2), radius: 4, y: 2)
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(title.isEmpty || content.isEmpty)
-            .keyboardShortcut("s", modifiers: [.command]) 
+            .allowsHitTesting(false) // Dejar que los clics pasen a los botones si hubiera solapamiento
         }
         .frame(width: width)
         .padding(.top, 16)
         .padding(.bottom, 12)
-        .frame(maxWidth: .infinity)
     }
     
                 private var imageGallery: some View {
