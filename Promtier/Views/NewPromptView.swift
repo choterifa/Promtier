@@ -278,7 +278,7 @@ struct NewPromptView: View {
                         placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
                         text: $negativePrompt,
                         icon: "hand.raised.fill",
-                        color: .red,
+                        color: currentCategoryColor,
                         focusRequest: $focusNegative,
                         onZenMode: {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -361,7 +361,7 @@ struct NewPromptView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "keyboard.fill")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(currentCategoryColor)
                         Text("shortcut".uppercased())
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
@@ -411,7 +411,7 @@ struct NewPromptView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.purple)
+                            .foregroundColor(currentCategoryColor)
                         Text("smart_recommendation".localized(for: preferences.language).uppercased())
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
@@ -523,7 +523,7 @@ struct NewPromptView: View {
                 set: { if alternatives.indices.contains(index) { alternatives[index] = $0 } }
             ),
             icon: "arrow.triangle.2.circlepath",
-            color: .green,
+            color: currentCategoryColor,
             onZenMode: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     zenTarget = .alternative(index)
@@ -1247,7 +1247,7 @@ struct NewPromptView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "photo.stack.fill")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(currentCategoryColor)
                             Text("prompt_results".localized(for: preferences.language).uppercased())
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.secondary)
@@ -2018,11 +2018,13 @@ struct SecondaryEditorCard<Actions: View>: View {
     }
     
     var body: some View {
+        let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : color
+        
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(color)
+                    .foregroundColor(iconColor)
                 
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .bold))
@@ -2088,10 +2090,10 @@ struct SecondaryEditorCard<Actions: View>: View {
                 }
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.textBackgroundColor).opacity(0.3))
+                        .fill(color.opacity(0.04)) // Matching shortcut/smart-recommendation style
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.06), lineWidth: isEditorFocused ? 2 : 1)
+                                .stroke(isEditorFocused ? color.opacity(0.6) : color.opacity(0.12), lineWidth: isEditorFocused ? 2 : 1)
                         )
                 )
                 

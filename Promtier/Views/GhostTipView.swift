@@ -25,9 +25,9 @@ struct GhostTipView: View {
         HStack(spacing: 12) {
             Image(systemName: tip.icon)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.blue)
+                .foregroundColor(.primary.opacity(0.7))
                 .frame(width: 32, height: 32)
-                .background(Circle().fill(Color.blue.opacity(0.1)))
+                .background(Circle().fill(Color.primary.opacity(0.05)))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(tip.title)
@@ -57,22 +57,10 @@ struct GhostTipView: View {
         .padding(.trailing, 12)
         .padding(.vertical, 8)
         .background {
-            ZStack {
-                // Luz de fondo (Glow) expandida para separación visual máxima
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue.opacity(0.15))
-                    .blur(radius: 15)
-                    .offset(y: 4)
-                
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.windowBackgroundColor))
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-            }
-        }
-        .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-        )
+                .fill(Color(NSColor.windowBackgroundColor))
+                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
+        }
         .opacity(opacity)
         .offset(y: offset)
         .onAppear {
