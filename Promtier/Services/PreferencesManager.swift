@@ -48,6 +48,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var isGridView: Bool {
+        didSet {
+            userDefaults.set(isGridView, forKey: "isGridView")
+        }
+    }
+    
     @Published var closeOnCopy: Bool {
         didSet {
             userDefaults.set(closeOnCopy, forKey: "closeOnCopy")
@@ -272,6 +278,8 @@ class PreferencesManager: ObservableObject {
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         // Sidebar visible por defecto
         self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
+        // Vista de grid (tarjetas) por defecto en false
+        self.isGridView = userDefaults.bool(forKey: "isGridView")
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         
@@ -455,6 +463,7 @@ class PreferencesManager: ObservableObject {
         self.fontSize = .medium
         self.launchAtLogin = false
         self.showSidebar = true
+        self.isGridView = false
         self.closeOnCopy = true
         self.soundEnabled = true
         self.hapticFeedbackEnabled = true

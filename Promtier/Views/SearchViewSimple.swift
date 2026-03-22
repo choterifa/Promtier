@@ -332,23 +332,25 @@ struct SearchViewSimple: View {
                 // Header Premium con búsqueda
                 VStack(spacing: 0) {
                     HStack(spacing: 16) {
-                        // Botón Colapsar Sidebar
+                        // Botón Colapsar Sidebar / Cambiar a Grid
                         Button(action: {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                preferences.showSidebar.toggle()
+                                preferences.isGridView.toggle()
+                                // Al activar grid, contraemos la sidebar para más espacio. Al desactivar, la mostramos.
+                                preferences.showSidebar = !preferences.isGridView
                             }
                         }) {
-                            Image(systemName: preferences.showSidebar ? "sidebar.left" : "sidebar.right")
+                            Image(systemName: preferences.isGridView ? "square.grid.2x2.fill" : "list.bullet.rectangle.fill")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(preferences.showSidebar ? .blue : .secondary)
+                                .foregroundColor(preferences.isGridView ? .blue : .secondary)
                                 .frame(width: 32, height: 32)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                        .fill(preferences.isGridView ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
                                 )
                         }
                         .buttonStyle(.plain)
-                        .help(preferences.showSidebar ? "hide_sidebar_help".localized(for: preferences.language) : "show_sidebar_help".localized(for: preferences.language))
+                        .help(preferences.isGridView ? "List View" : "Grid View")
                         
                         // Buscador Estilizado
                         HStack(spacing: 12) {
@@ -501,13 +503,22 @@ struct SearchViewSimple: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 24)
                 } else {
-                    // Lista moderna de prompts
+                    // Lista moderna o Grid de prompts
                     ScrollViewReader { proxy in
                         ScrollView {
-                            LazyVStack(spacing: 12) {
-                                ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                    promptRow(for: prompt)
-                                        .id(prompt.id)
+                            if preferences.isGridView {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
+                                    ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                        promptGridCard(for: prompt)
+                                            .id(prompt.id)
+                                    }
+                                }
+                            } else {
+                                LazyVStack(spacing: 12) {
+                                    ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                        promptRow(for: prompt)
+                                            .id(prompt.id)
+                                    }
                                 }
                             }
                         }
@@ -544,6 +555,33 @@ struct SearchViewSimple: View {
                     .zIndex(60)
             }
         }
+    }
+
+    @ViewBuilder
+    private func promptGridCard(for prompt: Prompt) -> some View {
+        PromptGridCard(
+            prompt: prompt,
+            isSelected: selectedPrompt?.id == prompt.id,
+            isHovered: hoveredPrompt?.id == prompt.id,
+            onTap: {
+                selectedPrompt = prompt
+                prewarmPreviewImages(for: prompt)
+                if showingPreview && preferences.soundEnabled {
+                    SoundService.shared.playInteractionSound()
+                }
+                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            },
+            onDoubleTap: {
+                selectedPrompt = prompt
+                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+            },
+            onCopy: { usePrompt(prompt) },
+            onHover: { isHovering in
+                DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
+                if isHovering { prewarmPreviewImages(for: prompt) }
+            }
+        )
+        .contextMenu { promptContextMenu(for: prompt) }
     }
 
     @ViewBuilder
