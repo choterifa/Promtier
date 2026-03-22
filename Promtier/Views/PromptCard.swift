@@ -382,9 +382,9 @@ struct PromptCard: View {
                         HapticService.shared.playLight()
                     }) {
                         Image(systemName: "doc.on.doc")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(.secondary.opacity(isHovered || isSelected ? 0.9 : 0.4))
-                            .frame(width: 24, height: 24)
+                            .frame(width: 22, height: 22)
                             .background(Color.primary.opacity(isHovered || isSelected ? 0.05 : 0))
                             .cornerRadius(6)
                             .contentShape(Rectangle())
