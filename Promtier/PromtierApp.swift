@@ -43,6 +43,19 @@ struct EmptyScene: Scene {
         .windowResizability(.contentSize)
         .defaultSize(width: 0, height: 0)
         .commands {
+            // Comandos estándar de edición para Undo/Redo
+            CommandGroup(replacing: .undoRedo) {
+                Button("Undo") {
+                    NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+                }
+                .keyboardShortcut("z", modifiers: [.command])
+                
+                Button("Redo") {
+                    NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+                }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+            }
+            
             // Cmd + , -> Ajustes (abre la sección de preferencias dentro del popover)
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") {

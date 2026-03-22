@@ -28,6 +28,7 @@ struct ZenEditorView: View {
     @Binding var isAIActive: Bool
     @Binding var isAIGenerating: Bool
     @Binding var selectedRange: NSRange?
+    @Binding var aiResult: AIResult?
     @Binding var showingPremiumFor: String?
     var originalPrompt: Prompt?
     @Binding var branchMessage: String?
@@ -110,6 +111,7 @@ struct ZenEditorView: View {
                         set: { isEditorFocused = $0 }
                     ),
                     selectedRange: $selectedRange,
+                    aiResult: $aiResult,
                     fontSize: 18 * preferences.fontSize.scale,
                     showSnippets: $showSnippets,
                     snippetSearchQuery: $snippetSearchQuery,

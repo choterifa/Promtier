@@ -77,6 +77,9 @@ struct NewPromptView: View {
     @State private var selectedRange: NSRange? = nil
     @State private var selectedNegativeRange: NSRange? = nil
     @State private var selectedAlternativeRanges: [NSRange?] = Array(repeating: nil, count: 10)
+    @State private var aiResult: AIResult? = nil
+    @State private var aiNegativeResult: AIResult? = nil
+    @State private var aiAlternativeResults: [AIResult?] = Array(repeating: nil, count: 10)
     @State private var isAIActive: Bool = false
     @State private var isAIGenerating: Bool = false
     @State private var showParticles: Bool = false
@@ -162,6 +165,27 @@ struct NewPromptView: View {
         )
     }
     
+    private var zenBindingAIResult: Binding<AIResult?> {
+        Binding(
+            get: {
+                switch zenTarget {
+                case .main: return aiResult
+                case .negative: return aiNegativeResult
+                case .alternative(let i): return i < aiAlternativeResults.count ? aiAlternativeResults[i] : nil
+                case .none: return nil
+                }
+            },
+            set: { val in
+                switch zenTarget {
+                case .main: aiResult = val
+                case .negative: aiNegativeResult = val
+                case .alternative(let i): if i < aiAlternativeResults.count { aiAlternativeResults[i] = val }
+                case .none: break
+                }
+            }
+        )
+    }
+    
     private var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
@@ -214,6 +238,7 @@ struct NewPromptView: View {
                 isAIActive: $isAIActive,
                 isAIGenerating: $isAIGenerating,
                 selectedRange: $selectedRange,
+                aiResult: $aiResult,
                 originalPrompt: originalPrompt,
                 prompt: prompt,
                 branchMessage: $branchMessage,
@@ -251,6 +276,7 @@ struct NewPromptView: View {
                     isAIActive: $isAIActive,
                     isAIGenerating: $isAIGenerating,
                     selectedRange: $selectedNegativeRange,
+                    aiResult: $aiNegativeResult,
                     showingPremiumFor: $showingPremiumFor,
                     originalPrompt: originalPrompt,
                     prompt: prompt,
@@ -488,6 +514,10 @@ struct NewPromptView: View {
             selectedRange: Binding(
                 get: { index < selectedAlternativeRanges.count ? selectedAlternativeRanges[index] : nil },
                 set: { if index < selectedAlternativeRanges.count { selectedAlternativeRanges[index] = $0 } }
+            ),
+            aiResult: Binding(
+                get: { index < aiAlternativeResults.count ? aiAlternativeResults[index] : nil },
+                set: { if index < aiAlternativeResults.count { aiAlternativeResults[index] = $0 } }
             ),
             showingPremiumFor: $showingPremiumFor,
             originalPrompt: originalPrompt,
@@ -753,6 +783,7 @@ struct NewPromptView: View {
                     isAIActive: $isAIActive,
                     isAIGenerating: $isAIGenerating,
                     selectedRange: zenBindingSelection,
+                    aiResult: zenBindingAIResult,
                     showingPremiumFor: $showingPremiumFor,
                     originalPrompt: originalPrompt,
                     branchMessage: $branchMessage
@@ -1585,6 +1616,7 @@ struct EditorCard: View {
     @Binding var isAIActive: Bool
     @Binding var isAIGenerating: Bool
     @Binding var selectedRange: NSRange?
+    @Binding var aiResult: AIResult?
     var originalPrompt: Prompt?
     var prompt: Prompt?
     @Binding var branchMessage: String?
@@ -1741,6 +1773,7 @@ struct EditorCard: View {
                     editorID: editorID,
                     isFocused: $isEditorFocused,
                     selectedRange: $selectedRange,
+                    aiResult: $aiResult,
                     fontSize: 16 * preferences.fontSize.scale,
                     themeColor: NSColor(currentCategoryColor),
                     showSnippets: $showSnippets,
@@ -1814,10 +1847,8 @@ struct EditorCard: View {
                 } else {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
-                        withAnimation {
-                            let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                            content = (content as NSString).replacingCharacters(in: rangeToProcess, with: result)
-                        }
+                        let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        aiResult = AIResult(result: resultString, range: rangeToProcess)
                     }
                 }
             }, receiveValue: { chunk in
@@ -1884,6 +1915,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     @Binding var isAIActive: Bool
     @Binding var isAIGenerating: Bool
     @Binding var selectedRange: NSRange?
+    @Binding var aiResult: AIResult?
     @Binding var showingPremiumFor: String?
     var originalPrompt: Prompt?
     var prompt: Prompt?
@@ -1910,6 +1942,7 @@ struct SecondaryEditorCard<Actions: View>: View {
          isAIActive: Binding<Bool>,
          isAIGenerating: Binding<Bool>,
          selectedRange: Binding<NSRange?>,
+         aiResult: Binding<AIResult?>,
          showingPremiumFor: Binding<String?>,
          originalPrompt: Prompt?,
          prompt: Prompt?,
@@ -1937,6 +1970,7 @@ struct SecondaryEditorCard<Actions: View>: View {
         self._isAIActive = isAIActive
         self._isAIGenerating = isAIGenerating
         self._selectedRange = selectedRange
+        self._aiResult = aiResult
         self._showingPremiumFor = showingPremiumFor
         self.originalPrompt = originalPrompt
         self.prompt = prompt
@@ -2069,6 +2103,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     isFocused: $isEditorFocused,
                     focusRequest: focusRequest,
                     selectedRange: $selectedRange,
+                    aiResult: $aiResult,
                     fontSize: 14 * preferences.fontSize.scale,
                     themeColor: NSColor(color),
                     showSnippets: $showSnippets,
@@ -2154,10 +2189,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                 } else {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
-                        withAnimation {
-                            let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                            text = (text as NSString).replacingCharacters(in: rangeToProcess, with: result)
-                        }
+                        let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        aiResult = AIResult(result: resultString, range: rangeToProcess)
                     }
                 }
             }, receiveValue: { chunk in

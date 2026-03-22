@@ -33,6 +33,7 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var isFocused: Bool
     var focusRequest: Binding<Bool>? = nil
     @Binding var selectedRange: NSRange?
+    @Binding var aiResult: AIResult?
     var fontSize: CGFloat
     var themeColor: NSColor = .systemOrange // Color por defecto si no se provee
     
@@ -115,7 +116,15 @@ struct HighlightedEditor: NSViewRepresentable {
             context.coordinator.applyHighlighting(textView)
         }
         
-            // Manejar petición de inserción
+        // Aplicar resultados de IA con soporte para Undo
+        if let result = aiResult {
+            DispatchQueue.main.async {
+                applyAIResult(result, to: textView)
+                self.aiResult = nil 
+            }
+        }
+        
+        // Manejar petición de inserción
         if let toInsert = insertionRequest {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
@@ -626,4 +635,28 @@ struct HighlightedEditor: NSViewRepresentable {
 
 
     }
+
+    private func applyAIResult(_ aiRes: AIResult, to textView: NSTextView) {
+        let range = aiRes.range
+        let text = aiRes.result
+        
+        // Verificar rango para evitar crash
+        let currentLen = (textView.string as NSString).length
+        guard range.location + range.length <= currentLen else { return }
+        
+        if textView.shouldChangeText(in: range, replacementString: text) {
+            textView.replaceCharacters(in: range, with: text)
+            textView.didChangeText()
+            // Notificar que el texto cambió para que SwiftUI lo sepa
+            DispatchQueue.main.async {
+                self.text = textView.string
+            }
+        }
+    }
+}
+
+struct AIResult: Equatable {
+    let result: String
+    let range: NSRange
+    let id = UUID()
 }
