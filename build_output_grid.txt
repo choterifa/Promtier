@@ -14,7 +14,11 @@ Resolved source packages:
 ComputePackagePrebuildTargetDependencyGraph
 
 Prepare packages
-
+> "Revisa la arquitectura de la ventana flotante (Manager + View). Asegúrate de que:
+> 1. Interacción del Ratón: El NSPanel NO use el styleMask .nonactivatingPanel si contiene campos de texto (TextField), para permitir clics y foco fluido.
+> 2. Interceptación de Teclado: Implementa un monitor de eventos global (NSEvent.addLocalMonitorForEvents) a nivel de Manager (no en la Vista) para capturar teclas de dirección (keyCode 125/126) y Escape (53). Esto evita que el TextField consuma las flechas y bloquee la navegación de la lista.
+> 3. Retorno de Foco: Al abrir la ventana, guarda la aplicación activa actual (NSWorkspace.shared.frontmostApplication). Al cerrarla, usa activate(options: .activateIgnoringOtherApps) sobre esa app guardada para devolver el foco al contexto de trabajo del usuario.
+> 4. Comunicación: Usa un sistema de Notificaciones (NotificationCenter) para que el Manager le diga a la Vista cuándo debe mover la selección, garantizando que el foco permanezca siempre en el campo de texto."
 CreateBuildRequest
 
 SendProjectDescription

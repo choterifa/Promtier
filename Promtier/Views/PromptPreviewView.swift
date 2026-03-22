@@ -115,6 +115,7 @@ struct PromptPreviewView: View {
                 Text(prompt.title)
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                     .foregroundColor(.primary)
+                    .lineLimit(2)
                 
                 if let folder = prompt.folder {
                     Text(folder)
@@ -143,7 +144,6 @@ struct PromptPreviewView: View {
                     .cornerRadius(8)
                 }
                 
-                // Toggle para posición de imágenes (Flecha)
                 if prompt.showcaseImageCount > 0 {
                     Button(action: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -165,33 +165,6 @@ struct PromptPreviewView: View {
                     .buttonStyle(.plain)
                     .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
                 }
-                
-                // Botón Copiar
-                Button(action: {
-                    ClipboardService.shared.copyToClipboard(prompt.content)
-                    
-                    if preferences.soundEnabled {
-                        SoundService.shared.playCopySound()
-                    }
-                    HapticService.shared.playAlignment()
-                    
-                    // Si en preferencias está configurado cerrar al copiar, cerramos la vista previa
-                    if preferences.closeOnCopy {
-                        // Enviar una notificación o simular escape para cerrar el popover (gestionado por el padre idealmente)
-                        // Por simplicidad en este contexto aislado, forzamos un cierre
-                        isFullScreenImageOpen = false
-                        NSApp.sendAction(#selector(NSPopover.performClose(_:)), to: nil, from: nil)
-                    }
-                }) {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.blue.opacity(0.1)))
-                }
-                .buttonStyle(.plain)
-                .help("Copiar prompt al portapapeles")
             }
         }
         .padding(.horizontal, 24)

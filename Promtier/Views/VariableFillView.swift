@@ -214,7 +214,7 @@ struct VariableFillView: View {
             
             footerSection
         }
-        .frame(width: 780, height: preferences.windowHeight * 0.85)
+        .frame(width: preferences.windowWidth * 0.95, height: preferences.windowHeight * 0.85)
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(24)
         .overlay(
