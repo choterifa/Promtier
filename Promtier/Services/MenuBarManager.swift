@@ -20,6 +20,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var ghostWindow: NSPanel?
+    private var floatingZenWindow: NSPanel?
     private var eventMonitor: Any?
     
     @Published var isPopoverShown = false
@@ -198,8 +199,11 @@ class MenuBarManager: NSObject, ObservableObject {
     func showPopover() {
         guard let button = statusItem?.button else { return }
         
-        // Sugerir desde el portapapeles si está habilitado y estamos en modo normal o ya había contenido
-        if suggestedClipboardContent != nil || !DraftService.shared.hasDraft {
+        // Restore draft if it exists
+        if DraftService.shared.hasDraft && suggestedClipboardContent == nil {
+            activeViewState = .newPrompt
+            isModalActive = true
+        } else if suggestedClipboardContent != nil || !DraftService.shared.hasDraft {
             activeViewState = .main
             checkClipboardForPromptSuggestion()
         }

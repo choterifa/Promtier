@@ -56,14 +56,22 @@ struct GhostTipView: View {
         .padding(.leading, 8)
         .padding(.trailing, 12)
         .padding(.vertical, 8)
-        .background(
+        .background {
+            ZStack {
+                // Luz de fondo (Glow) expandida para separación visual máxima
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.blue.opacity(0.15))
+                    .blur(radius: 15)
+                    .offset(y: 4)
+                
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.windowBackgroundColor))
+                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            }
+        }
+        .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                )
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
         )
         .opacity(opacity)
         .offset(y: offset)

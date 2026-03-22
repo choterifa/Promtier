@@ -105,7 +105,19 @@ struct PromptGridCard: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(14)
+            .padding(.horizontal, 14)
+            .padding(.top, 14)
+            .padding(.bottom, 6)
+            
+            // Description (Moved above image)
+            if let desc = prompt.promptDescription, !desc.isEmpty {
+                Text(desc)
+                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.75))
+                    .lineLimit(2)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 10)
+            }
             
             // Image Preview (if any)
             if !showcaseImagePaths.isEmpty, let firstPath = showcaseImagePaths.first {
@@ -116,20 +128,13 @@ struct PromptGridCard: View {
                     maxPixelSize: 300,
                     contentMode: .fill
                 )
-                .frame(height: 120)
+                .frame(height: 180) // Made taller (protagonist)
                 .frame(maxWidth: .infinity)
                 .clipped()
             }
             
-            // Description / Content Snippet
+            // Content Snippet
             VStack(alignment: .leading, spacing: 6) {
-                if let desc = prompt.promptDescription, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.75))
-                        .lineLimit(2)
-                }
-                
                 Text(highlightedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.9))

@@ -1761,20 +1761,34 @@ struct EditorCard: View {
 
                         Divider().frame(height: 18).background(currentCategoryColor.opacity(0.2))
 
-                        Button(action: { 
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showingZenEditor = true
-                                zenTarget = .main
-                            }
-                        }) {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(currentCategoryColor)
-                                .frame(width: 32, height: 32)
-                                .background(currentCategoryColor.opacity(0.1))
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                    }
+                                                Button(action: {
+                                                    // Extract title and content to floating manager
+                                                    FloatingZenManager.shared.show(title: title, content: content, promptId: nil, isEditing: true)
+                                                    // Close popover
+                                                    MenuBarManager.shared.closePopover()
+                                                }) {
+                                                    Image(systemName: "pip.enter")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundColor(currentCategoryColor)
+                                                        .frame(width: 32, height: 32)
+                                                        .background(currentCategoryColor.opacity(0.1))
+                                                }
+                                                .buttonStyle(ScaleButtonStyle())
+                                                .help("Floating Zen Mode")
+                        
+                                                Button(action: {
+                                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                                        showingZenEditor = true
+                                                        zenTarget = .main
+                                                    }
+                                                }) {
+                                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundColor(currentCategoryColor)
+                                                        .frame(width: 32, height: 32)
+                                                        .background(currentCategoryColor.opacity(0.1))
+                                                }
+                                                .buttonStyle(ScaleButtonStyle())                    }
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                 } // Closes HStack(1550)
