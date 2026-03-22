@@ -25,12 +25,13 @@ class DraftService: ObservableObject {
     func saveDraft(prompt: Prompt, isEditing: Bool) {
         // No guardar si el borrador está completamente vacío
         let isNegativeEmpty = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
-        let isAlternativeEmpty = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+        let areAlternativesEmpty = prompt.alternatives.allSatisfy { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
         if prompt.title.isEmpty &&
             prompt.content.isEmpty &&
             (prompt.promptDescription?.isEmpty ?? true) &&
             isNegativeEmpty &&
-            isAlternativeEmpty &&
+            areAlternativesEmpty &&
             prompt.showcaseImages.isEmpty {
             clearDraft()
             return

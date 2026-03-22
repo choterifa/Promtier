@@ -1112,7 +1112,15 @@ struct NewPromptView: View {
             title = prompt.title
             content = prompt.content
             negativePrompt = prompt.negativePrompt ?? ""
-            alternatives = prompt.alternatives
+            
+            var initialAlternatives = prompt.alternatives
+            if initialAlternatives.isEmpty, let legacy = prompt.alternativePrompt, !legacy.isEmpty {
+                initialAlternatives = [legacy]
+            }
+            alternatives = initialAlternatives
+            
+            if !negativePrompt.isEmpty { showNegativeField = true }
+            if !alternatives.isEmpty { showAlternativeField = true }
             if alternatives.isEmpty, let legacy = prompt.alternativePrompt, !legacy.isEmpty {
                 alternatives = [legacy]
             }

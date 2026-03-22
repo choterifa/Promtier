@@ -102,6 +102,9 @@ extension PromptEntity {
         modifiedAt = prompt.modifiedAt
         lastUsedAt = prompt.lastUsedAt
         
+        // Sincronizar campo legacy con el primer elemento para retrocompatibilidad
+        alternativePrompt = prompt.alternatives.first
+        
         if let historyData = try? JSONEncoder().encode(prompt.versionHistory) {
             versionHistoryData = historyData
         }
