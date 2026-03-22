@@ -319,16 +319,35 @@ struct NewPromptView: View {
                                     alternatives.append("")
                                 }
                             }) {
-                                HStack(spacing: 6) {
+                                HStack(spacing: 8) {
                                     Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 13, weight: .bold))
                                     Text("add_alternative".localized(for: preferences.language))
                                 }
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(Color.blue.opacity(0.08))
-                                .cornerRadius(10)
+                                .foregroundColor(currentCategoryColor)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 10)
+                                .background(
+                                    ZStack {
+                                        // Efecto de luz (brillo difuso)
+                                        currentCategoryColor.opacity(0.15)
+                                            .blur(radius: 12)
+                                        
+                                        // Fondo traslúcido estilizado
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(currentCategoryColor.opacity(0.1))
+                                            .background(
+                                                VisualEffectView(material: .popover, blendingMode: .withinWindow)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                                    .opacity(0.6)
+                                            )
+                                    }
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(currentCategoryColor.opacity(0.2), lineWidth: 1.5)
+                                )
                             }
                             .buttonStyle(.plain)
                             .frame(maxWidth: .infinity, alignment: .center)
