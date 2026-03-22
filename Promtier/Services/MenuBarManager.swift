@@ -48,7 +48,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     // Servicios compartidos
-    private let promptService = PromptService()
+    private let promptService = PromptService.shared
     private let preferencesManager = PreferencesManager.shared
     
     // CONFIGURABLE: Gestor de atajos (inicialización lazy)

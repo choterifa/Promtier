@@ -429,3 +429,9 @@
 "ai_action_fix" = "Fix Grammar & Spelling";
 "ai_action_concise" = "Make Concise";
 "ai_action_creative" = "Make Creative";
+
+/* Omni-Search */
+"gt_search_prompts" = "Search prompts...";
+"move_selection" = "Move Selection (↑↓)";
+"copy_and_close" = "Copy and Close (Enter)";
+

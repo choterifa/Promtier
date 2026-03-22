@@ -135,12 +135,28 @@ class PreferencesManager: ObservableObject {
     @Published var hotkeyCode: Int {
         didSet {
             userDefaults.set(hotkeyCode, forKey: "hotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
         }
     }
     
     @Published var hotkeyModifiers: Int {
         didSet {
             userDefaults.set(hotkeyModifiers, forKey: "hotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var omniHotkeyCode: Int {
+        didSet {
+            userDefaults.set(omniHotkeyCode, forKey: "omniHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var omniHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(omniHotkeyModifiers, forKey: "omniHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
         }
     }
     
@@ -295,6 +311,11 @@ class PreferencesManager: ObservableObject {
         // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
+        // Atajo Omni-Search por defecto: ⌘⇧Space (KeyCode 49, Command + Shift)
+        self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
+        self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
@@ -467,6 +488,8 @@ class PreferencesManager: ObservableObject {
         self.globalShortcutEnabled = true
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.omniHotkeyCode = 49
+        self.omniHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .english
         self.autoPaste = false
         self.clipboardSuggestions = true

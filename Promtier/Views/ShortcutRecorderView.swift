@@ -10,13 +10,18 @@ import AppKit
 import Carbon
 
 struct ShortcutRecorderView: View {
-    @EnvironmentObject var preferences: PreferencesManager
+    let label: String
+    @Binding var hotkeyCode: Int
+    @Binding var hotkeyModifiers: Int
+    let defaultKeyCode: Int
+    let defaultModifiers: Int
+    
     @State private var isRecording = false
     @State private var localMonitor: Any?
     
     var body: some View {
         HStack(spacing: 12) {
-            Text("Atajo de apertura")
+            Text(label)
                 .font(.system(size: 14, weight: .medium))
             
             Spacer()
@@ -60,8 +65,8 @@ struct ShortcutRecorderView: View {
             
             if !isRecording {
                 Button(action: {
-                    preferences.hotkeyCode = 35 // P
-                    preferences.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                    hotkeyCode = defaultKeyCode
+                    hotkeyModifiers = defaultModifiers
                 }) {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 12))
@@ -75,7 +80,7 @@ struct ShortcutRecorderView: View {
     
     
     private var shortcutString: String {
-        return ShortcutFormatter.format(keyCode: preferences.hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(preferences.hotkeyModifiers)))
+        return ShortcutFormatter.format(keyCode: hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(hotkeyModifiers)))
     }
     
     private func startRecording() {
@@ -101,8 +106,8 @@ struct ShortcutRecorderView: View {
             }
             
             // Guardar el atajo
-            preferences.hotkeyCode = Int(event.keyCode)
-            preferences.hotkeyModifiers = Int(modifiers.rawValue)
+            hotkeyCode = Int(event.keyCode)
+            hotkeyModifiers = Int(modifiers.rawValue)
             
             stopRecording()
             return nil

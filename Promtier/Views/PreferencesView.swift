@@ -723,7 +723,23 @@ struct ShortcutsTab: View {
                 if preferences.globalShortcutEnabled {
                     Divider().padding(.leading, 20)
                     VStack(spacing: 12) {
-                        ShortcutRecorderView()
+                        ShortcutRecorderView(
+                            label: "Atajo de apertura (App)",
+                            hotkeyCode: $preferences.hotkeyCode,
+                            hotkeyModifiers: $preferences.hotkeyModifiers,
+                            defaultKeyCode: 35,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Omni-Search (Spotlight)",
+                            hotkeyCode: $preferences.omniHotkeyCode,
+                            hotkeyModifiers: $preferences.omniHotkeyModifiers,
+                            defaultKeyCode: 49,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
                     }
                     .padding(20)
                 }

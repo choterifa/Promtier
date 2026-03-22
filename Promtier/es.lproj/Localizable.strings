@@ -452,3 +452,9 @@
 "ai_action_fix" = "Corregir Gramática";
 "ai_action_concise" = "Hacer Conciso";
 "ai_action_creative" = "Hacer Creativo";
+
+/* Omni-Search */
+"gt_search_prompts" = "Buscar prompts...";
+"move_selection" = "Mover Selección (↑↓)";
+"copy_and_close" = "Copiar y Cerrar (Enter)";
+

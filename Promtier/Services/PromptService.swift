@@ -12,6 +12,8 @@ import Combine
 
 // SERVICIO PRINCIPAL: Gestión completa de prompts
 class PromptService: ObservableObject {
+    static let shared = PromptService()
+    
     private let dataController = DataController.shared
     private let clipboardService = ClipboardService.shared
     

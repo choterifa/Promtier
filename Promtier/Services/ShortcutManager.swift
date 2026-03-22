@@ -48,12 +48,14 @@ class ShortcutManager: ObservableObject {
     ]
     
     private var hotKeyRef: EventHotKeyRef?
+    private var omniHotKeyRef: EventHotKeyRef?
     private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
     
     private var localMonitor: Any?
     private var permissionTimer: Timer?
+    private static var isHandlerInstalled = false
     
     private init() {
         print("✅ ShortcutManager inicializado")
@@ -94,49 +96,57 @@ class ShortcutManager: ObservableObject {
     // MARK: - Carbon HotKey (Detección Global Real)
     
     func setupCarbonHotKey() {
-        if let ref = hotKeyRef {
-            UnregisterEventHotKey(ref)
-            hotKeyRef = nil
-        }
+        // Limpiar registros previos
+        if let ref = hotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = omniHotKeyRef { UnregisterEventHotKey(ref) }
+        hotKeyRef = nil
+        omniHotKeyRef = nil
         
         let prefs = PreferencesManager.shared
         guard prefs.globalShortcutEnabled else { return }
         
+        // 1. HotKey Principal: Toggle Popover
         let keyCode = UInt32(prefs.hotkeyCode)
         var carbonModifiers: UInt32 = 0
         let flags = NSEvent.ModifierFlags(rawValue: UInt(prefs.hotkeyModifiers))
-        
         if flags.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
         if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
         if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
         if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
         
         let hotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 1) // 'PROM'
+        _ = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
         
-        var registration: EventHotKeyRef?
-        let status = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &registration)
+        // 2. HotKey Omni-Search: configurable en ajustes
+        let omniKeyCode = UInt32(prefs.omniHotkeyCode)
+        var omniCarbonMods: UInt32 = 0
+        let omniFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.omniHotkeyModifiers))
+        if omniFlags.contains(.command) { omniCarbonMods |= UInt32(cmdKey) }
+        if omniFlags.contains(.shift) { omniCarbonMods |= UInt32(shiftKey) }
+        if omniFlags.contains(.option) { omniCarbonMods |= UInt32(optionKey) }
+        if omniFlags.contains(.control) { omniCarbonMods |= UInt32(controlKey) }
         
-        if status == noErr {
-            hotKeyRef = registration
-            
-            // Instalar el manejador de eventos
+        let omniHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 100)
+        _ = RegisterEventHotKey(omniKeyCode, omniCarbonMods, omniHotKeyID, GetApplicationEventTarget(), 0, &omniHotKeyRef)
+        
+        // Instalar el manejador de eventos una sola vez globalmente
+        if !ShortcutManager.isHandlerInstalled {
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             
             InstallEventHandler(GetApplicationEventTarget(), { (nextHandler, theEvent, userData) -> OSStatus in
-                // Extraer el ID del HotKey presionado
-                var hkCom: EventHotKeyID = EventHotKeyID()
+                var hkCom = EventHotKeyID()
                 let status = GetEventParameter(theEvent, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hkCom)
                 
                 if status == noErr {
-                    let hotKeyId = hkCom.id
-                    ShortcutManager.handleGlobalHotKey(id: hotKeyId)
+                    ShortcutManager.handleGlobalHotKey(id: hkCom.id)
                 }
-                
                 return noErr
             }, 1, &eventType, nil, nil)
             
-            print("💎 Carbon HotKey registrado: \(prefs.hotkeyCode)")
+            ShortcutManager.isHandlerInstalled = true
         }
+        
+        print("💎 Carbon HotKeys registrados (Principal: \(prefs.hotkeyCode), Omni: \(prefs.omniHotkeyCode))")
     }
     
     // Método para registrar hotkeys dinámicos de prompts
@@ -190,6 +200,9 @@ class ShortcutManager: ObservableObject {
         if id == 1 {
             print("🚀 Carbon HotKey (Principal) detectado!")
             MenuBarManager.shared.togglePopover()
+        } else if id == 100 {
+            print("🚀 Carbon HotKey (OmniSearch) detectado!")
+            OmniSearchManager.shared.toggle()
         } else if let promptId = promptHotkeyMap[id] {
             print("🚀 Carbon HotKey (Prompt) detectado para ID: \(promptId)")
             // Notificar a PromptService para copiar
