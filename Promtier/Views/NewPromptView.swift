@@ -349,9 +349,6 @@ struct NewPromptView: View {
                     .id("alternatives_section")
                 }
                 .padding(16)
-                .background(Color.primary.opacity(0.04))
-                .cornerRadius(24)
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.primary.opacity(0.06), lineWidth: 1))
             }
             
             // SECTION 3: UTILITIES
@@ -1815,7 +1812,7 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(isEditorFocused ? Color.blue.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
+                            .stroke(isEditorFocused ? currentCategoryColor.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
@@ -2042,9 +2039,9 @@ struct SecondaryEditorCard<Actions: View>: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 2)
             
-            // ✅ Editor Secundario con Herramientas Flotantes
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 0) {
+            // ✅ Editor Secundario con Herramientas Inteligentes (Sidebar Layout)
+            HStack(alignment: .top, spacing: 0) {
+                ZStack(alignment: .topLeading) {
                     HighlightedEditor(
                         text: $text,
                         insertionRequest: $insertionRequest,
@@ -2068,40 +2065,22 @@ struct SecondaryEditorCard<Actions: View>: View {
                         isPremium: preferences.isPremiumActive
                     )
                     .padding(12)
-                    .frame(minHeight: 120)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(color.opacity(0.06))
-                            .overlay(alignment: .topLeading) {
-                                if text.isEmpty {
-                                    Text(placeholder)
-                                        .font(.system(size: 14 * preferences.fontSize.scale))
-                                        .foregroundColor(.secondary.opacity(0.4))
-                                        .padding(12)
-                                        .padding(.top, 4)
-                                }
-                            }
-                    )
-                    .overlay {
-                        if isAIGenerating {
-                            AIGeneratingOverlay(accentColor: color, compact: true)
-                                .transition(.opacity)
-                        }
+                    .frame(maxWidth: .infinity, minHeight: 120)
+                    
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .font(.system(size: 14 * preferences.fontSize.scale))
+                            .foregroundColor(.secondary.opacity(0.4))
+                            .padding(12)
+                            .padding(.top, 4)
+                            .allowsHitTesting(false)
                     }
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(color.opacity(0.04)) // Matching shortcut/smart-recommendation style
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(isEditorFocused ? color.opacity(0.6) : color.opacity(0.12), lineWidth: isEditorFocused ? 2 : 1)
-                        )
-                )
                 
-                // Herramientas Flotantes (Compactas)
+                // Herramientas Laterales (Compactas)
                 EditorToolbar(
                     color: color,
-                    vertical: false,
+                    vertical: true,
                     isAIGenerating: isAIGenerating,
                     onAIAction: { performAIAction($0) },
                     ollamaEnabled: preferences.ollamaEnabled && preferences.localAIToolsEnabled,
@@ -2129,8 +2108,23 @@ struct SecondaryEditorCard<Actions: View>: View {
                         onZenMode?()
                     }
                 )
-                .scaleEffect(0.85)
-                .padding(6)
+                .scaleEffect(0.9)
+                .padding(.vertical, 8)
+                .padding(.trailing, 6)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isEditorFocused ? color.opacity(0.6) : Color.primary.opacity(0.08), lineWidth: isEditorFocused ? 2 : 1)
+                    )
+            )
+            .overlay {
+                if isAIGenerating {
+                    AIGeneratingOverlay(accentColor: color, compact: true)
+                        .transition(.opacity)
+                }
             }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .onTapGesture {
