@@ -103,11 +103,52 @@ struct VersionHistoryView: View {
 
                         // Contenido de la versión
                         ScrollView {
-                            Text(snap.content)
-                                .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                                .foregroundColor(.primary.opacity(0.85))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(20)
+                            VStack(alignment: .leading, spacing: 20) {
+                                // 1. Contenido principal
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("PROMPT")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.secondary)
+                                    Text(snap.content)
+                                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                                        .foregroundColor(.primary.opacity(0.85))
+                                }
+
+                                // 2. Negative Prompt (si existe)
+                                if let neg = snap.negativePrompt, !neg.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("NEGATIVE PROMPT")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.red.opacity(0.6))
+                                        Text(neg)
+                                            .font(.system(size: 12 * preferences.fontSize.scale, design: .monospaced))
+                                            .foregroundColor(.primary.opacity(0.75))
+                                            .padding(10)
+                                            .background(Color.red.opacity(0.05))
+                                            .cornerRadius(6)
+                                    }
+                                }
+
+                                // 3. Alternativas (si existen)
+                                if !snap.alternatives.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("ALTERNATIVES")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.blue.opacity(0.6))
+                                        
+                                        ForEach(Array(snap.alternatives.enumerated()), id: \.offset) { _, alt in
+                                            Text(alt)
+                                                .font(.system(size: 12 * preferences.fontSize.scale, design: .monospaced))
+                                                .foregroundColor(.primary.opacity(0.75))
+                                                .padding(10)
+                                                .background(Color.blue.opacity(0.05))
+                                                .cornerRadius(6)
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(20)
                         }
                     } else {
                         Spacer()

@@ -802,12 +802,12 @@ struct NewPromptView: View {
                                 withAnimation(.spring()) {
                                     self.title = snap.title
                                     self.content = snap.content
-                                    if let neg = snap.negativePrompt {
-                                        self.negativePrompt = neg
-                                    }
-                                    if !snap.alternatives.isEmpty {
-                                        self.alternatives = snap.alternatives
-                                    }
+                                    self.negativePrompt = snap.negativePrompt ?? ""
+                                    self.alternatives = snap.alternatives
+                                    
+                                    // Actualizar visibilidad de campos opcionales
+                                    if !self.negativePrompt.isEmpty { self.showNegativeField = true }
+                                    if !self.alternatives.isEmpty { self.showAlternativeField = true }
                                 }
                                 showingVersionHistory = false
                                 HapticService.shared.playSuccess()
@@ -1553,10 +1553,10 @@ struct NewPromptView: View {
 
                 if coreChanges {
                     let snapshot = PromptSnapshot(
-                        title:     existingPrompt.title,
-                        content:   existingPrompt.content,
-                        negativePrompt: existingPrompt.negativePrompt,
-                        alternatives:   existingPrompt.alternatives,
+                        title:     title,
+                        content:   content,
+                        negativePrompt: newNegativePrompt,
+                        alternatives:   alternatives,
                         timestamp: Date()
                     )
                     var history = existingPrompt.versionHistory
