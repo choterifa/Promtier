@@ -344,7 +344,7 @@ struct SearchViewSimple: View {
                                 preferences.showSidebar = !preferences.isGridView
                             }
                         }) {
-                            Image(systemName: preferences.isGridView ? "square.grid.2x2.fill" : "list.bullet.rectangle.fill")
+                            Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(preferences.isGridView ? .blue : .secondary)
                                 .frame(width: 32, height: 32)
