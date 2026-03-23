@@ -139,8 +139,10 @@ struct PremiumUpsellView: View {
             .padding(.bottom, 24)
         }
         .padding(.horizontal, 32)
-        .frame(width: 450, height: 600)
+        .frame(width: 450)
+        .frame(minHeight: 400, maxHeight: 750)
         .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(24)
     }
 }
 
