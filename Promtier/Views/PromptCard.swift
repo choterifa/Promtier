@@ -214,13 +214,6 @@ struct PromptCard: View {
                         .background(Color.purple.opacity(0.1))
                         .clipShape(Capsule())
                     }
-                    
-                    if !prompt.versionHistory.isEmpty {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.purple.opacity(0.8))
-                            .help("history".localized(for: preferences.language))
-                    }
                 }
                 
                 if let desc = prompt.promptDescription, !desc.isEmpty {

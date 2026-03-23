@@ -108,12 +108,6 @@ struct PromptGridCard: View {
                         .background(color.opacity(0.15))
                         .clipShape(Capsule())
                 }
-                
-                if !prompt.versionHistory.isEmpty {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.purple.opacity(0.8))
-                }
             }
             .padding(.horizontal, 14)
             .padding(.top, 14)
