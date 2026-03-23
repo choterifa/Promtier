@@ -14,18 +14,45 @@ struct IconPickerView: View {
     
     // Lista curada de iconos útiles para prompts de IA
     let icons = [
-        // Inteligencia / Cerebro
+        // AI / Inteligencia / Creatividad
         "cpu", "brain.head.profile", "lightbulb.fill", "sparkles", "bolt.fill",
-        // Escritura / Documentos
+        "wand.and.stars", "face.smiling", "eyes", "brain", "atom", "magicmouse.fill",
+        "icloud.and.arrow.down", "network", "waveform.path.ecg", "antenna.radiowaves.left.and.right",
+
+        // Escritura / Documentos / Notas
         "doc.text.fill", "pencil.tip.crop.circle", "keyboard", "text.quote", "signature",
-        // Código / Desarrollo
+        "book.fill", "square.and.pencil", "doc.plaintext.fill", "list.bullet.rectangle",
+        "character.cursor.ibeam", "text.justify.left", "doc.richtext.fill", "note.text",
+
+        // Código / Desarrollo / Terminal
         "terminal.fill", "command", "curlybraces", "chevron.left.forwardslash.chevron.right", "gearshape.fill",
-        // Comunicación / Redacción
+        "hammer.fill", "wrench.and.screwdriver.fill", "app.window.description", "script",
+        "chevron.left.right", "app.badge.fill", "laptopcomputer", "puzzlepiece.fill",
+
+        // Comunicación / Redacción / Social
         "bubble.left.and.bubble.right.fill", "envelope.fill", "paperplane.fill", "megaphone.fill", "person.fill",
-        // Análisis / Datos
+        "person.2.fill", "person.3.fill", "person.text.rectangle.fill", "phone.fill",
+        "video.fill", "message.fill", "hand.thumbsup.fill", "quote.bubble.fill",
+
+        // Análisis / Datos / Negocios
         "chart.bar.fill", "magnifyingglass", "cube.fill", "square.stack.3d.up.fill", "target",
-        // Otros
-        "gift.fill", "gamecontroller.fill", "music.note", "camera.fill", "bag.fill"
+        "briefcase.fill", "creditcard.fill", "banknote.fill", "cart.fill", "bag.fill",
+        "line.diagonal", "slider.horizontal.3", "timer", "stopwatch.fill",
+
+        // Multimedia / Diseño / Arte
+        "photo.fill", "camera.fill", "paintbrush.fill", "paintpalette.fill", "film.fill",
+        "play.fill", "music.note", "speaker.wave.3.fill", "mic.fill", "headphones",
+        "crop", "framer", "scissors", "metronome.fill",
+
+        // Ciencia / Naturaleza / Educación
+        "leaf.fill", "drop.fill", "sun.max.fill", "moon.fill", "cloud.fill",
+        "thermometer.medium", "flask.fill", "testtube.2", "graduationcap.fill",
+        "globe.americas.fill", "mountain.2.fill", "pills.fill", "medical.thermometer.fill",
+
+        // General / Otros
+        "gift.fill", "gamecontroller.fill", "die.face.5.fill", "cup.and.saucer.fill",
+        "fork.knife", "trophy.fill", "medal.fill", "flag.fill", "bell.fill",
+        "key.fill", "lock.fill", "calendar", "map.fill"
     ]
     
     @Environment(\.dismiss) private var dismiss
@@ -84,7 +111,7 @@ struct IconPickerView: View {
                 }
                 .padding(4)
             }
-            .frame(height: 200)
+            .frame(height: 300)
         }
         .padding(20)
         .background(

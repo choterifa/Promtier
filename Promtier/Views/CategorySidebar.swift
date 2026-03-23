@@ -367,8 +367,6 @@ struct SidebarItem: View {
     @State private var isHovered = false
     
     var body: some View {
-        let themeColor = preferences.isHaloEffectEnabled ? color : Color.blue
-        
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))

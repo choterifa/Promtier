@@ -14,6 +14,28 @@ private struct PromtierDragPayload: Codable {
     let ids: [String]
 }
 
+struct IndicatorBadge: View {
+    let icon: String
+    let count: Int
+    let color: Color
+    let help: String?
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+            Text("\(count)")
+                .font(.system(size: 9, weight: .bold))
+        }
+        .foregroundColor(color.opacity(0.7))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(color.opacity(0.1))
+        .clipShape(Capsule())
+        .help(help ?? "")
+    }
+}
+
 struct PromptCard: View {
     let prompt: Prompt
     let isSelected: Bool
@@ -146,7 +168,7 @@ struct PromptCard: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
             
-            // Icono de categoría o personalizado grande restaurado
+            // Icono de categoría
             if let iconName = prompt.icon {
                 let color = currentCategoryColor
                 ZStack {
@@ -181,14 +203,13 @@ struct PromptCard: View {
                 }
             }
             
-            // Texto detallado
+            // Contenido de Texto
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(prompt.title)
                         .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .blue : .primary)
                         .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
                     
                     if let folder = prompt.folder, !folder.isEmpty {
                         let color = getFolderColor(for: folder)
@@ -240,90 +261,38 @@ struct PromptCard: View {
             
             Spacer()
             
-            // Indicadores de estado
+            // Indicadores
             HStack(spacing: 8) {
-                // 1. Indicador de Prompt Negativo / Alternativo (PUNTOS)
-                let hasNegative = (prompt.negativePrompt?.isEmpty == false)
-                let hasAlternativeField = (prompt.alternativePrompt?.isEmpty == false)
+                let hasNegative = !(prompt.negativePrompt?.isEmpty ?? true)
+                let hasAlternativeField = !(prompt.alternativePrompt?.isEmpty ?? true)
+                
                 if hasNegative || hasAlternativeField {
                     HStack(spacing: 4) {
                         if hasNegative {
                             Circle().fill(Color.red.opacity(0.8)).frame(width: 6, height: 6)
-                                .help("tooltip_negative_prompt".localized(for: preferences.language))
                         }
                         if hasAlternativeField {
                             Circle().fill(Color.green.opacity(0.8)).frame(width: 6, height: 6)
-                                .help("tooltip_alternative_prompt".localized(for: preferences.language))
                         }
                     }
-                    .padding(.trailing, 4)
                 }
 
-                // 2. Indicador de Alternativas (ARRAY) - Nuevo
                 if !prompt.alternatives.isEmpty {
-                    HStack(spacing: 3) {
-                        Image(systemName: "square.3.layers.3d.down.right")
-                            .font(.system(size: 8))
-                        Text("\(prompt.alternatives.count)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.teal.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.teal.opacity(0.1))
-                    .clipShape(Capsule())
-                    .help("tooltip_alternatives".localized(for: preferences.language))
+                    IndicatorBadge(icon: "square.3.layers.3d.down.right", count: prompt.alternatives.count, color: .teal, help: "tooltip_alternatives".localized(for: preferences.language))
                 }
                 
-                // 3. Indicador de Variables (Cubo)
                 if variableCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "cube.transparent.fill")
-                            .font(.system(size: 8))
-                        Text("\(variableCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.blue.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
-                    .help("tooltip_variables".localized(for: preferences.language))
+                    IndicatorBadge(icon: "cube.transparent.fill", count: variableCount, color: .blue, help: "tooltip_variables".localized(for: preferences.language))
                 }
 
-                // 4. Indicador de Imagen
                 if prompt.showcaseImageCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "photo.fill")
-                            .font(.system(size: 8))
-                        Text("\(prompt.showcaseImageCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.cyan.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.cyan.opacity(0.1))
-                    .clipShape(Capsule())
-                    .help("tooltip_images".localized(for: preferences.language))
+                    IndicatorBadge(icon: "photo.fill", count: prompt.showcaseImageCount, color: .cyan, help: "tooltip_images".localized(for: preferences.language))
                 }
 
-                // 5. Veces copiado (A LA DERECHA DE LOS ANTERIORES)
                 if prompt.useCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "doc.on.doc.fill")
-                            .font(.system(size: 8))
-                        Text("\(prompt.useCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(Color.primary.opacity(0.04))
-                    .clipShape(Capsule())
-                    .help("tooltip_use_count".localized(for: preferences.language))
+                    IndicatorBadge(icon: "doc.on.doc.fill", count: prompt.useCount, color: .secondary, help: "tooltip_use_count".localized(for: preferences.language))
                 }
                 
-                // 6. Indicador de Rama (Branch) - NUEVO
                 if prompt.parentID != nil {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.branch")
@@ -338,30 +307,16 @@ struct PromptCard: View {
                     .help("tooltip_branch".localized(for: preferences.language))
                 }
                 
-                // 7. Indicador de Versiones (Premium) - RE-ENUMERADO
                 if !prompt.versionHistory.isEmpty {
-                    HStack(spacing: 3) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 8))
-                        Text("\(prompt.versionHistory.count)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.purple.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.purple.opacity(0.1))
-                    .clipShape(Capsule())
-                    .help("tooltip_versions".localized(for: preferences.language))
+                    IndicatorBadge(icon: "clock.arrow.circlepath", count: prompt.versionHistory.count, color: .purple, help: "tooltip_versions".localized(for: preferences.language))
                 }
 
                 if prompt.isFavorite {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
-                        .shadow(color: .yellow.opacity(0.3), radius: 2)
                 }
                 
-                // Indicador de Atajo Personalizado (Movido al final como se solicitó)
                 if let display = shortcutDisplay {
                     Text(display)
                         .font(.system(size: 9, weight: .black, design: .monospaced))
@@ -370,10 +325,6 @@ struct PromptCard: View {
                         .padding(.vertical, 2)
                         .background(Color.blue.opacity(0.08))
                         .cornerRadius(4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.blue.opacity(0.15), lineWidth: 1)
-                        )
                 }
                 
                 if let onCopy = onCopy {
@@ -387,27 +338,15 @@ struct PromptCard: View {
                             .frame(width: 22, height: 22)
                             .background(Color.primary.opacity(isHovered || isSelected ? 0.05 : 0))
                             .cornerRadius(6)
-                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help("copy".localized(for: preferences.language))
-                    .contextMenu {
-                        Button(action: { onCopy() }) {
-                            Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
-                        }
-                        if let onCopyPack = onCopyPack {
-                            Button(action: { onCopyPack() }) {
-                                Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
-                            }
-                        }
-                    }
                 }
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.primary.opacity(0.2))
                     .opacity(isHovered || isSelected ? 1 : 0)
-                    .frame(width: 10) // Espacio fijo reservado
+                    .frame(width: 10)
             }
         }
 

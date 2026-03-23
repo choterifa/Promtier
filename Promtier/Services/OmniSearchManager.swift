@@ -92,7 +92,7 @@ class OmniSearchManager: NSObject, ObservableObject {
         
         // ACTIVACIÓN AGRESIVA: 
         // 1. Asegurar que la app sea activa
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         
         // 2. Mostrar y forzar "Key" window
         panel?.makeKeyAndOrderFront(nil)
@@ -111,7 +111,7 @@ class OmniSearchManager: NSObject, ObservableObject {
         
         // Devolver el foco a la aplicación anterior
         if let previousApp = previousApp {
-            previousApp.activate(options: .activateIgnoringOtherApps)
+            previousApp.activate()
             self.previousApp = nil
         }
     }
