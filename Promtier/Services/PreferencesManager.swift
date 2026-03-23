@@ -295,7 +295,7 @@ class PreferencesManager: ObservableObject {
     
     private init() {
         // Inicializar valores desde UserDefaults o defaults
-        self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
+        self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "light") ?? .light
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         // Sidebar visible por defecto
@@ -495,7 +495,7 @@ class PreferencesManager: ObservableObject {
         // Recargar valores por defecto
         objectWillChange.send()
         
-        self.appearance = .system
+        self.appearance = .light
         self.fontSize = .medium
         self.launchAtLogin = false
         self.showSidebar = true
