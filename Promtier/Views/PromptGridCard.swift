@@ -108,6 +108,12 @@ struct PromptGridCard: View {
                         .background(color.opacity(0.15))
                         .clipShape(Capsule())
                 }
+                
+                if !prompt.versionHistory.isEmpty {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.purple.opacity(0.8))
+                }
             }
             .padding(.horizontal, 14)
             .padding(.top, 14)
@@ -182,6 +188,20 @@ struct PromptGridCard: View {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
+                }
+                
+                if !prompt.versionHistory.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 8))
+                        Text("\(prompt.versionHistory.count)")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.purple.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(Capsule())
                 }
                 
                 Spacer()

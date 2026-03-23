@@ -222,5 +222,7 @@ struct PromptSnapshot: Codable, Identifiable {
     var id: UUID = UUID()
     let title: String
     let content: String
+    var negativePrompt: String?     // Opcional para retrocompatibilidad
+    var alternatives: [String] = []  // Opcional para retrocompatibilidad
     let timestamp: Date
 }

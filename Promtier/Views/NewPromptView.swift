@@ -792,6 +792,28 @@ struct NewPromptView: View {
                 .sheet(isPresented: $showingDiff) {
                     DiffView(text1: content, text2: alternatives.first ?? "")
                 }
+                .sheet(isPresented: $showingVersionHistory) {
+                    if let snapHistory = originalPrompt?.versionHistory {
+                        VersionHistoryView(
+                            snapshots: snapHistory,
+                            currentContent: content,
+                            onRestore: { snap in
+                                withAnimation(.spring()) {
+                                    self.title = snap.title
+                                    self.content = snap.content
+                                    if let neg = snap.negativePrompt {
+                                        self.negativePrompt = neg
+                                    }
+                                    if !snap.alternatives.isEmpty {
+                                        self.alternatives = snap.alternatives
+                                    }
+                                }
+                                showingVersionHistory = false
+                                HapticService.shared.playSuccess()
+                            }
+                        )
+                    }
+                }
                 .onAppear {
                     setupOnAppear()
                     setupKeyboardMonitor()
@@ -1223,6 +1245,25 @@ struct NewPromptView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
+                    if originalPrompt != nil && !originalPrompt!.versionHistory.isEmpty {
+                        Button(action: {
+                            if preferences.isPremiumActive {
+                                showingVersionHistory = true
+                            } else {
+                                showingPremiumFor = "Version History"
+                            }
+                        }) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(themeColor)
+                                .frame(width: 32, height: 32)
+                                .background(themeColor.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Ver historial")
+                    }
+
                     Button(action: {
                         withAnimation(.spring()) {
                             isFavorite.toggle()
@@ -1512,6 +1553,8 @@ struct NewPromptView: View {
                     let snapshot = PromptSnapshot(
                         title:     existingPrompt.title,
                         content:   existingPrompt.content,
+                        negativePrompt: existingPrompt.negativePrompt,
+                        alternatives:   existingPrompt.alternatives,
                         timestamp: Date()
                     )
                     var history = existingPrompt.versionHistory
@@ -1535,9 +1578,10 @@ struct NewPromptView: View {
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
             _ = promptService.updatePrompt(updated)
-
-            if isAutoSave {
-                DispatchQueue.main.async { self.originalPrompt = updated }
+            
+            // ✅ Actualizar el prompt original para que la UI (botones de historial, etc.) reaccione al instante
+            DispatchQueue.main.async {
+                self.originalPrompt = updated
             }
         } else {
             var new = Prompt(

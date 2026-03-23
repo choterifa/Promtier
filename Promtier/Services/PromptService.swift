@@ -307,23 +307,11 @@ class PromptService: ObservableObject {
 
                 let entities = try context.fetch(request)
                 prompts = entities.map { entity in
-                    var prompt = Prompt(title: entity.title, content: entity.content, folder: entity.folder)
-                    prompt.id = entity.id
-                    prompt.isFavorite = entity.isFavorite
-                    prompt.createdAt = entity.createdAt
-                    prompt.modifiedAt = entity.modifiedAt
-                    prompt.useCount = Int(entity.useCount)
-                    prompt.lastUsedAt = entity.lastUsedAt
-                    prompt.icon = entity.icon
-                    prompt.promptDescription = entity.promptDescription
-                    prompt.negativePrompt = entity.negativePrompt
-                    prompt.alternativePrompt = entity.alternativePrompt
-                    prompt.customShortcut = entity.customShortcut
-                    prompt.deletedAt = trashDict[entity.id.uuidString]
-                    prompt.showcaseImages = []
-                    prompt.showcaseImageCount = Int(entity.showcaseImageCount)
-                    prompt.showcaseImagePaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
-                    prompt.showcaseThumbnails = [entity.thumb1, entity.thumb2, entity.thumb3].compactMap { $0 }
+                    var prompt = entity.toPrompt()
+                    // Aplicar la fecha de eliminación desde el diccionario de la papelera
+                    if let trashDate = trashDict[entity.id.uuidString] {
+                        prompt.deletedAt = trashDate
+                    }
                     return prompt
                 }
             } catch {
