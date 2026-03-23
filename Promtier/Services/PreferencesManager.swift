@@ -488,8 +488,9 @@ class PreferencesManager: ObservableObject {
     
     /// Restablece todas las preferencias a valores por defecto
     func resetToDefaults() {
-        let domain = Bundle.main.bundleIdentifier!
-        userDefaults.removePersistentDomain(forName: domain)
+        if let domain = Bundle.main.bundleIdentifier {
+            userDefaults.removePersistentDomain(forName: domain)
+        }
         
         // Recargar valores por defecto
         objectWillChange.send()

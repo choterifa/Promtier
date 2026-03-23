@@ -1489,8 +1489,8 @@ class PromptService: ObservableObject {
             try context.execute(deleteFolders)
             
             // Limpiar flags de seeding para que se vuelvan a crear al recargar
-            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV21")
-            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV22")
+            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV22")
+            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV23")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImagesToDiskV1")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImageCountV1")
             
