@@ -218,6 +218,7 @@ struct NewPromptView: View {
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
+        self._originalPrompt = State(initialValue: prompt)
     }
 
     @ViewBuilder
@@ -1262,6 +1263,7 @@ struct NewPromptView: View {
                         }
                         .buttonStyle(.plain)
                         .help("Ver historial")
+                        .transition(.opacity)
                     }
 
                     Button(action: {
