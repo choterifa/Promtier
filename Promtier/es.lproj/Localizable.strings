@@ -388,7 +388,8 @@
 "add_prompt_results" = "Añadir resultados del prompt";
 "category" = "Categoría";
 "prompt_results" = "RESULTADOS DEL PROMPT";
-"advanced_options" = "Opciones Avanzadas";
+"main_prompt" = "Prompt Principal";
+"main_content" = "Contenido Principal";
 "negative_prompt" = "Prompt Negativo";
 "negative_prompt_placeholder" = "Lo que la IA NO debe hacer (ej: sin desenfoque, sin texto)...";
 "alternatives" = "Alternativas";

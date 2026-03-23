@@ -3,6 +3,8 @@ import SwiftUI
 struct DiffView: View {
     let text1: String
     let text2: String
+    var title1: String = "Main Content"
+    var title2: String = "Comparison"
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -23,7 +25,7 @@ struct DiffView: View {
             
             HStack(spacing: 0) {
                 VStack(alignment: .leading) {
-                    Text("Main Content")
+                    Text(title1)
                         .font(.caption.bold())
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -42,7 +44,7 @@ struct DiffView: View {
                 Divider()
                 
                 VStack(alignment: .leading) {
-                    Text("Alternative Prompt")
+                    Text(title2)
                         .font(.caption.bold())
                         .foregroundColor(.secondary)
                         .padding(.horizontal)

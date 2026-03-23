@@ -366,6 +366,7 @@
 "category" = "Category";
 "prompt_results" = "PROMPT RESULTS";
 "advanced_options" = "Advanced Options";
+"main_content" = "Main Content";
 "negative_prompt" = "Negative Prompt";
 "negative_prompt_placeholder" = "What the AI should NOT do (ex: no blur, no text)...";
 "alternatives" = "Alternatives";

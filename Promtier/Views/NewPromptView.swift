@@ -94,7 +94,15 @@ struct NewPromptView: View {
     @State private var focusAlternative: Bool = false
     @State private var targetAppBundleIDs: [String] = []
     @State private var localMonitor: Any? = nil
-    @State private var showingDiff: Bool = false
+    struct DiffComparison: Identifiable {
+        let id = UUID()
+        let text1: String
+        let text2: String
+        let title1: String
+        let title2: String
+    }
+
+    @State private var diffComparison: DiffComparison? = nil
     @State private var branchMessage: String? = nil
     @State private var showingAppPicker = false
 
@@ -304,7 +312,61 @@ struct NewPromptView: View {
                             editorID: "negative",
                             currentCategoryColor: currentCategoryColor
                         ) {
-                            EmptyView()
+                            HStack(spacing: 12) {
+                                if !negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    // Action: Swap
+                                    Button(action: {
+                                        withAnimation {
+                                            let temp = content
+                                            content = negativePrompt
+                                            negativePrompt = temp
+                                            branchMessage = "Content swapped!"
+                                        }
+                                        HapticService.shared.playLight()
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                                    }) {
+                                        Image(systemName: "arrow.up.arrow.down")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.red)
+                                    .help("Swap with main prompt")
+
+                                    // Action: Merge
+                                    Button(action: {
+                                        withAnimation {
+                                            if !content.isEmpty { content += "\n\n---\n\n" }
+                                            content += negativePrompt
+                                            negativePrompt = ""
+                                            branchMessage = "Merged into main!"
+                                        }
+                                        HapticService.shared.playLight()
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
+                                    }) {
+                                        Image(systemName: "arrow.down.to.line.compact")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.red)
+                                    .help("Merge into main prompt")
+
+                                    // Action: Compare
+                                    Button(action: {
+                                        diffComparison = DiffComparison(
+                                            text1: content,
+                                            text2: negativePrompt,
+                                            title1: "main_content".localized(for: preferences.language),
+                                            title2: "negative_prompt".localized(for: preferences.language)
+                                        )
+                                    }) {
+                                        Image(systemName: "arrow.left.and.right.text.vertical")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundColor(.orange)
+                                    .help("Compare with main prompt")
+                                }
+                            }
                         }
                         .id("negative_prompt_section")
 
@@ -651,7 +713,12 @@ struct NewPromptView: View {
 
                     // Action: Diff
                     Button(action: {
-                        showingDiff = true
+                        diffComparison = DiffComparison(
+                            text1: content,
+                            text2: alternatives[index],
+                            title1: "main_content".localized(for: preferences.language),
+                            title2: "\("alternative".localized(for: preferences.language)) #\(index + 1)"
+                        )
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.left.and.right.text.vertical")
@@ -780,8 +847,13 @@ struct NewPromptView: View {
                 .sheet(item: premiumSheetItem) { item in
                     PremiumUpsellView(featureName: item.value)
                 }
-                .sheet(isPresented: $showingDiff) {
-                    DiffView(text1: content, text2: alternatives.first ?? "")
+                .sheet(item: $diffComparison) { comparison in
+                    DiffView(
+                        text1: comparison.text1,
+                        text2: comparison.text2,
+                        title1: comparison.title1,
+                        title2: comparison.title2
+                    )
                 }
                 .sheet(isPresented: $showingVersionHistory) {
                     if let snapHistory = originalPrompt?.versionHistory {
