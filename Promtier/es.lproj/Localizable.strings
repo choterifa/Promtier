@@ -343,20 +343,23 @@
 "snippet_review_content" = "Por favor revisa este código:";
 "snippet_review_shortcut" = "revisar";
 
-"default_prompt_chatgpt_title" = "Asistente de Brainstorming";
+"default_prompt_chatgpt_title" = "Brainstorming de Estrategia de Marketing";
 "default_prompt_chatgpt_content" = "Actúa como un estratega creativo. Ayúdame a generar 5 ángulos de marketing únicos para un {{descripcion_del_producto}}. Enfócate en disparadores psicológicos y potencial viral.";
 
-"default_prompt_claude_title" = "Refactorización de Arquitectura";
+"default_prompt_claude_title" = "Asistente de Refactorización SOLID";
 "default_prompt_claude_content" = "Tengo una función compleja en {{lenguaje}} que se está volviendo difícil de mantener. Revisa el siguiente código y sugiere una refactorización usando principios SOLID y patrones modernos. Enfócate en el rendimiento. /review";
 
-"default_prompt_cursor_title" = "Implementación de Funcionalidad (@Codebase)";
+"default_prompt_cursor_title" = "Desarrollo de Funcionalidad (@Codebase)";
 "default_prompt_cursor_content" = "Usando el contexto actual del @Codebase, implementa una nueva {{nombre_de_la_funcionalidad}} que se integre con la capa de almacenamiento existente. Asegúrate de seguir las convenciones de estilo del proyecto y añadir pruebas unitarias exhaustivas.";
 
-"default_prompt_midjourney_title" = "Artístico: Retrato Hiperrealista";
-"default_prompt_midjourney_content" = "Retrato hiperrealista en primer plano de un {{subject}}, iluminación inspirada en Rembrandt, sombras profundas, 8k, cinematográfico, textura altamente detallada, disparado con lente de 35mm --v 6.0 --ar 16:9 --stylize 250";
+"default_prompt_midjourney_title" = "Parámetros de Retrato Cinematográfico";
+"default_prompt_midjourney_content" = "A hyper-realistic close-up portrait of a {{subject}}, lighting inspired by Rembrandt, deep shadows, 8k, cinematic, highly detailed texture, shot on 35mm lens --v 6.0 --ar 16:9 --stylize 250";
 
 "default_prompt_images_title" = "Mirror Selfie en Habitación Otaku (Nano Banana)";
 "default_prompt_images_content" = "### Escena\nMirror selfie en un rincón de computadora estilo otaku, con tonos azules.\n\n### Sujeto\nChica joven con cabello largo castaño, vistiendo un cárdigan corto azul claro y pantalones cortos de mezclilla, sosteniendo un teléfono con funda azul para tomarse una selfie frente al espejo.\n\n### Entorno\nEscritorio de gamer blanco con teclado azul y ratón, PC con ventiladores RGB azules, plantas en macetas blancas, póster de torre japonesa en la pared, figuritas de anime en el estante.\n\n### Iluminación\nLuz diurna suave que entra por la ventana, acentuada por el brillo azul de los periféricos y ventiladores del PC.\n\n### Parámetros\n--ar 3:4 --v 6.0 --stylize 250";
+
+"default_negative_otaku" = "(deforme, distorsionado, desfigurado:1.3), mal dibujado, mala anatomía, anatomía incorrecta, extremidad extra, extremidad faltante, extremidades flotantes, (manos y dedos mutados:1.4), extremidades desconectadas, mutación, mutado, feo, asqueroso, borroso, amputación.";
+"default_negative_cursor" = "No uses librerías obsoletas, evita el código inflado, sin comentarios redundantes.";
 
 "cat_chatgpt" = "ChatGPT";
 "cat_claude" = "Claude";

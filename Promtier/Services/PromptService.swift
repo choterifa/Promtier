@@ -182,7 +182,7 @@ class PromptService: ObservableObject {
         let context = dataController.viewContext
         
         // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
-        let seedKey = "hasSeededDefaultsV27" // BUMP VERSION
+        let seedKey = "hasSeededDefaultsV28" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
         let request = FolderEntity.fetchAll(in: context)
@@ -225,53 +225,95 @@ class PromptService: ObservableObject {
     /// Crea prompts de ejemplo para guiar al usuario
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV27" // BUMP VERSION
+        let seedKey = "hasSeededInitialPromptsV28" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
-        print("🌱 Sembrando prompts de ejemplo realistas (V27)...")
+        print("🌱 Sembrando prompts de ejemplo realistas (V28)...")
         
         let language = PreferencesManager.shared.language
         
-        // 1. ChatGPT - Brainstorming
-        let chatGPTPrompt = Prompt(
+        // 1. ChatGPT - Marketing (Suggested App)
+        let chatGPTPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000001")!
+        var chatGPTPrompt = Prompt(
             title: "default_prompt_chatgpt_title".localized(for: language),
             content: "default_prompt_chatgpt_content".localized(for: language),
             folder: PredefinedCategory.chatGPT.displayName,
             icon: PredefinedCategory.chatGPT.icon
         )
-        _ = PromptEntity.create(from: chatGPTPrompt, in: context)
+        chatGPTPrompt.id = chatGPTPromptId
+        chatGPTPrompt.targetAppBundleIDs = ["com.apple.Safari"]
+        chatGPTPrompt.showcaseImagePaths = ["\(chatGPTPromptId.uuidString)/showcase_0.png"]
+        chatGPTPrompt.showcaseImageCount = 1
+        let chatGPT_entity = PromptEntity.create(from: chatGPTPrompt, in: context)
+        chatGPT_entity.image1Path = chatGPTPrompt.showcaseImagePaths[0]
         
-        // 2. Claude - Architecture
-        let claudePrompt = Prompt(
+        // 2. Claude - SOLID (Shortcut)
+        let claudePromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000002")!
+        var claudePrompt = Prompt(
             title: "default_prompt_claude_title".localized(for: language),
             content: "default_prompt_claude_content".localized(for: language),
             folder: PredefinedCategory.claude.displayName,
             icon: PredefinedCategory.claude.icon
         )
-        _ = PromptEntity.create(from: claudePrompt, in: context)
+        claudePrompt.id = claudePromptId
+        claudePrompt.customShortcut = "review"
+        claudePrompt.showcaseImagePaths = ["\(claudePromptId.uuidString)/showcase_0.png"]
+        claudePrompt.showcaseImageCount = 1
+        let claude_entity = PromptEntity.create(from: claudePrompt, in: context)
+        claude_entity.image1Path = claudePrompt.showcaseImagePaths[0]
         
-        // 3. Cursor - Implementation
-        let cursorPrompt = Prompt(
+        // 3. Cursor - Implementation (Negative Prompt)
+        let cursorPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000003")!
+        var cursorPrompt = Prompt(
             title: "default_prompt_cursor_title".localized(for: language),
             content: "default_prompt_cursor_content".localized(for: language),
             folder: PredefinedCategory.cursor.displayName,
             icon: PredefinedCategory.cursor.icon
         )
-        _ = PromptEntity.create(from: cursorPrompt, in: context)
+        cursorPrompt.id = cursorPromptId
+        cursorPrompt.negativePrompt = "default_negative_cursor".localized(for: language)
+        cursorPrompt.showcaseImagePaths = ["\(cursorPromptId.uuidString)/showcase_0.png"]
+        cursorPrompt.showcaseImageCount = 1
+        let cursor_entity = PromptEntity.create(from: cursorPrompt, in: context)
+        cursor_entity.image1Path = cursorPrompt.showcaseImagePaths[0]
         
-        // 4. Images Prompts - Otaku Room (Nano Banana)
-        let imagesPrompt = Prompt(
+        // 4. Midjourney - Portrait (Versions)
+        let midjourneyPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000004")!
+        var midjourneyPrompt = Prompt(
+            title: "default_prompt_midjourney_title".localized(for: language),
+            content: "default_prompt_midjourney_content".localized(for: language),
+            folder: PredefinedCategory.midjourney.displayName,
+            icon: PredefinedCategory.midjourney.icon
+        )
+        midjourneyPrompt.id = midjourneyPromptId
+        midjourneyPrompt.versionHistory = [
+            PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Initial cinematic prompt", timestamp: Date().addingTimeInterval(-86400)),
+            PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Added --v 6.0 and lighting details", timestamp: Date().addingTimeInterval(-3600))
+        ]
+        midjourneyPrompt.showcaseImagePaths = ["\(midjourneyPromptId.uuidString)/showcase_0.png"]
+        midjourneyPrompt.showcaseImageCount = 1
+        let mid_entity = PromptEntity.create(from: midjourneyPrompt, in: context)
+        mid_entity.image1Path = midjourneyPrompt.showcaseImagePaths[0]
+        
+        // 5. Images Prompts - Otaku Room (Full Detail + Negative)
+        let imagesPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000005")!
+        var imagesPrompt = Prompt(
             title: "default_prompt_images_title".localized(for: language),
             content: "default_prompt_images_content".localized(for: language),
             folder: PredefinedCategory.imagesPrompts.displayName,
             icon: PredefinedCategory.imagesPrompts.icon
         )
-        _ = PromptEntity.create(from: imagesPrompt, in: context)
+        imagesPrompt.id = imagesPromptId
+        imagesPrompt.negativePrompt = "default_negative_otaku".localized(for: language)
+        imagesPrompt.showcaseImagePaths = ["\(imagesPromptId.uuidString)/showcase_0.png"]
+        imagesPrompt.showcaseImageCount = 1
+        let img_entity = PromptEntity.create(from: imagesPrompt, in: context)
+        img_entity.image1Path = imagesPrompt.showcaseImagePaths[0]
         
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
         self.loadPrompts() // Recargar para que aparezcan inmediatamente
-        print("✅ Prompts de ejemplo actualizados.")
+        print("✅ 5 prompts de ejemplo detallados creados.")
     }
     
     // MARK: - Operaciones CRUD
@@ -1463,8 +1505,8 @@ class PromptService: ObservableObject {
             try context.execute(deleteFolders)
             
             // Limpiar flags de seeding para que se vuelvan a crear al recargar
-            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV27")
-            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV27")
+            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV28")
+            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV28")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImagesToDiskV1")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImageCountV1")
             
