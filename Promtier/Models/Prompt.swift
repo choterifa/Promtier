@@ -219,10 +219,33 @@ struct Prompt: Identifiable, Codable {
 
 /// Representa una versión guardada de un prompt (Premium)
 struct PromptSnapshot: Codable, Identifiable {
-    var id: UUID = UUID()
+    var id: UUID
     let title: String
     let content: String
-    var negativePrompt: String?     // Opcional para retrocompatibilidad
-    var alternatives: [String] = []  // Opcional para retrocompatibilidad
+    var negativePrompt: String?
+    var alternatives: [String]
     let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, content, negativePrompt, alternatives, timestamp
+    }
+
+    init(id: UUID = UUID(), title: String, content: String, negativePrompt: String? = nil, alternatives: [String] = [], timestamp: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.content = content
+        self.negativePrompt = negativePrompt
+        self.alternatives = alternatives
+        self.timestamp = timestamp
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
+        self.title = try container.decode(String.self, forKey: .title)
+        self.content = try container.decode(String.self, forKey: .content)
+        self.negativePrompt = try? container.decodeIfPresent(String.self, forKey: .negativePrompt)
+        self.alternatives = (try? container.decodeIfPresent([String].self, forKey: .alternatives)) ?? []
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
+    }
 }

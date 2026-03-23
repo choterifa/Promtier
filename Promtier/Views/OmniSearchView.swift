@@ -297,9 +297,17 @@ struct OmniSearchRow: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(prompt.title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(isSelected ? .white : .primary)
+                    HStack(spacing: 8) {
+                        Text(prompt.title)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(isSelected ? .white : .primary)
+                        
+                        if !prompt.versionHistory.isEmpty {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(isSelected ? .white.opacity(0.8) : .purple.opacity(0.8))
+                        }
+                    }
                     
                     if let desc = prompt.promptDescription, !desc.isEmpty {
                         Text(desc)
