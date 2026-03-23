@@ -182,7 +182,7 @@ class PromptService: ObservableObject {
         let context = dataController.viewContext
         
         // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
-        let seedKey = "hasSeededDefaultsV25" // BUMP VERSION
+        let seedKey = "hasSeededDefaultsV27" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
         let request = FolderEntity.fetchAll(in: context)
@@ -225,10 +225,10 @@ class PromptService: ObservableObject {
     /// Crea prompts de ejemplo para guiar al usuario
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV25" // BUMP VERSION
+        let seedKey = "hasSeededInitialPromptsV27" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
-        print("🌱 Sembrando prompts de ejemplo realistas (V25)...")
+        print("🌱 Sembrando prompts de ejemplo realistas (V27)...")
         
         let language = PreferencesManager.shared.language
         
@@ -259,42 +259,15 @@ class PromptService: ObservableObject {
         )
         _ = PromptEntity.create(from: cursorPrompt, in: context)
         
-        // 4. Midjourney - Art
-        let midjourneyPrompt = Prompt(
-            title: "default_prompt_midjourney_title".localized(for: language),
-            content: "default_prompt_midjourney_content".localized(for: language),
-            folder: PredefinedCategory.midjourney.displayName,
-            icon: PredefinedCategory.midjourney.icon
+        // 4. Images Prompts - Otaku Room (Nano Banana)
+        let imagesPrompt = Prompt(
+            title: "default_prompt_images_title".localized(for: language),
+            content: "default_prompt_images_content".localized(for: language),
+            folder: PredefinedCategory.imagesPrompts.displayName,
+            icon: PredefinedCategory.imagesPrompts.icon
         )
-        _ = PromptEntity.create(from: midjourneyPrompt, in: context)
+        _ = PromptEntity.create(from: imagesPrompt, in: context)
         
-        // 5. Stable Diffusion - Technical Art
-        let sdPrompt = Prompt(
-            title: "default_prompt_sd_title".localized(for: language),
-            content: "default_prompt_sd_content".localized(for: language),
-            folder: PredefinedCategory.stableDiffusion.displayName,
-            icon: PredefinedCategory.stableDiffusion.icon
-        )
-        _ = PromptEntity.create(from: sdPrompt, in: context)
-        
-        // 6. Vibe Coding - Fast UI
-        let vibePrompt = Prompt(
-            title: "default_prompt_vibe_coding_title".localized(for: language),
-            content: "default_prompt_vibe_coding_content".localized(for: language),
-            folder: PredefinedCategory.vibeCoding.displayName,
-            icon: PredefinedCategory.vibeCoding.icon
-        )
-        _ = PromptEntity.create(from: vibePrompt, in: context)
-        
-        // 7. Windsurf - Rules
-        let windsurfPrompt = Prompt(
-            title: "default_prompt_windsurf_title".localized(for: language),
-            content: "default_prompt_windsurf_content".localized(for: language),
-            folder: PredefinedCategory.windsurf.displayName,
-            icon: PredefinedCategory.windsurf.icon
-        )
-        _ = PromptEntity.create(from: windsurfPrompt, in: context)
-
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
         self.loadPrompts() // Recargar para que aparezcan inmediatamente
@@ -1490,8 +1463,8 @@ class PromptService: ObservableObject {
             try context.execute(deleteFolders)
             
             // Limpiar flags de seeding para que se vuelvan a crear al recargar
-            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV22")
-            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV23")
+            UserDefaults.standard.removeObject(forKey: "hasSeededDefaultsV27")
+            UserDefaults.standard.removeObject(forKey: "hasSeededInitialPromptsV27")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImagesToDiskV1")
             UserDefaults.standard.removeObject(forKey: "hasMigratedShowcaseImageCountV1")
             

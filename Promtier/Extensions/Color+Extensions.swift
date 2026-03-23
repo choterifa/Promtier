@@ -147,7 +147,7 @@ enum PredefinedCategory: String, CaseIterable {
     case claude = "Claude"
     case cursor = "Cursor"
     case midjourney = "Midjourney"
-    case stableDiffusion = "Stable Diffusion"
+    case imagesPrompts = "Images Prompts"
     case vibeCoding = "Vibe Coding"
     case windsurf = "Windsurf"
     
@@ -158,7 +158,7 @@ enum PredefinedCategory: String, CaseIterable {
         case .claude: return "cat_claude".localized(for: language)
         case .cursor: return "cat_cursor".localized(for: language)
         case .midjourney: return "cat_midjourney".localized(for: language)
-        case .stableDiffusion: return "cat_stable_diffusion".localized(for: language)
+        case .imagesPrompts: return "cat_images_prompts".localized(for: language)
         case .vibeCoding: return "cat_vibe_coding".localized(for: language)
         case .windsurf: return "cat_windsurf".localized(for: language)
         }
@@ -171,7 +171,7 @@ enum PredefinedCategory: String, CaseIterable {
         case .cursor: return Color.blue
         case .midjourney: return Color.orange
         case .vibeCoding: return Color.pink
-        case .stableDiffusion: return Color.red
+        case .imagesPrompts: return Color.red
         case .windsurf: return Color.cyan
         }
     }
@@ -183,7 +183,7 @@ enum PredefinedCategory: String, CaseIterable {
         case .cursor: return "#007AFF"
         case .midjourney: return "#FF9500"
         case .vibeCoding: return "#FF2D92"
-        case .stableDiffusion: return "#FF3B30"
+        case .imagesPrompts: return "#FF3B30"
         case .windsurf: return "#32ADE6"
         }
     }
@@ -195,7 +195,7 @@ enum PredefinedCategory: String, CaseIterable {
         case .cursor: return "terminal.fill"
         case .midjourney: return "paintbrush.fill"
         case .vibeCoding: return "music.note"
-        case .stableDiffusion: return "cpu.fill"
+        case .imagesPrompts: return "photo.on.rectangle.angled.fill"
         case .windsurf: return "wind"
         }
     }
