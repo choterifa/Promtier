@@ -342,14 +342,9 @@ struct NewPromptView: View {
                                                     .blur(radius: 12)
                                             }
 
-                                            // Fondo traslúcido estilizado
+                                            // Fondo sólido estilizado
                                             RoundedRectangle(cornerRadius: 14)
-                                                .fill(themeColor.opacity(0.1))
-                                                .background(
-                                                    VisualEffectView(material: .popover, blendingMode: .withinWindow)
-                                                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                                                        .opacity(0.6)
-                                                )
+                                                .fill(themeColor.opacity(0.15))
                                         }
                                     )
                                     .overlay(
@@ -366,12 +361,7 @@ struct NewPromptView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.06) : Color.primary.opacity(0.03))
-                            .background(
-                                VisualEffectView(material: .popover, blendingMode: .withinWindow)
-                                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                                    .opacity(0.6)
-                            )
+                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.1) : Color.primary.opacity(0.05))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
@@ -1933,7 +1923,7 @@ struct EditorCard: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
@@ -2253,7 +2243,7 @@ struct SecondaryEditorCard<Actions: View>: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.textBackgroundColor).opacity(0.5))
+                    .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
