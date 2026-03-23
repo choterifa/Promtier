@@ -320,20 +320,34 @@
 "snippet_review_content" = "Please review this code:";
 "snippet_review_shortcut" = "review";
 
-"default_prompt_email_title" = "Friendly Email Reply";
-"default_prompt_email_content" = "Hi there,\n\nThanks for reaching out! I've reviewed your request and I'll get back to you shortly.\n\n/signature";
-"default_prompt_coding_title" = "Code Explainer";
-"default_prompt_coding_content" = "Explain the following {{language}} code in simple terms for a beginner:\n\n```\n{{code}}\n```";
-"default_prompt_creative_title" = "Showcase: Cyberpunk Landscape";
-"default_prompt_productivity_title" = "Daily Task Organizer";
-"default_prompt_productivity_content" = "Organize my tasks for today: {{tasks}}. Prioritize them using the Eisenhower Matrix and suggest a time for each.";
+"default_prompt_chatgpt_title" = "Brainstorming Assistant";
+"default_prompt_chatgpt_content" = "Act as a creative strategist. Help me brainstorm 5 unique marketing angles for a {{product_description}}. Focus on psychological triggers and viral potential.";
 
-"cat_code" = "Code";
-"cat_writing" = "Writing";
-"cat_image_gen" = "Image Generation";
-"cat_marketing" = "Marketing";
-"cat_productivity" = "Productivity";
-"cat_automation" = "Automation";
+"default_prompt_claude_title" = "Code Architecture Refactor";
+"default_prompt_claude_content" = "I have a complex {{language}} function that is becoming hard to maintain. Review the following code and suggest a refactor using SOLID principles and modern patterns. Stay focused on performance. /review";
+
+"default_prompt_cursor_title" = "Feature Implementation (@Codebase)";
+"default_prompt_cursor_content" = "Using the current context of the @Codebase, implement a new {{feature_name}} that integrates with the existing storage layer. Ensure that you follow the project's styling conventions and add exhaustive unit tests.";
+
+"default_prompt_midjourney_title" = "Artistic: Hyper-realistic Portrait";
+"default_prompt_midjourney_content" = "A hyper-realistic close-up portrait of a {{subject}}, lighting inspired by Rembrandt, deep shadows, 8k, cinematic, highly detailed texture, shot on 35mm lens --v 6.0 --ar 16:9 --stylize 250";
+
+"default_prompt_sd_title" = "Stable Diffusion: Cyberpunk City";
+"default_prompt_sd_content" = "Cyberpunk cityscape, neon lights, rainy street, cinematic lighting, masterpiece, high quality, trending on artstation, (intricate details:1.2), LoRA:CyberCity:0.8";
+
+"default_prompt_vibe_coding_title" = "Vibe Coding: Fast UI Build";
+"default_prompt_vibe_coding_content" = "Just build a beautiful, modern dashboard in Next.js and Tailwind for a {{business_type}}. Make it look premium with smooth transitions and glassmorphism. Don't ask questions, just cook it.";
+
+"default_prompt_windsurf_title" = "Windsurf: Rules-Based Dev";
+"default_prompt_windsurf_content" = "Follow the .windsurfrules file to refactor the authentication flow. Ensure that all security headers are correctly implemented and the session management is stateless.";
+
+"cat_chatgpt" = "ChatGPT";
+"cat_claude" = "Claude";
+"cat_cursor" = "Cursor";
+"cat_midjourney" = "Midjourney";
+"cat_stable_diffusion" = "Stable Diffusion";
+"cat_vibe_coding" = "Vibe Coding";
+"cat_windsurf" = "Windsurf";
 
 /* New Prompt */
 "edit_prompt" = "Edit Prompt";

@@ -182,7 +182,7 @@ class PromptService: ObservableObject {
         let context = dataController.viewContext
         
         // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
-        let seedKey = "hasSeededDefaultsV22"
+        let seedKey = "hasSeededDefaultsV25" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
         let request = FolderEntity.fetchAll(in: context)
@@ -225,62 +225,75 @@ class PromptService: ObservableObject {
     /// Crea prompts de ejemplo para guiar al usuario
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV23" // BUMP VERSION
+        let seedKey = "hasSeededInitialPromptsV25" // BUMP VERSION
         if UserDefaults.standard.bool(forKey: seedKey) { return }
         
-        print("🌱 Sembrando prompts de ejemplo (V23)...")
+        print("🌱 Sembrando prompts de ejemplo realistas (V25)...")
         
-        // 1. Prompt Normal (Email) con Snippet de firma
         let language = PreferencesManager.shared.language
-        let emailPrompt = Prompt(
-            title: "default_prompt_email_title".localized(for: language),
-            content: "default_prompt_email_content".localized(for: language),
-            folder: PredefinedCategory.writing.displayName,
-            icon: "envelope.fill"
-        )
-        _ = PromptEntity.create(from: emailPrompt, in: context)
         
-        // 2. Prompt con Variables (Programación)
-        let codingPrompt = Prompt(
-            title: "default_prompt_coding_title".localized(for: language),
-            content: "default_prompt_coding_content".localized(for: language),
-            folder: PredefinedCategory.code.displayName,
-            icon: "terminal.fill"
+        // 1. ChatGPT - Brainstorming
+        let chatGPTPrompt = Prompt(
+            title: "default_prompt_chatgpt_title".localized(for: language),
+            content: "default_prompt_chatgpt_content".localized(for: language),
+            folder: PredefinedCategory.chatGPT.displayName,
+            icon: PredefinedCategory.chatGPT.icon
         )
-        _ = PromptEntity.create(from: codingPrompt, in: context)
+        _ = PromptEntity.create(from: chatGPTPrompt, in: context)
         
-        // 3. Prompt de Diseño (Creativo) con IMAGEN
-        let imagePath = "/Users/valencia/.gemini/antigravity/brain/834ebcad-97e6-4d5e-a810-2da61e58cece/cyberpunk_example_result_1773778750439.png"
-        var showcaseImages: [Data] = []
-        if let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) {
-            if let optimized = ImageOptimizer.shared.optimize(imageData: data) {
-                showcaseImages.append(optimized)
-            } else {
-                showcaseImages.append(data)
-            }
-        }
-        
-        let creativePrompt = Prompt(
-            title: "default_prompt_creative_title".localized(for: language),
-            content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
-            folder: PredefinedCategory.imageGen.displayName,
-            icon: "sparkles",
-            showcaseImages: showcaseImages
+        // 2. Claude - Architecture
+        let claudePrompt = Prompt(
+            title: "default_prompt_claude_title".localized(for: language),
+            content: "default_prompt_claude_content".localized(for: language),
+            folder: PredefinedCategory.claude.displayName,
+            icon: PredefinedCategory.claude.icon
         )
-        let creativeEntity = PromptEntity(context: context)
-        creativeEntity.id = creativePrompt.id
-        creativeEntity.createdAt = creativePrompt.createdAt
-        creativeEntity.updateFromPrompt(creativePrompt)
-        applyShowcaseImages(creativePrompt.showcaseImages, to: creativeEntity, promptId: creativePrompt.id, clearExisting: true)
+        _ = PromptEntity.create(from: claudePrompt, in: context)
         
-        // 4. Prompt de Productividad (Variables) - NUEVO
-        let productivityPrompt = Prompt(
-            title: "default_prompt_productivity_title".localized(for: language),
-            content: "default_prompt_productivity_content".localized(for: language),
-            folder: PredefinedCategory.productivity.displayName,
-            icon: "list.bullet.rectangle.portrait.fill"
+        // 3. Cursor - Implementation
+        let cursorPrompt = Prompt(
+            title: "default_prompt_cursor_title".localized(for: language),
+            content: "default_prompt_cursor_content".localized(for: language),
+            folder: PredefinedCategory.cursor.displayName,
+            icon: PredefinedCategory.cursor.icon
         )
-        _ = PromptEntity.create(from: productivityPrompt, in: context)
+        _ = PromptEntity.create(from: cursorPrompt, in: context)
+        
+        // 4. Midjourney - Art
+        let midjourneyPrompt = Prompt(
+            title: "default_prompt_midjourney_title".localized(for: language),
+            content: "default_prompt_midjourney_content".localized(for: language),
+            folder: PredefinedCategory.midjourney.displayName,
+            icon: PredefinedCategory.midjourney.icon
+        )
+        _ = PromptEntity.create(from: midjourneyPrompt, in: context)
+        
+        // 5. Stable Diffusion - Technical Art
+        let sdPrompt = Prompt(
+            title: "default_prompt_sd_title".localized(for: language),
+            content: "default_prompt_sd_content".localized(for: language),
+            folder: PredefinedCategory.stableDiffusion.displayName,
+            icon: PredefinedCategory.stableDiffusion.icon
+        )
+        _ = PromptEntity.create(from: sdPrompt, in: context)
+        
+        // 6. Vibe Coding - Fast UI
+        let vibePrompt = Prompt(
+            title: "default_prompt_vibe_coding_title".localized(for: language),
+            content: "default_prompt_vibe_coding_content".localized(for: language),
+            folder: PredefinedCategory.vibeCoding.displayName,
+            icon: PredefinedCategory.vibeCoding.icon
+        )
+        _ = PromptEntity.create(from: vibePrompt, in: context)
+        
+        // 7. Windsurf - Rules
+        let windsurfPrompt = Prompt(
+            title: "default_prompt_windsurf_title".localized(for: language),
+            content: "default_prompt_windsurf_content".localized(for: language),
+            folder: PredefinedCategory.windsurf.displayName,
+            icon: PredefinedCategory.windsurf.icon
+        )
+        _ = PromptEntity.create(from: windsurfPrompt, in: context)
 
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)

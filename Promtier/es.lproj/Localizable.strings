@@ -343,20 +343,34 @@
 "snippet_review_content" = "Por favor revisa este código:";
 "snippet_review_shortcut" = "revisar";
 
-"default_prompt_email_title" = "Respuesta de Email Amigable";
-"default_prompt_email_content" = "Hola,\n\n¡Gracias por contactarme! He revisado tu solicitud y te responderé lo antes posible.\n\n/firma";
-"default_prompt_coding_title" = "Explicador de Código";
-"default_prompt_coding_content" = "Explica el siguiente código en {{lenguaje}} de forma sencilla para un principiante:\n\n```\n{{codigo}}\n```";
-"default_prompt_creative_title" = "Showcase: Paisaje Cyberpunk";
-"default_prompt_productivity_title" = "Organizador de Tareas Diario";
-"default_prompt_productivity_content" = "Organiza mis tareas para hoy: {{tareas}}. Priorízalas usando la Matriz de Eisenhower y sugiere un horario para cada una.";
+"default_prompt_chatgpt_title" = "Asistente de Brainstorming";
+"default_prompt_chatgpt_content" = "Actúa como un estratega creativo. Ayúdame a generar 5 ángulos de marketing únicos para un {{product_description}}. Enfatiza los disparadores psicológicos y el potencial viral.";
 
-"cat_code" = "Código";
-"cat_writing" = "Escritura";
-"cat_image_gen" = "Generación de Imágenes";
-"cat_marketing" = "Marketing";
-"cat_productivity" = "Productividad";
-"cat_automation" = "Automatización";
+"default_prompt_claude_title" = "Refactorización de Arquitectura";
+"default_prompt_claude_content" = "Tengo una función compleja en {{language}} que se está volviendo difícil de mantener. Revisa el siguiente código y sugiere una refactorización usando principios SOLID y patrones modernos. Prioriza el rendimiento. /review";
+
+"default_prompt_cursor_title" = "Implementación de Funcionalidad (@Codebase)";
+"default_prompt_cursor_content" = "Usando el contexto actual de @Codebase, implementa una nueva {{feature_name}} que se integre con la capa de almacenamiento existente. Asegúrate de seguir las convenciones de estilo del proyecto y añadir tests unitarios exhaustivos.";
+
+"default_prompt_midjourney_title" = "Artístico: Retrato Hiperrealista";
+"default_prompt_midjourney_content" = "Retrato hiperrealista en primer plano de un {{subject}}, iluminación inspirada en Rembrandt, sombras profundas, 8k, cinematográfico, textura altamente detallada, disparado con lente de 35mm --v 6.0 --ar 16:9 --stylize 250";
+
+"default_prompt_sd_title" = "Stable Diffusion: Ciudad Cyberpunk";
+"default_prompt_sd_content" = "Cyberpunk cityscape, neon lights, rainy street, cinematic lighting, masterpiece, high quality, trending on artstation, (intricate details:1.2), LoRA:CyberCity:0.8";
+
+"default_prompt_vibe_coding_title" = "Vibe Coding: Construcción Rápida de UI";
+"default_prompt_vibe_coding_content" = "Simplemente construye un dashboard moderno y hermoso en Next.js y Tailwind para un {{business_type}}. Haz que se vea premium con transiciones suaves y glassmorphism. No hagas preguntas, solo prográmalo.";
+
+"default_prompt_windsurf_title" = "Windsurf: Desarrollo Basado en Reglas";
+"default_prompt_windsurf_content" = "Sigue el archivo .windsurfrules para refactorizar el flujo de autenticación. Asegúrate de que todos los encabezados de seguridad estén correctamente implementados y que la gestión de sesiones sea sin estado.";
+
+"cat_chatgpt" = "ChatGPT";
+"cat_claude" = "Claude";
+"cat_cursor" = "Cursor";
+"cat_midjourney" = "Midjourney";
+"cat_stable_diffusion" = "Stable Diffusion";
+"cat_vibe_coding" = "Vibe Coding";
+"cat_windsurf" = "Windsurf";
 
 /* New Prompt */
 "edit_prompt" = "Editar Prompt";
