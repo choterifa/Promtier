@@ -26,6 +26,10 @@ struct CategorySidebar: View {
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
     
+    // Alerta de eliminación
+    @State private var folderToDelete: Folder? = nil
+    @State private var showingDeleteAlert = false
+    
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
@@ -71,18 +75,6 @@ struct CategorySidebar: View {
                 .fixedSize()
                 .help("sort_prompts_help".localized(for: preferences.language))
                 .padding(.trailing, 4)
-                
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        menuBarManager.activeViewState = .folderManager
-                    }
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 12))
-                        .foregroundColor(.blue.opacity(0.8))
-                }
-                .buttonStyle(.plain)
-                .help("manage_categories".localized(for: preferences.language))
             }
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -158,7 +150,52 @@ struct CategorySidebar: View {
             // Lista de categorías (Extraído para reducir complejidad)
             foldersListView
             
+            Spacer()
+            
+            // Botón Nueva Categoría Separado (Parte inferior)
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.12))
+                            .frame(width: 28, height: 28)
+                        
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Text("create_category".localized(for: preferences.language))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primary.opacity(0.03))
+                )
             }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 20)
+        }
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
+            Button("delete".localized(for: preferences.language), role: .destructive) {
+                _ = promptService.deleteFolder(folder)
+                HapticService.shared.playSuccess()
+            }
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+        } message: { folder in
+            let count = categoryCounts[folder.name] ?? 0
+            Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
+        }
         .frame(width: 198)
         .background(
             ZStack {
@@ -206,7 +243,14 @@ struct CategorySidebar: View {
                         }
                         
                         Button(role: .destructive) {
-                            _ = promptService.deleteFolder(folder)
+                            let count = categoryCounts[folder.name] ?? 0
+                            if count > 0 {
+                                folderToDelete = folder
+                                showingDeleteAlert = true
+                            } else {
+                                _ = promptService.deleteFolder(folder)
+                                HapticService.shared.playSuccess()
+                            }
                         } label: {
                             Label("delete".localized(for: preferences.language), systemImage: "trash")
                         }

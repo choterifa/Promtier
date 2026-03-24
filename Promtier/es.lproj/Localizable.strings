@@ -212,6 +212,9 @@
 "icon" = "Icono";
 "color" = "Color";
 "create_category" = "Crear Categoría";
+"delete_category_title" = "Eliminar Categoría";
+"delete_category_msg" = "¿Estás seguro de que quieres eliminar esta categoría?";
+"delete_category_with_items_msg" = "Esta categoría contiene %d prompts. Si la eliminas, estos prompts pasarán a estar Sin categoría. ¿Quieres continuar?";
 "save_changes" = "Guardar Cambios";
 "delete_category" = "Eliminar categoría";
 

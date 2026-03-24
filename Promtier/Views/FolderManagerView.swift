@@ -22,6 +22,19 @@ struct FolderManagerView: View {
     @State private var editingFolder: Folder?
     @State private var animateColors = false
     
+    // Alerta de eliminación
+    @State private var folderToDelete: Folder? = nil
+    @State private var showingDeleteAlert = false
+    
+    private var categoryCounts: [String: Int] {
+        var counts: [String: Int] = [:]
+        for prompt in promptService.prompts {
+            let folder = prompt.folder ?? "uncategorized"
+            counts[folder, default: 0] += 1
+        }
+        return counts
+    }
+    
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
     var body: some View {
@@ -52,6 +65,16 @@ struct FolderManagerView: View {
         }
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
+        }
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
+            Button("delete".localized(for: preferences.language), role: .destructive) {
+                _ = promptService.deleteFolder(folder)
+                HapticService.shared.playSuccess()
+            }
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+        } message: { folder in
+            let count = categoryCounts[folder.name] ?? 0
+            Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
         }
         .onAppear {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -150,7 +173,16 @@ struct FolderManagerView: View {
                             folder: folder,
                             isEditing: editingFolder?.id == folder.id,
                             onEdit: { startEditing(folder) },
-                            onDelete: { _ = promptService.deleteFolder(folder) }
+                            onDelete: {
+                                let count = categoryCounts[folder.name] ?? 0
+                                if count > 0 {
+                                    folderToDelete = folder
+                                    showingDeleteAlert = true
+                                } else {
+                                    _ = promptService.deleteFolder(folder)
+                                    HapticService.shared.playSuccess()
+                                }
+                            }
                         )
                     }
                 }

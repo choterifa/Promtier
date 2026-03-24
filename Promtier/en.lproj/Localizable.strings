@@ -210,8 +210,11 @@
 "icon" = "Icon";
 "color" = "Color";
 "create_category" = "Create Category";
-"save_changes" = "Save Changes";
 "delete_category" = "Delete Category";
+"delete_category_title" = "Delete Category";
+"delete_category_msg" = "Are you sure you want to delete this category?";
+"delete_category_with_items_msg" = "This category contains %d prompts. If you delete it, these prompts will become Uncategorized. Do you want to continue?";
+"save_changes" = "Save Changes";
 
 /* Variable Fill */
 "fill_variables_title" = "Fill Variables";
