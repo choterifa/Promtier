@@ -23,6 +23,43 @@ class PassThroughScrollView: NSScrollView {
     }
 }
 
+class PromtierTextView: NSTextView {
+    var isCurrentLineHighlightingEnabled: Bool = true
+    var currentLineHighlightColor: NSColor = .controlAccentColor
+    
+    override func drawBackground(in rect: NSRect) {
+        super.drawBackground(in: rect)
+        
+        guard isCurrentLineHighlightingEnabled,
+              let layoutManager = layoutManager,
+              let textContainer = textContainer,
+              let window = window,
+              window.firstResponder == self,
+              selectedRange().length == 0 else { return }
+        
+        let range = selectedRange()
+        // Safety check for empty text or range at the end
+        let glyphIndex = min(range.location, layoutManager.numberOfGlyphs > 0 ? layoutManager.numberOfGlyphs - 1 : 0)
+        let rect = layoutManager.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil)
+        
+        let highlightRect = NSRect(
+            x: 0,
+            y: rect.origin.y + textContainerInset.height,
+            width: bounds.width,
+            height: rect.height
+        )
+        
+        // Fill background with slightly higher opacity
+        currentLineHighlightColor.withAlphaComponent(0.1).set()
+        highlightRect.fill()
+        
+        // Add a subtle left border for extra visibility (Xcode style)
+        let borderRect = NSRect(x: 0, y: highlightRect.origin.y, width: 4, height: highlightRect.height)
+        currentLineHighlightColor.withAlphaComponent(0.5).set()
+        borderRect.fill()
+    }
+}
+
 struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var insertionRequest: String?
@@ -61,9 +98,10 @@ struct HighlightedEditor: NSViewRepresentable {
         scrollView.drawsBackground = false
         scrollView.autohidesScrollers = false // Siempre visible
         
-        let textView = NSTextView(frame: .zero)
+        let textView = PromtierTextView(frame: .zero)
         textView.delegate = context.coordinator
         textView.isRichText = false
+        textView.currentLineHighlightColor = themeColor
         textView.allowsUndo = true
         textView.autoresizingMask = [.width]
         textView.isVerticallyResizable = true
@@ -87,26 +125,38 @@ struct HighlightedEditor: NSViewRepresentable {
         
         scrollView.documentView = textView
         
+        // Listen for Apple Intelligence trigger notification
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("TriggerAppleIntelligence"), object: nil, queue: .main) { _ in
+            if textView.window?.firstResponder == textView {
+                textView.showWritingTools(nil)
+            }
+        }
+        
         return scrollView
     }
     
     func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard let textView = nsView.documentView as? PromtierTextView else { return }
         
-        // Sincronizar texto si cambió externamente
+        // Update highlight color
+        if textView.currentLineHighlightColor != themeColor {
+            textView.currentLineHighlightColor = themeColor
+        }
+        
+        // Sincronizar texto si cambió externamente (sin romper el Undo)
         if textView.string != text {
             let selectedRanges = textView.selectedRanges
-            textView.undoManager?.removeAllActions() // Prevenir crash de Cmd+Z por desincronización
-            textView.string = text
             
-            // Restaurar selección de forma segura para evitar Out of Bounds
-            let maxLen = (text as NSString).length
-            var safeRanges = [NSValue]()
-            for val in selectedRanges {
+            // Usar textStorage para que el cambio sea atómico
+            textView.textStorage?.beginEditing()
+            textView.textStorage?.replaceCharacters(in: NSRange(location: 0, length: textView.string.count), with: text)
+            textView.textStorage?.endEditing()
+            
+            // Restaurar selección de forma segura
+            let maxLen = text.count
+            let safeRanges = selectedRanges.compactMap { val -> NSValue? in
                 let r = val.rangeValue
-                if r.location + r.length <= maxLen {
-                    safeRanges.append(val)
-                }
+                return (r.location + r.length <= maxLen) ? val : nil
             }
             
             if !safeRanges.isEmpty {
@@ -289,17 +339,22 @@ struct HighlightedEditor: NSViewRepresentable {
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             applyHighlighting(textView) // Re-aplicar para actualizar el bracket matching
+            textView.needsDisplay = true // Redibujar para el resaltado de línea actual
         }
         
         func textDidBeginEditing(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
             DispatchQueue.main.async {
                 self.parent.isFocused = true
+                textView.needsDisplay = true // Redibujar para mostrar resaltado de línea
             }
         }
         
         func textDidEndEditing(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
             DispatchQueue.main.async {
                 self.parent.isFocused = false
+                textView.needsDisplay = true // Redibujar para ocultar resaltado de línea
             }
         }
         
@@ -469,11 +524,24 @@ struct HighlightedEditor: NSViewRepresentable {
         // Timer para debounce del resaltado
         private var highlightTimer: Timer?
         
+        // MARK: - Highlighting Logic (Optimized)
+        
+        private static let varRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+        private static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
+        private static let chainRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
+        
+        // Markdown Regexes
+        private static let mdHeaderRegex = try? NSRegularExpression(pattern: "^#{1,6}\\s+.*$", options: [.anchorsMatchLines])
+        private static let mdBoldRegex = try? NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^\\_]+)__", options: [])
+        private static let mdItalicRegex = try? NSRegularExpression(pattern: "\\*([^\\*\\s][^\\*]*[^\\*\\s])\\*|_([^\\_\\s][^\\_]*[^\\_\\s])_", options: [])
+        private static let mdCodeRegex = try? NSRegularExpression(pattern: "`([^`]+)`|```[\\s\\S]*?```", options: [])
+        private static let mdLinkRegex = try? NSRegularExpression(pattern: "\\[([^\\]]+)\\]\\(([^\\)]+)\\)", options: [])
+        private static let mdListRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
+
         func applyHighlighting(_ textView: NSTextView) {
             highlightTimer?.invalidate()
             
-            // Debounce de 50ms para evitar lag al escribir rápido pero ser responsive
-            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { [weak self, weak textView] _ in
+            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: false) { [weak self, weak textView] _ in
                 guard let self = self, let textView = textView else { return }
                 
                 let text = textView.string
@@ -482,30 +550,25 @@ struct HighlightedEditor: NSViewRepresentable {
                 
                 if text.isEmpty { return }
                 
-                // Ejecutar regex en segundo plano para no bloquear el hilo principal
-                DispatchQueue.global(qos: .userInteractive).async { [weak textView] in
-                    // 1. Regex para variables {{...}}
-                    let varPattern = "\\{\\{([^}]+)\\}\\}"
-                    let varRegex = try? NSRegularExpression(pattern: varPattern, options: [])
-                    let varMatches = varRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                DispatchQueue.global(qos: .userInteractive).async { [weak self, weak textView] in
+                    guard let self = self, let textView = textView else { return }
                     
-                    // 2. Regex para Brackets/Llaves individuales
-                    let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
-                    let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: [])
-                    let bracketMatches = bracketRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let varMatches = Self.varRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let bracketMatches = Self.bracketRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let chainMatches = Self.chainRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
                     
-                    // 3. Regex para Chaining [[@Prompt:Nombre]]
-                    let chainPattern = "\\[\\[@Prompt:([^\\]]+)\\]\\]"
-                    let chainRegex = try? NSRegularExpression(pattern: chainPattern, options: [])
-                    let chainMatches = chainRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    // Markdown matches
+                    let headerMatches = Self.mdHeaderRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let boldMatches = Self.mdBoldRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let italicMatches = Self.mdItalicRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let codeMatches = Self.mdCodeRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let linkMatches = Self.mdLinkRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    let listMatches = Self.mdListRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
                     
-                    // 3. Encontrar pareja de brackets si el cursor está en uno (Xcode style)
                     var matchingBracketRange: NSRange? = nil
                     var currentBracketRange: NSRange? = nil
                     let nsText = text as NSString
                     
-                    // Comprobar posición inmediata izquierda y derecha para encontrar un bracket
-                    // Xcode prioriza el que el cursor acaba de pasar o está por tocar
                     let positionsToCheck = [cursorLocation - 1, cursorLocation].filter { $0 >= 0 && $0 < nsText.length }
                     
                     for pos in positionsToCheck {
@@ -515,84 +578,101 @@ struct HighlightedEditor: NSViewRepresentable {
                             if let partner = self.findMatchingBracket(in: text, for: char, at: pos) {
                                 currentBracketRange = charRange
                                 matchingBracketRange = NSRange(location: partner, length: 1)
-                                break // Detenerse al encontrar el primer bracket válido
+                                break
                             }
                         }
                     }
                     
-                    // Aplicar cambios en el hilo principal
                     DispatchQueue.main.async { [weak textView] in
                         guard let textView = textView, let textStorage = textView.textStorage else { return }
+                        if textStorage.string != text { return } // Abortar si el texto cambió
                         
-                        // VALIDACIÓN CRÍTICA: Si el texto cambió significativamente mientras calculábamos, abortar
-                        let currentLength = textStorage.length
-                        if currentLength == 0 { return }
-                        
-                        let fullRange = NSRange(location: 0, length: currentLength)
+                        let fullRange = NSRange(location: 0, length: textStorage.length)
+                        let baseFont = NSFont.systemFont(ofSize: fontSize)
+                        let boldFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+                        let italicFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
+                        let codeFont = NSFont.monospacedSystemFont(ofSize: fontSize - 1, weight: .regular)
                         
                         textStorage.beginEditing()
                         
-                        // Resetear estilos base de forma atómica (más rápido que múltiples removeAttribute)
+                        // 1. Reset base attributes (Base Pass)
                         let baseAttributes: [NSAttributedString.Key: Any] = [
                             .foregroundColor: NSColor.labelColor,
-                            .font: NSFont.systemFont(ofSize: fontSize)
+                            .font: baseFont
                         ]
                         textStorage.setAttributes(baseAttributes, range: fullRange)
                         
-                        // Función helper interna para aplicar atributos de forma segura
-                        func safeAddAttribute(_ name: NSAttributedString.Key, value: Any, range: NSRange) {
-                            if range.location + range.length <= textStorage.length {
-                                textStorage.addAttribute(name, value: value, range: range)
-                            }
+                        // 2. Markdown Pass (Low priority)
+                        for match in headerMatches {
+                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: match.range)
+                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize + 2, weight: .bold), range: match.range)
                         }
                         
-                        // Aplicar resaltado de brackets individuales (CON EL COLOR DE LA CATEGORÍA)
+                        for match in boldMatches {
+                            textStorage.addAttribute(.font, value: boldFont, range: match.range)
+                        }
+                        
+                        for match in italicMatches {
+                            textStorage.addAttribute(.font, value: italicFont, range: match.range)
+                        }
+                        
+                        for match in codeMatches {
+                            textStorage.addAttribute(.font, value: codeFont, range: match.range)
+                            textStorage.addAttribute(.backgroundColor, value: NSColor.secondaryLabelColor.withAlphaComponent(0.1), range: match.range)
+                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemGray, range: match.range)
+                        }
+                        
+                        for match in linkMatches {
+                            textStorage.addAttribute(.foregroundColor, value: NSColor.linkColor, range: match.range)
+                            textStorage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
+                        }
+                        
+                        for match in listMatches {
+                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemOrange, range: match.range)
+                        }
+
+                        // 3. Syntax Highlighting Pass (High priority, overrides Markdown)
                         for match in bracketMatches {
-                            safeAddAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: match.range)
+                            textStorage.addAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
+                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: match.range)
                         }
                         
-                        // Aplicar resaltado de variables {{...}}
                         for match in varMatches {
-                            let range = match.range
                             let varColor = self.parent.isHaloEffectEnabled ? NSColor.systemBlue : self.parent.themeColor
-                            safeAddAttribute(.foregroundColor, value: varColor, range: range)
-                            safeAddAttribute(.backgroundColor, value: varColor.withAlphaComponent(0.08), range: range)
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
+                            textStorage.addAttribute(.foregroundColor, value: varColor, range: match.range)
+                            textStorage.addAttribute(.backgroundColor, value: varColor.withAlphaComponent(0.08), range: match.range)
+                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: match.range)
                         }
                         
-                        // Aplicar resaltado de Chaining [[@Prompt:Nombre]]
                         for match in chainMatches {
-                            let range = match.range
-                            // Usamos el color de la categoría pero con un estilo distintivo (Underline o Italic)
-                            safeAddAttribute(.foregroundColor, value: self.parent.themeColor, range: range)
-                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.05), range: range)
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
-                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
-                        }
-                        
-                        // Aplicar resaltado de Bracket Matching (Xcode Style - Force Click style)
-                        let glowShadow = NSShadow()
-                        glowShadow.shadowBlurRadius = 5
-                        glowShadow.shadowColor = self.parent.themeColor
-                        glowShadow.shadowOffset = NSSize(width: 0, height: 0)
-                        
-                        if let current = currentBracketRange {
-                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: current)
-                            if self.parent.isHaloEffectEnabled {
-                                safeAddAttribute(.shadow, value: glowShadow, range: current)
-                            }
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: current)
-                        }
-                        if let matching = matchingBracketRange {
-                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.25), range: matching)
-                            if self.parent.isHaloEffectEnabled {
-                                safeAddAttribute(.shadow, value: glowShadow, range: matching)
-                            }
-                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .black), range: matching)
+                            textStorage.addAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
+                            textStorage.addAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.05), range: match.range)
+                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: match.range)
+                            textStorage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
                         }
                         
                         textStorage.endEditing()
+                        
+                        // 3. Bracket Matching Pass (ULTRA FAST: Usando Temporary Attributes)
+                        // Esto no afecta al Undo ni al almacenamiento de texto.
+                        let layoutManager = textView.layoutManager
+                        layoutManager?.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
+                        layoutManager?.removeTemporaryAttribute(.shadow, forCharacterRange: fullRange)
+                        
+                        if let current = currentBracketRange, let matching = matchingBracketRange {
+                            let glowShadow = NSShadow()
+                            glowShadow.shadowBlurRadius = 5
+                            glowShadow.shadowColor = self.parent.themeColor
+                            glowShadow.shadowOffset = NSSize(width: 0, height: 0)
+                            
+                            let highlightAttrs: [NSAttributedString.Key: Any] = [
+                                .backgroundColor: self.parent.themeColor.withAlphaComponent(0.25),
+                                .shadow: self.parent.isHaloEffectEnabled ? glowShadow : NSShadow()
+                            ]
+                            
+                            layoutManager?.addTemporaryAttributes(highlightAttrs, forCharacterRange: current)
+                            layoutManager?.addTemporaryAttributes(highlightAttrs, forCharacterRange: matching)
+                        }
                     }
                 }
             }

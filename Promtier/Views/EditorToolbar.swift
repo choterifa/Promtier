@@ -5,6 +5,9 @@ struct EditorToolbar: View {
     let color: Color
     var vertical: Bool = false
     
+    @Binding var content: String
+    @Binding var selectedRange: NSRange?
+    
     // AI Actions
     var isAIGenerating: Bool
     var onAIAction: (AIAction) -> Void
@@ -42,6 +45,34 @@ struct EditorToolbar: View {
     
     @ViewBuilder
     private var buttons: some View {
+        Menu {
+            Button(action: { applyMarkdown("**", suffix: "**") }) {
+                Label("Bold", systemImage: "bold")
+            }
+            Button(action: { applyMarkdown("*", suffix: "*") }) {
+                Label("Italic", systemImage: "italic")
+            }
+            Button(action: { applyMarkdown("`", suffix: "`") }) {
+                Label("Inline Code", systemImage: "code")
+            }
+            Button(action: { applyMarkdown("### ", suffix: "") }) {
+                Label("Header", systemImage: "textformat.size")
+            }
+            Divider()
+            Button(action: { applyMarkdown("- ", suffix: "") }) {
+                Label("Bullet List", systemImage: "list.bullet")
+            }
+            Button(action: { applyMarkdown("1. ", suffix: "") }) {
+                Label("Numbered List", systemImage: "list.number")
+            }
+        } label: {
+            toolbarButton(icon: "textformat", isSpecial: false)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .help("Markdown Formatting")
+
         if aiEnabled {
             Menu {
                 Button(action: { onAIAction(.enhance) }) {
@@ -125,5 +156,22 @@ struct EditorToolbar: View {
         }
         .scaleEffect(active ? 1.1 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
+    }
+
+    private func applyMarkdown(_ prefix: String, suffix: String) {
+        let nsString = content as NSString
+        let range = selectedRange ?? NSRange(location: nsString.length, length: 0)
+        
+        let selectedText = nsString.substring(with: range)
+        let newText = prefix + selectedText + suffix
+        
+        content = nsString.replacingCharacters(in: range, with: newText)
+        
+        // Update selection to wrap the new text
+        let newLocation = range.location + prefix.count
+        let newLength = selectedText.count
+        selectedRange = NSRange(location: newLocation, length: newLength)
+        
+        HapticService.shared.playLight()
     }
 }

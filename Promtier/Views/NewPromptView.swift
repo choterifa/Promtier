@@ -1050,11 +1050,13 @@ struct NewPromptView: View {
                        let bitmap = NSBitmapImageRep(data: tiffData),
                        let pngData = bitmap.representation(using: .png, properties: [:]) {
 
-                        DispatchQueue.main.async {
+                        DispatchQueue.global(qos: .userInitiated).async {
                             if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
-                                if self.showcaseImages.count < 3 {
-                                    self.showcaseImages.append(optimizedData)
-                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                                DispatchQueue.main.async {
+                                    if self.showcaseImages.count < 3 {
+                                        self.showcaseImages.append(optimizedData)
+                                        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                                    }
                                 }
                             }
                         }
@@ -1517,19 +1519,27 @@ struct NewPromptView: View {
                        let tiffData = nsImage.tiffRepresentation,
                        let bitmap = NSBitmapImageRep(data: tiffData),
                        let pngData = bitmap.representation(using: .png, properties: [:]) {
-
+                        
+                        // Optimize in background thread (current)
+                        let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData)
+                        
                         DispatchQueue.main.async {
-                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
-                                self.insertImage(optimizedData, at: index)
+                            if let data = optimizedData {
+                                self.insertImage(data, at: index)
                             }
                         }
                     }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                    if let data = data {
+                        // Optimize in background thread
+                        let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
+                        
                         DispatchQueue.main.async {
-                            self.insertImage(optimizedData, at: index)
+                            if let data = optimizedData {
+                                self.insertImage(data, at: index)
+                            }
                         }
                     }
                 }
@@ -1537,18 +1547,27 @@ struct NewPromptView: View {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     if let url = url {
                         if url.isFileURL {
-                            if let data = try? Data(contentsOf: url),
-                               let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                            if let data = try? Data(contentsOf: url) {
+                                // Optimize in background thread
+                                let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
+                                
                                 DispatchQueue.main.async {
-                                    self.insertImage(optimizedData, at: index)
+                                    if let data = optimizedData {
+                                        self.insertImage(data, at: index)
+                                    }
                                 }
                             }
                         } else {
                             // Descargar imagen de web URL (Chrome/Safari drag)
                             URLSession.shared.dataTask(with: url) { data, _, _ in
-                                if let data = data, let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
+                                if let data = data {
+                                    // Optimize in background thread
+                                    let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
+                                    
                                     DispatchQueue.main.async {
-                                        self.insertImage(optimizedData, at: index)
+                                        if let data = optimizedData {
+                                            self.insertImage(data, at: index)
+                                        }
                                     }
                                 }
                             }.resume()
@@ -1751,13 +1770,23 @@ struct NewPromptView: View {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.image]
-
-        if panel.runModal() == .OK {
-            for url in panel.urls {
-                if showcaseImages.count < 3 {
+        
+        panel.begin { response in
+            guard response == .OK else { return }
+            
+            let urls = panel.urls
+            DispatchQueue.global(qos: .userInitiated).async {
+                for url in urls {
+                    // Cargar y optimizar en background
                     if let data = try? Data(contentsOf: url),
                        let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
-                        showcaseImages.append(optimizedData)
+                        
+                        DispatchQueue.main.async {
+                            if self.showcaseImages.count < 3 {
+                                self.showcaseImages.append(optimizedData)
+                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+                            }
+                        }
                     }
                 }
             }
@@ -1995,6 +2024,8 @@ struct EditorCard: View {
                 EditorToolbar(
                     color: currentCategoryColor,
                     vertical: true,
+                    content: $content,
+                    selectedRange: $selectedRange,
                     isAIGenerating: isAIGenerating,
                     onAIAction: { performAIAction($0) },
                     aiEnabled: isAIAvailable,
@@ -2338,6 +2369,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                 EditorToolbar(
                     color: color,
                     vertical: true,
+                    content: $text,
+                    selectedRange: $selectedRange,
                     isAIGenerating: isAIGenerating,
                     onAIAction: { performAIAction($0) },
                     aiEnabled: isAIAvailable,
