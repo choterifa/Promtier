@@ -13,6 +13,7 @@ struct EditorToolbar: View {
     // Snippets & Variables
     var onShowVariables: () -> Void
     var onShowSnippets: () -> Void
+    var onShowChains: () -> Void
     
     // Zen Mode & Other
     var onZenMode: () -> Void
@@ -75,6 +76,12 @@ struct EditorToolbar: View {
         }
         .buttonStyle(.plain)
         .help("Insert Snippet")
+        
+        Button(action: onShowChains) {
+            toolbarButton(icon: "link.badge.plus")
+        }
+        .buttonStyle(.plain)
+        .help("Chain Another Prompt")
 
         if let onFloating = onFloatingMode {
             Button(action: onFloating) {

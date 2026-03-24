@@ -494,6 +494,11 @@ struct HighlightedEditor: NSViewRepresentable {
                     let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: [])
                     let bracketMatches = bracketRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
                     
+                    // 3. Regex para Chaining [[@Prompt:Nombre]]
+                    let chainPattern = "\\[\\[@Prompt:([^\\]]+)\\]\\]"
+                    let chainRegex = try? NSRegularExpression(pattern: chainPattern, options: [])
+                    let chainMatches = chainRegex?.matches(in: text, options: [], range: NSRange(text.startIndex..., in: text)) ?? []
+                    
                     // 3. Encontrar pareja de brackets si el cursor está en uno (Xcode style)
                     var matchingBracketRange: NSRange? = nil
                     var currentBracketRange: NSRange? = nil
@@ -554,6 +559,16 @@ struct HighlightedEditor: NSViewRepresentable {
                             safeAddAttribute(.foregroundColor, value: varColor, range: range)
                             safeAddAttribute(.backgroundColor, value: varColor.withAlphaComponent(0.08), range: range)
                             safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
+                        }
+                        
+                        // Aplicar resaltado de Chaining [[@Prompt:Nombre]]
+                        for match in chainMatches {
+                            let range = match.range
+                            // Usamos el color de la categoría pero con un estilo distintivo (Underline o Italic)
+                            safeAddAttribute(.foregroundColor, value: self.parent.themeColor, range: range)
+                            safeAddAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.05), range: range)
+                            safeAddAttribute(.font, value: NSFont.systemFont(ofSize: fontSize, weight: .bold), range: range)
+                            safeAddAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                         }
                         
                         // Aplicar resaltado de Bracket Matching (Xcode Style - Force Click style)

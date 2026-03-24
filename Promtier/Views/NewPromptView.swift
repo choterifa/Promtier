@@ -1898,6 +1898,7 @@ struct EditorCard: View {
     }
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
+    @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
@@ -1995,6 +1996,9 @@ struct EditorCard: View {
                             showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                         }
                     },
+                    onShowChains: {
+                        showingPromptChainPicker.toggle()
+                    },
                     onZenMode: {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                             showingZenEditor = true
@@ -2002,6 +2006,12 @@ struct EditorCard: View {
                         }
                     }
                 )
+                .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
+                    PromptPickerPopover(excludePromptId: prompt?.id) { selected in
+                        insertionRequest = "[[@Prompt:\(selected.title)]]"
+                        showingPromptChainPicker = false
+                    }
+                }
                 .padding(.vertical, 8)
                 .padding(.trailing, 4) // Ajustado para dar más espacio al texto
             }
@@ -2185,6 +2195,7 @@ struct SecondaryEditorCard<Actions: View>: View {
 
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
+    @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
 
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
@@ -2328,10 +2339,19 @@ struct SecondaryEditorCard<Actions: View>: View {
                             showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                         }
                     },
+                    onShowChains: {
+                        showingPromptChainPicker.toggle()
+                    },
                     onZenMode: {
                         onZenMode?()
                     }
                 )
+                .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
+                    PromptPickerPopover(excludePromptId: prompt?.id) { selected in
+                        insertionRequest = "[[@Prompt:\(selected.title)]]"
+                        showingPromptChainPicker = false
+                    }
+                }
                 .scaleEffect(0.9)
                 .padding(.vertical, 8)
                 .padding(.trailing, 4) // Ajustado para ahorrar espacio lateral
