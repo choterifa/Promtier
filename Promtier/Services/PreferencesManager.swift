@@ -332,7 +332,8 @@ class PreferencesManager: ObservableObject {
         self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
         // Vista de grid (tarjetas) por defecto en false
         self.isGridView = userDefaults.bool(forKey: "isGridView")
-        self.sidebarWidth = userDefaults.object(forKey: "sidebarWidth") == nil ? 220 : CGFloat(userDefaults.double(forKey: "sidebarWidth"))
+        let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")
+        self.sidebarWidth = savedSidebarWidth > 0 ? min(350, max(200, CGFloat(savedSidebarWidth))) : 220
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         
