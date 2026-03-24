@@ -313,6 +313,10 @@
 "gt_close_window" = "Close Window";
 "gt_close_window_shortcut" = "Esc";
 
+"duplicate_category_title" = "Duplicate Category";
+"duplicate_category_msg" = "A category with this name already exists. Please choose a different one.";
+"reserved_name_msg" = "This name is reserved for the system.";
+
 /* Default Data */
 "snippet_signature_title" = "Professional Signature";
 "snippet_signature_content" = "Best regards,\nPromtier Team";

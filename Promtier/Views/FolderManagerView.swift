@@ -31,6 +31,8 @@ struct FolderManagerView: View {
     // Alerta de eliminación
     @State private var folderToDelete: Folder? = nil
     @State private var showingDeleteAlert = false
+    @State private var showingDuplicateAlert = false
+    @State private var showingReservedNameAlert = false
     
     private var categoryCounts: [String: Int] {
         var counts: [String: Int] = [:]
@@ -83,6 +85,16 @@ struct FolderManagerView: View {
         } message: { folder in
             let count = categoryCounts[folder.name] ?? 0
             Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
+        }
+        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $showingDuplicateAlert) {
+            Button("done".localized(for: preferences.language), role: .cancel) { }
+        } message: {
+            Text("duplicate_category_msg".localized(for: preferences.language))
+        }
+        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $showingReservedNameAlert) {
+            Button("done".localized(for: preferences.language), role: .cancel) { }
+        } message: {
+            Text("reserved_name_msg".localized(for: preferences.language))
         }
         .onAppear {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -248,6 +260,11 @@ struct FolderManagerView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.primary.opacity(0.07), lineWidth: 1)
                             )
+                            .onChange(of: newFolderName) { newValue in
+                                if newValue.count > 30 {
+                                    newFolderName = String(newValue.prefix(30))
+                                }
+                            }
                     }
                     
                     HStack(alignment: .top, spacing: 24) {
@@ -336,13 +353,36 @@ struct FolderManagerView: View {
     }
     
     private func saveFolder() {
+        let sanitizedName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 1. Validar nombre reservado
+        let reservedNames = [
+            "uncategorized", "sin categoría", "uncategorized".localized(for: preferences.language).lowercased()
+        ]
+        if reservedNames.contains(sanitizedName.lowercased()) {
+            showingReservedNameAlert = true
+            return
+        }
+        
+        // 2. Validar duplicados
+        let isEditingThis = editingFolder?.name.lowercased() == sanitizedName.lowercased()
+        let nameExists = promptService.folders.contains { 
+            $0.name.lowercased() == sanitizedName.lowercased() 
+        }
+        
+        if nameExists && !isEditingThis {
+            showingDuplicateAlert = true
+            return
+        }
+        
+        // 3. Proceder a guardar
         let hex = "#" + NSColor(selectedColor).hexString
         
         if let editing = editingFolder {
-            let updated = Folder(id: editing.id, name: newFolderName, color: hex, icon: selectedIcon, createdAt: editing.createdAt, parentId: editing.parentId)
+            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: selectedIcon, createdAt: editing.createdAt, parentId: editing.parentId)
             _ = promptService.updateFolder(updated, oldName: editing.name)
         } else {
-            let new = Folder(name: newFolderName, color: hex, icon: selectedIcon)
+            let new = Folder(name: sanitizedName, color: hex, icon: selectedIcon)
             _ = promptService.createFolder(new)
         }
         resetForm()

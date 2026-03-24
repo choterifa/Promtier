@@ -336,6 +336,10 @@
 "gt_close_window" = "Cerrar Ventana";
 "gt_close_window_shortcut" = "Esc";
 
+"duplicate_category_title" = "Categoría Duplicada";
+"duplicate_category_msg" = "Ya existe una categoría con este nombre. Por favor, elige uno diferente.";
+"reserved_name_msg" = "Este nombre está reservado para el sistema.";
+
 /* Default Data */
 "snippet_signature_title" = "Firma Profesional";
 "snippet_signature_content" = "Saludos cordiales,\nEquipo Promtier";
