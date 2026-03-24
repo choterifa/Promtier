@@ -436,6 +436,12 @@
 "ollama_subtitle" = "Run AI models locally on your Mac";
 "ollama_url" = "Ollama API URL";
 "ollama_url_subtitle" = "Default: http://localhost:11434";
+"openai_service" = "OpenAI (Cloud)";
+"openai_subtitle" = "Use your own OpenAI API Key to enhance prompts";
+"openai_api_key_subtitle" = "Your personal API Key from OpenAI platform";
+"openai_model_id" = "Model ID";
+"openai_model_presets" = "Select a model";
+"preferred_ai_provider" = "AI Provider";
 "ollama_status" = "Server Status";
 "ollama_active" = "Active";
 "ollama_inactive" = "Not found";

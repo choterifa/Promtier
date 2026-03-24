@@ -223,7 +223,8 @@ struct CategorySidebar: View {
                         color: Color(hex: folder.displayColor),
                         count: count,
                         isSelected: promptService.selectedCategory == folder.name,
-                        isDropTarget: dropTargetFolderId == folder.id,
+                        isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
+                        isReorderTarget: dropTargetFolderId == folder.id && draggedFolder != nil,
                         action: {
                             promptService.selectedCategory = folder.name
                         }
@@ -365,6 +366,10 @@ struct FolderSidebarDropDelegate: DropDelegate {
     func dropEntered(info: DropInfo) {
         // Reordenado
         if let draggedFolder = draggedFolder, draggedFolder.id != folder.id {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = folder.id
+            }
+            
             let from = promptService.folders.firstIndex(where: { $0.id == draggedFolder.id })
             let to = promptService.folders.firstIndex(where: { $0.id == folder.id })
             
@@ -435,6 +440,7 @@ struct SidebarItem: View {
     let count: Int
     let isSelected: Bool
     var isDropTarget: Bool = false
+    var isReorderTarget: Bool = false
     let action: () -> Void
     
     var dropAllowed: Bool = true
@@ -444,29 +450,41 @@ struct SidebarItem: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
-                .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                .frame(width: 18 * preferences.fontSize.scale)
+        VStack(spacing: 0) {
+            if isReorderTarget {
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(height: 2)
+                    .cornerRadius(1)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
             
-            Text(title)
-                .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
-                .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                .lineLimit(1)
-            
-            Spacer()
-            
-            if count > 0 {
-                Text("\(count)")
-                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
-                    )
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : color.opacity(0.8))
+                    .frame(width: 18 * preferences.fontSize.scale)
+                
+                Text(title)
+                    .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                    .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                        .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+                        )
+                }
             }
         }
         .padding(.horizontal, 12)

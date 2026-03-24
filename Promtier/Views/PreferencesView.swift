@@ -609,54 +609,126 @@ struct BehaviorTab: View {
                 }
             }
             
-            SettingsSection(title: "intelligence", icon: "sparkles") {
+            SettingsSection(title: "apple_intelligence", icon: "sparkles") {
                 
-                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
+                SettingsRow("preferred_ai_provider", subtitle: "preferred_ai_provider") {
+                    Picker("", selection: $preferences.preferredAIService) {
+                        Text("Ollama").tag(AIService.ollama)
+                        Text("Gemini").tag(AIService.gemini)
+                        Text("OpenAI").tag(AIService.openai)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 250)
+                }
+                
+                Divider().padding(.leading, 20)
+
+                // Configuración de OpenAI
+                SettingsRow("openai_service", subtitle: "openai_subtitle", icon: "cloud.fill", iconColor: .green) {
+                    EmptyView()
+                }
+                
+                VStack(spacing: 12) {
+                    HStack {
+                        Text("api_key".localized(for: preferences.language))
+                            .font(.system(size: 13, weight: .bold))
+                        Spacer()
+                        SecureField("sk-...", text: $preferences.openAIApiKey)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 250)
+                    }
+                    
+                    HStack {
+                        Text("model_id".localized(for: preferences.language))
+                            .font(.system(size: 13, weight: .bold))
+                        SettingsRow("openai_model_id") {
+                            HStack(spacing: 8) {
+                                TextField("gpt-4o", text: $preferences.openAIDefaultModel)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.system(.body, design: .monospaced))
+                                
+                                Menu {
+                                    ForEach(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"], id: \.self) { model in
+                                        Button(model) {
+                                            preferences.openAIDefaultModel = model
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "list.bullet.indent")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(4)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(4)
+                                }
+                                .menuStyle(.button)
+                                .buttonStyle(.plain)
+                                .fixedSize()
+                                .help("openai_model_presets".localized(for: preferences.language))
+                            }
+                        }
+                    }
+                }
+                .padding(.leading, 40)
+                .padding(.trailing, 20)
+                .padding(.bottom, 16)
+
+                Divider().padding(.leading, 20)
+
+                // Configuración de Gemini
+                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini", icon: "sparkles", iconColor: .blue) {
                     Toggle("", isOn: $preferences.geminiEnabled)
                         .toggleStyle(.switch)
                 }
                 
                 if preferences.geminiEnabled {
-                    Divider().padding(.leading, 20)
-                    
                     SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
                         SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 250)
                     }
+                    .padding(.leading, 20)
                 }
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("local_ai_ollama", subtitle: "ollama_subtitle") {
+                // Configuración de Ollama
+                SettingsRow("local_ai_ollama", subtitle: "ollama_subtitle", icon: "cpu", iconColor: .orange) {
                     Toggle("", isOn: $preferences.ollamaEnabled)
                         .toggleStyle(.switch)
                 }
                 
                 if preferences.ollamaEnabled {
-                    Divider().padding(.leading, 20)
-                    
-                    SettingsRow("ollama_url", subtitle: "ollama_url_subtitle") {
-                        TextField("http://localhost:11434", text: $preferences.ollamaURL)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 250)
-                    }
-                    
-                    Divider().padding(.leading, 20)
-                    
-                    SettingsRow("ollama_status", subtitle: OllamaService.shared.isOllamaRunning ? "ollama_active" : "ollama_inactive") {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(OllamaService.shared.isOllamaRunning ? Color.green : Color.red)
-                                .frame(width: 8, height: 8)
-                            
-                            Button(action: { OllamaService.shared.checkStatus() }) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 10))
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("ollama_url".localized(for: preferences.language))
+                                .font(.system(size: 12))
+                            Spacer()
+                            TextField("http://localhost:11434", text: $preferences.ollamaURL)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 200)
+                        }
+                        
+                        HStack {
+                            Text("ollama_status".localized(for: preferences.language))
+                                .font(.system(size: 12))
+                            Spacer()
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(OllamaService.shared.isOllamaRunning ? Color.green : Color.red)
+                                    .frame(width: 8, height: 8)
+                                
+                                Button(action: { OllamaService.shared.checkStatus() }) {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 10))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
+                    .padding(.leading, 40)
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 16)
                 }
             }
             

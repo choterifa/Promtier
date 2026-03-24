@@ -27,6 +27,7 @@ struct FolderManagerView: View {
     
     // Reordenado
     @State private var draggedFolder: Folder? = nil
+    @State private var dropTargetFolder: Folder? = nil
     
     // Alerta de eliminación
     @State private var folderToDelete: Folder? = nil
@@ -192,6 +193,7 @@ struct FolderManagerView: View {
                         CategoryRow(
                             folder: folder,
                             isEditing: editingFolder?.id == folder.id,
+                            isDropTarget: dropTargetFolder?.id == folder.id,
                             onEdit: { startEditing(folder) },
                             onDelete: {
                                 let count = categoryCounts[folder.name] ?? 0
@@ -214,7 +216,8 @@ struct FolderManagerView: View {
                         .onDrop(of: [.text], delegate: FolderReorderDelegate(
                             item: folder,
                             promptService: promptService,
-                            draggedItem: $draggedFolder
+                            draggedItem: $draggedFolder,
+                            dropTarget: $dropTargetFolder
                         ))
                     }
                 }
@@ -509,6 +512,7 @@ struct FolderManagerView: View {
 struct CategoryRow: View {
     let folder: Folder
     let isEditing: Bool
+    let isDropTarget: Bool
     let onEdit: () -> Void
     let onDelete: () -> Void
     
@@ -516,39 +520,51 @@ struct CategoryRow: View {
     @State private var isHovered = false
     
     var body: some View {
-        HStack(spacing: preferences.windowWidth >= 620 ? 12 : 0) {
-            if preferences.windowWidth >= 620 {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: folder.displayColor).opacity(0.1))
-                        .frame(width: 28, height: 28)
-                    
-                    Image(systemName: folder.icon ?? "folder.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: folder.displayColor))
-                }
+        VStack(spacing: 0) {
+            if isDropTarget {
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(height: 2)
+                    .cornerRadius(1)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 2)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
             
-            Text(folder.name)
-                .font(.system(size: 15 * preferences.fontSize.scale, weight: .semibold))
-                .foregroundColor(isEditing ? .primary : .primary.opacity(0.9))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            
-            Spacer()
-            
-            // Contenedor de acciones
-            HStack(spacing: 8) {
-                Button(action: onDelete) {
-                    Image(systemName: "trash.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.red.opacity(0.7))
-                        .frame(width: 26, height: 26)
-                        .background(Color.red.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+            HStack(spacing: preferences.windowWidth >= 620 ? 12 : 0) {
+                if preferences.windowWidth >= 620 {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(hex: folder.displayColor).opacity(0.1))
+                            .frame(width: 28, height: 28)
+                        
+                        Image(systemName: folder.icon ?? "folder.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: folder.displayColor))
+                    }
                 }
-                .buttonStyle(.plain)
-                .help("delete_category".localized(for: preferences.language))
+                
+                Text(folder.name)
+                    .font(.system(size: 15 * preferences.fontSize.scale, weight: .semibold))
+                    .foregroundColor(isEditing ? .primary : .primary.opacity(0.9))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                
+                Spacer()
+                
+                // Contenedor de acciones
+                HStack(spacing: 8) {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.red.opacity(0.7))
+                            .frame(width: 26, height: 26)
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .help("delete_category".localized(for: preferences.language))
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -574,20 +590,35 @@ struct FolderReorderDelegate: DropDelegate {
     let item: Folder
     let promptService: PromptService
     @Binding var draggedItem: Folder?
+    @Binding var dropTarget: Folder?
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
         return DropProposal(operation: .move)
     }
     
     func performDrop(info: DropInfo) -> Bool {
-        self.draggedItem = nil
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            self.dropTarget = nil
+            self.draggedItem = nil
+        }
         return true
+    }
+
+    func dropExited(info: DropInfo) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            self.dropTarget = nil
+        }
     }
     
     func dropEntered(info: DropInfo) {
         guard let draggedItem = draggedItem,
-              draggedItem.id != item.id,
-              let from = promptService.folders.firstIndex(where: { $0.id == draggedItem.id }),
+              draggedItem.id != item.id else { return }
+        
+        withAnimation(.easeInOut(duration: 0.2)) {
+            self.dropTarget = item
+        }
+        
+        guard let from = promptService.folders.firstIndex(where: { $0.id == draggedItem.id }),
               let to = promptService.folders.firstIndex(where: { $0.id == item.id }) else { return }
         
         if promptService.folders[to].id != draggedItem.id {

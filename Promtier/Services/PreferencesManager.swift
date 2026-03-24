@@ -12,6 +12,12 @@ import Combine
 import AppKit
 import ServiceManagement
 
+enum AIService: String, Codable, CaseIterable {
+    case ollama = "ollama"
+    case gemini = "gemini"
+    case openai = "openai"
+}
+
 // SERVICIO: Gestión centralizada de preferencias con UserDefaults
 class PreferencesManager: ObservableObject {
     static let shared = PreferencesManager()
@@ -293,6 +299,24 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var preferredAIService: AIService {
+        didSet {
+            userDefaults.set(preferredAIService.rawValue, forKey: "preferredAIService")
+        }
+    }
+    
+    @Published var openAIApiKey: String {
+        didSet {
+            userDefaults.set(openAIApiKey, forKey: "openAIApiKey")
+        }
+    }
+    
+    @Published var openAIDefaultModel: String {
+        didSet {
+            userDefaults.set(openAIDefaultModel, forKey: "openAIDefaultModel")
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "light") ?? .light
@@ -427,6 +451,11 @@ class PreferencesManager: ObservableObject {
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
         self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
         
+        // OpenAI
+        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "ollama") ?? .ollama
+        self.openAIApiKey = userDefaults.string(forKey: "openAIApiKey") ?? ""
+        self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
+        
         // Sincronizar dimensiones para el HUD
         self.previewWidth = self.windowWidth
         self.previewHeight = self.windowHeight
@@ -534,6 +563,9 @@ class PreferencesManager: ObservableObject {
         self.ollamaDefaultModel = "llama3"
         self.geminiEnabled = false
         self.geminiAPIKey = ""
+        self.preferredAIService = .ollama
+        self.openAIApiKey = ""
+        self.openAIDefaultModel = "gpt-4o"
         
         applyAppearance()
     }

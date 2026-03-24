@@ -8,7 +8,7 @@ struct EditorToolbar: View {
     // AI Actions
     var isAIGenerating: Bool
     var onAIAction: (AIAction) -> Void
-    var ollamaEnabled: Bool
+    var aiEnabled: Bool
     
     // Snippets & Variables
     var onShowVariables: () -> Void
@@ -41,7 +41,7 @@ struct EditorToolbar: View {
     
     @ViewBuilder
     private var buttons: some View {
-        if ollamaEnabled {
+        if aiEnabled {
             Menu {
                 Button(action: { onAIAction(.enhance) }) {
                     Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
