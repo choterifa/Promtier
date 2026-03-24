@@ -49,6 +49,7 @@ class ShortcutManager: ObservableObject {
     
     private var hotKeyRef: EventHotKeyRef?
     private var omniHotKeyRef: EventHotKeyRef?
+    private var fastAddHotKeyRef: EventHotKeyRef?
     private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
@@ -99,8 +100,10 @@ class ShortcutManager: ObservableObject {
         // Limpiar registros previos
         if let ref = hotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = omniHotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = fastAddHotKeyRef { UnregisterEventHotKey(ref) }
         hotKeyRef = nil
         omniHotKeyRef = nil
+        fastAddHotKeyRef = nil
         
         let prefs = PreferencesManager.shared
         guard prefs.globalShortcutEnabled else { return }
@@ -128,6 +131,12 @@ class ShortcutManager: ObservableObject {
         
         let omniHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 100)
         _ = RegisterEventHotKey(omniKeyCode, omniCarbonMods, omniHotKeyID, GetApplicationEventTarget(), 0, &omniHotKeyRef)
+        
+        // 3. HotKey Fast Add: Cmd+Shift+N (fijo)
+        let fastAddKeyCode: UInt32 = 45 // N
+        let fastAddMods: UInt32 = UInt32(cmdKey | shiftKey)
+        let fastAddHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 101)
+        _ = RegisterEventHotKey(fastAddKeyCode, fastAddMods, fastAddHotKeyID, GetApplicationEventTarget(), 0, &fastAddHotKeyRef)
         
         // Instalar el manejador de eventos una sola vez globalmente
         if !ShortcutManager.isHandlerInstalled {
@@ -203,6 +212,9 @@ class ShortcutManager: ObservableObject {
         } else if id == 100 {
             print("🚀 Carbon HotKey (OmniSearch) detectado!")
             OmniSearchManager.shared.toggle()
+        } else if id == 101 {
+            print("🚀 Carbon HotKey (Fast Add) detectado!")
+            FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
         } else if let promptId = promptHotkeyMap[id] {
             print("🚀 Carbon HotKey (Prompt) detectado para ID: \(promptId)")
             // Notificar a PromptService para copiar

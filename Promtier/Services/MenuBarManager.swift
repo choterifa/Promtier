@@ -305,6 +305,7 @@ class MenuBarManager: NSObject, ObservableObject {
         }
         
         addMenuItem("Add Prompt", selector: #selector(showAddPrompt), key: "n")
+        addMenuItem("Fast Add Prompt ⌘⇧N", selector: #selector(showFastAdd))
         menu.addItem(NSMenuItem.separator())
         addMenuItem("Preferencias...", selector: #selector(showPreferences), key: ",")
         menu.addItem(NSMenuItem.separator())
@@ -330,6 +331,10 @@ class MenuBarManager: NSObject, ObservableObject {
         if let popover = popover, !popover.isShown {
             showPopover(relativeTo: button.bounds, of: button)
         }
+    }
+    
+    @objc private func showFastAdd() {
+        FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
     }
     
     @objc private func showPreferences() {

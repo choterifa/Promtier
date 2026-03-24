@@ -37,21 +37,20 @@ class OmniSearchManager: NSObject, ObservableObject {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, self.isVisible else { return event }
             
-            // Log de depuración interna (invisible para el usuario)
             let keyCode = event.keyCode
             
             if keyCode == 125 { // Down
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
-                return nil // Bloquear para que el TextField no mueva el cursor
+                return nil
             } else if keyCode == 126 { // Up
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
-                return nil // Bloquear
+                return nil
             } else if keyCode == 36 || keyCode == 76 { // Enter / Return
                 NotificationCenter.default.post(name: NSNotification.Name("OmniSearchSubmit"), object: nil)
-                return nil // Capturar para procesar en la vista
-            } else if keyCode == 53 { // Esc
-                // Ya no cerramos con Esc por petición del usuario, sino que quitamos foco en la vista
-                return event 
+                return nil
+            } else if keyCode == 53 { // Esc -> cerrar ventana
+                DispatchQueue.main.async { self.hide() }
+                return nil
             }
             
             return event
@@ -83,25 +82,27 @@ class OmniSearchManager: NSObject, ObservableObject {
             let panelSize = panel?.frame.size ?? NSSize(width: 650, height: 450)
             let newFrame = NSRect(
                 x: screenRect.origin.x + (screenRect.width - panelSize.width) / 2,
-                y: screenRect.origin.y + (screenRect.height - panelSize.height) / 2,
+                y: screenRect.origin.y + (screenRect.height - panelSize.height) * 0.6,
                 width: panelSize.width,
                 height: panelSize.height
             )
             panel?.setFrame(newFrame, display: true)
         }
         
-        // ACTIVACIÓN AGRESIVA: 
-        // 1. Asegurar que la app sea activa
-        NSApp.activate()
-        
-        // 2. Mostrar y forzar "Key" window
+        // ACTIVACIÓN AGRESIVA:
+        NSApp.activate(ignoringOtherApps: true)
         panel?.makeKeyAndOrderFront(nil)
         
-        // 3. Pequeño delay para re-asegurar el foco tras la animación de orden frontal
+        // Re-asegurar el foco agresivamente para garantizar navegación por teclado
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             self.panel?.makeKey()
+            NSApp.activate(ignoringOtherApps: true)
             self.isVisible = true
             NotificationCenter.default.post(name: NSNotification.Name("OmniSearchOpened"), object: nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // Segundo intento por si el sistema robó el foco durante la animación
+            if self.isVisible { self.panel?.makeKey() }
         }
     }
     

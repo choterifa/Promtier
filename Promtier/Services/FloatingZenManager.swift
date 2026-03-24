@@ -2,7 +2,7 @@
 //  FloatingZenManager.swift
 //  Promtier
 //
-//  SERVICIO: Gestor del editor Zen Flotante
+//  SERVICIO: Gestor del editor Zen Flotante / Fast Add Mode
 //
 
 import SwiftUI
@@ -18,12 +18,12 @@ class FloatingZenManager: NSObject, ObservableObject {
     @Published var title: String = ""
     @Published var promptDescription: String = ""
     @Published var content: String = ""
+    @Published var showcaseImages: [Data] = []
     @Published var isVisible: Bool = false
+    @Published var isSaving: Bool = false
+    @Published var lastSaveSuccess: Bool = false
     
-    // We use a timer to debounce autosaving to draft
     private var autoSaveTimer: Timer?
-    
-    // To know if we are editing an existing prompt
     private var originalPromptId: UUID?
     private var isEditingExisting: Bool = false
     
@@ -32,23 +32,17 @@ class FloatingZenManager: NSObject, ObservableObject {
         
         $content
             .dropFirst()
-            .sink { [weak self] _ in
-                self?.scheduleAutoSave()
-            }
+            .sink { [weak self] _ in self?.scheduleAutoSave() }
             .store(in: &cancellables)
             
         $title
             .dropFirst()
-            .sink { [weak self] _ in
-                self?.scheduleAutoSave()
-            }
+            .sink { [weak self] _ in self?.scheduleAutoSave() }
             .store(in: &cancellables)
             
         $promptDescription
             .dropFirst()
-            .sink { [weak self] _ in
-                self?.scheduleAutoSave()
-            }
+            .sink { [weak self] _ in self?.scheduleAutoSave() }
             .store(in: &cancellables)
     }
     
@@ -58,14 +52,53 @@ class FloatingZenManager: NSObject, ObservableObject {
         self.content = content
         self.originalPromptId = promptId
         self.isEditingExisting = isEditing
+        self.showcaseImages = []
+        self.lastSaveSuccess = false
         
-        if panel == nil {
-            createPanel()
-        }
+        if panel == nil { createPanel() }
         
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         isVisible = true
+    }
+    
+    /// Guarda directamente como nuevo prompt en PromptService
+    func saveAsNewPrompt() {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        isSaving = true
+        
+        let newPrompt = Prompt(
+            title: title,
+            content: content,
+            promptDescription: promptDescription.isEmpty ? nil : promptDescription,
+            showcaseImages: Array(showcaseImages.prefix(3))
+        )
+        
+        _ = PromptService.shared.createPrompt(newPrompt)
+        
+        HapticService.shared.playSuccess()
+        if PreferencesManager.shared.soundEnabled {
+            SoundService.shared.playMagicSound()
+        }
+        
+        lastSaveSuccess = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+            self?.resetAndHide()
+        }
+    }
+    
+    func resetAndHide() {
+        panel?.orderOut(nil)
+        isVisible = false
+        isSaving = false
+        lastSaveSuccess = false
+        title = ""
+        promptDescription = ""
+        content = ""
+        showcaseImages = []
+        originalPromptId = nil
+        isEditingExisting = false
     }
     
     func hide() {
@@ -76,7 +109,7 @@ class FloatingZenManager: NSObject, ObservableObject {
     
     private func createPanel() {
         let newPanel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 350),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 440),
             styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -91,8 +124,6 @@ class FloatingZenManager: NSObject, ObservableObject {
         newPanel.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)
         newPanel.hasShadow = true
         newPanel.delegate = self
-        
-        // Center the panel on the screen
         newPanel.center()
         
         let view = FloatingZenEditorView()
@@ -119,7 +150,7 @@ class FloatingZenManager: NSObject, ObservableObject {
                 promptDescription: promptDescription.isEmpty ? existing.prompt.promptDescription : promptDescription,
                 folder: existing.prompt.folder,
                 icon: existing.prompt.icon,
-                showcaseImages: existing.prompt.showcaseImages,
+                showcaseImages: showcaseImages.isEmpty ? existing.prompt.showcaseImages : showcaseImages,
                 tags: existing.prompt.tags,
                 targetAppBundleIDs: existing.prompt.targetAppBundleIDs,
                 negativePrompt: existing.prompt.negativePrompt,
@@ -127,7 +158,6 @@ class FloatingZenManager: NSObject, ObservableObject {
                 alternatives: existing.prompt.alternatives,
                 customShortcut: existing.prompt.customShortcut
             )
-            // Restore hidden properties
             currentPrompt.id = originalPromptId ?? existing.prompt.id
             currentPrompt.createdAt = existing.prompt.createdAt
             currentPrompt.lastUsedAt = existing.prompt.lastUsedAt
@@ -139,7 +169,8 @@ class FloatingZenManager: NSObject, ObservableObject {
             currentPrompt = Prompt(
                 title: title,
                 content: content,
-                promptDescription: promptDescription.isEmpty ? nil : promptDescription
+                promptDescription: promptDescription.isEmpty ? nil : promptDescription,
+                showcaseImages: showcaseImages
             )
             if let originalId = originalPromptId {
                 currentPrompt.id = originalId
@@ -147,8 +178,6 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
         
         DraftService.shared.saveDraft(prompt: currentPrompt, isEditing: isEditingExisting)
-        
-        // Let NewPromptView know there's a draft update if it's currently open
         NotificationCenter.default.post(name: NSNotification.Name("FloatingZenDraftUpdated"), object: nil)
     }
 }
