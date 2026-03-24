@@ -341,7 +341,7 @@ struct SearchViewSimple: View {
                                         .onChanged { value in
                                             // Usamos la posición absoluta del mouse en el contenedor nombrado
                                             let newWidth = value.location.x
-                                            if newWidth >= 150 && newWidth <= 500 {
+                                            if newWidth >= 195 && newWidth <= 350 {
                                                 preferences.sidebarWidth = newWidth
                                             }
                                         }
