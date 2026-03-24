@@ -12,6 +12,7 @@ import AppKit
 struct FloatingZenEditorView: View {
     @EnvironmentObject var manager: FloatingZenManager
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     
     @FocusState private var focusedField: ZenField?
     @State private var isDraggingImage = false
@@ -23,6 +24,14 @@ struct FloatingZenEditorView: View {
         !manager.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
+    /// Top 3 carpetas usadas por el usuario (por número de prompts)
+    private var pinnedCategories: [String] {
+        let folderCounts = Dictionary(grouping: promptService.prompts.compactMap { $0.folder }) { $0 }
+            .mapValues { $0.count }
+        let sorted = folderCounts.sorted { $0.value > $1.value }.map { $0.key }
+        return Array(sorted.prefix(3))
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             
@@ -32,7 +41,7 @@ struct FloatingZenEditorView: View {
             Divider()
             
             // ── Title ─────────────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Label("TÍTULO", systemImage: "text.cursor")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.blue.opacity(0.7))
@@ -41,20 +50,21 @@ struct FloatingZenEditorView: View {
                 TextField("Escribe el título del prompt...", text: $manager.title, axis: .vertical)
                     .font(.system(size: 16, weight: .bold))
                     .textFieldStyle(.plain)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity * 0.9)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1...2)
                     .focused($focusedField, equals: .title)
+                    .frame(maxWidth: .infinity)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 18)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
             .padding(.top, 16)
             .padding(.bottom, 14)
             
             Divider().padding(.horizontal, 14)
             
             // ── Description ───────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Label("DESCRIPCIÓN", systemImage: "text.quote")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.secondary.opacity(0.6))
@@ -64,12 +74,14 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.secondary)
                     .textFieldStyle(.plain)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1...3)
                     .focused($focusedField, equals: .description)
+                    .frame(maxWidth: .infinity)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 18)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
             .padding(.top, 12)
             .padding(.bottom, 12)
             
@@ -98,6 +110,12 @@ struct FloatingZenEditorView: View {
             
             Divider()
 
+            // ── Category pins ─────────────────────────────────────────
+            if !pinnedCategories.isEmpty {
+                categoryPinsStrip
+                Divider()
+            }
+
             // ── Image strip ───────────────────────────────────────────
             imageStrip
             
@@ -117,6 +135,13 @@ struct FloatingZenEditorView: View {
         }
         .onDrop(of: [UTType.image, UTType.fileURL], isTargeted: $isDraggingImage) { providers in
             handleDrop(providers: providers)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ZenImagePasted"))) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { scrollContentToTop() }
+        }
+        .onChange(of: manager.content) { _, newVal in
+            // Si el contenido cambió mucho de golpe (paste) volver al inicio
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { scrollContentToTop() }
         }
     }
     
@@ -156,6 +181,64 @@ struct FloatingZenEditorView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(Color(NSColor.windowBackgroundColor).opacity(0.4))
+    }
+    
+    private var categoryPinsStrip: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pin.fill")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(.secondary.opacity(0.4))
+            
+            ForEach(pinnedCategories, id: \.self) { folder in
+                let isSelected = manager.selectedFolder == folder
+                let cat = PredefinedCategory.fromString(folder)
+                let catColor = cat?.color ?? .blue
+                let icon = cat?.icon ?? "folder.fill"
+                
+                Button(action: {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                        manager.selectedFolder = isSelected ? nil : folder
+                    }
+                    HapticService.shared.playLight()
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: icon)
+                            .font(.system(size: 10, weight: .bold))
+                        Text(folder)
+                            .font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(isSelected ? .white : catColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(isSelected ? catColor : catColor.opacity(0.10))
+                            .overlay(
+                                Capsule()
+                                    .stroke(catColor.opacity(isSelected ? 0 : 0.35), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            
+            Spacer()
+            
+            if manager.selectedFolder != nil {
+                Button(action: {
+                    withAnimation { manager.selectedFolder = nil }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.secondary.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.primary.opacity(0.02))
     }
     
     private var imageStrip: some View {
@@ -348,6 +431,30 @@ struct FloatingZenEditorView: View {
                let optimized = optimizeImage(image) {
                 manager.showcaseImages.append(optimized)
                 return
+            }
+        }
+    }
+    
+    /// Hace scroll al inicio de todos los NSTextView en la ventana flotante
+    private func scrollContentToTop() {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0 is NSPanel }) else { return }
+        
+        func allTextViews(in view: NSView) -> [NSTextView] {
+            var result: [NSTextView] = []
+            if let tv = view as? NSTextView { result.append(tv) }
+            for sub in view.subviews { result += allTextViews(in: sub) }
+            return result
+        }
+        
+        guard let contentView = window.contentView else { return }
+        let textViews = allTextViews(in: contentView)
+        
+        // Solo el NSTextView que pertenece al TextEditor (el único que tiene NSScrollView como superview)
+        for tv in textViews {
+            if tv.enclosingScrollView != nil {
+                // Es TextEditor (no TextField)
+                tv.scrollRangeToVisible(NSRange(location: 0, length: 0))
+                tv.setSelectedRange(NSRange(location: 0, length: 0))
             }
         }
     }

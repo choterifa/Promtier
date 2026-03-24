@@ -19,6 +19,7 @@ class FloatingZenManager: NSObject, ObservableObject {
     @Published var promptDescription: String = ""
     @Published var content: String = ""
     @Published var showcaseImages: [Data] = []
+    @Published var selectedFolder: String? = nil
     @Published var isVisible: Bool = false
     @Published var isSaving: Bool = false
     @Published var lastSaveSuccess: Bool = false
@@ -72,6 +73,7 @@ class FloatingZenManager: NSObject, ObservableObject {
             title: title,
             content: content,
             promptDescription: promptDescription.isEmpty ? nil : promptDescription,
+            folder: selectedFolder,
             showcaseImages: Array(showcaseImages.prefix(3))
         )
         
@@ -97,6 +99,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         promptDescription = ""
         content = ""
         showcaseImages = []
+        selectedFolder = nil
         originalPromptId = nil
         isEditingExisting = false
     }
@@ -129,6 +132,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         let view = FloatingZenEditorView()
             .environmentObject(self)
             .environmentObject(PreferencesManager.shared)
+            .environmentObject(PromptService.shared)
         
         newPanel.contentView = NSHostingView(rootView: view)
         self.panel = newPanel
