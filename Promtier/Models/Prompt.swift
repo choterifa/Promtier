@@ -167,10 +167,18 @@ struct Prompt: Identifiable, Codable {
     // Statically cached Regex patterns to avoid compiling on every view redra
     static let variableExtractRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
     static let variableCheckRegex = try? NSRegularExpression(pattern: "\\{\\{[^}]+\\}\\}", options: [])
+    static let chainExtractRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
     
     /// Verifica si el prompt contiene variables de plantilla {{variable}}
     func hasTemplateVariables() -> Bool {
         let regex = Self.variableCheckRegex
+        let range = NSRange(content.startIndex..<content.endIndex, in: content)
+        return regex?.firstMatch(in: content, options: [], range: range) != nil
+    }
+    
+    /// Verifica si tiene encadenamientos [[@Prompt:Nombre]]
+    func hasChains() -> Bool {
+        let regex = Self.chainExtractRegex
         let range = NSRange(content.startIndex..<content.endIndex, in: content)
         return regex?.firstMatch(in: content, options: [], range: range) != nil
     }
@@ -192,6 +200,44 @@ struct Prompt: Identifiable, Codable {
             }
         }
         return variables
+    }
+
+    /// Extrae recursivamente todas las variables, incluyendo las de los prompts encadenados
+    func extractAllVariables(availablePrompts: [Prompt], depth: Int = 0) -> [String] {
+        if depth > 5 { return extractTemplateVariables() }
+        
+        var allVars = extractTemplateVariables()
+        let chainedNames = extractChainedPromptNames()
+        
+        for name in chainedNames {
+            if let linked = availablePrompts.first(where: { $0.title.lowercased() == name.lowercased() }) {
+                let linkedVars = linked.extractAllVariables(availablePrompts: availablePrompts, depth: depth + 1)
+                for v in linkedVars {
+                    if !allVars.contains(v) {
+                        allVars.append(v)
+                    }
+                }
+            }
+        }
+        return allVars
+    }
+
+    /// Extrae los nombres de los prompts encadenados [[@Prompt:Nombre]]
+    func extractChainedPromptNames() -> [String] {
+        let regex = Self.chainExtractRegex
+        let range = NSRange(content.startIndex..<content.endIndex, in: content)
+        
+        var names: [String] = []
+        regex?.enumerateMatches(in: content, options: [], range: range) { match, _, _ in
+            if let captureRange = match?.range(at: 1),
+               let name = (content as NSString).substring(with: captureRange) as String? {
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty && !names.contains(trimmedName) {
+                    names.append(trimmedName)
+                }
+            }
+        }
+        return names
     }
     
     /// Verifica si un prompt contiene únicamente variables inteligentes (que se autorresuelven)

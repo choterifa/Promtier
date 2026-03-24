@@ -15,6 +15,7 @@ struct SearchViewSimple: View {
     @State private var showingPreview = false
     @State private var hoveredPrompt: Prompt?
     @State private var fillingVariablesFor: Prompt?
+    @State private var isNavigatingWithKeys: Bool = false
     @State private var showParticles: Bool = false
     @State private var isDraggingFile: Bool = false
     @State private var importMessage: String? = nil
@@ -403,6 +404,7 @@ struct SearchViewSimple: View {
                                         isSearchFocused = false
                                     }
                                     .onChange(of: promptService.searchQuery) { _, newValue in
+                                        isNavigatingWithKeys = false
                                         if newValue.count > 40 {
                                             promptService.searchQuery = String(newValue.prefix(40))
                                         }
@@ -746,19 +748,24 @@ struct SearchViewSimple: View {
             DispatchQueue.main.async { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { preferences.showSidebar.toggle() } }
             return nil
         }
-        if keyCode == 49 {
-            if showingPreview {
-                DispatchQueue.main.async {
-                    showingPreview = false
-                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+        if keyCode == 49 { // Space
+            let isSearchEmpty = promptService.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
+            let shouldTriggerPreview = isNavigatingWithKeys || isSearchEmpty || !isSearchFocused
+            
+            if shouldTriggerPreview {
+                if showingPreview {
+                    DispatchQueue.main.async {
+                        showingPreview = false
+                        if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                    }
+                    return nil
+                } else if selectedPrompt != nil {
+                    DispatchQueue.main.async {
+                        showingPreview = true
+                        if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                    }
+                    return nil
                 }
-                return nil
-            } else if selectedPrompt != nil {
-                DispatchQueue.main.async {
-                    showingPreview = true
-                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-                }
-                return nil
             }
         }
         if modifiers == .command && keyCode == 8 {
@@ -767,8 +774,9 @@ struct SearchViewSimple: View {
                 return nil
             }
         }
-        if keyCode == 126 {
+        if keyCode == 126 { // Up
             guard !promptService.filteredPrompts.isEmpty else { return event }
+            isNavigatingWithKeys = true
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex > 0 {
@@ -783,8 +791,9 @@ struct SearchViewSimple: View {
             }
             return nil
         }
-        if keyCode == 125 {
+        if keyCode == 125 { // Down
             guard !promptService.filteredPrompts.isEmpty else { return event }
+            isNavigatingWithKeys = true
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex < promptService.filteredPrompts.count - 1 {
@@ -803,8 +812,8 @@ struct SearchViewSimple: View {
     }
     
     private func usePrompt(_ prompt: Prompt) {
-        if prompt.hasTemplateVariables() {
-            if prompt.isSmartOnly() {
+        if prompt.hasTemplateVariables() || prompt.hasChains() {
+            if prompt.isSmartOnly() && !prompt.hasChains() {
                 let resolvedContent = PlaceholderResolver.shared.resolveAll(in: prompt.content)
                 self.promptService.usePrompt(prompt, contentOverride: resolvedContent)
             } else {

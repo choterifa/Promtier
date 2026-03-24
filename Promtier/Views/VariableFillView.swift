@@ -13,6 +13,7 @@ struct VariableFillView: View {
     let onCancel: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     @State private var variableValues: [String: String] = [:]
     @FocusState private var focusedField: String?
     @State private var showAIPlayground: Bool = false
@@ -38,7 +39,7 @@ struct VariableFillView: View {
     // MARK: - Computeds
     
     private var variables: [TemplateVariable] {
-        let rawVars = prompt.extractTemplateVariables()
+        let rawVars = prompt.extractAllVariables(availablePrompts: promptService.prompts)
         var vars: [TemplateVariable] = []
         
         for raw in rawVars {
@@ -119,7 +120,7 @@ struct VariableFillView: View {
     }
     
     private var hasPremiumVariables: Bool {
-        let rawVars = prompt.extractTemplateVariables()
+        let rawVars = prompt.extractAllVariables(availablePrompts: promptService.prompts)
         return rawVars.contains { raw in
             let lower = raw.lowercased()
             return lower == "date" || lower == "fecha" || lower == "time" || lower == "hora" || (raw.contains(":") && raw.contains(","))
@@ -127,14 +128,18 @@ struct VariableFillView: View {
     }
     
     private var processedContent: String {
-        var result = prompt.content
-        let rawVars = prompt.extractTemplateVariables()
+        // 1. Resolver cadenas primero para tener el contenido completo
+        let unifiedContent = PlaceholderResolver.shared.resolveChains(in: prompt.content, availablePrompts: promptService.prompts)
         
-        for rawVar in rawVars {
+        // 2. Resolver variables sobre el contenido unificado
+        var result = unifiedContent
+        let allVars = prompt.extractAllVariables(availablePrompts: promptService.prompts)
+        
+        for rawVar in allVars {
             let value = variableValues[rawVar] ?? ""
             if !value.isEmpty {
                 let escapedVar = NSRegularExpression.escapedPattern(for: rawVar)
-                let pattern = "\\{\\{\\s*\(escapedVar)\\s*\\}\\}"
+                let pattern = "\\{\\{\\s*\(escapedVar)\\s*\\}\\}|\\{\\{\\s*\(escapedVar)\\s*\\}\\}\\$"
                 if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
                     let range = NSRange(result.startIndex..<result.endIndex, in: result)
                     result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: value)

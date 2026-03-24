@@ -14,6 +14,7 @@ struct PromptPreviewView: View {
     @State private var isVisible = false
     @State private var showcaseImagePaths: [String] = []
     @State private var isLoadingImages: Bool = false
+    @State private var cachedAttributedContent: AttributedString? = nil
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
@@ -65,18 +66,27 @@ struct PromptPreviewView: View {
         .onAppear {
             isVisible = true
             showcaseImagePaths = prompt.showcaseImagePaths
+            updateCachedContent()
         }
         .onDisappear {
             isVisible = false
         }
+        .onChange(of: prompt.id) { _, _ in
+            updateCachedContent()
+        }
+        .onChange(of: preferences.fontSize.scale) { _, _ in
+            updateCachedContent()
+        }
         .task(id: prompt.id) {
-            guard showcaseImagePaths.isEmpty, prompt.showcaseImageCount > 0 else { return }
-            if isLoadingImages { return }
-            isLoadingImages = true
-            let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
-            await MainActor.run {
-                self.showcaseImagePaths = paths
-                self.isLoadingImages = false
+            // Cargar paths si no están ya en el objeto (CoreData fault)
+            if showcaseImagePaths.isEmpty && prompt.showcaseImageCount > 0 {
+                if isLoadingImages { return }
+                isLoadingImages = true
+                let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                await MainActor.run {
+                    self.showcaseImagePaths = paths
+                    self.isLoadingImages = false
+                }
             }
         }
     }
@@ -181,11 +191,20 @@ struct PromptPreviewView: View {
                     Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
                 }
                 
-                Text(highlightContent(prompt.content))
-                    .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
-                    .lineSpacing(6)
-                    .foregroundColor(.primary.opacity(0.9))
-                    .textSelection(.enabled)
+                if let attributedContent = cachedAttributedContent {
+                    Text(attributedContent)
+                        .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
+                        .lineSpacing(6)
+                        .foregroundColor(.primary.opacity(0.9))
+                        .textSelection(.enabled)
+                } else {
+                    // Fallback mientras se carga o falla
+                    Text(prompt.content)
+                        .font(.system(size: 16 * preferences.fontSize.scale, design: .rounded))
+                        .lineSpacing(6)
+                        .foregroundColor(.primary.opacity(0.9))
+                        .textSelection(.enabled)
+                }
                 
                 // Prompt Negativo (Si existe)
                 if let negative = prompt.negativePrompt, !negative.isEmpty {
@@ -423,6 +442,11 @@ struct PromptPreviewView: View {
         return (firstBlock, secondBlock)
     }
     
+    private func updateCachedContent() {
+        // Ejecutar el resaltado de forma síncrona pero solo una vez
+        self.cachedAttributedContent = highlightContent(prompt.content)
+    }
+
     private func highlightContent(_ text: String) -> AttributedString {
         var attrString = AttributedString(text)
         
