@@ -22,6 +22,7 @@
 "save" = "Guardar";
 "create" = "Crear";
 "add" = "Añadir";
+"clear_form" = "Limpiar Formulario";
 
 /* Tabs */
 "appearance_tab" = "Apariencia";

@@ -529,6 +529,7 @@ struct SearchViewSimple: View {
                                 }
                             }
                         }
+                        .scrollIndicators(.hidden)
                         .padding(.leading, 12)
                         .padding(.trailing, 24)
                         .padding(.vertical, 16)

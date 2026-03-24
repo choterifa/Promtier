@@ -22,6 +22,7 @@
 "save" = "Save";
 "create" = "Create";
 "add" = "Add";
+"clear_form" = "Clear Form";
 
 /* Tabs */
 "appearance_tab" = "Appearance";

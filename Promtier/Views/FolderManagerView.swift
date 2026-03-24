@@ -12,6 +12,8 @@ import UniformTypeIdentifiers
 struct FolderManagerView: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var menuBarManager: MenuBarManager
+    
     var folderToEdit: Folder? = nil
     var onClose: () -> Void
     
@@ -207,6 +209,7 @@ struct FolderManagerView: View {
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
             }
+            .scrollIndicators(.hidden)
         }
         .background(Color.primary.opacity(0.015))
     }
@@ -281,54 +284,7 @@ struct FolderManagerView: View {
                                 .foregroundColor(.secondary.opacity(0.6))
                                 .tracking(1)
                             
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 14) {
-                                ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
-                                    Circle()
-                                        .fill(color)
-                                        .frame(width: 28, height: 28)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
-                                                .shadow(color: .black.opacity(0.1), radius: 2)
-                                        )
-                                        .scaleEffect(selectedColor == color ? 1.2 : (animateColors ? 1.0 : 0.4))
-                                        .opacity(animateColors ? 1.0 : 0.0)
-                                        .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(index) * 0.05), value: animateColors)
-                                        .onTapGesture {
-                                            HapticService.shared.playLight()
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                selectedColor = color
-                                            }
-                                        }
-                                }
-                                
-                                // Color Picker Personalizado (Multicolor)
-                                ZStack {
-                                    AngularGradient(
-                                        gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]),
-                                        center: .center
-                                    )
-                                    .clipShape(Circle())
-                                    .frame(width: 28, height: 28)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white, lineWidth: selectedColor != .gray ? 3 : 1)
-                                            .shadow(color: .black.opacity(0.1), radius: 2)
-                                    )
-                                    .scaleEffect(animateColors ? 1.0 : 0.4)
-                                    .opacity(animateColors ? 1.0 : 0.0)
-                                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(presetColors.count) * 0.05), value: animateColors)
-
-                                    ColorPicker("", selection: $selectedColor)
-                                        .labelsHidden()
-                                        .opacity(0.011)
-                                        .frame(width: 28, height: 28)
-                                        .onTapGesture {
-                                            NSColorPanel.shared.makeKeyAndOrderFront(nil)
-                                        }
-                                }
-                            }
-                            .padding(.top, 4)
+                            colorPickerGrid
                         }
                     }
                 }
@@ -343,51 +299,11 @@ struct FolderManagerView: View {
                         .stroke(Color.primary.opacity(0.10), lineWidth: 1.1)
                 )
                 
-                // Botones de Acción
-                HStack(spacing: 16) {
-                    Button {
-                        resetForm()
-                        menuBarManager.folderToEdit = nil
-                    } label: {
-                        Text(editingFolder == nil ? "clear_form".localized(for: preferences.language) : "cancel".localized(for: preferences.language))
-                    }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(Color.primary.opacity(0.05)))
-                    
-                    Spacer()
-                    
-                    Button {
-                        saveFolder()
-                    } label: {
-                        HStack {
-                            Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
-                            Image(systemName: "checkmark")
-                        }
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(
-                            newFolderName.isEmpty ? 
-                                AnyShapeStyle(Color.gray.opacity(0.3)) : 
-                                (preferences.isHaloEffectEnabled ? 
-                                    AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
-                                    AnyShapeStyle(Color.blue))
-                        )
-                        .cornerRadius(12)
-                        .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(0.25) : .clear, radius: 8, y: 4)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(newFolderName.isEmpty)
-                }
-                .padding(.top, 8)
+                actionButtons
             }
             .padding(32)
         }
+        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity)
     }
     
@@ -410,6 +326,15 @@ struct FolderManagerView: View {
         }
     }
     
+    private func revertChanges() {
+        guard let folder = editingFolder else { return }
+        withAnimation(.spring()) {
+            newFolderName = folder.name
+            selectedIcon = folder.icon ?? "folder.fill"
+            selectedColor = Color(hex: folder.displayColor)
+        }
+    }
+    
     private func saveFolder() {
         let hex = "#" + NSColor(selectedColor).hexString
         
@@ -421,6 +346,121 @@ struct FolderManagerView: View {
             _ = promptService.createFolder(new)
         }
         resetForm()
+    }
+    
+    private var colorPickerGrid: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 14) {
+            ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
+                Circle()
+                    .fill(color)
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
+                            .shadow(color: .black.opacity(0.1), radius: 2)
+                    )
+                    .scaleEffect(selectedColor == color ? 1.2 : (animateColors ? 1.0 : 0.4))
+                    .opacity(animateColors ? 1.0 : 0.0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(index) * 0.05), value: animateColors)
+                    .onTapGesture {
+                        HapticService.shared.playLight()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedColor = color
+                        }
+                    }
+            }
+            
+            // Color Picker Personalizado (Multicolor)
+            ZStack {
+                AngularGradient(
+                    gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]),
+                    center: .center
+                )
+                .clipShape(Circle())
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: selectedColor != .gray ? 3 : 1)
+                        .shadow(color: .black.opacity(0.1), radius: 2)
+                )
+                .scaleEffect(animateColors ? 1.0 : 0.4)
+                .opacity(animateColors ? 1.0 : 0.0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(presetColors.count) * 0.05), value: animateColors)
+
+                ColorPicker("", selection: $selectedColor)
+                    .labelsHidden()
+                    .opacity(0.011)
+                    .frame(width: 28, height: 28)
+                    .onTapGesture {
+                        NSColorPanel.shared.makeKeyAndOrderFront(nil)
+                    }
+            }
+        }
+        .padding(.top, 4)
+    }
+    
+    private var actionButtons: some View {
+        HStack(spacing: 16) {
+                    if editingFolder != nil {
+                        // Botón de "Nuevo" para salir de edición
+                        Button {
+                            resetForm()
+                        } label: {
+                            Image(systemName: "plus.circle")
+                                .font(.system(size: 13))
+                            Text("new_category".localized(for: preferences.language))
+                        }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color.blue.opacity(0.1)))
+                    }
+                    
+                    Button {
+                        if editingFolder == nil {
+                            resetForm()
+                        } else {
+                            revertChanges()
+                        }
+                    } label: {
+                        Text(editingFolder == nil ? "clear_form".localized(for: preferences.language) : "cancel".localized(for: preferences.language))
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(Color.primary.opacity(0.05)))
+            
+            Spacer()
+            
+            Button {
+                saveFolder()
+            } label: {
+                HStack {
+                    Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
+                    Image(systemName: "checkmark")
+                }
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(
+                    newFolderName.isEmpty ? 
+                        AnyShapeStyle(Color.gray.opacity(0.3)) : 
+                        (preferences.isHaloEffectEnabled ? 
+                            AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
+                            AnyShapeStyle(Color.blue))
+                )
+                .cornerRadius(12)
+                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(0.25) : .clear, radius: 8, y: 4)
+            }
+            .buttonStyle(.plain)
+            .disabled(newFolderName.isEmpty)
+        }
+        .padding(.top, 8)
     }
 }
 
