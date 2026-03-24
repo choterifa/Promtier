@@ -37,13 +37,31 @@ class OllamaService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
-        // Checking status only if Ollama is enabled to prevent networking errors when not used
+        setupObservers()
+        
+        // Initial check only if explicitly enabled and selected to avoid console noise for OpenAI/Gemini users
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            if PreferencesManager.shared.ollamaEnabled {
+            if PreferencesManager.shared.ollamaEnabled && PreferencesManager.shared.preferredAIService == .ollama {
                 self.checkStatus()
                 self.fetchModels()
             }
         }
+    }
+    
+    private func setupObservers() {
+        // Observe both the enabled flag and the preferred service
+        Publishers.CombineLatest(PreferencesManager.shared.$preferredAIService, PreferencesManager.shared.$ollamaEnabled)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] (service, enabled) in
+                if service == .ollama && enabled {
+                    self?.checkStatus()
+                    self?.fetchModels()
+                } else if !enabled || service != .ollama {
+                    // Reset status if disabled or switched away
+                    self?.isOllamaRunning = false
+                }
+            }
+            .store(in: &cancellables)
     }
     
     /// Verifica si el servidor local de Ollama está activo
