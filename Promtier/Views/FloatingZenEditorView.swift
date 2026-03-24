@@ -42,9 +42,12 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 16, weight: .bold))
                     .textFieldStyle(.plain)
                     .lineLimit(2)
+                    .frame(maxWidth: .infinity * 0.9)
+                    .fixedSize(horizontal: false, vertical: true)
                     .focused($focusedField, equals: .title)
             }
             .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 16)
             .padding(.bottom, 14)
             
@@ -61,10 +64,12 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.secondary)
                     .textFieldStyle(.plain)
-                    .lineLimit(2)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
                     .focused($focusedField, equals: .description)
             }
             .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 12)
             .padding(.bottom, 12)
             
@@ -79,13 +84,16 @@ struct FloatingZenEditorView: View {
                     .padding(.horizontal, 18)
                     .padding(.top, 12)
                 
-                TextEditor(text: $manager.content)
-                    .font(.system(size: 13 * preferences.fontSize.scale))
-                    .focused($focusedField, equals: .content)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 110, maxHeight: 200)
+                GeometryReader { geo in
+                    TextEditor(text: $manager.content)
+                        .font(.system(size: 13 * preferences.fontSize.scale))
+                        .focused($focusedField, equals: .content)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .padding(.horizontal, 14)
+                        .frame(height: geo.size.height)
+                }
+                .frame(minHeight: 120)
             }
             
             Divider()
@@ -98,7 +106,7 @@ struct FloatingZenEditorView: View {
             // ── Footer ────────────────────────────────────────────────
             footerBar
         }
-        .background(VisualEffectView(material: .hudWindow, blendingMode: .behindWindow))
+        .background(Color(NSColor.windowBackgroundColor))
         .overlay {
             if manager.lastSaveSuccess {
                 savedFeedbackOverlay

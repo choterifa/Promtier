@@ -109,7 +109,7 @@ class FloatingZenManager: NSObject, ObservableObject {
     
     private func createPanel() {
         let newPanel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 440),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
             styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
