@@ -216,8 +216,8 @@ struct SearchViewSimple: View {
         }
         .onChange(of: menuBarManager.activeViewState) { _, newValue in
             if newValue == .main {
-                // Darle tiempo antes de aparecer cuando regresa a main
-                scheduleNextGhostTip(initialDelay: 10.0)
+                // Darle tiempo antes de aparecer cuando regresa a main (Triplicado)
+                scheduleNextGhostTip(initialDelay: 30.0)
             } else {
                 // Ocultar si sale de main
                 withAnimation { currentGhostTip = nil }
@@ -281,9 +281,9 @@ struct SearchViewSimple: View {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             }
             
-            // Programar primer Ghost Tip si están activados
+            // Programar primer Ghost Tip si están activados (Triplicado)
             if preferences.ghostTipsEnabled {
-                scheduleNextGhostTip(initialDelay: 3.0)
+                scheduleNextGhostTip(initialDelay: 9.0)
             }
             
             if localEventMonitor == nil {
@@ -1082,8 +1082,8 @@ struct SearchViewSimple: View {
             
             guard preferences.ghostTipsEnabled else { return }
     
-            // Usar delay inicial si se solicita, si no, uno aleatorio normal
-            let delay = initialDelay ?? Double.random(in: 25...45)
+            // Usar delay inicial si se solicita, si no, uno aleatorio normal (Triplicado por petición)
+            let delay = initialDelay ?? Double.random(in: 75...135)
     
             ghostTipTask = Task {
                 try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
@@ -1101,9 +1101,9 @@ struct SearchViewSimple: View {
                             }
                         }
     
-                        // ⏱️ Auto-ocultar después de 6.5 segundos (ajustado por petición)
+                        // ⏱️ Auto-ocultar después de 3.25 segundos (mitad de duración)
                         Task {
-                            try? await Task.sleep(nanoseconds: 6_500_000_000)
+                            try? await Task.sleep(nanoseconds: 3_250_000_000)
                             if !Task.isCancelled {
                                 await MainActor.run {
                                     if self.currentGhostTip != nil {
