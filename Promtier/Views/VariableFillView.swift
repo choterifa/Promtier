@@ -161,6 +161,12 @@ struct VariableFillView: View {
             !(variableValues[id]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
         }
     }
+    
+    private var isAIAvailable: Bool {
+        let useOpenAI = !preferences.openAIApiKey.isEmpty
+        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        return useOpenAI || useGemini
+    }
 
     // MARK: - Body
     
@@ -350,7 +356,7 @@ struct VariableFillView: View {
                 .background(Color.primary.opacity(0.04))
                 .cornerRadius(6)
                 
-                if preferences.ollamaEnabled {
+                if isAIAvailable {
                     Button(action: { 
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             showAIPlayground.toggle()
@@ -365,7 +371,7 @@ struct VariableFillView: View {
                             .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
-                    .help("local_ai_ollama".localized(for: preferences.language))
+                    .help("AI Assistant")
                 }
             }
             
@@ -387,7 +393,7 @@ struct VariableFillView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
             
-            if showAIPlayground && preferences.ollamaEnabled {
+            if showAIPlayground && isAIAvailable {
                 AIPlaygroundView(prompt: processedContent)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .frame(height: 280)

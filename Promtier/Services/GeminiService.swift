@@ -42,16 +42,15 @@ class GeminiService: ObservableObject {
     private init() {}
     
     /// Genera una respuesta basada en un prompt usando Google Gemini
-    func generate(prompt: String) -> AnyPublisher<String, Error> {
+    func generate(prompt: String, model: String) -> AnyPublisher<String, Error> {
         let apiKey = PreferencesManager.shared.geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard !apiKey.isEmpty else {
             return Fail(error: URLError(.userAuthenticationRequired)).eraseToAnyPublisher()
         }
         
-        // Usamos generateContent en lugar de streamGenerateContent para asegurar
-        // que el JSON se pueda parsear correctamente sin lidiar con los streams parciales.
-        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=\(apiKey)") else {
+        // Usamos generateContent en lugar de streamGenerateContent
+        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)") else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
         

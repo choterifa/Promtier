@@ -434,22 +434,16 @@
 /* Ollama AI */
 "local_ai_ollama" = "Local AI (Ollama)";
 "ollama_subtitle" = "Run AI models locally on your Mac";
-"ollama_url" = "Ollama API URL";
-"ollama_url_subtitle" = "Default: http://localhost:11434";
 "openai_service" = "OpenAI (Cloud)";
 "openai_subtitle" = "Use your own OpenAI API Key to enhance prompts";
 "openai_api_key_subtitle" = "Your personal API Key from OpenAI platform";
 "openai_model_id" = "Model ID";
 "openai_model_presets" = "Select a model";
 "preferred_ai_provider" = "AI Provider";
-"ollama_status" = "Server Status";
-"ollama_active" = "Active";
-"ollama_inactive" = "Not found";
-"ollama_models" = "Available Models";
+"gemini_model_subtitle" = "Gemini Model ID (e.g., gemini-2.0-flash)";
 "generate_test" = "Test Prompt";
 "ai_response" = "AI Response";
 "apply_ai_changes" = "Apply changes";
-"no_models_found" = "No models found. Run 'ollama run llama3' in terminal.";
 "ai_improvement_placeholder" = "Improvement command (e.g. 'Make it formal')...";
 "ai_action_create_from_text" = "Create New Prompt";
 "prompt_created_success" = "New prompt created!";

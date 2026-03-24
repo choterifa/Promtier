@@ -154,9 +154,8 @@ struct NewPromptView: View {
 
     private var isAIAvailable: Bool {
         let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOllama = preferences.preferredAIService == .ollama && OllamaService.shared.isOllamaRunning
         let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOllama || useOpenAI
+        return useGemini || useOpenAI
     }
 
     private var zenBindingSelection: Binding<NSRange?> {
@@ -1894,9 +1893,8 @@ struct EditorCard: View {
     
     private var isAIAvailable: Bool {
         let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOllama = preferences.preferredAIService == .ollama && OllamaService.shared.isOllamaRunning
         let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOllama || useOpenAI
+        return useGemini || useOpenAI
     }
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
@@ -2043,10 +2041,9 @@ struct EditorCard: View {
     }
     private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-            let useOllama = preferences.preferredAIService == .ollama && OllamaService.shared.isOllamaRunning
             let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
             
-            guard useGemini || useOllama || useOpenAI else { return }
+            guard useGemini || useOpenAI else { return }
 
             isAIGenerating = true
             HapticService.shared.playImpact()
@@ -2077,12 +2074,9 @@ struct EditorCard: View {
 
             switch preferences.preferredAIService {
             case .gemini:
-                publisher = GeminiService.shared.generate(prompt: fullPrompt)
+                publisher = GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
             case .openai:
                 publisher = OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-            case .ollama:
-                let model = OllamaService.shared.selectedModel ?? preferences.ollamaDefaultModel
-                publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
             }
 
             publisher
@@ -2185,9 +2179,8 @@ struct SecondaryEditorCard<Actions: View>: View {
 
     private var isAIAvailable: Bool {
         let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOllama = preferences.preferredAIService == .ollama && OllamaService.shared.isOllamaRunning
         let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOllama || useOpenAI
+        return useGemini || useOpenAI
     }
 
     @State private var isEditorFocused: Bool = false
@@ -2372,10 +2365,9 @@ struct SecondaryEditorCard<Actions: View>: View {
     }
         private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-            let useOllama = preferences.preferredAIService == .ollama && OllamaService.shared.isOllamaRunning
             let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
             
-            guard useGemini || useOllama || useOpenAI else { return }
+            guard useGemini || useOpenAI else { return }
 
             isAIGenerating = true
             HapticService.shared.playImpact()
@@ -2406,12 +2398,9 @@ struct SecondaryEditorCard<Actions: View>: View {
 
             switch preferences.preferredAIService {
             case .gemini:
-                publisher = GeminiService.shared.generate(prompt: fullPrompt)
+                publisher = GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
             case .openai:
                 publisher = OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-            case .ollama:
-                let model = OllamaService.shared.selectedModel ?? preferences.ollamaDefaultModel
-                publisher = OllamaService.shared.generate(prompt: fullPrompt, model: model)
             }
 
             publisher

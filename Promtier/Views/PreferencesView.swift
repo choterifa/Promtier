@@ -613,7 +613,6 @@ struct BehaviorTab: View {
                 
                 SettingsRow("preferred_ai_provider", subtitle: "preferred_ai_provider") {
                     Picker("", selection: $preferences.preferredAIService) {
-                        Text("Ollama").tag(AIService.ollama)
                         Text("Gemini").tag(AIService.gemini)
                         Text("OpenAI").tag(AIService.openai)
                     }
@@ -682,54 +681,43 @@ struct BehaviorTab: View {
                 }
                 
                 if preferences.geminiEnabled {
-                    SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
-                        SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 250)
+                    VStack(spacing: 12) {
+                        SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
+                            SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 250)
+                        }
+                        
+                        SettingsRow("model_id", subtitle: "gemini_model_subtitle") {
+                            HStack(spacing: 8) {
+                                TextField("gemini-1.5-flash-latest", text: $preferences.geminiDefaultModel)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(width: 200)
+                                
+                                Menu {
+                                    ForEach(["gemini-2.0-flash", "gemini-2.0-flash-lite-preview-02-05", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"], id: \.self) { model in
+                                        Button(model) {
+                                            preferences.geminiDefaultModel = model
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "list.bullet.indent")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(4)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(4)
+                                }
+                                .menuStyle(.button)
+                                .buttonStyle(.plain)
+                                .fixedSize()
+                            }
+                        }
                     }
                     .padding(.leading, 20)
                 }
                 
-                Divider().padding(.leading, 20)
-                
-                // Configuración de Ollama
-                SettingsRow("local_ai_ollama", subtitle: "ollama_subtitle", icon: "cpu", iconColor: .orange) {
-                    Toggle("", isOn: $preferences.ollamaEnabled)
-                        .toggleStyle(.switch)
-                }
-                
-                if preferences.ollamaEnabled {
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("ollama_url".localized(for: preferences.language))
-                                .font(.system(size: 12))
-                            Spacer()
-                            TextField("http://localhost:11434", text: $preferences.ollamaURL)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 200)
-                        }
-                        
-                        HStack {
-                            Text("ollama_status".localized(for: preferences.language))
-                                .font(.system(size: 12))
-                            Spacer()
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(OllamaService.shared.isOllamaRunning ? Color.green : Color.red)
-                                    .frame(width: 8, height: 8)
-                                
-                                Button(action: { OllamaService.shared.checkStatus() }) {
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.system(size: 10))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .padding(.leading, 40)
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 16)
-                }
             }
             
             SettingsSection(title: "system", icon: "macwindow") {

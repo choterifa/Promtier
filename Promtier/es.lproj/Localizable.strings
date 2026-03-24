@@ -44,6 +44,8 @@
 "system" = "Sistema";
 "font_size" = "Tamaño de fuente";
 "font_size_subtitle" = "Ajusta el texto de tus prompts";
+"preferred_ai_provider" = "IA Preferida";
+"gemini_model_subtitle" = "ID del modelo Gemini (ej. gemini-2.0-flash)";
 "preview_priority" = "Prioridad en Preview";
 "preview_priority_subtitle" = "Orden de elementos en la vista rápida";
 "images_first" = "Imágenes primero";
@@ -454,25 +456,6 @@
 "sort_most_used" = "Más usados";
 "sort_prompts_help" = "Cambiar orden de los prompts";
 
-/* Ollama AI */
-"local_ai_ollama" = "IA Local (Ollama)";
-"ollama_subtitle" = "Ejecuta modelos de IA localmente en tu Mac";
-"ollama_url" = "URL de la API de Ollama";
-"ollama_url_subtitle" = "Por defecto: http://localhost:11434";
-"openai_service" = "OpenAI (Nube)";
-"openai_subtitle" = "Usa tu propia API Key de OpenAI para mejorar prompts";
-"openai_api_key_subtitle" = "Tu API Key personal de la plataforma de OpenAI";
-"openai_model_id" = "ID del Modelo";
-"openai_model_presets" = "Seleccionar modelo";
-"preferred_ai_provider" = "IA Preferida";
-"ollama_status" = "Estado del Servidor";
-"ollama_active" = "Activo";
-"ollama_inactive" = "No detectado";
-"ollama_models" = "Modelos Disponibles";
-"generate_test" = "Probar Prompt";
-"ai_response" = "Respuesta de la IA";
-"apply_ai_changes" = "Aplicar cambios";
-"no_models_found" = "No se encontraron modelos. Ejecuta 'ollama run llama3' en la terminal.";
 "ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";
 "ai_action_create_from_text" = "Crear como nuevo Prompt";
 "prompt_created_success" = "¡Nuevo prompt creado!";

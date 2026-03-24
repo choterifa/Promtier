@@ -11,7 +11,6 @@ import Combine
 struct AIPlaygroundView: View {
     let prompt: String
     
-    @ObservedObject var ollama = OllamaService.shared
     @EnvironmentObject var preferences: PreferencesManager
     
     @State private var cancellable: AnyCancellable?
@@ -30,13 +29,14 @@ struct AIPlaygroundView: View {
                 
                 Spacer()
                 
+                let useOpenAI = !preferences.openAIApiKey.isEmpty
                 let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
                 
-                if useGemini {
+                if useOpenAI || useGemini {
                     HStack(spacing: 8) {
-                        Text("Google Gemini")
+                        Text(useOpenAI ? "OpenAI" : "Google Gemini")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
+                            .foregroundColor(useOpenAI ? .green : .blue)
                         
                         Button(action: generateResponse) {
                             if isGenerating {
@@ -50,42 +50,10 @@ struct AIPlaygroundView: View {
                         .controlSize(.small)
                         .disabled(isGenerating)
                     }
-                } else if ollama.isOllamaRunning {
-                    HStack(spacing: 8) {
-                        Picker("", selection: $ollama.selectedModel) {
-                            if ollama.availableModels.isEmpty {
-                                Text("no_models_found".localized(for: preferences.language)).tag(nil as String?)
-                            } else {
-                                ForEach(ollama.availableModels) { model in
-                                    Text(model.name).tag(model.name as String?)
-                                }
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 120)
-                        .controlSize(.small)
-                        
-                        Button(action: generateResponse) {
-                            if isGenerating {
-                                ProgressView().controlSize(.small)
-                            } else {
-                                Text("generate_test".localized(for: preferences.language))
-                                    .font(.system(size: 12, weight: .semibold))
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .disabled(isGenerating || ollama.selectedModel == nil)
-                    }
                 } else {
-                    Text("ollama_inactive".localized(for: preferences.language))
+                    Text("ai_service_not_configured".localized(for: preferences.language))
                         .font(.system(size: 12))
                         .foregroundColor(.red)
-                    
-                    Button(action: { ollama.checkStatus() }) {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 12)
@@ -166,9 +134,10 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
+        let useOpenAI = !preferences.openAIApiKey.isEmpty
         let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
         
-        guard useGemini || ollama.selectedModel != nil else { return }
+        guard useOpenAI || useGemini else { return }
         
         responseText = ""
         isGenerating = true
@@ -179,11 +148,10 @@ struct AIPlaygroundView: View {
         
         let publisher: AnyPublisher<String, Error>
         
-        if useGemini {
-            publisher = GeminiService.shared.generate(prompt: finalPrompt)
+        if useOpenAI {
+            publisher = OpenAIService.shared.generate(prompt: finalPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
         } else {
-            let model = ollama.selectedModel!
-            publisher = ollama.generate(prompt: finalPrompt, model: model)
+            publisher = GeminiService.shared.generate(prompt: finalPrompt, model: preferences.geminiDefaultModel)
         }
         
         cancellable = publisher

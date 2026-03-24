@@ -13,7 +13,6 @@ import AppKit
 import ServiceManagement
 
 enum AIService: String, Codable, CaseIterable {
-    case ollama = "ollama"
     case gemini = "gemini"
     case openai = "openai"
 }
@@ -233,33 +232,15 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var localAIToolsEnabled: Bool {
-        didSet {
-            userDefaults.set(localAIToolsEnabled, forKey: "localAIToolsEnabled")
-        }
-    }
-    
-    @Published var ollamaEnabled: Bool {
-        didSet {
-            userDefaults.set(ollamaEnabled, forKey: "ollamaEnabled")
-        }
-    }
-    
-    @Published var ollamaURL: String {
-        didSet {
-            userDefaults.set(ollamaURL, forKey: "ollamaURL")
-        }
-    }
-    
-    @Published var ollamaDefaultModel: String {
-        didSet {
-            userDefaults.set(ollamaDefaultModel, forKey: "ollamaDefaultModel")
-        }
-    }
-    
     @Published var geminiEnabled: Bool {
         didSet {
             userDefaults.set(geminiEnabled, forKey: "geminiEnabled")
+        }
+    }
+    
+    @Published var geminiDefaultModel: String {
+        didSet {
+            userDefaults.set(geminiDefaultModel, forKey: "geminiDefaultModel")
         }
     }
     
@@ -391,16 +372,7 @@ class PreferencesManager: ObservableObject {
         // Imágenes primero por defecto
         self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
         
-        // Apple Intelligence por defecto en true
-        // Migration from old key if it exists
-        if let oldVal = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool {
-            self.localAIToolsEnabled = oldVal
-            userDefaults.removeObject(forKey: "appleIntelligenceEnabled")
-        } else {
-            self.localAIToolsEnabled = userDefaults.object(forKey: "localAIToolsEnabled") as? Bool ?? true
-        }
-        
-        // Consejos Ghost por defecto en true
+        self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
         if userDefaults.object(forKey: "ghostTipsEnabled") != nil {
             self.ghostTipsEnabled = userDefaults.bool(forKey: "ghostTipsEnabled")
         } else {
@@ -442,17 +414,13 @@ class PreferencesManager: ObservableObject {
             ]
         }
         
-        // Ollama
-        self.ollamaEnabled = userDefaults.object(forKey: "ollamaEnabled") as? Bool ?? true
-        self.ollamaURL = userDefaults.string(forKey: "ollamaURL") ?? "http://localhost:11434"
-        self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? "llama3"
-        
         // Gemini
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
         self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
+        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-1.5-flash-latest"
         
         // OpenAI
-        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "ollama") ?? .ollama
+        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIApiKey = userDefaults.string(forKey: "openAIApiKey") ?? ""
         self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
         
@@ -551,19 +519,16 @@ class PreferencesManager: ObservableObject {
         self.icloudSyncEnabled = false
         self.suppressAccessibilityWarning = false
         self.isPremiumActive = false
-        self.localAIToolsEnabled = true
         self.ghostTipsEnabled = true
         self.gestureHintsEnabled = true
         self.previewImagesFirst = true
         self.disableImageAnimations = false
         self.showAdvancedFields = true
         self.isHaloEffectEnabled = true
-        self.ollamaEnabled = true
-        self.ollamaURL = "http://localhost:11434"
-        self.ollamaDefaultModel = "llama3"
         self.geminiEnabled = false
         self.geminiAPIKey = ""
-        self.preferredAIService = .ollama
+        self.geminiDefaultModel = "gemini-1.5-flash-latest"
+        self.preferredAIService = .openai
         self.openAIApiKey = ""
         self.openAIDefaultModel = "gpt-4o"
         
