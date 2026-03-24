@@ -17,6 +17,13 @@ struct CategoryPillPicker: View {
     
     @State private var scrollProxy: ScrollViewProxy?
     
+    // Estado para nueva categoría
+    @State private var showingNewCategoryPopover = false
+    @State private var newCategoryName = ""
+    @State private var selectedNewColor: Color = .blue
+    
+    private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
+    
     // Lista ordenada de todos los IDs para navegación secuencial
     private var allIds: [String] {
         var ids = ["uncategorized"]
@@ -67,6 +74,14 @@ struct CategoryPillPicker: View {
             ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
+                    // Botón para añadir nueva categoría (Primero y SEPARADO)
+                    plusButton
+                    
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 1, height: 24)
+                        .padding(.horizontal, 4)
+
                     // Opción: Sin categoría / General
                     pillView(
                         title: "uncategorized".localized(for: preferences.language),
@@ -103,6 +118,7 @@ struct CategoryPillPicker: View {
                             selectCategory(folder.name, id: folder.id.uuidString)
                         }
                     }
+                    
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 20) // Aumentado para evitar corte de sombras
@@ -158,7 +174,7 @@ struct CategoryPillPicker: View {
                 ZStack {
                     if isSelected {
                         // Resplandor de Selección (Glow Pro)
-                        let pillColor = preferences.isHaloEffectEnabled ? color : Color.blue.opacity(0.8)
+                        let pillColor = preferences.isHaloEffectEnabled ? color : (color == .gray ? .gray.opacity(0.6) : color.opacity(0.8))
                         RoundedRectangle(cornerRadius: 24)
                             .fill(pillColor)
                             .shadow(color: preferences.isHaloEffectEnabled ? pillColor.opacity(0.45) : .clear, radius: 10, x: 0, y: 5)
@@ -180,5 +196,98 @@ struct CategoryPillPicker: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(.plain)
+    }
+    
+    @ViewBuilder
+    private var plusButton: some View {
+        Button(action: { showingNewCategoryPopover = true }) {
+            ZStack {
+                Circle()
+                    .fill(Color.primary.opacity(0.06))
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showingNewCategoryPopover, arrowEdge: .top) {
+            newCategoryForm
+        }
+    }
+    
+    private var newCategoryForm: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("new_category".localized(for: preferences.language))
+                .font(.system(size: 14, weight: .bold))
+            
+            TextField("name_placeholder".localized(for: preferences.language), text: $newCategoryName)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 200)
+            
+            // Selector de Color simplificado
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 24))], spacing: 10) {
+                ForEach(presetColors, id: \.self) { color in
+                    Circle()
+                        .fill(color)
+                        .frame(width: 24, height: 24)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white, lineWidth: selectedNewColor == color ? 2 : 0)
+                                .shadow(radius: 1)
+                        )
+                        .onTapGesture {
+                            selectedNewColor = color
+                        }
+                }
+                
+                // Color Picker Personalizado (Multicolor)
+                ColorPicker("", selection: $selectedNewColor)
+                    .labelsHidden()
+                    .frame(width: 24, height: 24)
+                    .background(
+                        AngularGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]), center: .center)
+                            .clipShape(Circle())
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: 2)
+                            .shadow(radius: 1)
+                    )
+            }
+            
+            Button(action: createCategory) {
+                Text("create".localized(for: preferences.language))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(newCategoryName.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
+                    .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+            .disabled(newCategoryName.isEmpty)
+        }
+        .padding(16)
+    }
+    
+    private func createCategory() {
+        let hex = "#" + NSColor(selectedNewColor).hexString
+        let newFolder = Folder(name: newCategoryName, color: hex, icon: "folder.fill")
+        
+        if promptService.createFolder(newFolder) {
+            selectedCategory = newCategoryName
+            newCategoryName = ""
+            showingNewCategoryPopover = false
+            HapticService.shared.playSuccess()
+            
+            // Scroll a la nueva categoría
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                if let newId = promptService.folders.first(where: { $0.name == selectedCategory })?.id.uuidString {
+                    scrollTo(newId)
+                }
+            }
+        }
     }
 }

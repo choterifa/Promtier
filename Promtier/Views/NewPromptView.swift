@@ -200,7 +200,7 @@ struct NewPromptView: View {
     }
 
     private var themeColor: Color {
-        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+        preferences.isHaloEffectEnabled ? currentCategoryColor : (selectedFolder == nil ? .gray : Color.blue)
     }
 
     private var currentCategoryColor: Color {
@@ -208,9 +208,9 @@ struct NewPromptView: View {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
                 return Color(hex: customFolder.displayColor)
             }
-            return PredefinedCategory.fromString(folderName)?.color ?? .blue
+            return PredefinedCategory.fromString(folderName)?.color ?? .gray
         }
-        return .blue
+        return .gray
     }
 
     // Propiedad calculada para saber si el prompt está vacío
