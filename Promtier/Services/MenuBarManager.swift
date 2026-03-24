@@ -308,6 +308,7 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Muestra menú contextual al hacer click derecho
     @objc private func showContextMenu() {
         let menu = NSMenu()
+        let lang = preferencesManager.language
         
         // CONFIGURABLE: Opciones del menú contextual con target explícito
         func addMenuItem(_ title: String, selector: Selector, key: String = "") {
@@ -316,14 +317,18 @@ class MenuBarManager: NSObject, ObservableObject {
             menu.addItem(item)
         }
         
-        addMenuItem("Add Prompt", selector: #selector(showAddPrompt), key: "n")
-        addMenuItem("Fast Add Prompt ⌘⇧N", selector: #selector(showFastAdd))
+        addMenuItem("new_prompt".localized(for: lang), selector: #selector(showAddPrompt), key: "n")
+        
+        // Atajo dinámico para Fast Add
+        let fastAddShortcut = preferencesManager.shortcutDisplayString(keyCode: preferencesManager.fastAddHotkeyCode, modifiers: preferencesManager.fastAddHotkeyModifiers)
+        addMenuItem("\("gt_fast_add_title".localized(for: lang)) \(fastAddShortcut)", selector: #selector(showFastAdd))
+        
         menu.addItem(NSMenuItem.separator())
-        addMenuItem("Preferencias...", selector: #selector(showPreferences), key: ",")
+        addMenuItem("\("settings".localized(for: lang))...", selector: #selector(showPreferences), key: ",")
         menu.addItem(NSMenuItem.separator())
-        addMenuItem("Acerca de Promtier", selector: #selector(showAbout))
+        addMenuItem("about_promtier".localized(for: lang), selector: #selector(showAbout))
         menu.addItem(NSMenuItem.separator())
-        addMenuItem("Salir", selector: #selector(quitApp), key: "q")
+        addMenuItem("quit".localized(for: lang), selector: #selector(quitApp), key: "q")
         
         // Mostrar el menú de forma síncrona
         statusItem?.menu = menu
@@ -337,12 +342,7 @@ class MenuBarManager: NSObject, ObservableObject {
     
     @objc private func showAddPrompt() {
         // Force the app to open the new prompt view
-        self.activeViewState = .newPrompt
-        self.isModalActive = true
-        guard let button = statusItem?.button else { return }
-        if let popover = popover, !popover.isShown {
-            showPopover(relativeTo: button.bounds, of: button)
-        }
+        showWithState(.newPrompt)
     }
     
     @objc private func showFastAdd() {
@@ -350,8 +350,8 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     @objc private func showPreferences() {
-        // Abrir ventana de preferencias
-        NSApp.sendAction(Selector(("showPreferences:")), to: nil, from: nil)
+        // Abrir la vista de preferencias dentro del popover
+        showWithState(.preferences)
     }
     
     @objc private func showAbout() {

@@ -496,7 +496,7 @@ struct SearchViewSimple: View {
                                 .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                             }
                         }
-                        .padding(.leading, 12)
+                        .padding(.leading, 22)
                         .padding(.trailing, 24)
                         .padding(.vertical, 20)
                     }
@@ -505,7 +505,7 @@ struct SearchViewSimple: View {
                         isSearchFocused = false
                     }
                     
-                    Divider().padding(.leading, 12).padding(.trailing, 24)
+                    Divider().padding(.leading, 22).padding(.trailing, 24)
                     
                     // Contenido principal
                     if promptService.filteredPrompts.isEmpty {
@@ -536,7 +536,7 @@ struct SearchViewSimple: View {
                             Spacer()
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(.leading, 12)
+                        .padding(.leading, 22)
                         .padding(.trailing, 24)
                     } else {
                         // Lista moderna o Grid de prompts
@@ -559,7 +559,7 @@ struct SearchViewSimple: View {
                                 }
                             }
                             .scrollIndicators(.hidden)
-                            .padding(.leading, 12)
+                            .padding(.leading, 22)
                             .padding(.trailing, 24)
                             .padding(.vertical, 16)
                             .contentShape(Rectangle())
