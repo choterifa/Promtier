@@ -464,7 +464,8 @@ struct SearchViewSimple: View {
                             .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 24)
                     .padding(.vertical, 20)
                 }
                 .background(Color(NSColor.windowBackgroundColor))
@@ -472,7 +473,7 @@ struct SearchViewSimple: View {
                     isSearchFocused = false
                 }
                 
-                Divider().padding(.horizontal, 24)
+                Divider().padding(.leading, 12).padding(.trailing, 24)
                 
                 // Contenido principal
                 if promptService.filteredPrompts.isEmpty {
@@ -506,7 +507,8 @@ struct SearchViewSimple: View {
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 24)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 24)
                 } else {
                     // Lista moderna o Grid de prompts
                     ScrollViewReader { proxy in
@@ -527,7 +529,8 @@ struct SearchViewSimple: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 24)
+                        .padding(.leading, 12)
+                        .padding(.trailing, 24)
                         .padding(.vertical, 16)
                         .contentShape(Rectangle())
                         .onTapGesture {

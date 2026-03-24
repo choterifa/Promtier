@@ -173,7 +173,7 @@ struct FolderManagerView: View {
     private var sidebarListView: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
-                VStack(spacing: 6) {
+                VStack(spacing: 2) {
                     ForEach(promptService.folders) { folder in
                         CategoryRow(
                             folder: folder,
@@ -204,7 +204,7 @@ struct FolderManagerView: View {
                         ))
                     }
                 }
-                .padding(.vertical, 16)
+                .padding(.vertical, 8)
                 .padding(.horizontal, 12)
             }
         }
@@ -345,17 +345,18 @@ struct FolderManagerView: View {
                 
                 // Botones de Acción
                 HStack(spacing: 16) {
-                    if editingFolder != nil {
-                        Button("cancel".localized(for: preferences.language)) {
-                            resetForm()
-                        }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Capsule().fill(Color.primary.opacity(0.05)))
+                    Button {
+                        resetForm()
+                        menuBarManager.folderToEdit = nil
+                    } label: {
+                        Text(editingFolder == nil ? "clear_form".localized(for: preferences.language) : "cancel".localized(for: preferences.language))
                     }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(Color.primary.opacity(0.05)))
                     
                     Spacer()
                     
@@ -405,6 +406,7 @@ struct FolderManagerView: View {
             newFolderName = ""
             selectedColor = .blue
             selectedIcon = "folder.fill"
+            menuBarManager.folderToEdit = nil
         }
     }
     
@@ -470,7 +472,7 @@ struct CategoryRow: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isEditing ? Color.blue.opacity(0.08) : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
