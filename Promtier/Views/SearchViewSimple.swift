@@ -549,6 +549,9 @@ struct SearchViewSimple: View {
                                                 .id(prompt.id)
                                         }
                                     }
+                                    .padding(.leading, 22)
+                                    .padding(.trailing, 24)
+                                    .padding(.vertical, 16)
                                 } else {
                                     LazyVStack(spacing: 12) {
                                         ForEach(promptService.filteredPrompts, id: \.id) { prompt in
@@ -556,12 +559,12 @@ struct SearchViewSimple: View {
                                                 .id(prompt.id)
                                         }
                                     }
+                                    .padding(.leading, 22)
+                                    .padding(.trailing, 24)
+                                    .padding(.vertical, 16)
                                 }
                             }
                             .scrollIndicators(.hidden)
-                            .padding(.leading, 22)
-                            .padding(.trailing, 24)
-                            .padding(.vertical, 16)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 isSearchFocused = false

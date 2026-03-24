@@ -109,7 +109,7 @@ struct PromptGridCard: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 20)
             .padding(.top, 14)
             .padding(.bottom, 6)
             
@@ -119,7 +119,7 @@ struct PromptGridCard: View {
                     .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
                     .foregroundColor(.secondary.opacity(0.75))
                     .lineLimit(2)
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 10)
             }
             
@@ -144,7 +144,8 @@ struct PromptGridCard: View {
                     .foregroundColor(.secondary.opacity(0.9))
                     .lineLimit(showcaseImagePaths.isEmpty ? 4 : 2)
             }
-            .padding(14)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
             
             Spacer(minLength: 0)
             
@@ -216,7 +217,8 @@ struct PromptGridCard: View {
                     .help("copy".localized(for: preferences.language))
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
             .background(Color.primary.opacity(0.01))
             .overlay(Rectangle().frame(height: 1).foregroundColor(Color.primary.opacity(0.03)), alignment: .top)
         }
