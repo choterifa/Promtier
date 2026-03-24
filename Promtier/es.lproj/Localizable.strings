@@ -58,8 +58,8 @@
 "reset" = "Resetear";
 "target_size" = "TAMAÑO OBJETIVO";
 "release_to_apply" = "Soltar para aplicar";
-"halo_effects" = "Efectos de Halo";
-"halo_effects_subtitle" = "Mostrar resplandor dinámico y sombras de acento";
+"halo_effects" = "Acentos y Brillos";
+"halo_effects_subtitle" = "Activa degradados y resplandores (Desmarcar para estilo plano)";
 
 /* Behavior Tab */
 "interaction" = "Interacción";

@@ -51,30 +51,54 @@ class OpenAIService: ObservableObject {
         
         let subject = PassthroughSubject<String, Error>()
         
-        // El manejo de streams de OpenAI (Server-Sent Events)
+        // Handling OpenAI (Server-Sent Events)
+        print("🚀 OpenAI Request: model=\(model)")
         let session = URLSession(configuration: .default)
         let task = session.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ OpenAI Network Error: \(error.localizedDescription)")
                 subject.send(completion: .failure(error))
                 return
             }
             
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📡 OpenAI Status Code: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    if let data = data, let errorMsg = String(data: data, encoding: .utf8) {
+                        print("⚠️ OpenAI Error Body: \(errorMsg)")
+                    }
+                }
+            }
+            
             guard let data = data, let responseString = String(data: data, encoding: .utf8) else {
+                print("❓ OpenAI: No data received")
                 subject.send(completion: .finished)
                 return
             }
             
-            // OpenAI devuelve "data: {...}" por cada chunk
+            // OpenAI returns "data: {...}" per chunk
             let lines = responseString.components(separatedBy: "\n")
+            var hasFoundContent = false
             for line in lines {
-                guard line.hasPrefix("data: "), line != "data: [DONE]" else { continue }
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard trimmed.hasPrefix("data: "), trimmed != "data: [DONE]" else { continue }
                 
-                let jsonString = String(line.dropFirst(6))
+                let jsonString = String(trimmed.dropFirst(6))
                 if let jsonData = jsonString.data(using: .utf8),
-                   let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData),
-                   let content = chunk.choices.first?.delta?.content {
-                    subject.send(content)
+                   let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
+                    if let content = chunk.choices.first?.delta?.content {
+                        subject.send(content)
+                        hasFoundContent = true
+                    } else if let content = chunk.choices.first?.message?.content {
+                        // Non-streaming fallback
+                        subject.send(content)
+                        hasFoundContent = true
+                    }
                 }
+            }
+            
+            if !hasFoundContent && (response as? HTTPURLResponse)?.statusCode == 200 {
+                print("⚠️ OpenAI: No content chunks found in 200 OK response")
             }
             
             subject.send(completion: .finished)

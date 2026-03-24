@@ -2089,13 +2089,18 @@ struct EditorCard: View {
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
                     isAIGenerating = false
-                    if case .failure = completion {
+                    switch completion {
+                    case .failure(let error):
+                        print("❌ AI Generation Error: \(error.localizedDescription)")
                         HapticService.shared.playError()
-                    } else {
+                    case .finished:
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
+                            print("✅ AI Generation Success: \(fullResponse.count) characters")
                             let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                             aiResult = AIResult(result: resultString, range: rangeToProcess)
+                        } else {
+                            print("⚠️ AI Generation Finished with empty response")
                         }
                     }
                 }, receiveValue: { chunk in
