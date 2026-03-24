@@ -188,7 +188,9 @@ struct CategorySidebar: View {
         }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
-                _ = promptService.deleteFolder(folder)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    _ = promptService.deleteFolder(folder)
+                }
                 HapticService.shared.playSuccess()
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
@@ -223,6 +225,7 @@ struct CategorySidebar: View {
                             promptService.selectedCategory = folder.name
                         }
                     )
+                    .transition(.move(edge: .leading).combined(with: .opacity))
                     .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
                         folder: folder,
                         promptService: promptService,
@@ -248,7 +251,9 @@ struct CategorySidebar: View {
                                 folderToDelete = folder
                                 showingDeleteAlert = true
                             } else {
-                                _ = promptService.deleteFolder(folder)
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    _ = promptService.deleteFolder(folder)
+                                }
                                 HapticService.shared.playSuccess()
                             }
                         } label: {

@@ -9,6 +9,7 @@
 import Foundation
 @preconcurrency import CoreData
 import Combine
+import SwiftUI
 
 // SERVICIO PRINCIPAL: Gestión completa de prompts
 class PromptService: ObservableObject {
@@ -483,7 +484,9 @@ class PromptService: ObservableObject {
             }
             
             DispatchQueue.main.async {
-                self.folders = loadedFolders
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    self.folders = loadedFolders
+                }
             }
         } catch {
             print("Error cargando carpetas: \(error)")
@@ -496,7 +499,9 @@ class PromptService: ObservableObject {
         UserDefaults.standard.set(order, forKey: "folderSortOrder")
         
         DispatchQueue.main.async {
-            self.folders = folders
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                self.folders = folders
+            }
         }
     }
     

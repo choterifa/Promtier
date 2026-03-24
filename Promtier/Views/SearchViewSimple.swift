@@ -748,12 +748,23 @@ struct SearchViewSimple: View {
               !isFullScreenImageOpen,
               !menuBarManager.isModalActive else { return event }
         
-        // Enter (KeyCode 36) -> Editar
+        // Enter (KeyCode 36) -> Editar Prompt o Carpeta
         if keyCode == 36 {
             if selectedPrompt != nil {
                 DispatchQueue.main.async {
                     withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 }
+                return nil
+            } else if let categoryName = promptService.selectedCategory,
+                      let folder = promptService.folders.first(where: { $0.name == categoryName }) {
+                // Si no hay prompt seleccionado pero sí una carpeta custom
+                DispatchQueue.main.async {
+                    menuBarManager.folderToEdit = folder
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        menuBarManager.activeViewState = .folderManager
+                    }
+                }
+                HapticService.shared.playLight()
                 return nil
             }
         }

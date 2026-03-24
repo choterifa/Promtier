@@ -68,7 +68,9 @@ struct FolderManagerView: View {
         }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
-                _ = promptService.deleteFolder(folder)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    _ = promptService.deleteFolder(folder)
+                }
                 HapticService.shared.playSuccess()
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
@@ -179,11 +181,14 @@ struct FolderManagerView: View {
                                     folderToDelete = folder
                                     showingDeleteAlert = true
                                 } else {
-                                    _ = promptService.deleteFolder(folder)
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        _ = promptService.deleteFolder(folder)
+                                    }
                                     HapticService.shared.playSuccess()
                                 }
                             }
                         )
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .padding(.vertical, 16)
