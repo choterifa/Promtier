@@ -803,6 +803,26 @@ struct ShortcutsTab: View {
                             defaultKeyCode: 49,
                             defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
                         )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Fast Add (Floating Editor)",
+                            hotkeyCode: $preferences.fastAddHotkeyCode,
+                            hotkeyModifiers: $preferences.fastAddHotkeyModifiers,
+                            defaultKeyCode: 45,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Nueva Categoría (Folder Manager)",
+                            hotkeyCode: $preferences.categoryHotkeyCode,
+                            hotkeyModifiers: $preferences.categoryHotkeyModifiers,
+                            defaultKeyCode: 45,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+                        )
                     }
                     .padding(20)
                 }

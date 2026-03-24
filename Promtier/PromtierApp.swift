@@ -43,6 +43,22 @@ struct EmptyScene: Scene {
         .windowResizability(.contentSize)
         .defaultSize(width: 0, height: 0)
         .commands {
+            // Cmd + N -> Nuevo Prompt
+            // Cmd + Shift + N -> Nueva Categoría
+            CommandGroup(replacing: .newItem) {
+                Button("new_prompt".localized(for: PreferencesManager.shared.language)) {
+                    // Resetear el prompt seleccionado para que sea uno nuevo
+                    MenuBarManager.shared.showWithState(.newPrompt)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+                
+                Button("create_category".localized(for: PreferencesManager.shared.language)) {
+                    MenuBarManager.shared.folderToEdit = nil
+                    MenuBarManager.shared.showWithState(.folderManager)
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option])
+            }
+            
             // Comandos estándar de edición para Undo/Redo
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo") {

@@ -33,6 +33,7 @@ struct CategorySidebar: View {
     @State private var folderToDelete: Folder? = nil
     @State private var showingDeleteAlert = false
     
+    
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
@@ -147,48 +148,40 @@ struct CategorySidebar: View {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
             
-            Divider()
-                .padding(.vertical, 16)
-                .padding(.horizontal, 24)
-            
-            // Lista de categorías (Extraído para reducir complejidad)
-            foldersListView
+            VStack(spacing: 0) {
+                // Divider con botón de "Nueva Categoría" al final
+                HStack(spacing: 8) {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.1))
+                        .frame(height: 1)
+                    
+                    Button {
+                        menuBarManager.folderToEdit = nil
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            menuBarManager.activeViewState = .folderManager
+                        }
+                        HapticService.shared.playLight()
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(.blue.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("create_category".localized(for: preferences.language))
+                    .opacity(menuBarManager.isSidebarHovered ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.2), value: menuBarManager.isSidebarHovered)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 24) // Regresado al ancho original de la sidebar
+                
+                // Lista de categorías (Extraído para reducir complejidad)
+                foldersListView
+            }
             
             Spacer()
-            
-            // Botón Nueva Categoría Separado (Parte inferior)
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .folderManager
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.1))
-                            .frame(width: 22, height: 22)
-                        
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Text("create_category".localized(for: preferences.language))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.04))
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.bottom, 20)
+        }
+        .onHover { hovering in
+            menuBarManager.setSidebarHovered(hovering)
         }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
@@ -260,6 +253,17 @@ struct CategorySidebar: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 12)
             .padding(.bottom, 24)
+        }
+        .contextMenu {
+            Button {
+                menuBarManager.folderToEdit = nil
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+                HapticService.shared.playLight()
+            } label: {
+                Label("create_category".localized(for: preferences.language), systemImage: "folder.badge.plus")
+            }
         }
     }
     

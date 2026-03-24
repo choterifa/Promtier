@@ -50,6 +50,7 @@ class ShortcutManager: ObservableObject {
     private var hotKeyRef: EventHotKeyRef?
     private var omniHotKeyRef: EventHotKeyRef?
     private var fastAddHotKeyRef: EventHotKeyRef?
+    private var categoryHotKeyRef: EventHotKeyRef?
     private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
@@ -101,9 +102,11 @@ class ShortcutManager: ObservableObject {
         if let ref = hotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = omniHotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = fastAddHotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = categoryHotKeyRef { UnregisterEventHotKey(ref) }
         hotKeyRef = nil
         omniHotKeyRef = nil
         fastAddHotKeyRef = nil
+        categoryHotKeyRef = nil
         
         let prefs = PreferencesManager.shared
         guard prefs.globalShortcutEnabled else { return }
@@ -132,11 +135,29 @@ class ShortcutManager: ObservableObject {
         let omniHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 100)
         _ = RegisterEventHotKey(omniKeyCode, omniCarbonMods, omniHotKeyID, GetApplicationEventTarget(), 0, &omniHotKeyRef)
         
-        // 3. HotKey Fast Add: Cmd+Shift+N (fijo)
-        let fastAddKeyCode: UInt32 = 45 // N
-        let fastAddMods: UInt32 = UInt32(cmdKey | shiftKey)
+        // 3. HotKey Fast Add: personalizable
+        let fastAddKeyCode = UInt32(prefs.fastAddHotkeyCode)
+        var fastAddCarbonMods: UInt32 = 0
+        let fastAddFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.fastAddHotkeyModifiers))
+        if fastAddFlags.contains(.command) { fastAddCarbonMods |= UInt32(cmdKey) }
+        if fastAddFlags.contains(.shift) { fastAddCarbonMods |= UInt32(shiftKey) }
+        if fastAddFlags.contains(.option) { fastAddCarbonMods |= UInt32(optionKey) }
+        if fastAddFlags.contains(.control) { fastAddCarbonMods |= UInt32(controlKey) }
+        
         let fastAddHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 101)
-        _ = RegisterEventHotKey(fastAddKeyCode, fastAddMods, fastAddHotKeyID, GetApplicationEventTarget(), 0, &fastAddHotKeyRef)
+        _ = RegisterEventHotKey(fastAddKeyCode, fastAddCarbonMods, fastAddHotKeyID, GetApplicationEventTarget(), 0, &fastAddHotKeyRef)
+        
+        // 4. HotKey Create Category: personalizable
+        let catKeyCode = UInt32(prefs.categoryHotkeyCode)
+        var catCarbonMods: UInt32 = 0
+        let catFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.categoryHotkeyModifiers))
+        if catFlags.contains(.command) { catCarbonMods |= UInt32(cmdKey) }
+        if catFlags.contains(.shift) { catCarbonMods |= UInt32(shiftKey) }
+        if catFlags.contains(.option) { catCarbonMods |= UInt32(optionKey) }
+        if catFlags.contains(.control) { catCarbonMods |= UInt32(controlKey) }
+        
+        let catHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 102)
+        _ = RegisterEventHotKey(catKeyCode, catCarbonMods, catHotKeyID, GetApplicationEventTarget(), 0, &categoryHotKeyRef)
         
         // Instalar el manejador de eventos una sola vez globalmente
         if !ShortcutManager.isHandlerInstalled {
@@ -215,6 +236,10 @@ class ShortcutManager: ObservableObject {
         } else if id == 101 {
             print("🚀 Carbon HotKey (Fast Add) detectado!")
             FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+        } else if id == 102 {
+            print("🚀 Carbon HotKey (Nueva Categoría) detectado!")
+            MenuBarManager.shared.folderToEdit = nil
+            MenuBarManager.shared.showWithState(.folderManager)
         } else if let promptId = promptHotkeyMap[id] {
             print("🚀 Carbon HotKey (Prompt) detectado para ID: \(promptId)")
             // Notificar a PromptService para copiar

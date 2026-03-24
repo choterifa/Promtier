@@ -37,6 +37,9 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     
+    // Estado de hover compartido para la sidebar y su tirador de redimensionamiento
+    @Published var isSidebarHovered = false
+    
     enum PopoverViewState {
         case main
         case newPrompt
@@ -45,6 +48,7 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     private var cancellables = Set<AnyCancellable>()
+    private var sidebarHoverTask: AnyCancellable?
     
     // Servicios compartidos
     private let promptService = PromptService.shared
@@ -145,7 +149,15 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Muestra el popover con un estado específico
     func showWithState(_ state: PopoverViewState) {
         guard let button = statusItem?.button else { return }
-        self.activeViewState = state
+        
+        // Aplicar animación de entrada suave (igual que cuando se hace clic)
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            self.activeViewState = state
+            if state == .newPrompt || state == .folderManager {
+                self.isModalActive = true
+            }
+        }
+        
         showPopover(relativeTo: button.bounds, of: button)
         
         // Si es búsqueda, asegurar que el query esté limpio o enfocado (esto se manejará en la vista)
@@ -513,6 +525,23 @@ class MenuBarManager: NSObject, ObservableObject {
     }
 
     // MARK: - Event Monitoring
+
+    /// Gestiona el estado de hover de la sidebar con un retraso al salir de 1s
+    func setSidebarHovered(_ hovered: Bool) {
+        if hovered {
+            sidebarHoverTask?.cancel()
+            if !isSidebarHovered {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isSidebarHovered = true
+                }
+            }
+        } else {
+            sidebarHoverTask?.cancel()
+            withAnimation(.easeInOut(duration: 0.25)) {
+                self.isSidebarHovered = false
+            }
+        }
+    }
 
     private func startEventMonitoring() {
         guard eventMonitor == nil else { return }

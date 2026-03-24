@@ -460,3 +460,5 @@
 "move_selection" = "Move Selection (↑↓)";
 "copy_and_close" = "Copy and Close (Enter)";
 
+"gt_fast_add_title" = "Fast Add Prompt";
+"gt_create_category_title" = "New Category";

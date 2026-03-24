@@ -171,6 +171,34 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var fastAddHotkeyCode: Int {
+        didSet {
+            userDefaults.set(fastAddHotkeyCode, forKey: "fastAddHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var fastAddHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(fastAddHotkeyModifiers, forKey: "fastAddHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var categoryHotkeyCode: Int {
+        didSet {
+            userDefaults.set(categoryHotkeyCode, forKey: "categoryHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var categoryHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(categoryHotkeyModifiers, forKey: "categoryHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
     // MARK: - Idioma
     
     @Published var language: AppLanguage {
@@ -353,6 +381,14 @@ class PreferencesManager: ObservableObject {
         // Atajo Omni-Search por defecto: ⌘⇧Space (KeyCode 49, Command + Shift)
         self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
         self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
+        // Atajo Fast-Add por defecto: ⌘⇧N (KeyCode 45, Command + Shift)
+        self.fastAddHotkeyCode = userDefaults.object(forKey: "fastAddHotkeyCode") as? Int ?? 45
+        self.fastAddHotkeyModifiers = userDefaults.object(forKey: "fastAddHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
+        // Atajo Nueva Categoría por defecto: ⌘⌥N (KeyCode 45, Command + Option)
+        self.categoryHotkeyCode = userDefaults.object(forKey: "categoryHotkeyCode") as? Int ?? 45
+        self.categoryHotkeyModifiers = userDefaults.object(forKey: "categoryHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
@@ -661,5 +697,43 @@ class PreferencesManager: ObservableObject {
     
     func removeAppFromWhitelist(bundleID: String) {
         customAllowedAppBundleIDs.remove(bundleID)
+    }
+    
+    // MARK: - Helpers de Atajos
+    
+    /// Devuelve una cadena legible para el atajo (ej: "⌘⇧N")
+    func shortcutDisplayString(keyCode: Int, modifiers: Int) -> String {
+        var result = ""
+        let flags = NSEvent.ModifierFlags(rawValue: UInt(modifiers))
+        
+        if flags.contains(.control) { result += "⌃" }
+        if flags.contains(.option) { result += "⌥" }
+        if flags.contains(.shift) { result += "⇧" }
+        if flags.contains(.command) { result += "⌘" }
+        
+        // Convertir keyCode a carácter legible usando CGEvent (más robusto)
+        let keyStr: String
+        switch keyCode {
+        case 36: keyStr = "↩"
+        case 48: keyStr = "⇥"
+        case 49: keyStr = "Space"
+        case 51: keyStr = "⌫"
+        case 53: keyStr = "⎋"
+        case 123: keyStr = "←"
+        case 124: keyStr = "→"
+        case 125: keyStr = "↓"
+        case 126: keyStr = "↑"
+        default:
+            let source = CGEventSource(stateID: .combinedSessionState)
+            if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true),
+               let nsEvent = NSEvent(cgEvent: cgEvent),
+               let chars = nsEvent.charactersIgnoringModifiers, !chars.isEmpty {
+                keyStr = chars.uppercased()
+            } else {
+                keyStr = "\(keyCode)"
+            }
+        }
+        
+        return result + keyStr
     }
 }
