@@ -319,272 +319,258 @@ struct SearchViewSimple: View {
     }
     
     private var mainView: some View {
-        HStack(spacing: 0) {
-            // Sidebar de categorías
-            if preferences.showSidebar {
-                CategorySidebar()
-                    .frame(width: preferences.sidebarWidth)
-                    .environmentObject(promptService)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                
-                // Divider interactivo para redimensionar (Invisble)
-                Rectangle()
-                    .fill(Color.white.opacity(0.001))
-                    .frame(width: 5)
-                    .onHover { inside in
-                        if inside { NSCursor.resizeLeftRight.push() }
-                        else { NSCursor.pop() }
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                if dragStartedSidebarWidth == 0 {
-                                    dragStartedSidebarWidth = preferences.sidebarWidth
+        ZStack(alignment: .bottom) {
+            HStack(spacing: 0) {
+                // Sidebar de categorías
+                if preferences.showSidebar {
+                    CategorySidebar()
+                        .frame(width: preferences.sidebarWidth)
+                        .environmentObject(promptService)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .overlay(alignment: .trailing) {
+                            // Hit area invisible para redimensionar (15px al borde)
+                            Rectangle()
+                                .fill(Color.white.opacity(0.001))
+                                .frame(width: 15)
+                                .onHover { inside in
+                                    if inside { NSCursor.resizeLeftRight.push() }
+                                    else { NSCursor.pop() }
                                 }
-                                let newWidth = dragStartedSidebarWidth + value.translation.width
-                                if newWidth >= 150 && newWidth <= 500 {
-                                    preferences.sidebarWidth = newWidth
-                                }
-                            }
-                            .onEnded { _ in
-                                dragStartedSidebarWidth = 0
-                            }
-                    )
-                    .zIndex(100)
-            }
-            
-            // Contenido principal
-            VStack(spacing: 0) {
-                // Banner de Accesibilidad (Refinado)
-                if !ShortcutManager.shared.isAccessibilityGranted && !preferences.suppressAccessibilityWarning {
-                    AccessibilityBanner()
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .zIndex(50)
-                }
-                
-                // Header Premium con búsqueda
-                VStack(spacing: 0) {
-                    HStack(spacing: 16) {
-                        // Botón Colapsar Sidebar / Cambiar a Grid
-                        Button(action: {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                preferences.isGridView.toggle()
-                                // Al activar grid, contraemos la sidebar para más espacio. Al desactivar, la mostramos.
-                                preferences.showSidebar = !preferences.isGridView
-                            }
-                        }) {
-                            Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(preferences.isGridView ? .blue : .secondary)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(preferences.isGridView ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                .gesture(
+                                    DragGesture(minimumDistance: 0, coordinateSpace: .named("sidebarContainer"))
+                                        .onChanged { value in
+                                            // Usamos la posición absoluta del mouse en el contenedor nombrado
+                                            let newWidth = value.location.x
+                                            if newWidth >= 150 && newWidth <= 500 {
+                                                preferences.sidebarWidth = newWidth
+                                            }
+                                        }
                                 )
                         }
-                        .buttonStyle(.plain)
-                        .help(preferences.isGridView ? "List View" : "Grid View")
-                        
-                        // Buscador Estilizado
-                        HStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.blue)
-                            
-                            TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
-                                .textFieldStyle(.plain)
-                                .font(.system(size: 15 * preferences.fontSize.scale))
-                                .disableAutocorrection(true)
-                                .focused($isSearchFocused)
-                                .onExitCommand {
-                                    isSearchFocused = false
-                                }
-                                .onChange(of: promptService.searchQuery) { _, newValue in
-                                    if newValue.count > 40 {
-                                        promptService.searchQuery = String(newValue.prefix(40))
-                                    }
-                                }
-                            
-                            if !promptService.searchQuery.isEmpty {
-                                Button(action: { promptService.searchQuery = "" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.secondary.opacity(0.5))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.primary.opacity(0.04))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                )
-                        )
-                        
-                        // Acciones rápidas
-                        HStack(spacing: 10) {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedPrompt = nil
-                                    menuBarManager.activeViewState = .newPrompt
-                                }
-                            }) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.blue)
-                                            .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .help("new_prompt".localized(for: preferences.language) + " (N)")
-                            
-                            // Botón de Selección en Lote
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3)) {
-                                    batchService.isSelectionModeActive.toggle()
-                                    if !batchService.isSelectionModeActive {
-                                        batchService.clearSelection()
-                                    }
-                                }
-                                HapticService.shared.playLight()
-                            }) {
-                                Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.2) : Color.primary.opacity(0.06), lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
-
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    menuBarManager.activeViewState = .preferences
-                                }
-                            }) {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.primary.opacity(0.7))
-                                    .frame(width: 34, height: 34)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.primary.opacity(0.04))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .help("settings".localized(for: preferences.language) + " (Cmd+,)")
-                        }
-                    }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 24)
-                    .padding(.vertical, 20)
                 }
-                .background(Color(NSColor.windowBackgroundColor))
-                .onTapGesture {
-                    isSearchFocused = false
-                }
-                
-                Divider().padding(.leading, 12).padding(.trailing, 24)
                 
                 // Contenido principal
-                if promptService.filteredPrompts.isEmpty {
-                    VStack(spacing: 32) {
-                        Spacer()
-                        
-                        Image(systemName: "text.bubble")
-                            .font(.system(size: 64))
-                            .foregroundColor(.secondary)
-                            .foregroundColor(.secondary.opacity(0.6))
-                        
-                        VStack(spacing: 12) {
-                            Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
-                                .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
-                                .foregroundColor(.primary)
-                            
-                            Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
-                                .font(.system(size: 14 * preferences.fontSize.scale))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        if promptService.searchQuery.isEmpty {
-                            Button("create_first_prompt".localized(for: preferences.language)) {
-                                selectedPrompt = nil
-                                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
-                        }
-                        
-                        Spacer()
+                VStack(spacing: 0) {
+                    // Banner de Accesibilidad (Refinado)
+                    if !ShortcutManager.shared.isAccessibilityGranted && !preferences.suppressAccessibilityWarning {
+                        AccessibilityBanner()
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .zIndex(50)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.leading, 12)
-                    .padding(.trailing, 24)
-                } else {
-                    // Lista moderna o Grid de prompts
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            if preferences.isGridView {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
-                                    ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                        promptGridCard(for: prompt)
-                                            .id(prompt.id)
-                                    }
+                    
+                    // Header Premium con búsqueda
+                    VStack(spacing: 0) {
+                        HStack(spacing: 16) {
+                            // Botón Colapsar Sidebar / Cambiar a Grid
+                            Button(action: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    preferences.isGridView.toggle()
+                                    preferences.showSidebar = !preferences.isGridView
                                 }
-                            } else {
-                                LazyVStack(spacing: 12) {
-                                    ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                        promptRow(for: prompt)
-                                            .id(prompt.id)
+                            }) {
+                                Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(preferences.isGridView ? .blue : .secondary)
+                                    .frame(width: 32, height: 32)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(preferences.isGridView ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .help(preferences.isGridView ? "List View" : "Grid View")
+                            
+                            // Buscador Estilizado
+                            HStack(spacing: 12) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.blue)
+                                
+                                TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 15 * preferences.fontSize.scale))
+                                    .disableAutocorrection(true)
+                                    .focused($isSearchFocused)
+                                    .onExitCommand {
+                                        isSearchFocused = false
                                     }
+                                    .onChange(of: promptService.searchQuery) { _, newValue in
+                                        if newValue.count > 40 {
+                                            promptService.searchQuery = String(newValue.prefix(40))
+                                        }
+                                    }
+                                
+                                if !promptService.searchQuery.isEmpty {
+                                    Button(action: { promptService.searchQuery = "" }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary.opacity(0.5))
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.primary.opacity(0.04))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                    )
+                            )
+                            
+                            // Acciones rápidas
+                            HStack(spacing: 10) {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        selectedPrompt = nil
+                                        menuBarManager.activeViewState = .newPrompt
+                                    }
+                                }) {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.blue)
+                                                .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .help("new_prompt".localized(for: preferences.language) + " (N)")
+                                
+                                // Botón de Selección en Lote
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3)) {
+                                        batchService.isSelectionModeActive.toggle()
+                                        if !batchService.isSelectionModeActive {
+                                            batchService.clearSelection()
+                                        }
+                                    }
+                                    HapticService.shared.playLight()
+                                }) {
+                                    Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.2) : Color.primary.opacity(0.06), lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
+
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        menuBarManager.activeViewState = .preferences
+                                    }
+                                }) {
+                                    Image(systemName: "gearshape.fill")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.primary.opacity(0.7))
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.primary.opacity(0.04))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .help("settings".localized(for: preferences.language) + " (Cmd+,)")
+                            }
                         }
-                        .scrollIndicators(.hidden)
                         .padding(.leading, 12)
                         .padding(.trailing, 24)
-                        .padding(.vertical, 16)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            isSearchFocused = false
-                        }
-                        .onChange(of: selectedPrompt?.id) { _, newId in
-                            if let id = newId {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    proxy.scrollTo(id, anchor: .center)
-                                }
-                                
-                                // Sonido eliminado de aquí por ser demasiado lento/insuficiente
-                            }
-                        }
+                        .padding(.vertical, 20)
                     }
-                    .onChange(of: showingPreview) { _, isShowing in
-                        if isShowing && preferences.soundEnabled {
-                            SoundService.shared.playInteractionSound()
+                    .background(Color(NSColor.windowBackgroundColor))
+                    .onTapGesture {
+                        isSearchFocused = false
+                    }
+                    
+                    Divider().padding(.leading, 12).padding(.trailing, 24)
+                    
+                    // Contenido principal
+                    if promptService.filteredPrompts.isEmpty {
+                        VStack(spacing: 32) {
+                            Spacer()
+                            Image(systemName: "text.bubble")
+                                .font(.system(size: 64))
+                                .foregroundColor(.secondary.opacity(0.6))
+                            
+                            VStack(spacing: 12) {
+                                Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
+                                    .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
+                                    .font(.system(size: 14 * preferences.fontSize.scale))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            if promptService.searchQuery.isEmpty {
+                                Button("create_first_prompt".localized(for: preferences.language)) {
+                                    selectedPrompt = nil
+                                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.large)
+                            }
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.leading, 12)
+                        .padding(.trailing, 24)
+                    } else {
+                        // Lista moderna o Grid de prompts
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                if preferences.isGridView {
+                                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
+                                        ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                            promptGridCard(for: prompt)
+                                                .id(prompt.id)
+                                        }
+                                    }
+                                } else {
+                                    LazyVStack(spacing: 12) {
+                                        ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                            promptRow(for: prompt)
+                                                .id(prompt.id)
+                                        }
+                                    }
+                                }
+                            }
+                            .scrollIndicators(.hidden)
+                            .padding(.leading, 12)
+                            .padding(.trailing, 24)
+                            .padding(.vertical, 16)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isSearchFocused = false
+                            }
+                            .onChange(of: selectedPrompt?.id) { _, newId in
+                                if let id = newId {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        proxy.scrollTo(id, anchor: .center)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
-        .overlay(alignment: .bottom) {
+            .coordinateSpace(name: "sidebarContainer")
+            
             if batchService.isSelectionModeActive && !batchService.selectedPromptIds.isEmpty {
                 BatchToolbarView()
                     .padding(.bottom, 14)
@@ -631,37 +617,23 @@ struct SearchViewSimple: View {
             onTap: {
                 selectedPrompt = prompt
                 prewarmPreviewImages(for: prompt)
-
-                // Sonido si la vista previa está abierta
                 if showingPreview && preferences.soundEnabled {
                     SoundService.shared.playInteractionSound()
                 }
-
-                // Forzar foco a la ventana principal
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             },
             onDoubleTap: {
                 selectedPrompt = prompt
                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
             },
-            onCopy: {
-                usePrompt(prompt)
-            },
-            onCopyPack: {
-                copyPromptPack(prompt)
-            },
+            onCopy: { usePrompt(prompt) },
+            onCopyPack: { copyPromptPack(prompt) },
             onHover: { isHovering in
-                DispatchQueue.main.async {
-                    hoveredPrompt = isHovering ? prompt : nil
-                }
-                if isHovering {
-                    prewarmPreviewImages(for: prompt)
-                }
+                DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
+                if isHovering { prewarmPreviewImages(for: prompt) }
             }
         )
-        .contextMenu {
-            promptContextMenu(for: prompt)
-        }
+        .contextMenu { promptContextMenu(for: prompt) }
         .popover(
             isPresented: Binding(
                 get: { showingPreview && selectedPrompt?.id == prompt.id },
@@ -681,138 +653,88 @@ struct SearchViewSimple: View {
         Button(action: { usePrompt(prompt) }) {
             Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
         }
-
         Button(action: { copyPromptPack(prompt) }) {
             Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
         }
-
         Button(action: {
             selectedPrompt = prompt
-            if preferences.soundEnabled {
-                SoundService.shared.playMagicSound()
-            }
+            if preferences.soundEnabled { SoundService.shared.playMagicSound() }
             withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
         }) {
             Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
         }
-
         Button(action: {
             selectedPrompt = prompt
             showingPreview = true
-            if preferences.soundEnabled {
-                SoundService.shared.playInteractionSound()
-            }
+            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
         }) {
             Label("preview".localized(for: preferences.language), systemImage: "eye")
         }
-
         Button(action: { toggleFavorite(prompt) }) {
             Label(
                 prompt.isFavorite ? "remove_favorite".localized(for: preferences.language) : "add_favorite".localized(for: preferences.language),
                 systemImage: prompt.isFavorite ? "star.slash" : "star.fill"
             )
         }
-
         Divider()
-
         Button(action: {
-            if preferences.soundEnabled {
-                SoundService.shared.playInteractionSound()
-            }
+            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
             exportPromptsToFile(prompt)
         }) {
             Label("export_plain_text".localized(for: preferences.language), systemImage: "square.and.arrow.up")
         }
-
         Button(role: .destructive, action: { deletePrompt(prompt) }) {
             Label("delete".localized(for: preferences.language), systemImage: "trash.fill")
         }
     }
     
-    /// Maneja eventos de teclado locales para Cmd+C, Enter y navegación
     private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
         let keyCode = event.keyCode
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        
-        // ESC (KeyCode 53)
         if keyCode == 53 && modifiers.isEmpty {
-            // 1. Overlay de Variables Dinámicas (Prioridad alta)
             if fillingVariablesFor != nil {
                 DispatchQueue.main.async { withAnimation { fillingVariablesFor = nil } }
-                return nil  // consumir el evento — no cerrar la app
+                return nil
             }
-            
-            // 2. Vista Previa (Quick Look)
             if showingPreview {
                 DispatchQueue.main.async {
-                    withAnimation(.spring(response: 0.3)) {
-                        showingPreview = false
-                    }
+                    withAnimation(.spring(response: 0.3)) { showingPreview = false }
                     if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
                 }
                 return nil
             }
-            
-            // 3. Vistas secundarias (Ajustes, Papelera, Carpetas)
-            // Nota: NewPromptView tiene su propio monitor, pero esto actúa como salvaguarda
-            // para el resto de estados que no tienen monitor dedicado.
             let currentState = menuBarManager.activeViewState
             if currentState != .main {
                 DispatchQueue.main.async {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        // Limpieza de estados específicos según la vista
-                        if currentState == .newPrompt {
-                            DraftService.shared.clearDraft()
-                        }
-                        
+                        if currentState == .newPrompt { DraftService.shared.clearDraft() }
                         menuBarManager.activeViewState = .main
                         selectedPrompt = nil
                         menuBarManager.folderToEdit = nil
                         menuBarManager.isModalActive = false
                     }
                 }
-                return nil // Bloquear cierre del popover principal
+                return nil
             }
         }
-        
-        // GUARDIA PRINCIPAL: solo actuar en vista principal para el resto de atajos (flechas, espacio, etc)
-        guard case .main = menuBarManager.activeViewState,
-              fillingVariablesFor == nil,
-              !isFullScreenImageOpen,
-              !menuBarManager.isModalActive else { return event }
-        
-        // Enter (KeyCode 36) -> Editar Prompt o Carpeta
+        guard case .main = menuBarManager.activeViewState, fillingVariablesFor == nil, !isFullScreenImageOpen, !menuBarManager.isModalActive else { return event }
         if keyCode == 36 {
             if selectedPrompt != nil {
-                DispatchQueue.main.async {
-                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                }
+                DispatchQueue.main.async { withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } }
                 return nil
-            } else if let categoryName = promptService.selectedCategory,
-                      let folder = promptService.folders.first(where: { $0.name == categoryName }) {
-                // Si no hay prompt seleccionado pero sí una carpeta custom
+            } else if let categoryName = promptService.selectedCategory, let folder = promptService.folders.first(where: { $0.name == categoryName }) {
                 DispatchQueue.main.async {
                     menuBarManager.folderToEdit = folder
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        menuBarManager.activeViewState = .folderManager
-                    }
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { menuBarManager.activeViewState = .folderManager }
                 }
                 HapticService.shared.playLight()
                 return nil
             }
         }
-        
-        // Cmd + B (KeyCode 11) -> Alternar Sidebar
         if modifiers == .command && keyCode == 11 {
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    preferences.showSidebar.toggle()
-                }
-            }
+            DispatchQueue.main.async { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { preferences.showSidebar.toggle() } }
             return nil
         }
-        
-        // Espacio (KeyCode 49) -> Vista Previa (Quick Look)
         if keyCode == 49 {
             if showingPreview {
                 DispatchQueue.main.async {
@@ -828,30 +750,19 @@ struct SearchViewSimple: View {
                 return nil
             }
         }
-        
-        // Cmd + C (KeyCode 8) -> Copiar
         if modifiers == .command && keyCode == 8 {
             if let prompt = selectedPrompt {
-                DispatchQueue.main.async {
-                    usePrompt(prompt)
-                }
+                DispatchQueue.main.async { usePrompt(prompt) }
                 return nil
             }
         }
-        
-        // Flecha Arriba (KeyCode 126)
         if keyCode == 126 {
             guard !promptService.filteredPrompts.isEmpty else { return event }
             DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt,
-                   let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex > 0 {
                         selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
-                        
-                        // Sonido forzado para navegación por teclado
-                        if showingPreview && preferences.soundEnabled {
-                            SoundService.shared.playInteractionSound()
-                        }
+                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                         HapticService.shared.playLight()
                     }
                 } else {
@@ -861,20 +772,13 @@ struct SearchViewSimple: View {
             }
             return nil
         }
-        
-        // Flecha Abajo (KeyCode 125)
         if keyCode == 125 {
             guard !promptService.filteredPrompts.isEmpty else { return event }
             DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt,
-                   let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex < promptService.filteredPrompts.count - 1 {
                         selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
-                        
-                        // Sonido forzado para navegación por teclado
-                        if showingPreview && preferences.soundEnabled {
-                            SoundService.shared.playInteractionSound()
-                        }
+                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                         HapticService.shared.playLight()
                     }
                 } else {
@@ -884,77 +788,44 @@ struct SearchViewSimple: View {
             }
             return nil
         }
-        
         return event
     }
     
-    // MARK: - Métodos
-    
-    /// Usa un prompt (copia al clipboard) - Versión optimizada
     private func usePrompt(_ prompt: Prompt) {
-        // Si tiene variables, mostrar el formulario primero
         if prompt.hasTemplateVariables() {
-            // EXCEPCIÓN: Si todas las variables son Inteligentes (Auto-resolvibles),
-            // resolvemos y copiamos directamente sin abrir el formulario.
             if prompt.isSmartOnly() {
                 let resolvedContent = PlaceholderResolver.shared.resolveAll(in: prompt.content)
                 self.promptService.usePrompt(prompt, contentOverride: resolvedContent)
-                // Continuar con la lógica de post-copia después del bloque de variables
             } else {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    fillingVariablesFor = prompt
-                }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { fillingVariablesFor = prompt }
                 return
             }
         } else {
             self.promptService.usePrompt(prompt)
         }
-        
-        // Lógica de Post-Copia: Sonido, Háptica, Cerrar y Preview
-        if self.preferences.soundEnabled {
-            SoundService.shared.playCopySound()
-        }
+        if self.preferences.soundEnabled { SoundService.shared.playCopySound() }
         HapticService.shared.playAlignment()
-        
-        // Efectos Visuales
         if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
-            self.showParticles = false // Reset
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                self.showParticles = true
-            }
+            self.showParticles = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { self.showParticles = true }
         }
-        
-        // Cerrar preview si está abierto
-        if self.showingPreview {
-            self.showingPreview = false
-        }
-        
-        // CERRAR VENTANA: Si la preferencia está activa
+        if self.showingPreview { self.showingPreview = false }
         if self.preferences.closeOnCopy {
             if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
-                // Dar tiempo para ver las partículas
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    self.menuBarManager.closePopover()
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.menuBarManager.closePopover() }
             } else {
                 self.menuBarManager.closePopover()
             }
         }
     }
 
-    /// Copia un "pack" del prompt: Main + Negative + Alternatives (si existen)
     private func copyPromptPack(_ prompt: Prompt) {
         var packPrompt = prompt
-
         var parts: [String] = [prompt.content]
-
-        if let negative = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !negative.isEmpty {
+        if let negative = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines), !negative.isEmpty {
             let title = "negative_prompt".localized(for: preferences.language)
             parts.append("\n\n\(title):\n\(negative)")
         }
-
-        // Incluir alternativas de la lista nueva
         for (index, alt) in prompt.alternatives.enumerated() {
             let trimmed = alt.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {
@@ -962,83 +833,48 @@ struct SearchViewSimple: View {
                 parts.append("\n\n\(title):\n\(trimmed)")
             }
         }
-
-        // Fallback para datos antiguos si la lista nueva está vacía
-        if prompt.alternatives.isEmpty, 
-           let alternative = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !alternative.isEmpty {
+        if prompt.alternatives.isEmpty, let alternative = prompt.alternativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines), !alternative.isEmpty {
             let title = "alternative_prompt".localized(for: preferences.language)
             parts.append("\n\n\(title):\n\(alternative)")
         }
-
         packPrompt.content = parts.joined()
         usePrompt(packPrompt)
     }
     
-    /// Cambia el estado de favorito de un prompt - Versión optimizada
     private func toggleFavorite(_ prompt: Prompt) {
         var updatedPrompt = prompt
         updatedPrompt.isFavorite.toggle()
-        
         _ = self.promptService.updatePrompt(updatedPrompt)
-        
-        // Sonido y Háptica
-        if self.preferences.soundEnabled {
-            SoundService.shared.playFavoriteSound()
-        }
+        if self.preferences.soundEnabled { SoundService.shared.playFavoriteSound() }
         HapticService.shared.playImpact()
     }
     
-    /// Elimina un prompt - Versión optimizada
     private func deletePrompt(_ prompt: Prompt) {
-        if batchService.isSelectionModeActive,
-           batchService.selectedPromptIds.contains(prompt.id),
-           batchService.selectedPromptIds.count > 1 {
+        if batchService.isSelectionModeActive, batchService.selectedPromptIds.contains(prompt.id), batchService.selectedPromptIds.count > 1 {
             _ = promptService.deletePrompts(withIds: Array(batchService.selectedPromptIds))
-            withAnimation(.spring()) {
-                batchService.clearSelection()
-            }
+            withAnimation(.spring()) { batchService.clearSelection() }
         } else {
             _ = self.promptService.deletePrompt(prompt)
-            if batchService.isSelectionModeActive {
-                batchService.selectedPromptIds.remove(prompt.id)
-            }
+            if batchService.isSelectionModeActive { batchService.selectedPromptIds.remove(prompt.id) }
         }
-        
-        if self.preferences.soundEnabled {
-            SoundService.shared.playDeleteSound()
-        }
+        if self.preferences.soundEnabled { SoundService.shared.playDeleteSound() }
     }
     
-    /// Exporta un prompt específico a un archivo de texto
     private func exportPromptsToFile(_ prompt: Prompt) {
         let exportContent = "# \(prompt.title)\n\n\(prompt.content)"
-        
         let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).md"
-        
-        // Crear el diálogo de guardar nativo de macOS
         let savePanel = NSSavePanel()
-        if let mdType = UTType(filenameExtension: "md") {
-            savePanel.allowedContentTypes = [mdType, .plainText]
-        } else {
-            savePanel.allowedContentTypes = [.plainText]
-        }
+        if let mdType = UTType(filenameExtension: "md") { savePanel.allowedContentTypes = [mdType, .plainText] }
+        else { savePanel.allowedContentTypes = [.plainText] }
         savePanel.nameFieldStringValue = fileName
         savePanel.title = "export_prompts_title".localized(for: preferences.language)
         savePanel.message = "export_prompts_message".localized(for: preferences.language)
-        
-        // Hacer la app activa para evitar errores de ViewBridge y paneles en background
         NSApp.activate(ignoringOtherApps: true)
-        
-        // Cerrar el popover inmediatamente para que solo quede el diálogo del Finder
         self.menuBarManager.closePopover()
-        
-        // Mostrar el diálogo y esperar respuesta del usuario
         savePanel.begin { response in
             if response == .OK, let url = savePanel.url {
-                do {
-                    try exportContent.write(to: url, atomically: true, encoding: .utf8)
-                } catch {
+                do { try exportContent.write(to: url, atomically: true, encoding: .utf8) }
+                catch {
                     let alert = NSAlert()
                     alert.messageText = "export_error_title".localized(for: preferences.language)
                     alert.informativeText = error.localizedDescription
@@ -1053,24 +889,12 @@ struct SearchViewSimple: View {
     @ViewBuilder
     private var importOverlays: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.blue.opacity(0.3), lineWidth: isDraggingFile ? 3 : 0)
-                .padding(4)
-                .allowsHitTesting(false)
-            
+            RoundedRectangle(cornerRadius: 16).stroke(Color.blue.opacity(0.3), lineWidth: isDraggingFile ? 3 : 0).padding(4).allowsHitTesting(false)
             if let msg = importMessage {
                 VStack {
                     Spacer()
-                    Text(msg)
-                        .font(.system(size: 11, weight: .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .clipShape(Capsule())
-                        .padding(.bottom, 20)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                    Text(msg).font(.system(size: 11, weight: .bold)).padding(.horizontal, 12).padding(.vertical, 6).background(Color.blue).foregroundColor(.white).clipShape(Capsule()).padding(.bottom, 20)
+                }.transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
     }
@@ -1088,7 +912,6 @@ struct SearchViewSimple: View {
                     }
                     return
                 }
-
                 if ext == "json", let data = try? Data(contentsOf: url) {
                     DispatchQueue.main.async {
                         self.importData = data
@@ -1104,15 +927,9 @@ struct SearchViewSimple: View {
         guard prompt.showcaseImageCount > 0 else { return }
         if lastPrewarmedPromptId == prompt.id { return }
         lastPrewarmedPromptId = prompt.id
-
         prewarmTask?.cancel()
         prewarmTask = Task(priority: .utility) {
-            let paths: [String]
-            if !prompt.showcaseImagePaths.isEmpty {
-                paths = prompt.showcaseImagePaths
-            } else {
-                paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
-            }
+            let paths: [String] = !prompt.showcaseImagePaths.isEmpty ? prompt.showcaseImagePaths : await promptService.fetchShowcaseImagePaths(byId: prompt.id)
             guard let first = paths.first else { return }
             let url = ImageStore.shared.url(forRelativePath: first)
             let cacheKey = "\(prompt.id.uuidString):preview:0:900:\(first)"
@@ -1120,53 +937,38 @@ struct SearchViewSimple: View {
         }
     }
     
-        /// Programa la aparición de un Ghost Tip de forma secuencial
-        private func scheduleNextGhostTip(initialDelay: Double? = nil) {
-            ghostTipTask?.cancel()
-            
-            guard preferences.ghostTipsEnabled else { return }
-    
-            // Usar delay inicial si se solicita, si no, uno aleatorio normal (Triplicado por petición)
-            let delay = initialDelay ?? Double.random(in: 75...135)
-    
-            ghostTipTask = Task {
-                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                if Task.isCancelled { return }
-                
-                await MainActor.run {
-                    // Solo mostrar si seguimos en la pantalla principal y están activados
-                    if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                            // Seleccionar el siguiente consejo en la lista de forma circular
-                            let tips = self.ghostTips
-                            if !tips.isEmpty {
-                                self.currentGhostTip = tips[self.nextTipIndex % tips.count]
-                                self.nextTipIndex = (self.nextTipIndex + 1) % tips.count
-                            }
+    private func scheduleNextGhostTip(initialDelay: Double? = nil) {
+        ghostTipTask?.cancel()
+        guard preferences.ghostTipsEnabled else { return }
+        let delay = initialDelay ?? Double.random(in: 75...135)
+        ghostTipTask = Task {
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            if Task.isCancelled { return }
+            await MainActor.run {
+                if self.menuBarManager.activeViewState == .main && self.preferences.ghostTipsEnabled && self.currentGhostTip == nil {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        let tips = self.ghostTips
+                        if !tips.isEmpty {
+                            self.currentGhostTip = tips[self.nextTipIndex % tips.count]
+                            self.nextTipIndex = (self.nextTipIndex + 1) % tips.count
                         }
-    
-                        // ⏱️ Auto-ocultar después de 3.25 segundos (mitad de duración)
-                        Task {
-                            try? await Task.sleep(nanoseconds: 3_250_000_000)
-                            if !Task.isCancelled {
-                                await MainActor.run {
-                                    if self.currentGhostTip != nil {
-                                        withAnimation(.easeOut(duration: 0.4)) {
-                                            self.currentGhostTip = nil
-                                        }
-                                    }
+                    }
+                    Task {
+                        try? await Task.sleep(nanoseconds: 3_250_000_000)
+                        if !Task.isCancelled {
+                            await MainActor.run {
+                                if self.currentGhostTip != nil {
+                                    withAnimation(.easeOut(duration: 0.4)) { self.currentGhostTip = nil }
                                 }
                             }
                         }
                     }
-    
-                    if !Task.isCancelled {
-                        // Programar el siguiente tip (sin delay inicial forzado)
-                        self.scheduleNextGhostTip()
-                    }
                 }
+                if !Task.isCancelled { self.scheduleNextGhostTip() }
             }
-        }}
+        }
+    }
+}
 
 // MARK: - Guía Visual de Redimensionado HUD
 struct ResizingGuideView: View {
@@ -1174,163 +976,69 @@ struct ResizingGuideView: View {
     
     var body: some View {
         ZStack {
-            // Fondo traslúcido sutil para enfocar el HUD
-            Color.black.opacity(0.1)
-                .edgesIgnoringSafeArea(.all)
-            
-            // HUD Central Flotante (Referencia visual de la animación)
+            Color.black.opacity(0.1).edgesIgnoringSafeArea(.all)
             VStack(spacing: 20) {
-                // Icono dinámico
                 ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.15))
-                        .frame(width: 70, height: 70)
-                    
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.blue)
+                    Circle().fill(Color.blue.opacity(0.15)).frame(width: 70, height: 70)
+                    Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 28, weight: .bold)).foregroundColor(.blue)
                 }
-                
                 VStack(spacing: 6) {
-                    Text(NSLocalizedString("target_size", comment: ""))
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .tracking(1.5)
-                        .textCase(.uppercase)
-                    
+                    Text(NSLocalizedString("target_size", comment: "")).font(.system(size: 11, weight: .bold)).foregroundColor(.secondary).tracking(1.5).textCase(.uppercase)
                     HStack(spacing: 25) {
                         VStack {
-                            Text("\(Int(preferences.previewWidth))")
-                                .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            Text(NSLocalizedString("width", comment: ""))
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
+                            Text("\(Int(preferences.previewWidth))").font(.system(size: 24, weight: .bold, design: .monospaced))
+                            Text(NSLocalizedString("width", comment: "")).font(.system(size: 10)).foregroundColor(.secondary)
                         }
-                        
                         Divider().frame(height: 35)
-                        
                         VStack {
-                            Text("\(Int(preferences.previewHeight))")
-                                .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            Text(NSLocalizedString("height", comment: ""))
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
+                            Text("\(Int(preferences.previewHeight))").font(.system(size: 24, weight: .bold, design: .monospaced))
+                            Text(NSLocalizedString("height", comment: "")).font(.system(size: 10)).foregroundColor(.secondary)
                         }
                     }
                 }
-                
-                // Indicador de "Soltar para aplicar"
-                Text(NSLocalizedString("release_to_apply", comment: ""))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.blue.opacity(0.7))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Color.blue.opacity(0.1)))
+                Text(NSLocalizedString("release_to_apply", comment: "")).font(.system(size: 10, weight: .medium)).foregroundColor(.blue.opacity(0.7)).padding(.horizontal, 12).padding(.vertical, 4).background(Capsule().fill(Color.blue.opacity(0.1)))
             }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.25), radius: 25, y: 12)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-            )
+            .padding(32).background(RoundedRectangle(cornerRadius: 28).fill(.ultraThinMaterial).shadow(color: .black.opacity(0.25), radius: 25, y: 12))
+            .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.primary.opacity(0.1), lineWidth: 1))
         }
     }
 }
-
-// MARK: - Componentes de Soporte
 
 struct AccessibilityBanner: View {
     @EnvironmentObject var preferences: PreferencesManager
-    
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "lock.shield.fill")
-                .foregroundColor(.orange)
-                .font(.system(size: 14))
-            
+            Image(systemName: "lock.shield.fill").foregroundColor(.orange).font(.system(size: 14))
             VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString("accessibility_permissions", comment: ""))
-                    .font(.system(size: 12, weight: .bold))
-                Text(NSLocalizedString("accessibility_required_for_paste", comment: ""))
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                Text(NSLocalizedString("accessibility_permissions", comment: "")).font(.system(size: 12, weight: .bold))
+                Text(NSLocalizedString("accessibility_required_for_paste", comment: "")).font(.system(size: 11)).foregroundColor(.secondary)
             }
-            
             Spacer()
-            
             HStack(spacing: 8) {
-                Button(NSLocalizedString("configure", comment: "")) {
-                    ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                
-                Button(action: {
-                    withAnimation {
-                        preferences.suppressAccessibilityWarning = true
-                    }
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .padding(6)
-                        .background(Color.primary.opacity(0.05))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help(NSLocalizedString("do_not_show_again", comment: ""))
+                Button(NSLocalizedString("configure", comment: "")) { ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true) }.buttonStyle(.bordered).controlSize(.small)
+                Button(action: { withAnimation { preferences.suppressAccessibilityWarning = true } }) {
+                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).padding(6).background(Color.primary.opacity(0.05)).clipShape(Circle())
+                }.buttonStyle(.plain).help(NSLocalizedString("do_not_show_again", comment: ""))
             }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color.orange.opacity(0.08))
-        .overlay(
-            Rectangle()
-                .frame(height: 1)
-                .foregroundColor(.orange.opacity(0.15)),
-            alignment: .bottom
-        )
+        }.padding(.horizontal, 16).padding(.vertical, 10).background(Color.orange.opacity(0.08)).overlay(Rectangle().frame(height: 1).foregroundColor(.orange.opacity(0.15)), alignment: .bottom)
     }
 }
 
-// MARK: - Banner de Sugerencia de Portapapeles (Premium)
 struct ClipboardSuggestionBanner: View {
     let content: String
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
-    
     var body: some View {
         HStack(spacing: 12) {
-            // Icono Accent con resplandor
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.blue.opacity(0.12))
-                    .frame(width: 42, height: 42)
-                
-                Image(systemName: "doc.on.clipboard.fill")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.blue)
-                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 6)
+                RoundedRectangle(cornerRadius: 12).fill(Color.blue.opacity(0.12)).frame(width: 42, height: 42)
+                Image(systemName: "doc.on.clipboard.fill").font(.system(size: 16, weight: .bold)).foregroundColor(.blue).shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 6)
             }
-            
             VStack(alignment: .leading, spacing: 2) {
-                Text("clipboard_banner_title".localized(for: preferences.language))
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.primary.opacity(0.9))
-                
-                // Truncado del contenido original
-                Text(content)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
+                Text("clipboard_banner_title".localized(for: preferences.language)).font(.system(size: 12, weight: .bold)).foregroundColor(.primary.opacity(0.9))
+                Text(content).font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundColor(.secondary).lineLimit(2)
             }
-            
             Spacer()
-            
-            // Acción principal
             Button(action: {
                 let newPrompt = Prompt(title: "", content: content, folder: nil, tags: [])
                 DraftService.shared.saveDraft(prompt: newPrompt, isEditing: false)
@@ -1341,48 +1049,13 @@ struct ClipboardSuggestionBanner: View {
                 }
                 HapticService.shared.playLight()
             }) {
-                Text("clipboard_banner_action".localized(for: preferences.language))
-                    .font(.system(size: 10, weight: .black))
-                    .textCase(.uppercase)
-                    .tracking(0.5)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10) // Shorten from 14
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(preferences.isHaloEffectEnabled ? 
-                                AnyShapeStyle(LinearGradient(colors: [.blue, .blue.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing)) :
-                                AnyShapeStyle(Color.blue))
-                            .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 8, y: 4)
-                    )
-            }
-            .buttonStyle(.plain)
-            
-            // Botón cerrar
-            Button(action: {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    menuBarManager.suggestedClipboardContent = nil
-                }
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .black))
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.primary.opacity(0.04)))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(12)
-        .frame(maxWidth: preferences.windowWidth * 0.9) // 80% window width
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-        )
-        .padding(.bottom, 8)
+                Text("clipboard_banner_action".localized(for: preferences.language)).font(.system(size: 10, weight: .black)).textCase(.uppercase).tracking(0.5).foregroundColor(.white).padding(.horizontal, 10).padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 10).fill(preferences.isHaloEffectEnabled ? AnyShapeStyle(LinearGradient(colors: [.blue, .blue.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing)) : AnyShapeStyle(Color.blue)).shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.4) : .clear, radius: 8, y: 4))
+            }.buttonStyle(.plain)
+            Button(action: { withAnimation(.easeOut(duration: 0.25)) { menuBarManager.suggestedClipboardContent = nil } }) {
+                Image(systemName: "xmark").font(.system(size: 10, weight: .black)).foregroundColor(.secondary.opacity(0.5)).frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.04)))
+            }.buttonStyle(.plain)
+        }.padding(12).frame(maxWidth: preferences.windowWidth * 0.9).background(RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial).shadow(color: .black.opacity(0.15), radius: 20, y: 10))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.primary.opacity(0.12), lineWidth: 1)).padding(.bottom, 8)
     }
 }
