@@ -93,6 +93,8 @@ struct NewPromptView: View {
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
     @State private var targetAppBundleIDs: [String] = []
+    @State private var showingShortcutHelp: Bool = false
+    @State private var showingSmartHelp: Bool = false
     @State private var localMonitor: Any? = nil
     struct DiffComparison: Identifiable {
         let id = UUID()
@@ -450,6 +452,16 @@ struct NewPromptView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
                             .tracking(1)
+                        
+                        Button(action: { showingShortcutHelp.toggle() }) {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showingShortcutHelp) {
+                            helpPopover(title: "shortcut_help", content: "shortcut_help_desc")
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
@@ -500,6 +512,16 @@ struct NewPromptView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
                             .tracking(1)
+                        
+                        Button(action: { showingSmartHelp.toggle() }) {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showingSmartHelp) {
+                            helpPopover(title: "smart_recommendation_help", content: "smart_recommendation_help_desc")
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 4)
@@ -2696,5 +2718,23 @@ struct IdentifiableString: Identifiable {
 struct IdentifiableData: Identifiable {
     let id = UUID()
     let value: Data
+}
+
+extension NewPromptView {
+    @ViewBuilder
+    private func helpPopover(title: String, content: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title.localized(for: preferences.language))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.primary)
+            
+            Text(content.localized(for: preferences.language))
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+                .lineSpacing(4)
+        }
+        .padding(16)
+        .frame(width: 250)
+    }
 }
 

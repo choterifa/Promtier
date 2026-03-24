@@ -175,18 +175,18 @@ struct CategoryPillPicker: View {
                     if isSelected {
                         // Resplandor de Selección (Glow Pro)
                         let pillColor = preferences.isHaloEffectEnabled ? color : (color == .gray ? .gray.opacity(0.6) : color.opacity(0.8))
-                        RoundedRectangle(cornerRadius: 24)
+                        RoundedRectangle(cornerRadius: 12)
                             .fill(pillColor)
                             .shadow(color: preferences.isHaloEffectEnabled ? pillColor.opacity(0.45) : .clear, radius: 10, x: 0, y: 5)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 24)
+                                RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
                             )
                     } else {
-                        RoundedRectangle(cornerRadius: 24)
+                        RoundedRectangle(cornerRadius: 12)
                             .fill(Color.primary.opacity(0.04))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 24)
+                                RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                             )
                     }

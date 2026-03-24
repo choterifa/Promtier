@@ -464,3 +464,9 @@
 "gt_create_category_title" = "New Category";
 "about_promtier" = "About Promtier";
 "quit" = "Quit";
+
+/* Help Popovers */
+"shortcut_help" = "Global Shortcut";
+"shortcut_help_desc" = "Set a key combination to copy this prompt instantly from any application without opening Promtier.";
+"smart_recommendation_help" = "Smart Recommendation";
+"smart_recommendation_help_desc" = "Associate this prompt with specific apps. When using those apps, Promtier will prioritize it in the list for faster access.";

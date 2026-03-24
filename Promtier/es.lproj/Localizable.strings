@@ -477,3 +477,9 @@
 "gt_create_category_title" = "Nueva Categoría";
 "about_promtier" = "Acerca de Promtier";
 "quit" = "Salir";
+
+/* Help Popovers */
+"shortcut_help" = "Atajo Global";
+"shortcut_help_desc" = "Configura una combinación de teclas para copiar este prompt instantáneamente desde cualquier aplicación sin abrir Promtier.";
+"smart_recommendation_help" = "Recomendación Inteligente";
+"smart_recommendation_help_desc" = "Asocia este prompt a aplicaciones específicas. Cuando estés usando esas apps, Promtier lo priorizará en la lista para que lo encuentres más rápido.";
