@@ -161,28 +161,28 @@ struct CategorySidebar: View {
                     menuBarManager.activeViewState = .folderManager
                 }
             } label: {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     ZStack {
                         Circle()
-                            .fill(Color.blue.opacity(0.12))
-                            .frame(width: 28, height: 28)
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 22, height: 22)
                         
                         Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.blue)
                     }
                     
                     Text("create_category".localized(for: preferences.language))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                     
                     Spacer()
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.primary.opacity(0.03))
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.primary.opacity(0.04))
                 )
             }
             .buttonStyle(.plain)
