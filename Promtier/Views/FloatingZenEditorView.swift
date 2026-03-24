@@ -34,32 +34,46 @@ struct FloatingZenEditorView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            
-            // ── Header ────────────────────────────────────────────────
-            headerBar
-            
-            Divider()
-            
-            // ── Title ─────────────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 6) {
-                Label("TÍTULO", systemImage: "text.cursor")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.blue.opacity(0.7))
-                    .tracking(1)
+                      // ── Title + expand button ─────────────────────────────────
+            ZStack(alignment: .topTrailing) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("TÍTULO", systemImage: "text.cursor")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.blue.opacity(0.7))
+                        .tracking(1)
+                    
+                    TextField("Escribe el título del prompt...", text: $manager.title, axis: .vertical)
+                        .font(.system(size: 16, weight: .bold))
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...3)
+                        .focused($focusedField, equals: .title)
+                        .frame(maxWidth: .infinity)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.trailing, 36) // espacio para el botón
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 18)
+                .padding(.top, 16)
+                .padding(.bottom, 14)
                 
-                TextField("Escribe el título del prompt...", text: $manager.title, axis: .vertical)
-                    .font(.system(size: 16, weight: .bold))
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...2)
-                    .focused($focusedField, equals: .title)
-                    .frame(maxWidth: .infinity)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Botón expandir en la esquina
+                Button(action: {
+                    manager.hide()
+                    MenuBarManager.shared.showPopover()
+                }) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .padding(5)
+                        .background(Color.primary.opacity(0.06))
+                        .cornerRadius(5)
+                }
+                .buttonStyle(.plain)
+                .help("Abrir editor completo")
+                .padding(.top, 14)
+                .padding(.trailing, 14)
             }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 18)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
             
             Divider().padding(.horizontal, 14)
             

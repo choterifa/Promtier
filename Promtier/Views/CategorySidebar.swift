@@ -214,65 +214,155 @@ struct CategorySidebar: View {
     private var foldersListView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 4) {
-                ForEach(promptService.folders, id: \.id) { folder in
-                    let count: Int = categoryCounts[folder.name] ?? 0
+                
+                // ── Pinned section ────────────────────────────────
+                let pinnedFolders = promptService.folders.filter {
+                    preferences.pinnedFolderNames.contains($0.name)
+                }.sorted {
+                    (preferences.pinnedFolderNames.firstIndex(of: $0.name) ?? 99) <
+                    (preferences.pinnedFolderNames.firstIndex(of: $1.name) ?? 99)
+                }
+                
+                if !pinnedFolders.isEmpty {
+                    HStack {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.secondary.opacity(0.4))
+                        Text("PINNED")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary.opacity(0.4))
+                            .tracking(1)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
                     
-                    SidebarItem(
-                        title: LocalizedStringKey(folder.name),
-                        icon: folder.icon ?? "folder.fill",
-                        color: Color(hex: folder.displayColor),
-                        count: count,
-                        isSelected: promptService.selectedCategory == folder.name,
-                        isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
-                        isReorderTarget: dropTargetFolderId == folder.id && draggedFolder != nil,
-                        action: {
-                            promptService.selectedCategory = folder.name
-                        }
-                    )
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                    .onDrag {
-                        self.draggedFolder = folder
-                        return NSItemProvider(object: folder.id.uuidString as NSString)
+                    ForEach(pinnedFolders, id: \.id) { folder in
+                        pinnedFolderRow(folder)
                     }
-                    .onDrop(of: [.json, .plainText, .text], delegate: FolderSidebarDropDelegate(
-                        folder: folder,
-                        promptService: promptService,
-                        menuBarManager: menuBarManager,
-                        dropTargetFolderId: $dropTargetFolderId,
-                        draggedFolder: $draggedFolder,
-                        onPromptMove: { ids, folderName in
-                            movePrompts(ids: ids, to: folderName)
-                        }
-                    ))
-                    .contextMenu {
-                        Button {
-                            menuBarManager.folderToEdit = folder
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                menuBarManager.activeViewState = .folderManager
-                            }
-                        } label: {
-                            Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
-                        }
-                        
-                        Button(role: .destructive) {
-                            let count = categoryCounts[folder.name] ?? 0
-                            if count > 0 {
-                                folderToDelete = folder
-                                showingDeleteAlert = true
-                            } else {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    _ = promptService.deleteFolder(folder)
-                                }
-                                HapticService.shared.playSuccess()
-                            }
-                        } label: {
-                            Label("delete".localized(for: preferences.language), systemImage: "trash")
-                        }
-                    }
+                    
+                    Divider()
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 6)
+                }
+                
+                // ── Remaining folders ────────────────────────────
+                let unpinnedFolders = promptService.folders.filter {
+                    !preferences.pinnedFolderNames.contains($0.name)
+                }
+                
+                ForEach(unpinnedFolders, id: \.id) { folder in
+                    folderRow(folder)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 24)
+        }
+    }
+    
+    @ViewBuilder
+    private func pinnedFolderRow(_ folder: Folder) -> some View {
+        let count: Int = categoryCounts[folder.name] ?? 0
+        SidebarItem(
+            title: LocalizedStringKey(folder.name),
+            icon: folder.icon ?? "folder.fill",
+            color: Color(hex: folder.displayColor),
+            count: count,
+            isSelected: promptService.selectedCategory == folder.name,
+            isPinned: true,
+            action: { promptService.selectedCategory = folder.name }
+        )
+        .transition(.move(edge: .leading).combined(with: .opacity))
+        .contextMenu {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    preferences.togglePin(folder.name)
+                }
+                HapticService.shared.playLight()
+            } label: {
+                Label("Quitar pin", systemImage: "pin.slash")
+            }
+            Divider()
+            Button {
+                menuBarManager.folderToEdit = folder
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            } label: {
+                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func folderRow(_ folder: Folder) -> some View {
+        let count: Int = categoryCounts[folder.name] ?? 0
+        SidebarItem(
+            title: LocalizedStringKey(folder.name),
+            icon: folder.icon ?? "folder.fill",
+            color: Color(hex: folder.displayColor),
+            count: count,
+            isSelected: promptService.selectedCategory == folder.name,
+            isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
+            isReorderTarget: dropTargetFolderId == folder.id && draggedFolder != nil,
+            action: { promptService.selectedCategory = folder.name }
+        )
+        .transition(.move(edge: .leading).combined(with: .opacity))
+        .onDrag {
+            self.draggedFolder = folder
+            return NSItemProvider(object: folder.id.uuidString as NSString)
+        }
+        .onDrop(of: [.json, .plainText, .text], delegate: FolderSidebarDropDelegate(
+            folder: folder,
+            promptService: promptService,
+            menuBarManager: menuBarManager,
+            dropTargetFolderId: $dropTargetFolderId,
+            draggedFolder: $draggedFolder,
+            onPromptMove: { ids, folderName in
+                movePrompts(ids: ids, to: folderName)
+            }
+        ))
+        .contextMenu {
+            // Pin
+            if preferences.pinnedFolderNames.count < 3 || preferences.isPinned(folder.name) {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        preferences.togglePin(folder.name)
+                    }
+                    HapticService.shared.playLight()
+                } label: {
+                    Label(
+                        preferences.isPinned(folder.name) ? "Quitar pin" : "Pinear categoría",
+                        systemImage: preferences.isPinned(folder.name) ? "pin.slash" : "pin.fill"
+                    )
+                }
+                Divider()
+            }
+            
+            Button {
+                menuBarManager.folderToEdit = folder
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            } label: {
+                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
+            }
+            
+            Button(role: .destructive) {
+                let count = categoryCounts[folder.name] ?? 0
+                if count > 0 {
+                    folderToDelete = folder
+                    showingDeleteAlert = true
+                } else {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        _ = promptService.deleteFolder(folder)
+                    }
+                    HapticService.shared.playSuccess()
+                }
+            } label: {
+                Label("delete".localized(for: preferences.language), systemImage: "trash")
+            }
         }
     }
     
@@ -441,6 +531,7 @@ struct SidebarItem: View {
     let isSelected: Bool
     var isDropTarget: Bool = false
     var isReorderTarget: Bool = false
+    var isPinned: Bool = false
     let action: () -> Void
     
     var dropAllowed: Bool = true
@@ -484,6 +575,13 @@ struct SidebarItem: View {
                             Capsule()
                                 .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
                         )
+                }
+                
+                if isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(isSelected ? .white.opacity(0.7) : color.opacity(0.5))
+                        .rotationEffect(.degrees(45))
                 }
             }
         }

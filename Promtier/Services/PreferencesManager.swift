@@ -298,6 +298,25 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    /// Carpetas pineadas en el sidebar (máx. 3), persistidas por nombre
+    @Published var pinnedFolderNames: [String] {
+        didSet {
+            userDefaults.set(pinnedFolderNames, forKey: "pinnedFolderNames")
+        }
+    }
+    
+    func isPinned(_ folderName: String) -> Bool {
+        pinnedFolderNames.contains(folderName)
+    }
+    
+    func togglePin(_ folderName: String) {
+        if let idx = pinnedFolderNames.firstIndex(of: folderName) {
+            pinnedFolderNames.remove(at: idx)
+        } else if pinnedFolderNames.count < 3 {
+            pinnedFolderNames.insert(folderName, at: 0)
+        }
+    }
+    
     private init() {
         // Inicializar valores desde UserDefaults o defaults
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "light") ?? .light
@@ -423,6 +442,9 @@ class PreferencesManager: ObservableObject {
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIApiKey = userDefaults.string(forKey: "openAIApiKey") ?? ""
         self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
+        
+        // Carpetas pineadas
+        self.pinnedFolderNames = userDefaults.stringArray(forKey: "pinnedFolderNames") ?? []
         
         // Sincronizar dimensiones para el HUD
         self.previewWidth = self.windowWidth
