@@ -27,6 +27,9 @@ struct SearchViewSimple: View {
     @State private var prewarmTask: Task<Void, Never>? = nil
     @State private var lastPrewarmedPromptId: UUID? = nil
     
+    // Resizing Sidebar
+    @State private var dragStartedSidebarWidth: CGFloat = 0
+    
     // Ghost Tips logic
     private var selectedPromptCategoryColor: Color {
         guard let p = selectedPrompt, let folderName = p.folder else {
@@ -320,8 +323,34 @@ struct SearchViewSimple: View {
             // Sidebar de categorías
             if preferences.showSidebar {
                 CategorySidebar()
+                    .frame(width: preferences.sidebarWidth)
                     .environmentObject(promptService)
                     .transition(.move(edge: .leading).combined(with: .opacity))
+                
+                // Divider interactivo para redimensionar (Invisble)
+                Rectangle()
+                    .fill(Color.white.opacity(0.001))
+                    .frame(width: 5)
+                    .onHover { inside in
+                        if inside { NSCursor.resizeLeftRight.push() }
+                        else { NSCursor.pop() }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                if dragStartedSidebarWidth == 0 {
+                                    dragStartedSidebarWidth = preferences.sidebarWidth
+                                }
+                                let newWidth = dragStartedSidebarWidth + value.translation.width
+                                if newWidth >= 150 && newWidth <= 500 {
+                                    preferences.sidebarWidth = newWidth
+                                }
+                            }
+                            .onEnded { _ in
+                                dragStartedSidebarWidth = 0
+                            }
+                    )
+                    .zIndex(100)
             }
             
             // Contenido principal

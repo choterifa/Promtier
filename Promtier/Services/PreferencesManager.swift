@@ -58,6 +58,12 @@ class PreferencesManager: ObservableObject {
             userDefaults.set(isGridView, forKey: "isGridView")
         }
     }
+
+    @Published var sidebarWidth: CGFloat {
+        didSet {
+            userDefaults.set(sidebarWidth, forKey: "sidebarWidth")
+        }
+    }
     
     @Published var closeOnCopy: Bool {
         didSet {
@@ -323,9 +329,10 @@ class PreferencesManager: ObservableObject {
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         // Sidebar visible por defecto
-        self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
+        self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
         // Vista de grid (tarjetas) por defecto en false
         self.isGridView = userDefaults.bool(forKey: "isGridView")
+        self.sidebarWidth = userDefaults.object(forKey: "sidebarWidth") == nil ? 220 : CGFloat(userDefaults.double(forKey: "sidebarWidth"))
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
         

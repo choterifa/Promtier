@@ -145,6 +145,7 @@ struct CategorySidebar: View {
                 }
             }
             .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity)
             
             Divider()
                 .padding(.vertical, 16)
@@ -201,7 +202,7 @@ struct CategorySidebar: View {
             let count = categoryCounts[folder.name] ?? 0
             Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
         }
-        .frame(width: 198)
+        .frame(maxWidth: .infinity)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor).opacity(0.95)
@@ -256,6 +257,7 @@ struct CategorySidebar: View {
                     folderRow(folder)
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 12)
             .padding(.bottom, 24)
         }
@@ -585,6 +587,7 @@ struct SidebarItem: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(

@@ -24,12 +24,23 @@ struct FloatingZenEditorView: View {
         !manager.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    /// Top 3 carpetas usadas por el usuario (por número de prompts)
-    private var pinnedCategories: [String] {
+    /// Todas las carpetas ordenadas: más usadas primero, luego el resto
+    private var allCategoriesSorted: [String] {
         let folderCounts = Dictionary(grouping: promptService.prompts.compactMap { $0.folder }) { $0 }
             .mapValues { $0.count }
-        let sorted = folderCounts.sorted { $0.value > $1.value }.map { $0.key }
-        return Array(sorted.prefix(3))
+        let allFolderNames = promptService.folders.map { $0.name }
+        return allFolderNames.sorted { a, b in
+            (folderCounts[a] ?? 0) > (folderCounts[b] ?? 0)
+        }
+    }
+    
+    private func usageCount(for folder: String) -> Int {
+        promptService.prompts.filter { $0.folder == folder }.count
+    }
+    
+    private func isTopUsed(_ folder: String) -> Bool {
+        let sorted = allCategoriesSorted
+        return sorted.prefix(3).contains(folder)
     }
     
     var body: some View {
@@ -124,9 +135,9 @@ struct FloatingZenEditorView: View {
             
             Divider()
 
-            // ── Category pins ─────────────────────────────────────────
-            if !pinnedCategories.isEmpty {
-                categoryPinsStrip
+            // ── Category selector ───────────────────────────────────
+            if !allCategoriesSorted.isEmpty {
+                categoryScrollStrip
                 Divider()
             }
 
@@ -197,60 +208,77 @@ struct FloatingZenEditorView: View {
         .background(Color(NSColor.windowBackgroundColor).opacity(0.4))
     }
     
-    private var categoryPinsStrip: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "pin.fill")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundColor(.secondary.opacity(0.4))
-            
-            ForEach(pinnedCategories, id: \.self) { folder in
-                let isSelected = manager.selectedFolder == folder
-                let cat = PredefinedCategory.fromString(folder)
-                let catColor = cat?.color ?? .blue
-                let icon = cat?.icon ?? "folder.fill"
-                
-                Button(action: {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                        manager.selectedFolder = isSelected ? nil : folder
+    private var categoryScrollStrip: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "folder")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.secondary.opacity(0.4))
+                Text("CATEGORÍA")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.secondary.opacity(0.4))
+                    .tracking(1)
+                Spacer()
+                if manager.selectedFolder != nil {
+                    Button(action: { withAnimation { manager.selectedFolder = nil } }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                            Text("Quitar")
+                                .font(.system(size: 9, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
                     }
-                    HapticService.shared.playLight()
-                }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: icon)
-                            .font(.system(size: 10, weight: .bold))
-                        Text(folder)
-                            .font(.system(size: 11, weight: .semibold))
-                            .lineLimit(1)
-                    }
-                    .foregroundColor(isSelected ? .white : catColor)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(isSelected ? catColor : catColor.opacity(0.10))
-                            .overlay(
-                                Capsule()
-                                    .stroke(catColor.opacity(isSelected ? 0 : 0.35), lineWidth: 1)
-                            )
-                    )
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 14)
             
-            Spacer()
-            
-            if manager.selectedFolder != nil {
-                Button(action: {
-                    withAnimation { manager.selectedFolder = nil }
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.secondary.opacity(0.5))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    ForEach(allCategoriesSorted, id: \.self) { folder in
+                        let isSelected = manager.selectedFolder == folder
+                        let cat = PredefinedCategory.fromString(folder)
+                        let catColor = cat?.color ?? Color(hex: promptService.folders.first(where: { $0.name == folder })?.displayColor ?? "#007AFF")
+                        let icon = cat?.icon ?? (promptService.folders.first(where: { $0.name == folder })?.icon ?? "folder.fill")
+                        let isTop = isTopUsed(folder)
+                        
+                        Button(action: {
+                            withAnimation(.spring(response: 0.22, dampingFraction: 0.7)) {
+                                manager.selectedFolder = isSelected ? nil : folder
+                            }
+                            HapticService.shared.playLight()
+                        }) {
+                            HStack(spacing: 5) {
+                                if isTop && !isSelected {
+                                    Image(systemName: "flame.fill")
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundColor(catColor.opacity(0.6))
+                                }
+                                Image(systemName: icon)
+                                    .font(.system(size: 10, weight: .semibold))
+                                Text(folder)
+                                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                                    .lineLimit(1)
+                            }
+                            .foregroundColor(isSelected ? .white : catColor)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? catColor : catColor.opacity(0.08))
+                                    .overlay(
+                                        Capsule().stroke(catColor.opacity(isSelected ? 0 : 0.3), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 2)
             }
         }
-        .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(Color.primary.opacity(0.02))
     }
