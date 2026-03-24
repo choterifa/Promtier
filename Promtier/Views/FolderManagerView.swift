@@ -251,6 +251,32 @@ struct FolderManagerView: View {
                                             }
                                         }
                                 }
+                                
+                                // Color Picker Personalizado (Multicolor)
+                                ZStack {
+                                    AngularGradient(
+                                        gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]),
+                                        center: .center
+                                    )
+                                    .clipShape(Circle())
+                                    .frame(width: 28, height: 28)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: selectedColor != .gray ? 3 : 1)
+                                            .shadow(color: .black.opacity(0.1), radius: 2)
+                                    )
+                                    .scaleEffect(animateColors ? 1.0 : 0.4)
+                                    .opacity(animateColors ? 1.0 : 0.0)
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(presetColors.count) * 0.05), value: animateColors)
+
+                                    ColorPicker("", selection: $selectedColor)
+                                        .labelsHidden()
+                                        .opacity(0.011)
+                                        .frame(width: 28, height: 28)
+                                        .onTapGesture {
+                                            NSColorPanel.shared.makeKeyAndOrderFront(nil)
+                                        }
+                                }
                             }
                             .padding(.top, 4)
                         }
