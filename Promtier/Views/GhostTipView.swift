@@ -78,8 +78,8 @@ struct GhostTipView: View {
                 offset = 0
             }
             
-            // Auto-dismiss after 8 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+            // Auto-dismiss after 4.5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
                 withAnimation(.easeIn(duration: 0.5)) {
                     opacity = 0
                     offset = -20

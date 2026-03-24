@@ -15,44 +15,44 @@ struct IconPickerView: View {
     // Lista curada de iconos útiles para prompts de IA
     let icons = [
         // AI / Inteligencia / Creatividad
-        "cpu", "brain.head.profile", "lightbulb.fill", "sparkles", "bolt.fill",
+        "cpu", "sparkles", "sparkle", "bolt.fill", "bulb",
         "wand.and.stars", "face.smiling", "eyes", "brain", "atom", "magicmouse.fill",
-        "icloud.and.arrow.down", "network", "waveform.path.ecg", "antenna.radiowaves.left.and.right",
+        "square.stack.3d.up.fill", "icloud.and.arrow.down", "network", "waveform.path.ecg", "antenna.radiowaves.left.and.right",
 
         // Escritura / Documentos / Notas
         "doc.text.fill", "pencil.tip.crop.circle", "keyboard", "text.quote", "signature",
-        "book.fill", "square.and.pencil", "doc.plaintext.fill", "list.bullet.rectangle",
-        "character.cursor.ibeam", "text.justify.left", "doc.richtext.fill", "note.text",
+        "book.fill", "books.vertical.fill", "square.and.pencil", "doc.plaintext.fill", "list.bullet.rectangle",
+        "character.cursor.ibeam", "text.justify.left", "doc.plaintext", "text.bubble.fill", "note.text", "doc.richtext.fill",
 
         // Código / Desarrollo / Terminal
         "terminal.fill", "command", "curlybraces", "chevron.left.forwardslash.chevron.right", "gearshape.fill",
-        "hammer.fill", "wrench.and.screwdriver.fill", "app.window.description", "script",
-        "chevron.left.right", "app.badge.fill", "laptopcomputer", "puzzlepiece.fill",
+        "hammer.fill", "wrench.and.screwdriver.fill", "macwindow", "scroll.fill",
+        "arrow.left.and.right", "app.badge.fill", "laptopcomputer", "puzzlepiece.fill", "ant.fill", "externaldrive.fill", "memorychip", "case.fill",
 
         // Comunicación / Redacción / Social
         "bubble.left.and.bubble.right.fill", "envelope.fill", "paperplane.fill", "megaphone.fill", "person.fill",
         "person.2.fill", "person.3.fill", "person.text.rectangle.fill", "phone.fill",
         "video.fill", "message.fill", "hand.thumbsup.fill", "quote.bubble.fill",
 
-        // Análisis / Datos / Negocios
+        // Análisis / Datos / Negocios / Finanzas
         "chart.bar.fill", "magnifyingglass", "cube.fill", "square.stack.3d.up.fill", "target",
-        "briefcase.fill", "creditcard.fill", "banknote.fill", "cart.fill", "bag.fill",
+        "briefcase.fill", "creditcard.fill", "banknote.fill", "dollarsign.circle.fill", "eurosign.circle.fill", "cart.fill", "bag.fill",
         "line.diagonal", "slider.horizontal.3", "timer", "stopwatch.fill",
 
         // Multimedia / Diseño / Arte
         "photo.fill", "camera.fill", "paintbrush.fill", "paintpalette.fill", "film.fill",
-        "play.fill", "music.note", "speaker.wave.3.fill", "mic.fill", "headphones",
-        "crop", "framer", "scissors", "metronome.fill",
+        "play.fill", "music.note", "music.mic", "speaker.wave.3.fill", "mic.fill", "headphones",
+        "crop", "perspective", "scissors", "metronome.fill",
 
         // Ciencia / Naturaleza / Educación
         "leaf.fill", "drop.fill", "sun.max.fill", "moon.fill", "cloud.fill",
         "thermometer.medium", "flask.fill", "testtube.2", "graduationcap.fill",
-        "globe.americas.fill", "mountain.2.fill", "pills.fill", "medical.thermometer.fill",
+        "globe.americas.fill", "mountain.2.fill", "ruler.fill", "pills.fill", "medical.thermometer.fill",
 
         // General / Otros
         "gift.fill", "gamecontroller.fill", "die.face.5.fill", "cup.and.saucer.fill",
-        "fork.knife", "trophy.fill", "medal.fill", "flag.fill", "bell.fill",
-        "key.fill", "lock.fill", "calendar", "map.fill"
+        "fork.knife", "trophy.fill", "medal.fill", "flag.fill", "bell.fill", "flame.fill", "bicycle", "airplane",
+        "key.fill", "lock.fill", "calendar", "map.fill", "star.fill", "party.popper.fill"
     ]
     
     @Environment(\.dismiss) private var dismiss

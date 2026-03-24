@@ -284,7 +284,7 @@ struct FolderManagerView: View {
                                     .background(
                                         ZStack {
                                             selectedColor.opacity(0.12)
-                                            Circle().stroke(selectedColor.opacity(0.2), lineWidth: 1)
+                                            RoundedRectangle(cornerRadius: 16).stroke(selectedColor.opacity(0.2), lineWidth: 1)
                                         }
                                     )
                                     .foregroundColor(selectedColor)
