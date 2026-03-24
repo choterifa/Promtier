@@ -242,19 +242,29 @@ struct CategoryPillPicker: View {
                         }
                 }
                 
-                // Color Picker Personalizado (Multicolor)
-                ColorPicker("", selection: $selectedNewColor)
-                    .labelsHidden()
-                    .frame(width: 24, height: 24)
-                    .background(
-                        AngularGradient(gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]), center: .center)
-                            .clipShape(Circle())
+                // Color Picker Personalizado (Punto Multicolor Refinado)
+                ZStack {
+                    AngularGradient(
+                        gradient: Gradient(colors: [.red, .orange, .yellow, .green, .blue, .purple, .red]),
+                        center: .center
                     )
+                    .clipShape(Circle())
+                    .frame(width: 24, height: 24)
                     .overlay(
                         Circle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.white, lineWidth: selectedNewColor != .gray ? 2 : 1)
                             .shadow(radius: 1)
                     )
+                    
+                    ColorPicker("", selection: $selectedNewColor)
+                        .labelsHidden()
+                        .opacity(0.011) // Invísimble pero interactivo
+                        .frame(width: 24, height: 24)
+                        .onTapGesture {
+                            // Asegurar que el el NSColorPanel se mueva al frente
+                            NSColorPanel.shared.makeKeyAndOrderFront(nil)
+                        }
+                }
             }
             
             Button(action: createCategory) {
