@@ -1281,7 +1281,7 @@ struct ClipboardSuggestionBanner: View {
                 Text(content)
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             
             Spacer()
@@ -1329,7 +1329,7 @@ struct ClipboardSuggestionBanner: View {
             .buttonStyle(.plain)
         }
         .padding(12)
-        .frame(maxWidth: 420) // Centered and limited width
+        .frame(maxWidth: preferences.windowWidth * 0.9) // 80% window width
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(.ultraThinMaterial)
