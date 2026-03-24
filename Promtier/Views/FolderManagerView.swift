@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct FolderManagerView: View {
     @EnvironmentObject var promptService: PromptService
@@ -21,6 +22,9 @@ struct FolderManagerView: View {
     @State private var showingIconPicker = false
     @State private var editingFolder: Folder?
     @State private var animateColors = false
+    
+    // Reordenado
+    @State private var draggedFolder: Folder? = nil
     
     // Alerta de eliminación
     @State private var folderToDelete: Folder? = nil
@@ -189,6 +193,15 @@ struct FolderManagerView: View {
                             }
                         )
                         .transition(.scale.combined(with: .opacity))
+                        .onDrag {
+                            self.draggedFolder = folder
+                            return NSItemProvider(object: folder.id.uuidString as NSString)
+                        }
+                        .onDrop(of: [.text], delegate: FolderReorderDelegate(
+                            item: folder,
+                            promptService: promptService,
+                            draggedItem: $draggedFolder
+                        ))
                     }
                 }
                 .padding(.vertical, 16)
@@ -473,4 +486,32 @@ struct CategoryRow: View {
     FolderManagerView(folderToEdit: nil, onClose: {})
         .environmentObject(PromptService())
         .environmentObject(PreferencesManager.shared)
+}
+// MARK: - Delegate para Reordenado
+struct FolderReorderDelegate: DropDelegate {
+    let item: Folder
+    let promptService: PromptService
+    @Binding var draggedItem: Folder?
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+    
+    func performDrop(info: DropInfo) -> Bool {
+        self.draggedItem = nil
+        return true
+    }
+    
+    func dropEntered(info: DropInfo) {
+        guard let draggedItem = draggedItem,
+              draggedItem.id != item.id,
+              let from = promptService.folders.firstIndex(where: { $0.id == draggedItem.id }),
+              let to = promptService.folders.firstIndex(where: { $0.id == item.id }) else { return }
+        
+        if promptService.folders[to].id != draggedItem.id {
+            var updated = promptService.folders
+            updated.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+            promptService.reorderFolders(updated)
+        }
+    }
 }

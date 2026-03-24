@@ -26,6 +26,9 @@ struct CategorySidebar: View {
     @State private var isTargetedFavoritos = false
     @State private var isTargetedSinCategoria = false
     
+    // Reordenado (Sidebar)
+    @State private var draggedFolder: Folder? = nil
+    
     // Alerta de eliminación
     @State private var folderToDelete: Folder? = nil
     @State private var showingDeleteAlert = false
@@ -226,11 +229,16 @@ struct CategorySidebar: View {
                         }
                     )
                     .transition(.move(edge: .leading).combined(with: .opacity))
-                    .onDrop(of: [.json, .plainText], delegate: FolderDropDelegate(
+                    .onDrag {
+                        self.draggedFolder = folder
+                        return NSItemProvider(object: folder.id.uuidString as NSString)
+                    }
+                    .onDrop(of: [.json, .plainText, .text], delegate: FolderSidebarDropDelegate(
                         folder: folder,
                         promptService: promptService,
                         menuBarManager: menuBarManager,
                         dropTargetFolderId: $dropTargetFolderId,
+                        draggedFolder: $draggedFolder,
                         onPromptMove: { ids, folderName in
                             movePrompts(ids: ids, to: folderName)
                         }
@@ -344,18 +352,35 @@ struct CategorySidebar: View {
     }
 }
 
-// MARK: - DropDelegate especializado para Carpeta
-struct FolderDropDelegate: DropDelegate {
+// MARK: - DropDelegate Combinado para Sidebar (Prompts + Reordenado)
+struct FolderSidebarDropDelegate: DropDelegate {
     let folder: Folder
     let promptService: PromptService
     let menuBarManager: MenuBarManager
     @Binding var dropTargetFolderId: UUID?
+    @Binding var draggedFolder: Folder?
     
     var onPromptMove: ([String], String) -> Void
     
     func dropEntered(info: DropInfo) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            dropTargetFolderId = folder.id
+        // Reordenado
+        if let draggedFolder = draggedFolder, draggedFolder.id != folder.id {
+            let from = promptService.folders.firstIndex(where: { $0.id == draggedFolder.id })
+            let to = promptService.folders.firstIndex(where: { $0.id == folder.id })
+            
+            if let from = from, let to = to {
+                var updated = promptService.folders
+                updated.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+                promptService.reorderFolders(updated)
+            }
+            return
+        }
+        
+        // Mover Prompts
+        if draggedFolder == nil {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = folder.id
+            }
         }
     }
     
@@ -368,16 +393,19 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        return DropProposal(operation: .copy)
+        return DropProposal(operation: .move)
     }
     
     func validateDrop(info: DropInfo) -> Bool {
-        return info.hasItemsConforming(to: [.json, .plainText])
+        return info.hasItemsConforming(to: [.json, .plainText, .text])
     }
     
     func performDrop(info: DropInfo) -> Bool {
         dropTargetFolderId = nil
-        menuBarManager.isModalActive = false
+        let wasDraggingFolder = draggedFolder != nil
+        self.draggedFolder = nil
+        
+        if wasDraggingFolder { return true }
         
         let jsonType = UTType.json.identifier
         for provider in info.itemProviders(for: [.json, .plainText]) {
@@ -396,7 +424,7 @@ struct FolderDropDelegate: DropDelegate {
             }
         }
         
-        return false
+        return true
     }
 }
 
