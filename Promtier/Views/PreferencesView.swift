@@ -647,7 +647,7 @@ struct BehaviorTab: View {
                                     .font(.system(.body, design: .monospaced))
                                 
                                 Menu {
-                                    ForEach(["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"], id: \.self) { model in
+                                    ForEach(["o3-mini", "o1", "o1-mini", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"], id: \.self) { model in
                                         Button(model) {
                                             preferences.openAIDefaultModel = model
                                         }
@@ -696,7 +696,7 @@ struct BehaviorTab: View {
                                     .frame(width: 200)
                                 
                                 Menu {
-                                    ForEach(["gemini-2.0-flash", "gemini-2.0-flash-lite-preview-02-05", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"], id: \.self) { model in
+                                    ForEach(["gemini-2.0-flash", "gemini-2.0-flash-lite-preview-02-05", "gemini-2.0-pro-exp-02-05", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest"], id: \.self) { model in
                                         Button(model) {
                                             preferences.geminiDefaultModel = model
                                         }
