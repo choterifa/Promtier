@@ -53,6 +53,10 @@ final class ImageStore: @unchecked Sendable {
         try? Data(contentsOf: url(forRelativePath: relativePath))
     }
 
+    nonisolated func fileExists(relativePath: String) -> Bool {
+        FileManager.default.fileExists(atPath: url(forRelativePath: relativePath).path)
+    }
+
     nonisolated func delete(relativePaths: [String]) {
         let fm = FileManager.default
         for path in relativePaths {

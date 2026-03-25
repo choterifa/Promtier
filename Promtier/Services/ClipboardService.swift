@@ -45,7 +45,6 @@ class ClipboardService: ObservableObject {
         if let frontmostApp = NSWorkspace.shared.frontmostApplication,
            frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {
             self.lastSourceAppBundleID = frontmostApp.bundleIdentifier
-            print("📋 Nuevo contenido en portapapeles detectado desde: \(lastSourceAppBundleID ?? "unknown")")
         }
     }
     
@@ -56,26 +55,31 @@ class ClipboardService: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        
-        // Agregar al historial si está habilitado
-        if addToHistory {
-            self.addToHistory(text)
+
+        finalizeCopy(plainText: text, addToHistory: addToHistory)
+    }
+
+    /// Copia rich text al clipboard conservando un fallback de texto plano
+    func copyRichTextToClipboard(_ attributedText: NSAttributedString, addToHistory: Bool = true) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+
+        let fullRange = NSRange(location: 0, length: attributedText.length)
+        if let rtfData = try? attributedText.data(
+            from: fullRange,
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        ) {
+            pasteboard.setData(rtfData, forType: .rtf)
         }
-        
-        // CONFIGURABLE: Notificación visual (opcional)
-        showCopyNotification()
-        
-        // AUTO-PASTE: Magia de pegado si está habilitada
-        if PreferencesManager.shared.autoPaste {
-            performAutoPaste()
-        }
+        pasteboard.setString(attributedText.string, forType: .string)
+
+        finalizeCopy(plainText: attributedText.string, addToHistory: addToHistory)
     }
     
     /// Ejecuta el pegado automático mediante CoreGraphics (Simulación de Teclado)
     private func performAutoPaste() {
         // Asegurar que el proceso tiene permisos antes de intentar
         guard ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false) else {
-            print("⚠️ Auto-Paste cancelado: Sin permisos de accesibilidad")
             return
         }
         
@@ -118,7 +122,6 @@ class ClipboardService: ObservableObject {
                         
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                             cmdUp?.post(tap: .cghidEventTap)
-                            print("✅ Auto-Paste (Robust CGEvent) ejecutado satisfactoriamente")
                         }
                     }
                 }
@@ -163,11 +166,8 @@ class ClipboardService: ObservableObject {
     
     /// Muestra notificación visual de copia exitosa
     private func showCopyNotification() {
-        // CONFIGURABLE: Usar print para notificación simple (evita deprecated APIs)
-        print("📋 Prompt copiado al clipboard")
-        
-        // CONFIGURABLE: Alternativa futura con UserNotifications framework
-        // Por ahora, usamos notificación simple para compatibilidad
+        // Mantener silencioso para no ensuciar la consola; el feedback visual/sonoro
+        // vive en la UI y los haptics.
     }
     
     // MARK: - Utilidades
@@ -180,5 +180,17 @@ class ClipboardService: ObservableObject {
     /// Obtiene longitud del contenido actual
     func getContentLength() -> Int {
         return getClipboardContent()?.count ?? 0
+    }
+
+    private func finalizeCopy(plainText: String, addToHistory: Bool) {
+        if addToHistory {
+            self.addToHistory(plainText)
+        }
+
+        showCopyNotification()
+
+        if PreferencesManager.shared.autoPaste {
+            performAutoPaste()
+        }
     }
 }

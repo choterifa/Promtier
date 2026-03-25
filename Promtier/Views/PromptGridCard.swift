@@ -23,7 +23,7 @@ struct PromptGridCard: View {
     @EnvironmentObject var batchService: BatchOperationsService
     
     @State private var isTargetedForDrop = false
-    @State private var showcaseImagePaths: [String] = []
+    @State private var fallbackShowcasePath: String? = nil
     
     // Cached Regex patterns
     static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
@@ -72,6 +72,18 @@ struct PromptGridCard: View {
             }
         }
         return .blue
+    }
+
+    private var previewThumbnailData: Data? {
+        prompt.showcaseThumbnails.first
+    }
+
+    private var previewRelativePath: String? {
+        prompt.showcaseImagePaths.first ?? fallbackShowcasePath
+    }
+
+    private var hasPreviewImage: Bool {
+        previewThumbnailData != nil || previewRelativePath != nil
     }
     
     var body: some View {
@@ -124,12 +136,22 @@ struct PromptGridCard: View {
             }
             
             // Image Preview (if any)
-            if !showcaseImagePaths.isEmpty, let firstPath = showcaseImagePaths.first {
+            if let thumbnailData = previewThumbnailData {
+                DownsampledImageView(
+                    imageData: thumbnailData,
+                    cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
+                    maxPixelSize: 360,
+                    contentMode: .fill
+                )
+                .frame(height: 180)
+                .frame(maxWidth: .infinity)
+                .clipped()
+            } else if let firstPath = previewRelativePath {
                 let url = ImageStore.shared.url(forRelativePath: firstPath)
                 DownsampledImageURLView(
                     imageURL: url,
-                    cacheKey: "\(prompt.id.uuidString):grid:0:300:\(firstPath)",
-                    maxPixelSize: 300,
+                    cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
+                    maxPixelSize: 360,
                     contentMode: .fill
                 )
                 .frame(height: 180) // Made taller (protagonist)
@@ -142,7 +164,7 @@ struct PromptGridCard: View {
                 Text(highlightedContent)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.9))
-                    .lineLimit(showcaseImagePaths.isEmpty ? 4 : 2)
+                    .lineLimit(hasPreviewImage ? 2 : 4)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -257,8 +279,11 @@ struct PromptGridCard: View {
             onHover(hovering)
         }
         .task {
-            if prompt.showcaseImageCount > 0 {
-                showcaseImagePaths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+            if prompt.showcaseImageCount > 0,
+               previewThumbnailData == nil,
+               prompt.showcaseImagePaths.isEmpty,
+               fallbackShowcasePath == nil {
+                fallbackShowcasePath = await promptService.fetchShowcaseImagePaths(byId: prompt.id).first
             }
         }
     }

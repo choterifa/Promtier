@@ -28,7 +28,20 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
    - El icono del prompt se redujo y se compactó el spacing.
    - Título y descripción quedaron más alineados y más fáciles de atacar con el mouse.
 
-6. **Infra ya existente preservada**
+6. **Preview y rendimiento escalable**
+   - La lista/grid ya no intenta cargar imágenes medianas: usa primero thumbnails ligeras.
+   - El preview con `Space` ahora pre-calienta texto enriquecido y la primera imagen en resolución media.
+   - El fullscreen carga una versión más grande aparte, sin castigar el scroll de la biblioteca.
+   - Se añadieron guardas para rutas de imagen faltantes y una reparación automática de referencias rotas.
+
+7. **Ruido de consola reducido**
+   - Se quitaron prints internos del portapapeles que ensuciaban la consola.
+   - Se evitó que `ImageIO` intentara abrir rutas inexistentes de showcase.
+
+8. **Proyecto/Xcode saneado**
+   - Se migró el target a `generated Info.plist` para quitar el warning de `Copy Bundle Resources`.
+
+9. **Infra ya existente preservada**
    - Negative Prompt y Alternatives siguen funcionando dentro del mismo sistema.
    - El soporte previo de imágenes en disco, ZIP backup/import, prewarm y throttling no se tocó en esta pasada.
 
@@ -41,6 +54,14 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
 - `Promtier/Views/NewPromptView.swift`
 - `Promtier/Views/ZenEditorView.swift`
 - `Promtier/Services/MenuBarManager.swift`
+- `Promtier/Views/SearchViewSimple.swift`
+- `Promtier/Views/PromptPreviewView.swift`
+- `Promtier/Views/PromptGridCard.swift`
+- `Promtier/Views/DownsampledImageURLView.swift`
+- `Promtier/Services/PromptPreviewTextCache.swift`
+- `Promtier/Services/ImageDecodeCache.swift`
+- `Promtier/Services/ClipboardService.swift`
+- `Promtier.xcodeproj/project.pbxproj`
 
 ## 🧩 Decisiones técnicas importantes
 
@@ -53,6 +74,9 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
 
 - **Resaltado:** se separó el highlight completo del bracket matching.
 - **Motivo:** bajar repintados y quitar el flicker de las llaves.
+
+- **Carga de imágenes:** `thumb en lista → media en preview → grande en fullscreen`.
+- **Motivo:** evitar beachball en bibliotecas grandes y mantener scroll fluido.
 
 ## ⚠️ Cosas a vigilar si algo falla
 
@@ -75,6 +99,16 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
 5. Si el editor vuelve a quedarse abierto al perder foco:
    - revisar `MenuBarManager.updatePopoverBehavior()`
    - revisar asignaciones a `MenuBarManager.shared.isModalActive`
+
+6. Si una imagen no aparece en preview pero sí existe en disco:
+   - revisar `PromptEntity.toPrompt()`
+   - revisar `PromptService.repairMissingShowcaseReferencesIfNeeded()`
+   - revisar `DownsampledImageURLView.loadIfNeeded()`
+
+7. Si vuelve el beachball al primer `Space`:
+   - revisar `SearchViewSimple.prewarmPreviewAssets(...)`
+   - revisar `PromptPreviewTextCache`
+   - revisar tamaños de decode (`360 / 1600 / 3200`)
 
 ## 🔜 Buen siguiente paso
 

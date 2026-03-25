@@ -263,7 +263,7 @@ struct FolderManagerView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.primary.opacity(0.07), lineWidth: 1)
                             )
-                            .onChange(of: newFolderName) { newValue in
+                            .onChange(of: newFolderName) { _, newValue in
                                 if newValue.count > 30 {
                                     newFolderName = String(newValue.prefix(30))
                                 }

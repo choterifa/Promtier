@@ -89,6 +89,7 @@ class PromptService: ObservableObject {
         loadPrompts()
         migrateShowcaseImageCountIfNeeded()
         migrateShowcaseBlobsToDiskIfNeeded()
+        repairMissingShowcaseReferencesIfNeeded()
     }
     
     /// Elimina duplicados que hayan sido generados accidentalmente por semillas anteriores
@@ -281,10 +282,7 @@ class PromptService: ObservableObject {
             )
             chatGPTPrompt.id = chatGPTPromptId
             chatGPTPrompt.targetAppBundleIDs = ["com.apple.Safari"]
-            chatGPTPrompt.showcaseImagePaths = ["\(chatGPTPromptId.uuidString)/showcase_0.png"]
-            chatGPTPrompt.showcaseImageCount = 1
-            let chatGPT_entity = PromptEntity.create(from: chatGPTPrompt, in: context)
-            chatGPT_entity.image1Path = chatGPTPrompt.showcaseImagePaths[0]
+            _ = PromptEntity.create(from: chatGPTPrompt, in: context)
         }
         
         // 2. Claude - SOLID (Shortcut)
@@ -298,10 +296,7 @@ class PromptService: ObservableObject {
             )
             claudePrompt.id = claudePromptId
             claudePrompt.customShortcut = "review"
-            claudePrompt.showcaseImagePaths = ["\(claudePromptId.uuidString)/showcase_0.png"]
-            claudePrompt.showcaseImageCount = 1
-            let claude_entity = PromptEntity.create(from: claudePrompt, in: context)
-            claude_entity.image1Path = claudePrompt.showcaseImagePaths[0]
+            _ = PromptEntity.create(from: claudePrompt, in: context)
         }
         
         // 3. Cursor - Implementation (Negative Prompt)
@@ -315,10 +310,7 @@ class PromptService: ObservableObject {
             )
             cursorPrompt.id = cursorPromptId
             cursorPrompt.negativePrompt = "default_negative_cursor".localized(for: language)
-            cursorPrompt.showcaseImagePaths = ["\(cursorPromptId.uuidString)/showcase_0.png"]
-            cursorPrompt.showcaseImageCount = 1
-            let cursor_entity = PromptEntity.create(from: cursorPrompt, in: context)
-            cursor_entity.image1Path = cursorPrompt.showcaseImagePaths[0]
+            _ = PromptEntity.create(from: cursorPrompt, in: context)
         }
         
         // 4. Midjourney - Portrait (Versions)
@@ -335,10 +327,7 @@ class PromptService: ObservableObject {
                 PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Initial cinematic prompt", timestamp: Date().addingTimeInterval(-86400)),
                 PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Added --v 6.0 and lighting details", timestamp: Date().addingTimeInterval(-3600))
             ]
-            midjourneyPrompt.showcaseImagePaths = ["\(midjourneyPromptId.uuidString)/showcase_0.png"]
-            midjourneyPrompt.showcaseImageCount = 1
-            let mid_entity = PromptEntity.create(from: midjourneyPrompt, in: context)
-            mid_entity.image1Path = midjourneyPrompt.showcaseImagePaths[0]
+            _ = PromptEntity.create(from: midjourneyPrompt, in: context)
         }
         
         // 5. Images Prompts - Otaku Room (Full Detail + Negative)
@@ -352,10 +341,7 @@ class PromptService: ObservableObject {
             )
             imagesPrompt.id = imagesPromptId
             imagesPrompt.negativePrompt = "default_negative_otaku".localized(for: language)
-            imagesPrompt.showcaseImagePaths = ["\(imagesPromptId.uuidString)/showcase_0.png"]
-            imagesPrompt.showcaseImageCount = 1
-            let img_entity = PromptEntity.create(from: imagesPrompt, in: context)
-            img_entity.image1Path = imagesPrompt.showcaseImagePaths[0]
+            _ = PromptEntity.create(from: imagesPrompt, in: context)
         }
         
         dataController.save()
@@ -399,6 +385,58 @@ class PromptService: ObservableObject {
             return .failure(fetchError)
         }
         return .success(prompts)
+    }
+
+    private func repairMissingShowcaseReferencesIfNeeded() {
+        let key = "hasRepairedMissingShowcaseReferencesV1"
+        if UserDefaults.standard.bool(forKey: key) { return }
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            let context: NSManagedObjectContext = self.dataController.backgroundContext
+            var didUpdate = false
+
+            context.performAndWaitCompat {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "image1Path != nil OR image2Path != nil OR image3Path != nil")
+
+                do {
+                    let entities = try context.fetch(request)
+                    for entity in entities {
+                        let existingPaths = [entity.image1Path, entity.image2Path, entity.image3Path]
+                        let validMask = existingPaths.map { path in
+                            guard let path else { return false }
+                            return ImageStore.shared.fileExists(relativePath: path)
+                        }
+
+                        guard validMask.contains(false) else { continue }
+
+                        entity.image1Path = validMask.indices.contains(0) && validMask[0] ? entity.image1Path : nil
+                        entity.image2Path = validMask.indices.contains(1) && validMask[1] ? entity.image2Path : nil
+                        entity.image3Path = validMask.indices.contains(2) && validMask[2] ? entity.image3Path : nil
+
+                        entity.thumb1 = validMask.indices.contains(0) && validMask[0] ? entity.thumb1 : nil
+                        entity.thumb2 = validMask.indices.contains(1) && validMask[1] ? entity.thumb2 : nil
+                        entity.thumb3 = validMask.indices.contains(2) && validMask[2] ? entity.thumb3 : nil
+
+                        let remaining = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }.count
+                        entity.showcaseImageCount = Int16(remaining)
+                        didUpdate = true
+                    }
+
+                    if context.hasChanges {
+                        try context.save()
+                    }
+                } catch {
+                    print("Error reparando referencias de imágenes inexistentes: \(error)")
+                }
+            }
+
+            UserDefaults.standard.set(true, forKey: key)
+            if didUpdate {
+                DispatchQueue.main.async { self.loadPrompts() }
+            }
+        }
     }
     
     /// Carga todos los prompts desde Core Data (excluye los de la papelera)
@@ -448,21 +486,7 @@ class PromptService: ObservableObject {
 
                     do {
                         guard let entity = try context.fetch(request).first else { return }
-                        var p = Prompt(title: entity.title, content: entity.content, folder: entity.folder)
-                        p.id = entity.id
-                        p.isFavorite = entity.isFavorite
-                        p.createdAt = entity.createdAt
-                        p.modifiedAt = entity.modifiedAt
-                        p.useCount = Int(entity.useCount)
-                        p.lastUsedAt = entity.lastUsedAt
-                        p.icon = entity.icon
-                        p.promptDescription = entity.promptDescription
-                        p.deletedAt = entity.deletedAt
-                        p.negativePrompt = entity.negativePrompt
-                        p.alternativePrompt = entity.alternativePrompt
-                        p.customShortcut = entity.customShortcut
-                        p.showcaseImagePaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
-                        p.showcaseThumbnails = [entity.thumb1, entity.thumb2, entity.thumb3].compactMap { $0 }
+                        var p = entity.toPrompt()
 
                         if includeImages {
                             if !p.showcaseImagePaths.isEmpty {

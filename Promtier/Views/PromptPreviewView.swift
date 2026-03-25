@@ -6,9 +6,14 @@
 //  Created by Carlos on 15/03/26.
 //
 
+import AppKit
 import SwiftUI
 
 struct PromptPreviewView: View {
+    private enum PreviewImageProfile {
+        static let mediumPixelSize = 1600
+    }
+
     let prompt: Prompt
     @State private var showingFullScreenImageURL: URL? = nil
     @State private var isVisible = false
@@ -19,6 +24,13 @@ struct PromptPreviewView: View {
     @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
     @Binding var isFullScreenImageOpen: Bool
+
+    private var previewThemeColor: PromptPreviewThemeColor {
+        if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+            return PromptPreviewThemeColor(NSColor(category.color))
+        }
+        return PromptPreviewThemeColor(.systemBlue)
+    }
     
     init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false)) {
         self.prompt = prompt
@@ -363,7 +375,14 @@ struct PromptPreviewView: View {
                 HStack(spacing: 12) {
                     ForEach(Array(showcaseImagePaths.enumerated()), id: \.offset) { index, relativePath in
                         let url = ImageStore.shared.url(forRelativePath: relativePath)
-                        GalleryThumbnail(url: url, promptId: prompt.id, index: index, relativePath: relativePath) {
+                        let thumbnailData = prompt.showcaseThumbnails.indices.contains(index) ? prompt.showcaseThumbnails[index] : nil
+                        GalleryThumbnail(
+                            url: url,
+                            promptId: prompt.id,
+                            index: index,
+                            relativePath: relativePath,
+                            thumbnailData: thumbnailData
+                        ) {
                             showingFullScreenImageURL = url
                         }
                     }
@@ -380,120 +399,88 @@ struct PromptPreviewView: View {
         let promptId: UUID
         let index: Int
         let relativePath: String
+        let thumbnailData: Data?
         let action: () -> Void
         
         @State private var isHovered = false
         
-                var body: some View {
-                    DownsampledImageURLView(
-                        imageURL: url,
-                        cacheKey: "\(promptId.uuidString):preview:\(index):900:\(relativePath)",
-                        maxPixelSize: 900,
-                        contentMode: .fill
-                    )
-                    .frame(width: 280, height: 180, alignment: .top)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                    )
-                    .overlay(alignment: .bottomTrailing) {
-                        // Icono de lupa al hacer hover (Esquina Inferior Derecha)
-                        ZStack {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 32, height: 32)
-                                .shadow(color: .black.opacity(0.1), radius: 4)
-        
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.primary.opacity(0.7))
-                        }
-                        .padding(10)
-                        .opacity(isHovered ? 1 : 0)
-                        .scaleEffect(isHovered ? 1 : 0.8)
-                    }
-                    .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
-                    .onTapGesture {
-                        action()
-                    }
-                    .onHover { hovering in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            isHovered = hovering
-                        }
-                    }
-                    .task {
-                        // Pre-warm the image decode to make space preview faster
-                        await ImageDecodeThrottler.prewarm(url: url, cacheKey: "\(promptId.uuidString):preview:\(index):900:\(relativePath)", maxPixelSize: 900)
-                    }
-                }    }
+        var body: some View {
+            DownsampledImageURLView(
+                imageURL: url,
+                cacheKey: "\(promptId.uuidString):preview:\(index):\(PreviewImageProfile.mediumPixelSize):\(relativePath)",
+                maxPixelSize: PreviewImageProfile.mediumPixelSize,
+                contentMode: .fill,
+                thumbnailData: thumbnailData
+            )
+            .frame(width: 280, height: 180, alignment: .top)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .overlay(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 32, height: 32)
+                        .shadow(color: .black.opacity(0.1), radius: 4)
+
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary.opacity(0.7))
+                }
+                .padding(10)
+                .opacity(isHovered ? 1 : 0)
+                .scaleEffect(isHovered ? 1 : 0.8)
+            }
+            .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+            .onTapGesture {
+                action()
+            }
+            .onHover { hovering in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isHovered = hovering
+                }
+            }
+            .task {
+                await ImageDecodeThrottler.prewarm(
+                    url: url,
+                    cacheKey: "\(promptId.uuidString):preview:\(index):\(PreviewImageProfile.mediumPixelSize):\(relativePath)",
+                    maxPixelSize: PreviewImageProfile.mediumPixelSize
+                )
+            }
+        }
+    }
     
     // MARK: - Helpers
     
-    private func splitContent(_ content: String) -> (firstBlock: String, secondBlock: String) {
-        let paragraphs = content.components(separatedBy: "\n\n")
-        if paragraphs.count <= 2 {
-            return (content, "")
-        }
-        
-        let firstBlock = paragraphs.prefix(2).joined(separator: "\n\n")
-        let secondBlock = paragraphs.dropFirst(2).joined(separator: "\n\n")
-        return (firstBlock, secondBlock)
-    }
-    
     private func updateCachedContent() {
-        let text = prompt.content
-        let themeColor: Color = {
-            if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
-                return category.color
-            }
-            return .blue
-        }()
         let scale = preferences.fontSize.scale
-        
-        Task.detached(priority: .userInitiated) {
-            let highlighted = Self.highlightContent(text, themeColor: themeColor, scale: scale)
-            await MainActor.run {
-                self.cachedAttributedContent = highlighted
-            }
-        }
-    }
 
-    private static func highlightContent(_ text: String, themeColor: Color, scale: CGFloat) -> AttributedString {
-        var attrString = AttributedString(text)
-        
-        // 1. Resaltado de Brackets (Color categoría)
-        let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
-        if let bracketRegex = try? NSRegularExpression(pattern: bracketPattern, options: []) {
-            let range = NSRange(text.startIndex..<text.endIndex, in: text)
-            let matches = bracketRegex.matches(in: text, options: [], range: range)
-            for match in matches {
-                if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = themeColor.opacity(0.8)
-                }
+        let key = PromptPreviewTextCache.shared.cacheKey(
+            promptId: prompt.id,
+            modifiedAt: prompt.modifiedAt,
+            scale: scale
+        )
+
+        if let cached = PromptPreviewTextCache.shared.cachedAttributedString(forKey: key),
+           let attributed = try? AttributedString(cached, including: \.appKit) {
+            cachedAttributedContent = attributed
+            return
+        }
+
+        Task(priority: .utility) {
+            let highlighted = PromptPreviewTextCache.shared.highlightedString(
+                for: prompt,
+                themeColor: previewThemeColor,
+                scale: scale
+            )
+            let converted = try? AttributedString(highlighted, including: \.appKit)
+            await MainActor.run {
+                self.cachedAttributedContent = converted
             }
         }
-        
-        // 2. Resaltado de Variables (Estilo Promtier - Color categoría)
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return attrString
-        }
-        
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = regex.matches(in: text, options: [], range: range)
-        
-        for match in matches.reversed() {
-            if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = .blue
-                attrString[range].font = .system(size: 16 * scale, weight: .bold)
-                attrString[range].backgroundColor = Color.blue.opacity(0.08)
-            }
-        }
-        
-        return attrString
     }
 }
 

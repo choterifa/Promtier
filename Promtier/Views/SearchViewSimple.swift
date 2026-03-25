@@ -4,6 +4,13 @@ import UniformTypeIdentifiers
 
 // VISTA PRINCIPAL SIMPLIFICADA: Búsqueda básica con resultados
 struct SearchViewSimple: View {
+    private enum PromptCopyFormat {
+        case plainText
+        case markdown
+        case richText
+        case pack
+    }
+
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
@@ -24,9 +31,9 @@ struct SearchViewSimple: View {
     @State private var importURL: URL? = nil
     /// Bloquea atajos de teclado cuando hay una hoja/modal secundaria abierta
     @State private var isFullScreenImageOpen: Bool = false
-    // Prewarm de thumbnails para evitar beachball al abrir preview tras arrancar.
+    // Prewarm de preview/texto para evitar beachball al abrir preview tras arrancar.
     @State private var prewarmTask: Task<Void, Never>? = nil
-    @State private var lastPrewarmedPromptId: UUID? = nil
+    @State private var lastPrewarmedPreviewKey: String? = nil
     
     // Resizing Sidebar
     @State private var dragStartedSidebarWidth: CGFloat = 0
@@ -300,12 +307,27 @@ struct SearchViewSimple: View {
                     return handleLocalKeyEvent(event)
                 }
             }
+
+            if let firstPrompt = promptService.filteredPrompts.first {
+                prewarmPreviewAssets(for: firstPrompt, force: true)
+            }
         }
         .onDisappear {
             if let monitor = localEventMonitor {
                 NSEvent.removeMonitor(monitor)
                 localEventMonitor = nil
             }
+            prewarmTask?.cancel()
+        }
+        .onChange(of: selectedPrompt?.id) { _, _ in
+            guard let selectedPrompt else { return }
+            prewarmPreviewAssets(for: selectedPrompt)
+        }
+        .onChange(of: promptService.filteredPrompts.first?.id) { _, newValue in
+            guard selectedPrompt == nil,
+                  let newValue,
+                  let firstPrompt = promptService.filteredPrompts.first(where: { $0.id == newValue }) else { return }
+            prewarmPreviewAssets(for: firstPrompt, force: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PromtierCustomShortcutPressed"))) { notification in
             guard let promptId = notification.object as? UUID,
@@ -602,7 +624,7 @@ struct SearchViewSimple: View {
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
                 selectedPrompt = prompt
-                prewarmPreviewImages(for: prompt)
+                prewarmPreviewAssets(for: prompt)
                 if showingPreview && preferences.soundEnabled {
                     SoundService.shared.playInteractionSound()
                 }
@@ -615,7 +637,7 @@ struct SearchViewSimple: View {
             onCopy: { usePrompt(prompt) },
             onHover: { isHovering in
                 DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
-                if isHovering { prewarmPreviewImages(for: prompt) }
+                if isHovering { prewarmPreviewAssets(for: prompt) }
             }
         )
         .contextMenu { promptContextMenu(for: prompt) }
@@ -629,7 +651,7 @@ struct SearchViewSimple: View {
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
                 selectedPrompt = prompt
-                prewarmPreviewImages(for: prompt)
+                prewarmPreviewAssets(for: prompt)
                 if showingPreview && preferences.soundEnabled {
                     SoundService.shared.playInteractionSound()
                 }
@@ -643,7 +665,7 @@ struct SearchViewSimple: View {
             onCopyPack: { copyPromptPack(prompt) },
             onHover: { isHovering in
                 DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
-                if isHovering { prewarmPreviewImages(for: prompt) }
+                if isHovering { prewarmPreviewAssets(for: prompt) }
             }
         )
         .contextMenu { promptContextMenu(for: prompt) }
@@ -668,6 +690,13 @@ struct SearchViewSimple: View {
         }
         Button(action: { copyPromptPack(prompt) }) {
             Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
+        }
+        Menu("Copy As…") {
+            Button("Plain Text") { copyPrompt(prompt, as: .plainText) }
+            Button("Markdown") { copyPrompt(prompt, as: .markdown) }
+            Button("Rich Text") { copyPrompt(prompt, as: .richText) }
+            Divider()
+            Button("Copy Pack") { copyPrompt(prompt, as: .pack) }
         }
         Button(action: {
             selectedPrompt = prompt
@@ -840,7 +869,55 @@ struct SearchViewSimple: View {
     }
 
     private func copyPromptPack(_ prompt: Prompt) {
-        var packPrompt = prompt
+        copyPrompt(prompt, as: .pack)
+    }
+
+    private func copyPrompt(_ prompt: Prompt, as format: PromptCopyFormat) {
+        let markdownContent: String
+        switch format {
+        case .pack:
+            markdownContent = promptPackMarkdown(for: prompt)
+        case .markdown, .plainText, .richText:
+            markdownContent = prompt.content
+        }
+
+        switch format {
+        case .markdown, .pack:
+            ClipboardService.shared.copyToClipboard(markdownContent)
+        case .plainText:
+            let plainText = MarkdownRTFConverter.parseMarkdown(
+                markdownContent,
+                baseFont: .systemFont(ofSize: 14),
+                textColor: .labelColor
+            ).string
+            ClipboardService.shared.copyToClipboard(plainText)
+        case .richText:
+            let attributed = MarkdownRTFConverter.parseMarkdown(
+                markdownContent,
+                baseFont: .systemFont(ofSize: 14),
+                textColor: .labelColor
+            )
+            ClipboardService.shared.copyRichTextToClipboard(attributed)
+        }
+
+        promptService.recordPromptUse(prompt)
+        if preferences.soundEnabled { SoundService.shared.playCopySound() }
+        HapticService.shared.playAlignment()
+        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+            showParticles = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { showParticles = true }
+        }
+        if showingPreview { showingPreview = false }
+        if preferences.closeOnCopy {
+            if preferences.isPremiumActive && preferences.visualEffectsEnabled {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { menuBarManager.closePopover() }
+            } else {
+                menuBarManager.closePopover()
+            }
+        }
+    }
+
+    private func promptPackMarkdown(for prompt: Prompt) -> String {
         var parts: [String] = [prompt.content]
         if let negative = prompt.negativePrompt?.trimmingCharacters(in: .whitespacesAndNewlines), !negative.isEmpty {
             let title = "negative_prompt".localized(for: preferences.language)
@@ -857,8 +934,7 @@ struct SearchViewSimple: View {
             let title = "alternative_prompt".localized(for: preferences.language)
             parts.append("\n\n\(title):\n\(alternative)")
         }
-        packPrompt.content = parts.joined()
-        usePrompt(packPrompt)
+        return parts.joined()
     }
     
     private func toggleFavorite(_ prompt: Prompt) {
@@ -943,18 +1019,38 @@ struct SearchViewSimple: View {
         }
     }
 
-    private func prewarmPreviewImages(for prompt: Prompt) {
-        guard prompt.showcaseImageCount > 0 else { return }
-        if lastPrewarmedPromptId == prompt.id { return }
-        lastPrewarmedPromptId = prompt.id
+    private func prewarmPreviewAssets(for prompt: Prompt, force: Bool = false) {
+        let previewKey = "\(prompt.id.uuidString):\(Int(preferences.fontSize.scale * 100)):\(prompt.modifiedAt.timeIntervalSince1970)"
+        if !force && lastPrewarmedPreviewKey == previewKey { return }
+        lastPrewarmedPreviewKey = previewKey
         prewarmTask?.cancel()
+
+        let scale = preferences.fontSize.scale
+        let themeColor = previewThemeColor(for: prompt)
         prewarmTask = Task(priority: .utility) {
-            let paths: [String] = !prompt.showcaseImagePaths.isEmpty ? prompt.showcaseImagePaths : await promptService.fetchShowcaseImagePaths(byId: prompt.id)
-            guard let first = paths.first else { return }
-            let url = ImageStore.shared.url(forRelativePath: first)
-            let cacheKey = "\(prompt.id.uuidString):preview:0:900:\(first)"
-            await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey, maxPixelSize: 900)
+            let prewarmedText = PromptPreviewTextCache.shared.highlightedString(for: prompt, themeColor: themeColor, scale: scale)
+
+            if prompt.showcaseImageCount > 0 {
+                let paths: [String] = !prompt.showcaseImagePaths.isEmpty
+                    ? prompt.showcaseImagePaths
+                    : await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+
+                if let first = paths.first {
+                    let url = ImageStore.shared.url(forRelativePath: first)
+                    let cacheKey = "\(prompt.id.uuidString):preview:0:1600:\(first)"
+                    await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey, maxPixelSize: 1600)
+                }
+            }
+
+            _ = prewarmedText
         }
+    }
+
+    private func previewThemeColor(for prompt: Prompt) -> PromptPreviewThemeColor {
+        if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
+            return PromptPreviewThemeColor(NSColor(category.color))
+        }
+        return PromptPreviewThemeColor(.systemBlue)
     }
     
     private func scheduleNextGhostTip(initialDelay: Double? = nil) {

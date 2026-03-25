@@ -97,9 +97,9 @@ struct FullScreenImageView: View {
                     let img: NSImage?
                     switch source {
                     case .data(let data):
-                        img = await ImageDecodeThrottler.downsample(data: data, maxPixelSize: 2800)
+                        img = await ImageDecodeThrottler.downsample(data: data, maxPixelSize: 3200)
                     case .url(let url):
-                        img = await ImageDecodeThrottler.downsample(url: url, maxPixelSize: 2800)
+                        img = await ImageDecodeThrottler.downsample(url: url, maxPixelSize: 3200)
                     }
                     decodedImage = img
                 }

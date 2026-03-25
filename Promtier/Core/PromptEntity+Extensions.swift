@@ -47,16 +47,31 @@ extension PromptEntity {
         }
 
         // Nuevo esquema: paths + thumbnails en Core Data (las imágenes completas viven en disco).
-        prompt.showcaseImagePaths = [image1Path, image2Path, image3Path].compactMap { $0 }
-        prompt.showcaseThumbnails = [thumb1, thumb2, thumb3].compactMap { $0 }
+        let storedPaths = [image1Path, image2Path, image3Path]
+        let storedThumbs = [thumb1, thumb2, thumb3]
+        var validPaths: [String] = []
+        var validThumbs: [Data] = []
+
+        for index in storedPaths.indices {
+            guard let path = storedPaths[index], ImageStore.shared.fileExists(relativePath: path) else { continue }
+            validPaths.append(path)
+            if let thumb = storedThumbs[index] {
+                validThumbs.append(thumb)
+            }
+        }
+
+        prompt.showcaseImagePaths = validPaths
+        prompt.showcaseThumbnails = validThumbs
         prompt.showcaseImages = [] // Lazy-load cuando se necesite
 
         // Mantener conteo consistente incluso si aún no se migró.
         let storedCount = Int(showcaseImageCount)
-        if storedCount > 0 {
-            prompt.showcaseImageCount = storedCount
-        } else if !prompt.showcaseImagePaths.isEmpty {
+        if !prompt.showcaseImagePaths.isEmpty {
             prompt.showcaseImageCount = prompt.showcaseImagePaths.count
+        } else if storedCount > 0 {
+            // Si el conteo decía que había imágenes pero ya no existen en disco,
+            // preferimos no exponer refs rotas en UI.
+            prompt.showcaseImageCount = 0
         } else {
             // Fallback legacy (antes de migración a disco)
             let legacyCount = [image1, image2, image3].compactMap { $0 }.count

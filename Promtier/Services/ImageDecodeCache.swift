@@ -41,6 +41,10 @@ final class ImageDecodeCache: @unchecked Sendable {
 
     /// Downsamplea desde URL (evita cargar todo el archivo en memoria).
     nonisolated func downsampledImage(from url: URL, maxPixelSize: Int) -> NSImage? {
+        if url.isFileURL && !FileManager.default.fileExists(atPath: url.path) {
+            return nil
+        }
+
         let options: [CFString: Any] = [
             kCGImageSourceShouldCache: false
         ]

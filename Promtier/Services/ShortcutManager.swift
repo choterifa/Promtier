@@ -58,41 +58,13 @@ class ShortcutManager: ObservableObject {
     private var localMonitor: Any?
     private var permissionTimer: Timer?
     private static var isHandlerInstalled = false
+    private var hasLoggedInitialAccessibilityState = false
     
     private init() {
         print("✅ ShortcutManager inicializado")
         checkAccessibilityPermissions()
         setupMonitors()
         setupCarbonHotKey()
-        startPermissionPolling()
-        setupLifecycleObservers()
-    }
-    
-    // MARK: - Sincronización Automática
-    
-    private func startPermissionPolling() {
-        // Solo iniciar polling si aún no tenemos permisos
-        guard !isAccessibilityGranted else { return }
-        
-        permissionTimer?.invalidate()
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            // Si ya se concedió, detener el timer
-            if self.checkAccessibilityPermissions(forceDialog: false) {
-                print("✨ Permisos detectados automáticamente. Deteniendo polling.")
-                self.permissionTimer?.invalidate()
-                self.permissionTimer = nil
-            }
-        }
-    }
-    
-    private func setupLifecycleObservers() {
-        // Verificar solo cuando el popover se va a mostrar (vía notificación personalizada o evento)
-        // Por ahora mantenemos didBecomeActive pero con control de frecuencia
-        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.checkAccessibilityPermissions(forceDialog: false)
-        }
     }
     
     // MARK: - Carbon HotKey (Detección Global Real)
@@ -175,7 +147,6 @@ class ShortcutManager: ObservableObject {
             
             ShortcutManager.isHandlerInstalled = true
         }
-        
         print("💎 Carbon HotKeys registrados (Principal: \(prefs.hotkeyCode), Omni: \(prefs.omniHotkeyCode))")
     }
     
@@ -214,7 +185,6 @@ class ShortcutManager: ObservableObject {
             if status == noErr, let ref = registration {
                 promptHotKeyRefs[hotKeyId] = ref
                 promptHotkeyMap[hotKeyId] = prompt.id
-                print("💎 Carbon HotKey registrado para prompt: \(prompt.title)")
             }
         }
     }
@@ -228,20 +198,15 @@ class ShortcutManager: ObservableObject {
     
     func handleCarbonHotKey(id: UInt32) {
         if id == 1 {
-            print("🚀 Carbon HotKey (Principal) detectado!")
             MenuBarManager.shared.togglePopover()
         } else if id == 100 {
-            print("🚀 Carbon HotKey (OmniSearch) detectado!")
             OmniSearchManager.shared.toggle()
         } else if id == 101 {
-            print("🚀 Carbon HotKey (Fast Add) detectado!")
             FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
         } else if id == 102 {
-            print("🚀 Carbon HotKey (Nueva Categoría) detectado!")
             MenuBarManager.shared.folderToEdit = nil
             MenuBarManager.shared.showWithState(.folderManager)
         } else if let promptId = promptHotkeyMap[id] {
-            print("🚀 Carbon HotKey (Prompt) detectado para ID: \(promptId)")
             // Notificar a PromptService para copiar
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)
         }
@@ -270,19 +235,19 @@ class ShortcutManager: ObservableObject {
                 self.isAccessibilityGranted = isTrusted
             }
         }
-        
-        print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
+
+        if !hasLoggedInitialAccessibilityState {
+            print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
+            hasLoggedInitialAccessibilityState = true
+        }
         
         // 2. Si no es confiable y se solicita diálogo (respetando la supresión a menos que se ignore)
         if !isTrusted && forceDialog {
             if !PreferencesManager.shared.suppressAccessibilityWarning || ignoreSuppression {
                 print("🏛️ Invocando diálogo de accesibilidad nativo de macOS")
-                
                 // Esta llamada disparará el diálogo del sistema si el proceso no es confiable
                 let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
                 AXIsProcessTrustedWithOptions(promptOptions)
-            } else {
-                print("ℹ️ Aviso de accesibilidad suprimido por el usuario.")
             }
         }
         

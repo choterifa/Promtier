@@ -6,13 +6,19 @@ struct DownsampledImageURLView: View {
     let cacheKey: String
     let maxPixelSize: Int
     var contentMode: ContentMode = .fill
+    var thumbnailData: Data? = nil
 
     @State private var decoded: NSImage? = nil
+    @State private var thumbnail: NSImage? = nil
 
     var body: some View {
         Group {
             if let decoded {
                 Image(nsImage: decoded)
+                    .resizable()
+                    .aspectRatio(contentMode: contentMode)
+            } else if let thumbnail {
+                Image(nsImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: contentMode)
             } else {
@@ -32,9 +38,16 @@ struct DownsampledImageURLView: View {
     }
 
     private func loadIfNeeded() async {
+        if thumbnail == nil {
+            await loadThumbnailIfNeeded()
+        }
         if decoded != nil { return }
         if let cached = ImageDecodeCache.shared.cachedImage(forKey: cacheKey) {
             decoded = cached
+            return
+        }
+
+        guard !imageURL.isFileURL || FileManager.default.fileExists(atPath: imageURL.path) else {
             return
         }
 
@@ -47,5 +60,25 @@ struct DownsampledImageURLView: View {
         let cost = max(image.size.width, image.size.height)
         ImageDecodeCache.shared.store(image, forKey: key, cost: Int(cost * cost))
         decoded = image
+    }
+
+    private func loadThumbnailIfNeeded() async {
+        guard let thumbnailData else { return }
+
+        let thumbnailKey = "\(cacheKey):thumb"
+        if let cached = ImageDecodeCache.shared.cachedImage(forKey: thumbnailKey) {
+            thumbnail = cached
+            return
+        }
+
+        let data = thumbnailData
+        let image = await Task.detached(priority: .utility) {
+            NSImage(data: data)
+        }.value
+
+        guard let image else { return }
+        let cost = max(image.size.width, image.size.height)
+        ImageDecodeCache.shared.store(image, forKey: thumbnailKey, cost: Int(cost * cost))
+        thumbnail = image
     }
 }

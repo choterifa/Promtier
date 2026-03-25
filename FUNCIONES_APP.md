@@ -63,6 +63,15 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Drag Inteligente**: La ventana se mantiene abierta si el arrastre es hacia la sidebar (categorización), pero se cierra automáticamente al iniciar un arrastre (Drag) hacia otra app externa.
 - **Visualizador Full-Screen**: Animaciones de zoom fluidas y soporte para gestos de trackpad corregidos.
 - **Transitoriedad Reparada**: El popover recupera su capacidad de cierre por clic externo tras usar el visor de imágenes.
+- **Carga Progresiva de Imágenes**:
+    - **Lista/Grid**: usa thumbnails ligeras persistentes para mantener scroll suave.
+    - **Preview con `Space`**: precalienta texto enriquecido y una imagen media para abrir casi instantáneo.
+    - **Fullscreen**: decodifica una versión más grande solo cuando realmente se necesita.
+- **Copy As… por Prompt**:
+    - **Texto limpio**: ideal para pegar directo en ChatGPT/Claude sin marcas.
+    - **Markdown**: conserva estructura y formato textual.
+    - **Rich Text**: pega con negritas/cursivas reales en apps compatibles.
+    - **Copy Pack**: copia `Main + Negative + Alternative(s)` en un solo bloque.
 
 ### 🛠️ Utilidades y UX
 - **Dimensiones Pro**: Ancho predeterminado de **740px** y alto de **530px**.

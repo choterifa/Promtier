@@ -1097,27 +1097,44 @@ struct HighlightedEditor: NSViewRepresentable {
 class FormatMenuPopover {
     static let shared = FormatMenuPopover()
     private var popover: NSPopover?
+    private var hideWorkItem: DispatchWorkItem?
+    private var lastEditorID: String?
     
     func show(in view: NSView, at rect: NSRect, editorID: String, themeColor: NSColor) {
+        hideWorkItem?.cancel()
+
         if popover == nil {
             popover = NSPopover()
             popover?.behavior = .transient
-            popover?.animates = true
+            popover?.animates = false
         }
 
         popover?.contentSize = NSSize(width: 290, height: 54)
-        popover?.contentViewController = NSHostingController(
-            rootView: FloatingFormatBar(editorID: editorID, themeColor: Color(themeColor))
-        )
-
-        if popover?.isShown == true {
-            popover?.performClose(nil)
+        let rootView = AnyView(FloatingFormatBar(editorID: editorID, themeColor: Color(themeColor)))
+        if let hostingController = popover?.contentViewController as? NSHostingController<AnyView> {
+            hostingController.rootView = rootView
+        } else {
+            popover?.contentViewController = NSHostingController(rootView: rootView)
         }
-        popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+
+        if popover?.isShown == true, lastEditorID == editorID {
+            popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        } else {
+            popover?.close()
+            popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        }
+
+        lastEditorID = editorID
     }
     
     func hide() {
-        popover?.close()
+        hideWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.popover?.close()
+            self?.lastEditorID = nil
+        }
+        hideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: workItem)
     }
 }
 
