@@ -46,66 +46,47 @@ class PassThroughScrollView: NSScrollView {
 }
 
 class PromtierTextView: NSTextView {
-    var isCurrentLineHighlightingEnabled: Bool = true
-    var currentLineHighlightColor: NSColor = .controlAccentColor
+    var editorID: String = ""
     
-    override func drawBackground(in rect: NSRect) {
-        super.drawBackground(in: rect)
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let command = event.modifierFlags.contains(.command)
+        let shift = event.modifierFlags.contains(.shift)
         
-        guard isCurrentLineHighlightingEnabled,
-              let layoutManager = layoutManager,
-              let textContainer = textContainer,
-              let window = window,
-              window.firstResponder == self,
-              selectedRange().length == 0 else { return }
-        
-        let range = selectedRange()
-        let stringLength = string.utf16.count
-        let safeRange = NSRange(
-            location: max(0, min(range.location, stringLength)),
-            length: 0
-        )
-        
-        let nsString = string as NSString
-        let lineRange = nsString.lineRange(for: safeRange)
-        let glyphRange = layoutManager.glyphRange(forCharacterRange: lineRange, actualCharacterRange: nil)
-        
-        var highlightRects: [NSRect] = []
-        
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (rect, usedRect, _, _, _) in
-            var adjustedRect = rect
-            if let defaultStyle = self.defaultParagraphStyle {
-                adjustedRect.size.height -= defaultStyle.paragraphSpacing
-            } else {
-                adjustedRect.size.height -= 8
+        if command && !shift {
+            if event.charactersIgnoringModifiers == "b" {
+                PromtierEditorCommandCenter.post(.bold, to: editorID)
+                return true
+            } else if event.charactersIgnoringModifiers == "i" {
+                PromtierEditorCommandCenter.post(.italic, to: editorID)
+                return true
+            } else if event.charactersIgnoringModifiers == "]" {
+                PromtierEditorCommandCenter.post(.indent, to: editorID)
+                return true
             }
-            
-            let highlightRect = NSRect(
-                x: 6,
-                y: adjustedRect.origin.y + self.textContainerInset.height,
-                width: self.bounds.width - 12,
-                height: adjustedRect.height
-            )
-            highlightRects.append(highlightRect)
+        } else if command && shift {
+            if event.charactersIgnoringModifiers == "l" {
+                PromtierEditorCommandCenter.post(.bulletList, to: editorID)
+                return true
+            }
         }
         
-        for hRect in highlightRects {
-            // Rounded background highlight
-            let path = NSBezierPath(roundedRect: hRect, xRadius: 6, yRadius: 6)
-            currentLineHighlightColor.withAlphaComponent(0.06).setFill()
-            path.fill()
-            
-            // Left accent bar (rounded)
-            let barRect = NSRect(x: 2, y: hRect.origin.y + 2, width: 3, height: hRect.height - 4)
-            let barPath = NSBezierPath(roundedRect: barRect, xRadius: 1.5, yRadius: 1.5)
-            currentLineHighlightColor.withAlphaComponent(0.45).setFill()
-            barPath.fill()
+        // Let Tab handle indent if multi-line selection
+        if event.keyCode == 48 && selectedRange().length > 0 { // Tab key
+            if event.modifierFlags.contains(.shift) {
+                PromtierEditorCommandCenter.post(.outdent, to: editorID)
+            } else {
+                PromtierEditorCommandCenter.post(.indent, to: editorID)
+            }
+            return true
         }
+        
+        return super.performKeyEquivalent(with: event)
     }
 }
 
 struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
+    @Binding var plainText: String
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
     @Binding var triggerAIRequest: String?
@@ -144,9 +125,11 @@ struct HighlightedEditor: NSViewRepresentable {
         scrollView.scrollerStyle = .overlay
         
         let textView = PromtierTextView(frame: .zero)
+        textView.editorID = editorID
         textView.delegate = context.coordinator
-        textView.isRichText = false
-        textView.currentLineHighlightColor = themeColor
+        textView.isRichText = true
+        textView.importsGraphics = false
+        textView.usesRuler = false
         textView.allowsUndo = true
         textView.autoresizingMask = [.width]
         textView.isVerticallyResizable = true
@@ -185,123 +168,17 @@ struct HighlightedEditor: NSViewRepresentable {
         scrollView.contentView.postsBoundsChangedNotifications = false
         
         scrollView.documentView = textView
-        
-        // Listen for Apple Intelligence trigger notification
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("TriggerAppleIntelligence"), object: nil, queue: .main) { _ in
-            if textView.window?.firstResponder == textView {
-                textView.showWritingTools(nil)
-            }
-        }
-        
-        // Formato Markdown nativo (Preserva Undo/Redo)
-        NotificationCenter.default.addObserver(forName: NSNotification.Name("FormatMarkdown"), object: nil, queue: .main) { notification in
-            guard textView.window?.firstResponder == textView else { return }
-            guard let userInfo = notification.userInfo,
-                  let prefix = userInfo["prefix"] as? String,
-                  let suffix = userInfo["suffix"] as? String else { return }
-            
-            let isList = userInfo["isList"] as? Bool ?? false
-            let nsString = textView.string as NSString
-            let currentSelection = textView.selectedRange()
-            
-            if isList {
-                // Para listas, expandir la selección para cubrir líneas completas
-                let lineRange = nsString.lineRange(for: currentSelection)
-                let linesText = nsString.substring(with: lineRange)
-                
-                let lines = linesText.components(separatedBy: "\n")
-                var formattedLines: [String] = []
-                var counter = 1
-                
-                let isNumbered = prefix.contains("1.")
-                
-                for line in lines {
-                    // Ignorar la última línea vacía que components(separatedBy:) suele generar si termina en \n
-                    if line.isEmpty && line == lines.last { continue }
-                    
-                    if line.trimmingCharacters(in: .whitespaces).isEmpty {
-                        formattedLines.append(line)
-                    } else {
-                        // Evitar anidamiento: si la línea ya empieza con el marcador, no lo añadimos de nuevo
-                        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-                        let hasBullet = trimmedLine.hasPrefix("- ")
-                        let hasNumber = trimmedLine.range(of: "^\\d+\\.\\s", options: .regularExpression) != nil
-                        
-                        if (isNumbered && hasNumber) || (!isNumbered && hasBullet) {
-                            formattedLines.append(line) // Ya es lista, dejar igual
-                        } else {
-                            let linePrefix = isNumbered ? "\(counter). " : prefix
-                            formattedLines.append(linePrefix + line + suffix)
-                            counter += 1
-                        }
-                    }
-                }
-                
-                let newText = formattedLines.joined(separator: "\n") + (linesText.hasSuffix("\n") ? "\n" : "")
-                
-                textView.undoManager?.beginUndoGrouping()
-                if textView.shouldChangeText(in: lineRange, replacementString: newText) {
-                    textView.replaceCharacters(in: lineRange, with: newText)
-                    textView.didChangeText()
-                    // Restaurar cursor al final de la inserción o seleccionar todo el bloque editado
-                    textView.setSelectedRange(NSRange(location: lineRange.location + (newText as NSString).length, length: 0))
-                }
-                textView.undoManager?.endUndoGrouping()
-                
-            } else {
-                // Formato estándar (Bold, Italic, Code) sobre la selección exacta
-                let selectedText = nsString.substring(with: currentSelection)
-                let newText = prefix + selectedText + suffix
-                let newLength = (selectedText as NSString).length
-                
-                textView.undoManager?.beginUndoGrouping()
-                if textView.shouldChangeText(in: currentSelection, replacementString: newText) {
-                    textView.replaceCharacters(in: currentSelection, with: newText)
-                    textView.didChangeText()
-                    
-                    let newLocation = currentSelection.location + (prefix as NSString).length
-                    textView.setSelectedRange(NSRange(location: newLocation, length: newLength))
-                }
-                textView.undoManager?.endUndoGrouping()
-            }
-        }
+        context.coordinator.installObservers(for: textView)
+        context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
         
         return scrollView
     }
     
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? PromtierTextView else { return }
-        
-        // Update highlight color
-        if textView.currentLineHighlightColor != themeColor {
-            textView.currentLineHighlightColor = themeColor
-        }
-        
-        // Sincronizar texto si cambió externamente (sin romper el Undo)
-        if textView.string != text {
-            let selectedRanges = textView.selectedRanges
-            let nsCurrentText = textView.string as NSString
-            let nsNewText = text as NSString
-            
-            // Usar textStorage para que el cambio sea atómico
-            textView.textStorage?.beginEditing()
-            textView.textStorage?.replaceCharacters(in: NSRange(location: 0, length: nsCurrentText.length), with: text)
-            textView.textStorage?.endEditing()
-            
-            // Restaurar selección de forma segura
-            let maxLen = nsNewText.length
-            let safeRanges = selectedRanges.compactMap { val -> NSValue? in
-                let r = val.rangeValue
-                return (r.location + r.length <= maxLen) ? val : nil
-            }
-            
-            if !safeRanges.isEmpty {
-                textView.selectedRanges = safeRanges
-            } else {
-                textView.setSelectedRange(NSRange(location: maxLen, length: 0))
-            }
-            
-            context.coordinator.applyHighlighting(textView)
+
+        if context.coordinator.lastSerializedMarkdown != text {
+            context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
         }
         
         // Aplicar resultados de IA con soporte para Undo
@@ -392,7 +269,8 @@ struct HighlightedEditor: NSViewRepresentable {
             
             // Actualizar el binding padre inmediatamente
             DispatchQueue.main.async {
-                self.text = textView.string
+                self.plainText = textView.string
+                self.text = context.coordinator.serializedMarkdown(from: textView)
                 self.insertionRequest = nil
             }
         }
@@ -414,7 +292,8 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             
             DispatchQueue.main.async {
-                self.text = textView.string
+                self.plainText = textView.string
+                self.text = context.coordinator.serializedMarkdown(from: textView)
                 self.replaceSnippetRequest = nil
                 self.showSnippets = false
             }
@@ -425,7 +304,7 @@ struct HighlightedEditor: NSViewRepresentable {
         // Actualizar fuente si cambió
         if textView.font?.pointSize != fontSize {
             textView.font = .systemFont(ofSize: fontSize)
-            context.coordinator.applyHighlighting(textView)
+            context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text, force: true)
         }
         
         // Manejar petición de foco
@@ -436,21 +315,121 @@ struct HighlightedEditor: NSViewRepresentable {
             }
         }
     }
+
+    static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
+        coordinator.teardownObservers()
+    }
     
     // MARK: - Coordinator
     
     class Coordinator: NSObject, NSTextViewDelegate {
+        private enum HighlightMode {
+            case full
+            case bracketOnly
+        }
+
         var parent: HighlightedEditor
+        var observerTokens: [NSObjectProtocol] = []
+        var lastSerializedMarkdown: String = ""
+        private var isApplyingExternalUpdate = false
+        private var highlightWorkItem: DispatchWorkItem?
+        private var appliedBracketRanges: [NSRange] = []
         
         init(_ parent: HighlightedEditor) {
             self.parent = parent
         }
+
+        deinit {
+            highlightWorkItem?.cancel()
+            teardownObservers()
+        }
+
+        func installObservers(for textView: PromtierTextView) {
+            teardownObservers()
+
+            let aiToken = NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("TriggerAppleIntelligence"),
+                object: nil,
+                queue: .main
+            ) { [weak textView] _ in
+                guard let textView = textView, textView.window?.firstResponder == textView else { return }
+                textView.showWritingTools(nil)
+            }
+
+            let commandToken = NotificationCenter.default.addObserver(
+                forName: .promtierEditorCommand,
+                object: nil,
+                queue: .main
+            ) { [weak self, weak textView] notification in
+                guard let self = self, let textView = textView else { return }
+                guard let targetID = notification.userInfo?["editorID"] as? String, targetID == self.parent.editorID else { return }
+                guard let rawAction = notification.userInfo?["action"] as? String,
+                      let action = PromtierEditorCommandAction(rawValue: rawAction) else { return }
+                guard textView.window?.firstResponder == textView else { return }
+                self.handleEditorCommand(action, in: textView)
+            }
+
+            observerTokens = [aiToken, commandToken]
+        }
+
+        func teardownObservers() {
+            observerTokens.forEach(NotificationCenter.default.removeObserver)
+            observerTokens.removeAll()
+        }
+
+        func loadMarkdownIfNeeded(into textView: PromtierTextView, markdown: String, force: Bool = false) {
+            guard force || lastSerializedMarkdown != markdown else { return }
+
+            isApplyingExternalUpdate = true
+            let selectedRanges = textView.selectedRanges
+            let attributed = MarkdownRTFConverter.parseMarkdown(
+                markdown,
+                baseFont: .systemFont(ofSize: parent.fontSize),
+                textColor: .labelColor
+            )
+
+            textView.textStorage?.beginEditing()
+            textView.textStorage?.setAttributedString(attributed)
+            textView.textStorage?.endEditing()
+
+            MarkdownRTFConverter.applyParagraphStyles(
+                to: textView.textStorage ?? NSMutableAttributedString(),
+                baseFont: .systemFont(ofSize: parent.fontSize)
+            )
+
+            if let safe = selectedRanges.first?.rangeValue,
+               safe.location + safe.length <= textView.string.utf16.count {
+                textView.selectedRanges = selectedRanges
+            } else {
+                textView.setSelectedRange(NSRange(location: min(markdown.count, textView.string.utf16.count), length: 0))
+            }
+
+            parent.plainText = textView.string
+            lastSerializedMarkdown = markdown
+            syncTypingAttributes(for: textView)
+            scheduleHighlighting(for: textView, mode: .full, debounce: false)
+            isApplyingExternalUpdate = false
+        }
+
+        func serializedMarkdown(from textView: NSTextView) -> String {
+            MarkdownRTFConverter.generateMarkdown(from: textView.attributedString())
+        }
         
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            self.parent.text = textView.string
+            if isApplyingExternalUpdate { return }
+            MarkdownRTFConverter.applyParagraphStyles(
+                to: textView.textStorage ?? NSMutableAttributedString(),
+                baseFont: .systemFont(ofSize: parent.fontSize)
+            )
+
+            let markdown = serializedMarkdown(from: textView)
+            lastSerializedMarkdown = markdown
+            self.parent.text = markdown
+            self.parent.plainText = textView.string
             self.parent.selectedRange = textView.selectedRange()
-            applyHighlighting(textView)
+            syncTypingAttributes(for: textView)
+            scheduleHighlighting(for: textView, mode: .full)
             
             // Actualizar búsqueda de snippets si está activo
             if self.parent.showSnippets {
@@ -474,24 +453,231 @@ struct HighlightedEditor: NSViewRepresentable {
         
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            applyHighlighting(textView) // Re-aplicar para actualizar el bracket matching
-            textView.needsDisplay = true // Redibujar para el resaltado de línea actual
+            scheduleHighlighting(for: textView, mode: .bracketOnly, debounce: false)
+            syncTypingAttributes(for: textView)
+            
+            // Notion-style floating format menu
+            let range = textView.selectedRange()
+            if range.length > 0 {
+                if let layoutManager = textView.layoutManager, let textContainer = textView.textContainer {
+                    let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+                    var boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                    boundingRect.origin.x += textView.textContainerOrigin.x
+                    boundingRect.origin.y += textView.textContainerOrigin.y
+                    FormatMenuPopover.shared.show(
+                        in: textView,
+                        at: boundingRect,
+                        editorID: parent.editorID,
+                        themeColor: parent.themeColor
+                    )
+                }
+            } else {
+                FormatMenuPopover.shared.hide()
+            }
         }
         
         func textDidBeginEditing(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
+            guard notification.object as? NSTextView != nil else { return }
             DispatchQueue.main.async {
                 self.parent.isFocused = true
-                textView.needsDisplay = true // Redibujar para mostrar resaltado de línea
             }
         }
         
         func textDidEndEditing(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
+            guard notification.object as? NSTextView != nil else { return }
             DispatchQueue.main.async {
                 self.parent.isFocused = false
-                textView.needsDisplay = true // Redibujar para ocultar resaltado de línea
             }
+        }
+
+        private func handleEditorCommand(_ action: PromtierEditorCommandAction, in textView: NSTextView) {
+            switch action {
+            case .bold:
+                toggleTrait(.boldFontMask, in: textView)
+            case .italic:
+                toggleTrait(.italicFontMask, in: textView)
+            case .inlineCode:
+                toggleInlineCode(in: textView)
+            case .bulletList:
+                applyList(prefix: "- ", in: textView)
+            case .numberedList:
+                applyNumberedList(in: textView)
+            case .indent:
+                indentSelection(in: textView)
+            case .outdent:
+                outdentSelection(in: textView)
+            }
+        }
+
+        private func toggleTrait(_ trait: NSFontTraitMask, in textView: NSTextView) {
+            let selection = textView.selectedRange()
+            let baseFont = NSFont.systemFont(ofSize: parent.fontSize)
+
+            textView.undoManager?.beginUndoGrouping()
+
+            if selection.length == 0 {
+                var typing = textView.typingAttributes
+                let current = (typing[.font] as? NSFont) ?? baseFont
+                typing[.font] = MarkdownRTFConverter.toggledFont(from: current, add: trait)
+                textView.typingAttributes = typing
+            } else {
+                textView.textStorage?.beginEditing()
+                textView.textStorage?.enumerateAttribute(.font, in: selection, options: []) { value, subRange, _ in
+                    let current = (value as? NSFont) ?? baseFont
+                    let updated = MarkdownRTFConverter.toggledFont(from: current, add: trait)
+                    textView.textStorage?.addAttribute(.font, value: updated, range: subRange)
+                }
+                textView.textStorage?.endEditing()
+            }
+
+            textView.didChangeText()
+            textView.undoManager?.endUndoGrouping()
+        }
+
+        private func toggleInlineCode(in textView: NSTextView) {
+            let selection = textView.selectedRange()
+            let baseFont = NSFont.systemFont(ofSize: parent.fontSize)
+            let codeFont = NSFont.monospacedSystemFont(ofSize: max(11, parent.fontSize - 1), weight: .regular)
+            let codeBackground = NSColor.secondaryLabelColor.withAlphaComponent(0.12)
+            let codeForeground = NSColor.labelColor
+
+            textView.undoManager?.beginUndoGrouping()
+
+            if selection.length == 0 {
+                var typing = textView.typingAttributes
+                let isCode = (typing[.promtierInlineCode] as? Bool) == true
+                if isCode {
+                    typing[.font] = baseFont
+                    typing[.promtierInlineCode] = nil
+                    typing[.backgroundColor] = nil
+                    typing[.foregroundColor] = NSColor.labelColor
+                } else {
+                    typing[.font] = codeFont
+                    typing[.promtierInlineCode] = true
+                    typing[.backgroundColor] = codeBackground
+                    typing[.foregroundColor] = codeForeground
+                }
+                textView.typingAttributes = typing
+            } else {
+                let isEntireSelectionCode = isCodeRange(selection, in: textView)
+                textView.textStorage?.beginEditing()
+                if isEntireSelectionCode {
+                    textView.textStorage?.removeAttribute(.promtierInlineCode, range: selection)
+                    textView.textStorage?.removeAttribute(.backgroundColor, range: selection)
+                    textView.textStorage?.addAttribute(.font, value: baseFont, range: selection)
+                    textView.textStorage?.addAttribute(.foregroundColor, value: NSColor.labelColor, range: selection)
+                } else {
+                    textView.textStorage?.addAttributes([
+                        .font: codeFont,
+                        .backgroundColor: codeBackground,
+                        .foregroundColor: codeForeground,
+                        .promtierInlineCode: true
+                    ], range: selection)
+                }
+                textView.textStorage?.endEditing()
+            }
+
+            textView.didChangeText()
+            textView.undoManager?.endUndoGrouping()
+        }
+
+        private func isCodeRange(_ range: NSRange, in textView: NSTextView) -> Bool {
+            guard range.length > 0 else { return false }
+            var foundPlain = false
+            textView.textStorage?.enumerateAttribute(.promtierInlineCode, in: range, options: []) { value, _, stop in
+                if (value as? Bool) != true {
+                    foundPlain = true
+                    stop.pointee = true
+                }
+            }
+            return !foundPlain
+        }
+
+        private func applyList(prefix: String, in textView: NSTextView) {
+            transformSelectedLines(in: textView) { lines in
+                lines.map { line in
+                    if line.trimmingCharacters(in: .whitespaces).isEmpty { return line }
+                    if line.trimmingCharacters(in: .whitespaces).hasPrefix("- ") { return line }
+                    return prefix + line
+                }
+            }
+        }
+
+        private func applyNumberedList(in textView: NSTextView) {
+            transformSelectedLines(in: textView) { lines in
+                var counter = 1
+                return lines.map { line in
+                    if line.trimmingCharacters(in: .whitespaces).isEmpty { return line }
+                    if line.trimmingCharacters(in: .whitespaces).range(of: "^\\d+\\.\\s", options: .regularExpression) != nil {
+                        return line
+                    }
+                    defer { counter += 1 }
+                    return "\(counter). \(line)"
+                }
+            }
+        }
+
+        private func indentSelection(in textView: NSTextView) {
+            transformSelectedLines(in: textView) { lines in
+                lines.map { "\t" + $0 }
+            }
+        }
+
+        private func outdentSelection(in textView: NSTextView) {
+            transformSelectedLines(in: textView) { lines in
+                lines.map { line in
+                    if line.hasPrefix("\t") {
+                        return String(line.dropFirst())
+                    }
+                    if line.hasPrefix("    ") {
+                        return String(line.dropFirst(4))
+                    }
+                    return line
+                }
+            }
+        }
+
+        private func transformSelectedLines(in textView: NSTextView, transform: ([String]) -> [String]) {
+            let nsString = textView.string as NSString
+            let selection = textView.selectedRange()
+            let lineRange = nsString.lineRange(for: selection)
+            let lineBlock = nsString.substring(with: lineRange)
+            let trailingNewline = lineBlock.hasSuffix("\n")
+            var lines = lineBlock.components(separatedBy: "\n")
+            if trailingNewline, lines.last == "" {
+                lines.removeLast()
+            }
+
+            let transformed = transform(lines)
+            let newText = transformed.joined(separator: "\n") + (trailingNewline ? "\n" : "")
+
+            textView.undoManager?.beginUndoGrouping()
+            if textView.shouldChangeText(in: lineRange, replacementString: newText) {
+                textView.replaceCharacters(in: lineRange, with: newText)
+                textView.setSelectedRange(NSRange(location: lineRange.location, length: (newText as NSString).length))
+                textView.didChangeText()
+            }
+            textView.undoManager?.endUndoGrouping()
+        }
+
+        private func syncTypingAttributes(for textView: NSTextView) {
+            guard textView.selectedRange().length == 0 else { return }
+            let paragraphStyle = MarkdownRTFConverter.defaultParagraphStyle()
+            if textView.string.isEmpty {
+                textView.typingAttributes = [
+                    .font: NSFont.systemFont(ofSize: parent.fontSize),
+                    .foregroundColor: NSColor.labelColor,
+                    .paragraphStyle: paragraphStyle
+                ]
+                return
+            }
+
+            let maxIndex = max(0, textView.string.utf16.count - 1)
+            let caretLocation = max(0, min(textView.selectedRange().location, maxIndex))
+            var attrs = textView.textStorage?.attributes(at: caretLocation, effectiveRange: nil) ?? textView.typingAttributes
+            attrs[.paragraphStyle] = attrs[.paragraphStyle] ?? paragraphStyle
+            attrs[.foregroundColor] = attrs[.foregroundColor] ?? NSColor.labelColor
+            textView.typingAttributes = attrs
         }
         
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
@@ -686,258 +872,146 @@ struct HighlightedEditor: NSViewRepresentable {
             return true
         }
         
-        // Timer para debounce del resaltado
-        private var highlightTimer: Timer?
-        private var lastHighlightedText: String?
-        
-        // MARK: - Highlighting Logic (Optimized)
+        // MARK: - Highlighting Logic (Rich Text + Temporary Overlays)
         
         private static let varRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-        private static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
         private static let chainRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
-        
-        // Markdown Regexes
-        private static let mdHeaderRegex = try? NSRegularExpression(pattern: "^#{1,6}\\s+.*$", options: [.anchorsMatchLines])
-        private static let mdBoldRegex = try? NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^\\_]+)__", options: [])
-        private static let mdItalicRegex = try? NSRegularExpression(pattern: "(?<![\\*\\w])\\*([^\\*\\s][^\\*]*[^\\*\\s])\\*(?![\\*\\w])|(?<![_\\w])_([^_\\s][^_]*[^_\\s])_(?![_\\w])", options: [])
-        private static let mdInlineCodeRegex = try? NSRegularExpression(pattern: "(?<!`)`(?!`)([^`\\n]+?)(?<!`)`(?!`)", options: [])
-        private static let mdCodeBlockRegex = try? NSRegularExpression(pattern: "```[^\\n]*\\n[\\s\\S]*?```", options: [])
-        private static let mdLinkRegex = try? NSRegularExpression(pattern: "\\[([^\\]]+)\\]\\(([^\\)]+)\\)", options: [])
-        private static let mdListRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
+        private static let listRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
 
-        func applyHighlighting(_ textView: NSTextView) {
-            highlightTimer?.invalidate()
-            
-            highlightTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: false) { [weak self, weak textView] _ in
-                guard let self = self, let textView = textView else { return }
-                
-                let text = textView.string
-                let cursorLocation = textView.selectedRange().location
-                let fontSize = self.parent.fontSize
-                
-                if text.isEmpty { return }
-                
-                DispatchQueue.global(qos: .userInteractive).async { [weak self, weak textView] in
-                    guard let self = self, let textView = textView else { return }
-                    
-                    let fullNSRange = NSRange(text.startIndex..., in: text)
-                    
-                    let varMatches = Self.varRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let bracketMatches = Self.bracketRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let chainMatches = Self.chainRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    
-                    // Markdown matches
-                    let headerMatches = Self.mdHeaderRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let boldMatches = Self.mdBoldRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let italicMatches = Self.mdItalicRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let inlineCodeMatches = Self.mdInlineCodeRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let codeBlockMatches = Self.mdCodeBlockRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let linkMatches = Self.mdLinkRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    let listMatches = Self.mdListRegex?.matches(in: text, options: [], range: fullNSRange) ?? []
-                    
-                    // Build a set of ranges inside code blocks to skip for inline code
-                    let codeBlockRangeSet = codeBlockMatches.map { $0.range }
-                    let filteredInlineCode = inlineCodeMatches.filter { inlineMatch in
-                        !codeBlockRangeSet.contains(where: { blockRange in
-                            NSIntersectionRange(blockRange, inlineMatch.range).length > 0
-                        })
-                    }
-                    
-                    var matchingBracketRange: NSRange? = nil
-                    var currentBracketRange: NSRange? = nil
-                    let nsText = text as NSString
-                    
-                    let positionsToCheck = [cursorLocation - 1, cursorLocation].filter { $0 >= 0 && $0 < nsText.length }
-                    
-                    for pos in positionsToCheck {
-                        let charRange = NSRange(location: pos, length: 1)
-                        let char = nsText.substring(with: charRange)
-                        if "{}[]()".contains(char) {
-                            if let partner = self.findMatchingBracket(in: text, for: char, at: pos) {
-                                currentBracketRange = charRange
-                                matchingBracketRange = NSRange(location: partner, length: 1)
-                                break
-                            }
-                        }
-                    }
-                    
-                    DispatchQueue.main.async { [weak textView] in
-                        guard let textView = textView, let textStorage = textView.textStorage else { return }
-                        if textStorage.string != text { return }
-                        
-                        let fullRange = NSRange(location: 0, length: textStorage.length)
-                        let baseFont = NSFont.systemFont(ofSize: fontSize)
-                        let boldFont = NSFont.systemFont(ofSize: fontSize, weight: .bold)
-                        let semiboldFont = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
-                        let italicFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
-                        let codeFont = NSFont.monospacedSystemFont(ofSize: fontSize - 1, weight: .regular)
-                        let codeFontBold = NSFont.monospacedSystemFont(ofSize: fontSize - 1, weight: .medium)
-                        
-                        let paragraphStyle = NSMutableParagraphStyle()
-                        paragraphStyle.lineSpacing = 5
-                        paragraphStyle.paragraphSpacing = 10
-                        
-                        // Indented paragraph style for code blocks
-                        let codeBlockParagraphStyle = NSMutableParagraphStyle()
-                        codeBlockParagraphStyle.lineSpacing = 3
-                        codeBlockParagraphStyle.paragraphSpacing = 4
-                        codeBlockParagraphStyle.headIndent = 12
-                        codeBlockParagraphStyle.firstLineHeadIndent = 12
-                        
-                        textStorage.beginEditing()
-                        
-                        // 1. Reset base attributes
-                        let baseAttributes: [NSAttributedString.Key: Any] = [
-                            .foregroundColor: NSColor.labelColor,
-                            .font: baseFont,
-                            .paragraphStyle: paragraphStyle
-                        ]
-                        textStorage.setAttributes(baseAttributes, range: fullRange)
-                        
-                        let syntaxColor = NSColor.labelColor.withAlphaComponent(0.22)
-                        
-                        // 2. Markdown Pass
-                        
-                        // Headers
-                        for match in headerMatches {
-                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: match.range)
-                            textStorage.addAttribute(.font, value: NSFont.systemFont(ofSize: fontSize + 1, weight: .heavy), range: match.range)
-                            
-                            if let hashRange = text.range(of: "^#{1,6}\\s+", options: .regularExpression, range: Range(match.range, in: text)!) {
-                                let nsHashRange = NSRange(hashRange, in: text)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: nsHashRange)
-                            }
-                        }
-                        
-                        // Bold
-                        for match in boldMatches {
-                            textStorage.addAttribute(.font, value: boldFont, range: match.range)
-                            if match.numberOfRanges >= 1 {
-                                let startMarker = NSRange(location: match.range.location, length: 2)
-                                let endMarker = NSRange(location: match.range.location + match.range.length - 2, length: 2)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: startMarker)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: endMarker)
-                            }
-                        }
-                        
-                        // Italic
-                        for match in italicMatches {
-                            textStorage.addAttribute(.font, value: italicFont, range: match.range)
-                            if match.numberOfRanges >= 1 {
-                                let startMarker = NSRange(location: match.range.location, length: 1)
-                                let endMarker = NSRange(location: match.range.location + match.range.length - 1, length: 1)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: startMarker)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: endMarker)
-                            }
-                        }
-                        
-                        // Code Blocks (``` ... ```)
-                        for match in codeBlockMatches {
-                            textStorage.addAttribute(.font, value: codeFont, range: match.range)
-                            textStorage.addAttribute(.foregroundColor, value: NSColor.systemGreen.withAlphaComponent(0.85), range: match.range)
-                            textStorage.addAttribute(.backgroundColor, value: NSColor.black.withAlphaComponent(0.15), range: match.range)
-                            textStorage.addAttribute(.paragraphStyle, value: codeBlockParagraphStyle, range: match.range)
-                            
-                            // Dim the ``` fences
-                            let fenceText = nsText.substring(with: match.range)
-                            if let openEnd = fenceText.range(of: "\n") {
-                                let openLen = fenceText.distance(from: fenceText.startIndex, to: openEnd.lowerBound)
-                                let openRange = NSRange(location: match.range.location, length: openLen)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: openRange)
-                            }
-                            // Dim the closing ```
-                            let closeLen = 3
-                            if match.range.length >= closeLen {
-                                let closeRange = NSRange(location: match.range.location + match.range.length - closeLen, length: closeLen)
-                                textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: closeRange)
-                            }
-                        }
-                        
-                        // Inline Code (`code`) — Professional pill-style
-                        let inlineCodeBg: NSColor
-                        let inlineCodeFg: NSColor
-                        if NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
-                            inlineCodeBg = NSColor(red: 0.2, green: 0.22, blue: 0.28, alpha: 1.0)
-                            inlineCodeFg = NSColor(red: 0.85, green: 0.65, blue: 0.95, alpha: 1.0) // Soft purple
-                        } else {
-                            inlineCodeBg = NSColor(red: 0.92, green: 0.92, blue: 0.96, alpha: 1.0)
-                            inlineCodeFg = NSColor(red: 0.72, green: 0.22, blue: 0.55, alpha: 1.0) // Rose-purple
-                        }
-                        
-                        for match in filteredInlineCode {
-                            textStorage.addAttribute(.font, value: codeFontBold, range: match.range)
-                            textStorage.addAttribute(.foregroundColor, value: inlineCodeFg, range: match.range)
-                            textStorage.addAttribute(.backgroundColor, value: inlineCodeBg, range: match.range)
-                            
-                            // Dim backticks
-                            let startTick = NSRange(location: match.range.location, length: 1)
-                            let endTick = NSRange(location: match.range.location + match.range.length - 1, length: 1)
-                            textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: startTick)
-                            textStorage.addAttribute(.foregroundColor, value: syntaxColor, range: endTick)
-                        }
-                        
-                        // Links
-                        for match in linkMatches {
-                            textStorage.addAttribute(.foregroundColor, value: NSColor.linkColor, range: match.range)
-                            textStorage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
-                        }
-                        
-                        // Lists — Use theme color for markers
-                        let listMarkerColor = self.parent.isHaloEffectEnabled ? self.parent.themeColor : NSColor.systemOrange
-                        for match in listMatches {
-                            textStorage.addAttribute(.foregroundColor, value: listMarkerColor, range: match.range)
-                            textStorage.addAttribute(.font, value: semiboldFont, range: match.range)
-                        }
-
-                        // 3. Syntax Pass (High priority)
-                        for match in bracketMatches {
-                            // Skip brackets inside code blocks/inline code
-                            let inCode = codeBlockRangeSet.contains(where: { NSIntersectionRange($0, match.range).length > 0 })
-                                || filteredInlineCode.contains(where: { NSIntersectionRange($0.range, match.range).length > 0 })
-                            if inCode { continue }
-                            
-                            textStorage.addAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
-                            textStorage.addAttribute(.font, value: boldFont, range: match.range)
-                        }
-                        
-                        for match in varMatches {
-                            let varColor = self.parent.isHaloEffectEnabled ? NSColor.systemBlue : self.parent.themeColor
-                            textStorage.addAttribute(.foregroundColor, value: varColor, range: match.range)
-                            textStorage.addAttribute(.backgroundColor, value: varColor.withAlphaComponent(0.08), range: match.range)
-                            textStorage.addAttribute(.font, value: boldFont, range: match.range)
-                        }
-                        
-                        for match in chainMatches {
-                            textStorage.addAttribute(.foregroundColor, value: self.parent.themeColor, range: match.range)
-                            textStorage.addAttribute(.backgroundColor, value: self.parent.themeColor.withAlphaComponent(0.05), range: match.range)
-                            textStorage.addAttribute(.font, value: boldFont, range: match.range)
-                            textStorage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
-                        }
-                        
-                        textStorage.endEditing()
-                        
-                        // 4. Bracket Matching Pass (Temporary Attributes — no Undo impact)
-                        let layoutManager = textView.layoutManager
-                        layoutManager?.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
-                        layoutManager?.removeTemporaryAttribute(.shadow, forCharacterRange: fullRange)
-                        
-                        if let current = currentBracketRange, let matching = matchingBracketRange {
-                            let glowShadow = NSShadow()
-                            glowShadow.shadowBlurRadius = 5
-                            glowShadow.shadowColor = self.parent.themeColor
-                            glowShadow.shadowOffset = NSSize(width: 0, height: 0)
-                            
-                            let highlightAttrs: [NSAttributedString.Key: Any] = [
-                                .backgroundColor: self.parent.themeColor.withAlphaComponent(0.25),
-                                .shadow: self.parent.isHaloEffectEnabled ? glowShadow : NSShadow()
-                            ]
-                            
-                            layoutManager?.addTemporaryAttributes(highlightAttrs, forCharacterRange: current)
-                            layoutManager?.addTemporaryAttributes(highlightAttrs, forCharacterRange: matching)
-                        }
-                    }
-                }
+        private func scheduleHighlighting(for textView: NSTextView, mode: HighlightMode, debounce: Bool = true) {
+            if mode == .full {
+                highlightWorkItem?.cancel()
             }
+
+            let delay = debounce ? 0.03 : 0
+            let workItem = DispatchWorkItem { [weak self, weak textView] in
+                guard let self, let textView else { return }
+                self.applyHighlighting(to: textView, mode: mode)
+            }
+
+            if mode == .full {
+                highlightWorkItem = workItem
+            }
+
+            if delay == 0 {
+                DispatchQueue.main.async(execute: workItem)
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+            }
+        }
+
+        private func applyHighlighting(to textView: NSTextView, mode: HighlightMode) {
+            let text = textView.string
+
+            if text.isEmpty {
+                if mode == .full {
+                    clearFullDecorations(in: textView)
+                }
+                clearBracketHighlight(in: textView)
+                return
+            }
+
+            if mode == .full {
+                applyFullDecorations(in: textView, text: text)
+            }
+            applyBracketHighlight(in: textView, text: text)
+        }
+
+        private func applyFullDecorations(in textView: NSTextView, text: String) {
+            guard let layoutManager = textView.layoutManager,
+                  let textStorage = textView.textStorage,
+                  textStorage.string == text else { return }
+
+            let fullRange = NSRange(location: 0, length: textStorage.length)
+            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
+            layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: fullRange)
+            layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: fullRange)
+
+            let listMatches = Self.listRegex?.matches(in: text, options: [], range: fullRange) ?? []
+            let variableMatches = Self.varRegex?.matches(in: text, options: [], range: fullRange) ?? []
+            let chainMatches = Self.chainRegex?.matches(in: text, options: [], range: fullRange) ?? []
+
+            let listMarkerColor = parent.isHaloEffectEnabled ? parent.themeColor : NSColor.systemOrange
+            for match in listMatches {
+                layoutManager.addTemporaryAttributes([
+                    .foregroundColor: listMarkerColor
+                ], forCharacterRange: match.range)
+            }
+
+            let variableColor = parent.isHaloEffectEnabled ? NSColor.systemBlue : parent.themeColor
+            for match in variableMatches {
+                layoutManager.addTemporaryAttributes([
+                    .foregroundColor: variableColor,
+                    .backgroundColor: variableColor.withAlphaComponent(0.1)
+                ], forCharacterRange: match.range)
+            }
+
+            for match in chainMatches {
+                layoutManager.addTemporaryAttributes([
+                    .foregroundColor: parent.themeColor,
+                    .backgroundColor: parent.themeColor.withAlphaComponent(0.06),
+                    .underlineStyle: NSUnderlineStyle.single.rawValue
+                ], forCharacterRange: match.range)
+            }
+        }
+
+        private func clearFullDecorations(in textView: NSTextView) {
+            guard let layoutManager = textView.layoutManager else { return }
+            let fullRange = NSRange(location: 0, length: textView.string.utf16.count)
+            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
+            layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: fullRange)
+            layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: fullRange)
+        }
+
+        private func applyBracketHighlight(in textView: NSTextView, text: String) {
+            guard let layoutManager = textView.layoutManager else { return }
+
+            clearBracketHighlight(in: textView)
+
+            let selection = textView.selectedRange()
+            guard selection.length == 0 else { return }
+
+            let nsText = text as NSString
+            let positionsToCheck = [selection.location - 1, selection.location].filter { $0 >= 0 && $0 < nsText.length }
+
+            for position in positionsToCheck {
+                let bracket = nsText.substring(with: NSRange(location: position, length: 1))
+                guard "{}[]()".contains(bracket),
+                      let partner = findMatchingBracket(in: text, for: bracket, at: position) else { continue }
+
+                let glowShadow = NSShadow()
+                glowShadow.shadowBlurRadius = parent.isHaloEffectEnabled ? 6 : 3
+                glowShadow.shadowColor = parent.themeColor.withAlphaComponent(parent.isHaloEffectEnabled ? 0.8 : 0.45)
+                glowShadow.shadowOffset = .zero
+
+                let ranges = [
+                    NSRange(location: position, length: 1),
+                    NSRange(location: partner, length: 1)
+                ]
+
+                for range in ranges {
+                    layoutManager.addTemporaryAttributes([
+                        .shadow: glowShadow
+                    ], forCharacterRange: range)
+                }
+
+                appliedBracketRanges = ranges
+                break
+            }
+        }
+
+        private func clearBracketHighlight(in textView: NSTextView) {
+            guard let layoutManager = textView.layoutManager else { return }
+            let textLength = textView.string.utf16.count
+            for range in appliedBracketRanges where range.location < textLength {
+                let safeRange = NSRange(
+                    location: range.location,
+                    length: min(range.length, textLength - range.location)
+                )
+                guard safeRange.length > 0 else { continue }
+                layoutManager.removeTemporaryAttribute(.shadow, forCharacterRange: safeRange)
+            }
+            appliedBracketRanges.removeAll()
         }
         
         /// Algoritmo para encontrar el bracket correspondiente
@@ -1013,9 +1087,97 @@ struct HighlightedEditor: NSViewRepresentable {
             textView.didChangeText()
             // Notificar que el texto cambió para que SwiftUI lo sepa
             DispatchQueue.main.async {
-                self.text = textView.string
+                self.plainText = textView.string
+                self.text = MarkdownRTFConverter.generateMarkdown(from: textView.attributedString())
             }
         }
+    }
+}
+
+class FormatMenuPopover {
+    static let shared = FormatMenuPopover()
+    private var popover: NSPopover?
+    
+    func show(in view: NSView, at rect: NSRect, editorID: String, themeColor: NSColor) {
+        if popover == nil {
+            popover = NSPopover()
+            popover?.behavior = .transient
+            popover?.animates = true
+        }
+
+        popover?.contentSize = NSSize(width: 290, height: 54)
+        popover?.contentViewController = NSHostingController(
+            rootView: FloatingFormatBar(editorID: editorID, themeColor: Color(themeColor))
+        )
+
+        if popover?.isShown == true {
+            popover?.performClose(nil)
+        }
+        popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+    }
+    
+    func hide() {
+        popover?.close()
+    }
+}
+
+struct FloatingFormatBar: View {
+    let editorID: String
+    let themeColor: Color
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            formatButton(icon: "bold", action: .bold)
+            formatButton(icon: "italic", action: .italic)
+            formatButton(icon: "chevron.left.forwardslash.chevron.right", action: .inlineCode)
+
+            separator
+
+            formatButton(icon: "list.bullet", action: .bulletList)
+            formatButton(icon: "list.number", action: .numberedList)
+
+            separator
+
+            formatButton(icon: "increase.indent", action: .indent)
+            formatButton(icon: "decrease.indent", action: .outdent)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.18), radius: 14, x: 0, y: 8)
+        )
+        .overlay(
+            Capsule()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
+        )
+        .padding(8)
+    }
+    
+    private var separator: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.12))
+            .frame(width: 1, height: 18)
+            .padding(.horizontal, 2)
+    }
+
+    private func formatButton(icon: String, action: PromtierEditorCommandAction) -> some View {
+        Button(action: {
+            PromtierEditorCommandCenter.post(action, to: editorID)
+            HapticService.shared.playLight()
+        }) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(themeColor)
+                .frame(width: 30, height: 30)
+                .background(
+                    Circle()
+                        .fill(themeColor.opacity(0.1))
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

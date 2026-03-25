@@ -1,7 +1,7 @@
 # ❓ Promtier — Preguntas Frecuentes (FAQ)
 
 > Cada respuesta incluye una versión **para humanos** y otra **técnica**.
-No eliminies las anteriores simplemente agrega mas preguntas maximo 100 (.)
+No elimines las anteriores; simplemente agrega más preguntas, máximo 100.
 
 ## 1) ¿Qué es la "Copia Mágica" y cómo funciona?
 **Para humanos:** Es la capacidad de copiar cualquier prompt usando un atajo de teclado global (ej. `Cmd+Opt+1`) sin necesidad de abrir la aplicación. Funciona incluso si Promtier está minimizado o cerrado.
@@ -54,6 +54,53 @@ No eliminies las anteriores simplemente agrega mas preguntas maximo 100 (.)
 **Para humanos:** Si prefieres una interfaz más seria y minimalista, ve a **Ajustes** y desactiva la opción **"Efectos Halo"**. Esto neutralizará los fondos de colores, sombras vibrantes y degradados del editor, dejando una app oscura "sobria".
 **Técnico:** El sistema utiliza una propiedad reactiva `isHaloEffectEnabled` en `PreferencesManager` que conmuta dinámicamente entre `currentCategoryColor` y colores neutros (azul desaturado/gris) en todas las capas de `background`, `shadow` y `stroke` de la aplicación.
 
----
-*Última actualización: 22 de Marzo de 2026*
+## 13) ¿El editor ahora es de texto enriquecido o sigue siendo Markdown?
+**Para humanos:** Es ambas cosas. Tú editas de forma visual y más cómoda, pero Promtier guarda el contenido en un formato estable para que copiar y exportar siga funcionando bien.
+**Técnico:** La edición se hace con `NSTextView` + `NSAttributedString`, mientras que la persistencia sigue usando Markdown canónico mediante `MarkdownRTFConverter`.
 
+## 14) ¿Por qué ya no se resalta toda la línea actual?
+**Para humanos:** Porque terminaba distrayendo más de lo que ayudaba. Se dejó un editor más limpio y más estable visualmente.
+**Técnico:** El highlight de línea completa provocaba repintados extra en `drawBackground(in:)` y empeoraba la percepción de flicker; fue eliminado para reducir trabajo de render.
+
+## 15) ¿Puedo cerrar el editor haciendo clic fuera sin perder cambios?
+**Para humanos:** Sí. Ahora se cierra normal, pero tus cambios siguen protegidos con borrador/autosave.
+**Técnico:** El popover volvió a `transient` durante edición normal y el contenido se conserva vía `DraftService` + guardado incremental del estado de `NewPromptView`.
+
+## 16) ¿Cuántas imágenes puedo guardar por prompt?
+**Para humanos:** Hasta **3 imágenes por prompt** en la versión actual.
+**Técnico:** La UI y el modelo actual limitan `showcaseImages` a 3 slots por prompt para controlar peso, decodificación y layout del preview.
+
+## 17) ¿Las imágenes se comprimen?
+**Para humanos:** Sí. Promtier las optimiza automáticamente para que ocupen menos espacio y carguen mejor.
+**Técnico:** Las imágenes pasan por `ImageOptimizer` antes de guardarse; además se generan versiones más ligeras para preview/thumbnail según el flujo de importación/exportación.
+
+## 18) ¿Dónde se guardan las imágenes?
+**Para humanos:** Dentro de los datos locales de la app en tu Mac, no en una carpeta suelta del escritorio.
+**Técnico:** Se guardan en `Application Support` bajo el bundle de la app, usando archivos en disco y no blobs gigantes en memoria para mejorar escalabilidad.
+
+## 19) ¿Qué conviene más: exportar en JSON o en ZIP?
+**Para humanos:** Si quieres algo simple y portátil, usa **JSON**. Si quieres un respaldo más grande y confiable con imágenes reales, usa **ZIP**.
+**Técnico:** JSON embebe imágenes en base64 y puede crecer rápido; ZIP separa manifiesto + archivos, reduce sobrecarga y es mejor para librerías grandes.
+
+## 20) ¿Puedo exportar todo sin perder categorías, textos, historial e imágenes?
+**Para humanos:** Sí, esa es justo la idea del backup completo.
+**Técnico:** El flujo de export/import completo contempla prompts, categorías, metadata, imágenes y estado relacionado; ZIP es la ruta más robusta para preservar assets sin inflación base64.
+
+## 21) ¿Cuántos prompts soporta Promtier?
+**Para humanos:** Para una biblioteca normal o grande va bien; cientos o miles son razonables si las imágenes se manejan optimizadas.
+**Técnico:** El cuello de botella no suele ser el texto sino imágenes, thumbnails, decodificación y fetches completos; por eso se migró a almacenamiento en disco y prewarm controlado.
+
+## 22) ¿Por qué a veces un prompt con imágenes tardaba en abrir?
+**Para humanos:** Porque antes macOS tenía que decodificar demasiado de golpe al mostrar la vista previa.
+**Técnico:** El costo venía de lectura + decodificación + render en el momento de abrir; se redujo con prewarm, throttling de decodificación y almacenamiento más ligero.
+
+## 23) ¿Puedo seguir usando variables tipo `{{subject}}` con el editor visual?
+**Para humanos:** Sí, siguen funcionando igual.
+**Técnico:** Las variables no dependen del markdown enriquecido; se detectan por regex y se mantienen compatibles con el flujo de inserción, navegación y formulario final.
+
+## 24) ¿Promtier guarda solo el prompt principal?
+**Para humanos:** No. También puede guardar negative prompt, alternativas, imágenes, categoría, atajo, apps asociadas y más.
+**Técnico:** El modelo `Prompt` ya contempla metadata extendida como `negativePrompt`, `alternatives`, `promptDescription`, `targetAppBundleIDs`, `customShortcut` e imágenes.
+
+---
+*Última actualización: 25 de Marzo de 2026*

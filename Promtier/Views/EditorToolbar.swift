@@ -3,6 +3,7 @@ import SwiftUI
 struct EditorToolbar: View {
     @EnvironmentObject var preferences: PreferencesManager
     let color: Color
+    let editorID: String
     var vertical: Bool = false
     
     @Binding var content: String
@@ -46,24 +47,28 @@ struct EditorToolbar: View {
     @ViewBuilder
     private var buttons: some View {
         Menu {
-            Button(action: { applyMarkdown("**", suffix: "**") }) {
+            Button(action: { send(.bold) }) {
                 Label("Bold", systemImage: "bold")
             }
-            Button(action: { applyMarkdown("*", suffix: "*") }) {
+            Button(action: { send(.italic) }) {
                 Label("Italic", systemImage: "italic")
             }
-            Button(action: { applyMarkdown("`", suffix: "`") }) {
+            Button(action: { send(.inlineCode) }) {
                 Label("Inline Code", systemImage: "code")
             }
-            Button(action: { applyMarkdown("### ", suffix: "") }) {
-                Label("Header", systemImage: "textformat.size")
-            }
             Divider()
-            Button(action: { applyMarkdown("- ", suffix: "", isList: true) }) {
+            Button(action: { send(.bulletList) }) {
                 Label("Bullet List", systemImage: "list.bullet")
             }
-            Button(action: { applyMarkdown("1. ", suffix: "", isList: true) }) {
+            Button(action: { send(.numberedList) }) {
                 Label("Numbered List", systemImage: "list.number")
+            }
+            Divider()
+            Button(action: { send(.indent) }) {
+                Label("Indent Right", systemImage: "increase.indent")
+            }
+            Button(action: { send(.outdent) }) {
+                Label("Indent Left", systemImage: "decrease.indent")
             }
         } label: {
             toolbarButton(icon: "textformat", isSpecial: false)
@@ -158,16 +163,8 @@ struct EditorToolbar: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
     }
 
-    private func applyMarkdown(_ prefix: String, suffix: String, isList: Bool = false) {
-        // Post a notification that the active text view will intercept and process natively
-        // This completely preserves the native Undo/Redo stack.
-        NotificationCenter.default.post(
-            name: NSNotification.Name("FormatMarkdown"),
-            object: nil,
-            userInfo: ["prefix": prefix, "suffix": suffix, "isList": isList]
-        )
-        
+    private func send(_ action: PromtierEditorCommandAction) {
+        PromtierEditorCommandCenter.post(action, to: editorID)
         HapticService.shared.playLight()
     }
 }
-

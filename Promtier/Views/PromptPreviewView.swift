@@ -443,19 +443,25 @@ struct PromptPreviewView: View {
     }
     
     private func updateCachedContent() {
-        // Ejecutar el resaltado de forma síncrona pero solo una vez
-        self.cachedAttributedContent = highlightContent(prompt.content)
-    }
-
-    private func highlightContent(_ text: String) -> AttributedString {
-        var attrString = AttributedString(text)
-        
+        let text = prompt.content
         let themeColor: Color = {
             if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
                 return category.color
             }
             return .blue
         }()
+        let scale = preferences.fontSize.scale
+        
+        Task.detached(priority: .userInitiated) {
+            let highlighted = Self.highlightContent(text, themeColor: themeColor, scale: scale)
+            await MainActor.run {
+                self.cachedAttributedContent = highlighted
+            }
+        }
+    }
+
+    private static func highlightContent(_ text: String, themeColor: Color, scale: CGFloat) -> AttributedString {
+        var attrString = AttributedString(text)
         
         // 1. Resaltado de Brackets (Color categoría)
         let bracketPattern = "[\\{\\}\\[\\]\\(\\)]"
@@ -482,7 +488,7 @@ struct PromptPreviewView: View {
         for match in matches.reversed() {
             if let range = Range(match.range, in: attrString) {
                 attrString[range].foregroundColor = .blue
-                attrString[range].font = .system(size: 16 * preferences.fontSize.scale, weight: .bold)
+                attrString[range].font = .system(size: 16 * scale, weight: .bold)
                 attrString[range].backgroundColor = Color.blue.opacity(0.08)
             }
         }

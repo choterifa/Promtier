@@ -83,7 +83,7 @@ class MenuBarManager: NSObject, ObservableObject {
             // RESTAURACIÓN DE ESTADO: Abrir en modo nuevo prompt si hay un borrador
             if DraftService.shared.hasDraft {
                 self.activeViewState = .newPrompt
-                self.isModalActive = true
+                self.isModalActive = false
             }
         }
     }
@@ -153,9 +153,7 @@ class MenuBarManager: NSObject, ObservableObject {
         // Aplicar animación de entrada suave (igual que cuando se hace clic)
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             self.activeViewState = state
-            if state == .newPrompt || state == .folderManager {
-                self.isModalActive = true
-            }
+            self.isModalActive = (state == .folderManager)
         }
         
         showPopover(relativeTo: button.bounds, of: button)
@@ -213,7 +211,7 @@ class MenuBarManager: NSObject, ObservableObject {
         // Restore draft if it exists
         if DraftService.shared.hasDraft && suggestedClipboardContent == nil {
             activeViewState = .newPrompt
-            isModalActive = true
+            isModalActive = false
         } else if suggestedClipboardContent != nil || !DraftService.shared.hasDraft {
             activeViewState = .main
             checkClipboardForPromptSuggestion()
@@ -516,7 +514,7 @@ class MenuBarManager: NSObject, ObservableObject {
         guard let popover = popover else { return }
         
         if isModalActive {
-            // BLOQUEO: Evita que el popover se cierre al hacer clic fuera o cambiar de app
+            // BLOQUEO: Reservado para flujos que sí requieren mantener el popover fijo
             popover.behavior = .applicationDefined
         } else {
             // NORMAL: Se cierra automáticamente al perder el foco

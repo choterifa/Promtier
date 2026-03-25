@@ -905,19 +905,19 @@ struct NewPromptView: View {
                         )
                     }
                 }
-                .onAppear {
-                    setupOnAppear()
-                    setupKeyboardMonitor()
-                }        .onDisappear {
+        .onAppear {
+            setupOnAppear()
+            setupKeyboardMonitor()
+        }
+        .onDisappear {
             if let monitor = localMonitor {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
             }
+            MenuBarManager.shared.isModalActive = false
         }
-        .onChange(of: draftState) { _, newValue in
+        .onChange(of: draftState) { _, _ in
             saveCurrentDraft()
-            // Maintain the lock on the modal so clicking outside doesn't close it
-            MenuBarManager.shared.isModalActive = true
             debounceAutoSave()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FloatingZenDraftUpdated"))) { _ in
@@ -1159,8 +1159,7 @@ struct NewPromptView: View {
     }
 
     private func setupOnAppear() {
-        // ALWAYS lock modal so clicking outside doesn't close the editor
-        MenuBarManager.shared.isModalActive = true
+        MenuBarManager.shared.isModalActive = false
 
         let draft = DraftService.shared.loadDraft()
 
@@ -1951,42 +1950,44 @@ struct EditorCard: View {
     @State private var isHovering: Bool = false
     @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var plainTextContent: String = ""
 
     var body: some View {
         VStack(spacing: 0) {
-            // Título, Icono y Descripción (Header Expandido)
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .center, spacing: 20) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
                     Button(action: { showingIconPicker.toggle() }) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: 12)
                                 .fill(currentCategoryColor.opacity(0.1))
-                                .frame(width: 56, height: 56)
+                                .frame(width: 42, height: 42)
 
                             Image(systemName: selectedIcon ?? fallbackIconName)
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(currentCategoryColor)
                         }
                     }
                     .buttonStyle(.plain)
+                    .help("Change icon")
                     .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
                         IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
                     }
 
-                    VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 6) {
                         TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 23 * preferences.fontSize.scale, weight: .bold))
+                            .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
                             .lineLimit(2)
-                            .padding(.bottom, 2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
                             .foregroundColor(.secondary.opacity(0.8))
                             .lineLimit(2)
-                            .frame(minHeight: 32, alignment: .topLeading)
+                            .frame(minHeight: 28, alignment: .topLeading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } // Cierre de la cabecera (VStack en 1695)
 
@@ -1995,6 +1996,7 @@ struct EditorCard: View {
                 // El Editor
                 HighlightedEditor(
                     text: $content,
+                    plainText: $plainTextContent,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
                     triggerAIRequest: $triggerAIRequest,
@@ -2023,6 +2025,7 @@ struct EditorCard: View {
                 // Barra de Herramientas Lateral
                 EditorToolbar(
                     color: currentCategoryColor,
+                    editorID: editorID,
                     vertical: true,
                     content: $content,
                     selectedRange: $selectedRange,
@@ -2112,15 +2115,16 @@ struct EditorCard: View {
             HapticService.shared.playImpact()
 
             // Determinar qué fragmento procesar (selección o todo)
+            let sourceText = plainTextContent.isEmpty ? content : plainTextContent
             let textToProcess: String
             let rangeToProcess: NSRange
-            let fullNSString = content as NSString
+            let fullNSString = sourceText as NSString
 
             if let sel = selectedRange, sel.length > 0 {
                 textToProcess = fullNSString.substring(with: sel)
                 rangeToProcess = sel
             } else {
-                textToProcess = content
+                textToProcess = sourceText
                 rangeToProcess = NSRange(location: 0, length: fullNSString.length)
             }
 
@@ -2250,6 +2254,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     @State private var isHovering: Bool = false
     @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var plainTextContent: String = ""
 
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
@@ -2329,6 +2334,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                 ZStack(alignment: .topLeading) {
                     HighlightedEditor(
                         text: $text,
+                        plainText: $plainTextContent,
                         insertionRequest: $insertionRequest,
                         replaceSnippetRequest: $replaceSnippetRequest,
                         triggerAIRequest: $triggerAIRequest,
@@ -2368,6 +2374,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                 // Herramientas Laterales (Compactas)
                 EditorToolbar(
                     color: color,
+                    editorID: editorID,
                     vertical: true,
                     content: $text,
                     selectedRange: $selectedRange,
@@ -2448,15 +2455,16 @@ struct SecondaryEditorCard<Actions: View>: View {
             HapticService.shared.playImpact()
 
             // Determinar qué fragmento procesar
+            let sourceText = plainTextContent.isEmpty ? text : plainTextContent
             let textToProcess: String
             let rangeToProcess: NSRange
-            let fullNSString = text as NSString
+            let fullNSString = sourceText as NSString
 
             if let sel = selectedRange, sel.length > 0 {
                 textToProcess = fullNSString.substring(with: sel)
                 rangeToProcess = sel
             } else {
-                textToProcess = text
+                textToProcess = sourceText
                 rangeToProcess = NSRange(location: 0, length: fullNSString.length)
             }
 
@@ -2770,4 +2778,3 @@ extension NewPromptView {
         .frame(width: 250)
     }
 }
-

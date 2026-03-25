@@ -82,12 +82,41 @@ class PromptService: ObservableObject {
         }
         
         seedDefaultFolders() // Crear categorías de sistema si no existen
+        removeDuplicatePrompts() // Limpiar posibles duplicados por el bug de sembrado
         seedDefaultPrompts() // Crear prompts de ejemplo iniciales
         purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
         loadFolders()
         loadPrompts()
         migrateShowcaseImageCountIfNeeded()
         migrateShowcaseBlobsToDiskIfNeeded()
+    }
+    
+    /// Elimina duplicados que hayan sido generados accidentalmente por semillas anteriores
+    private func removeDuplicatePrompts() {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        
+        do {
+            let allEntities = try context.fetch(request)
+            var seenIds = Set<UUID>()
+            var deletedCount = 0
+            
+            for entity in allEntities {
+                if seenIds.contains(entity.id) {
+                    context.delete(entity)
+                    deletedCount += 1
+                } else {
+                    seenIds.insert(entity.id)
+                }
+            }
+            
+            if deletedCount > 0 {
+                try context.save()
+                print("🧹 Se eliminaron \(deletedCount) prompts duplicados de la base de datos.")
+            }
+        } catch {
+            print("Error limpiando duplicados: \(error)")
+        }
     }
 
     private func migrateShowcaseImageCountIfNeeded() {
@@ -233,88 +262,106 @@ class PromptService: ObservableObject {
         
         let language = PreferencesManager.shared.language
         
+        // Helper function to check if prompt exists
+        func promptExists(id: UUID) -> Bool {
+            let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+            request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            request.fetchLimit = 1
+            return (try? context.count(for: request)) ?? 0 > 0
+        }
+        
         // 1. ChatGPT - Marketing (Suggested App)
         let chatGPTPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000001")!
-        var chatGPTPrompt = Prompt(
-            title: "default_prompt_chatgpt_title".localized(for: language),
-            content: "default_prompt_chatgpt_content".localized(for: language),
-            folder: PredefinedCategory.chatGPT.displayName,
-            icon: PredefinedCategory.chatGPT.icon
-        )
-        chatGPTPrompt.id = chatGPTPromptId
-        chatGPTPrompt.targetAppBundleIDs = ["com.apple.Safari"]
-        chatGPTPrompt.showcaseImagePaths = ["\(chatGPTPromptId.uuidString)/showcase_0.png"]
-        chatGPTPrompt.showcaseImageCount = 1
-        let chatGPT_entity = PromptEntity.create(from: chatGPTPrompt, in: context)
-        chatGPT_entity.image1Path = chatGPTPrompt.showcaseImagePaths[0]
+        if !promptExists(id: chatGPTPromptId) {
+            var chatGPTPrompt = Prompt(
+                title: "default_prompt_chatgpt_title".localized(for: language),
+                content: "default_prompt_chatgpt_content".localized(for: language),
+                folder: PredefinedCategory.chatGPT.displayName,
+                icon: PredefinedCategory.chatGPT.icon
+            )
+            chatGPTPrompt.id = chatGPTPromptId
+            chatGPTPrompt.targetAppBundleIDs = ["com.apple.Safari"]
+            chatGPTPrompt.showcaseImagePaths = ["\(chatGPTPromptId.uuidString)/showcase_0.png"]
+            chatGPTPrompt.showcaseImageCount = 1
+            let chatGPT_entity = PromptEntity.create(from: chatGPTPrompt, in: context)
+            chatGPT_entity.image1Path = chatGPTPrompt.showcaseImagePaths[0]
+        }
         
         // 2. Claude - SOLID (Shortcut)
         let claudePromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000002")!
-        var claudePrompt = Prompt(
-            title: "default_prompt_claude_title".localized(for: language),
-            content: "default_prompt_claude_content".localized(for: language),
-            folder: PredefinedCategory.claude.displayName,
-            icon: PredefinedCategory.claude.icon
-        )
-        claudePrompt.id = claudePromptId
-        claudePrompt.customShortcut = "review"
-        claudePrompt.showcaseImagePaths = ["\(claudePromptId.uuidString)/showcase_0.png"]
-        claudePrompt.showcaseImageCount = 1
-        let claude_entity = PromptEntity.create(from: claudePrompt, in: context)
-        claude_entity.image1Path = claudePrompt.showcaseImagePaths[0]
+        if !promptExists(id: claudePromptId) {
+            var claudePrompt = Prompt(
+                title: "default_prompt_claude_title".localized(for: language),
+                content: "default_prompt_claude_content".localized(for: language),
+                folder: PredefinedCategory.claude.displayName,
+                icon: PredefinedCategory.claude.icon
+            )
+            claudePrompt.id = claudePromptId
+            claudePrompt.customShortcut = "review"
+            claudePrompt.showcaseImagePaths = ["\(claudePromptId.uuidString)/showcase_0.png"]
+            claudePrompt.showcaseImageCount = 1
+            let claude_entity = PromptEntity.create(from: claudePrompt, in: context)
+            claude_entity.image1Path = claudePrompt.showcaseImagePaths[0]
+        }
         
         // 3. Cursor - Implementation (Negative Prompt)
         let cursorPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000003")!
-        var cursorPrompt = Prompt(
-            title: "default_prompt_cursor_title".localized(for: language),
-            content: "default_prompt_cursor_content".localized(for: language),
-            folder: PredefinedCategory.cursor.displayName,
-            icon: PredefinedCategory.cursor.icon
-        )
-        cursorPrompt.id = cursorPromptId
-        cursorPrompt.negativePrompt = "default_negative_cursor".localized(for: language)
-        cursorPrompt.showcaseImagePaths = ["\(cursorPromptId.uuidString)/showcase_0.png"]
-        cursorPrompt.showcaseImageCount = 1
-        let cursor_entity = PromptEntity.create(from: cursorPrompt, in: context)
-        cursor_entity.image1Path = cursorPrompt.showcaseImagePaths[0]
+        if !promptExists(id: cursorPromptId) {
+            var cursorPrompt = Prompt(
+                title: "default_prompt_cursor_title".localized(for: language),
+                content: "default_prompt_cursor_content".localized(for: language),
+                folder: PredefinedCategory.cursor.displayName,
+                icon: PredefinedCategory.cursor.icon
+            )
+            cursorPrompt.id = cursorPromptId
+            cursorPrompt.negativePrompt = "default_negative_cursor".localized(for: language)
+            cursorPrompt.showcaseImagePaths = ["\(cursorPromptId.uuidString)/showcase_0.png"]
+            cursorPrompt.showcaseImageCount = 1
+            let cursor_entity = PromptEntity.create(from: cursorPrompt, in: context)
+            cursor_entity.image1Path = cursorPrompt.showcaseImagePaths[0]
+        }
         
         // 4. Midjourney - Portrait (Versions)
         let midjourneyPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000004")!
-        var midjourneyPrompt = Prompt(
-            title: "default_prompt_midjourney_title".localized(for: language),
-            content: "default_prompt_midjourney_content".localized(for: language),
-            folder: PredefinedCategory.midjourney.displayName,
-            icon: PredefinedCategory.midjourney.icon
-        )
-        midjourneyPrompt.id = midjourneyPromptId
-        midjourneyPrompt.versionHistory = [
-            PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Initial cinematic prompt", timestamp: Date().addingTimeInterval(-86400)),
-            PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Added --v 6.0 and lighting details", timestamp: Date().addingTimeInterval(-3600))
-        ]
-        midjourneyPrompt.showcaseImagePaths = ["\(midjourneyPromptId.uuidString)/showcase_0.png"]
-        midjourneyPrompt.showcaseImageCount = 1
-        let mid_entity = PromptEntity.create(from: midjourneyPrompt, in: context)
-        mid_entity.image1Path = midjourneyPrompt.showcaseImagePaths[0]
+        if !promptExists(id: midjourneyPromptId) {
+            var midjourneyPrompt = Prompt(
+                title: "default_prompt_midjourney_title".localized(for: language),
+                content: "default_prompt_midjourney_content".localized(for: language),
+                folder: PredefinedCategory.midjourney.displayName,
+                icon: PredefinedCategory.midjourney.icon
+            )
+            midjourneyPrompt.id = midjourneyPromptId
+            midjourneyPrompt.versionHistory = [
+                PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Initial cinematic prompt", timestamp: Date().addingTimeInterval(-86400)),
+                PromptSnapshot(id: UUID(), title: midjourneyPrompt.title, content: "Added --v 6.0 and lighting details", timestamp: Date().addingTimeInterval(-3600))
+            ]
+            midjourneyPrompt.showcaseImagePaths = ["\(midjourneyPromptId.uuidString)/showcase_0.png"]
+            midjourneyPrompt.showcaseImageCount = 1
+            let mid_entity = PromptEntity.create(from: midjourneyPrompt, in: context)
+            mid_entity.image1Path = midjourneyPrompt.showcaseImagePaths[0]
+        }
         
         // 5. Images Prompts - Otaku Room (Full Detail + Negative)
         let imagesPromptId = UUID(uuidString: "88888888-8888-4444-AAAA-000000000005")!
-        var imagesPrompt = Prompt(
-            title: "default_prompt_images_title".localized(for: language),
-            content: "default_prompt_images_content".localized(for: language),
-            folder: PredefinedCategory.imagesPrompts.displayName,
-            icon: PredefinedCategory.imagesPrompts.icon
-        )
-        imagesPrompt.id = imagesPromptId
-        imagesPrompt.negativePrompt = "default_negative_otaku".localized(for: language)
-        imagesPrompt.showcaseImagePaths = ["\(imagesPromptId.uuidString)/showcase_0.png"]
-        imagesPrompt.showcaseImageCount = 1
-        let img_entity = PromptEntity.create(from: imagesPrompt, in: context)
-        img_entity.image1Path = imagesPrompt.showcaseImagePaths[0]
+        if !promptExists(id: imagesPromptId) {
+            var imagesPrompt = Prompt(
+                title: "default_prompt_images_title".localized(for: language),
+                content: "default_prompt_images_content".localized(for: language),
+                folder: PredefinedCategory.imagesPrompts.displayName,
+                icon: PredefinedCategory.imagesPrompts.icon
+            )
+            imagesPrompt.id = imagesPromptId
+            imagesPrompt.negativePrompt = "default_negative_otaku".localized(for: language)
+            imagesPrompt.showcaseImagePaths = ["\(imagesPromptId.uuidString)/showcase_0.png"]
+            imagesPrompt.showcaseImageCount = 1
+            let img_entity = PromptEntity.create(from: imagesPrompt, in: context)
+            img_entity.image1Path = imagesPrompt.showcaseImagePaths[0]
+        }
         
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
         self.loadPrompts() // Recargar para que aparezcan inmediatamente
-        print("✅ 5 prompts de ejemplo detallados creados.")
+        print("✅ Prompts de ejemplo verificados y creados si no existían.")
     }
     
     // MARK: - Operaciones CRUD
