@@ -59,10 +59,10 @@ struct EditorToolbar: View {
                 Label("Header", systemImage: "textformat.size")
             }
             Divider()
-            Button(action: { applyMarkdown("- ", suffix: "") }) {
+            Button(action: { applyMarkdown("- ", suffix: "", isList: true) }) {
                 Label("Bullet List", systemImage: "list.bullet")
             }
-            Button(action: { applyMarkdown("1. ", suffix: "") }) {
+            Button(action: { applyMarkdown("1. ", suffix: "", isList: true) }) {
                 Label("Numbered List", systemImage: "list.number")
             }
         } label: {
@@ -158,20 +158,16 @@ struct EditorToolbar: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
     }
 
-    private func applyMarkdown(_ prefix: String, suffix: String) {
-        let nsString = content as NSString
-        let range = selectedRange ?? NSRange(location: nsString.length, length: 0)
-        
-        let selectedText = nsString.substring(with: range)
-        let newText = prefix + selectedText + suffix
-        
-        content = nsString.replacingCharacters(in: range, with: newText)
-        
-        // Update selection to wrap the new text
-        let newLocation = range.location + prefix.count
-        let newLength = selectedText.count
-        selectedRange = NSRange(location: newLocation, length: newLength)
+    private func applyMarkdown(_ prefix: String, suffix: String, isList: Bool = false) {
+        // Post a notification that the active text view will intercept and process natively
+        // This completely preserves the native Undo/Redo stack.
+        NotificationCenter.default.post(
+            name: NSNotification.Name("FormatMarkdown"),
+            object: nil,
+            userInfo: ["prefix": prefix, "suffix": suffix, "isList": isList]
+        )
         
         HapticService.shared.playLight()
     }
 }
+
