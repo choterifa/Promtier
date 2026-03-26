@@ -32,6 +32,11 @@ struct VariableFillView: View {
         let name: String
         let type: VariableType
         
+        var cleanName: String {
+            name.replacingOccurrences(of: "_", with: " ")
+                .capitalized
+        }
+        
         static func == (lhs: TemplateVariable, rhs: TemplateVariable) -> Bool { lhs.id == rhs.id }
         func hash(into hasher: inout Hasher) { hasher.combine(id) }
     }
@@ -304,7 +309,7 @@ struct VariableFillView: View {
             ForEach(variables) { variable in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(variable.name.uppercased())
+                        Text(variable.cleanName.uppercased())
                             .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
                             .foregroundColor(themeColor)
                             .tracking(1.2)
@@ -453,7 +458,7 @@ struct VariableFillView: View {
         Group {
             switch variable.type {
             case .text:
-                TextField(String(format: "value_for".localized(for: preferences.language), variable.name), text: Binding(
+                TextField(String(format: "value_for".localized(for: preferences.language), variable.cleanName), text: Binding(
                     get: { variableValues[variable.id, default: ""] },
                     set: { variableValues[variable.id] = $0 }
                 ))
@@ -494,7 +499,7 @@ struct VariableFillView: View {
                 .focused($focusedField, equals: variable.id)
                 
             case .smart:
-                TextField(String(format: "value_for".localized(for: preferences.language), variable.name), text: Binding(
+                TextField(String(format: "value_for".localized(for: preferences.language), variable.cleanName), text: Binding(
                     get: { variableValues[variable.id, default: ""] },
                     set: { variableValues[variable.id] = $0 }
                 ))

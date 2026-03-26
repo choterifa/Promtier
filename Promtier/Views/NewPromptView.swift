@@ -1384,9 +1384,9 @@ struct NewPromptView: View {
                     }) {
                         Image(systemName: isFavorite ? "star.fill" : "star")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(isFavorite ? (preferences.isHaloEffectEnabled ? .yellow : .blue) : themeColor)
+                            .foregroundColor(themeColor)
                             .frame(width: 32, height: 32)
-                            .background(Circle().fill(isFavorite ? (preferences.isHaloEffectEnabled ? Color.yellow.opacity(0.1) : Color.blue.opacity(0.1)) : themeColor.opacity(0.1)))
+                            .background(Circle().fill(themeColor.opacity(isFavorite ? 0.2 : 0.1)))
                     }
                     .buttonStyle(.plain)
                     .help("favorite".localized(for: preferences.language))
