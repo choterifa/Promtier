@@ -1844,16 +1844,27 @@ struct NewPromptView: View {
         HapticService.shared.playImpact()
         
         let systemPrompt: String
-        if !trimmedTitle.isEmpty && trimmedContent.isEmpty {
-            // Caso 1: Solo hay título -> Generar contenido desde cero. NO crear variables nuevas.
-            systemPrompt = "You are an expert prompt engineer. Given the title '\(trimmedTitle)', generate a high-quality, detailed AI prompt. Do NOT include dynamic variables like {{variable}}, provide a ready-to-use prompt. Respond ONLY with the prompt content."
-        } else if !trimmedTitle.isEmpty && !trimmedContent.isEmpty {
-            // Caso 2: Hay ambos -> Mejorar el contenido usando el título como contexto. Mantener existentes, no crear nuevas.
-            systemPrompt = "You are an expert prompt engineer. Improve and expand the following AI prompt based on the title '\(trimmedTitle)'. Maintain any EXISTING variables {{...}} but do NOT add new ones. Respond ONLY with the improved prompt:\n\n\(trimmedContent)"
-        } else {
-            // Caso 3: Solo hay contenido -> Mejorar/Completar el contenido actual. Mantener existentes, no crear nuevas.
-            systemPrompt = "You are an expert prompt engineer. Improve, fix grammar, and expand the following AI prompt draft. Maintain any EXISTING variables {{...}} but do NOT add new ones. Respond ONLY with the improved prompt:\n\n\(trimmedContent)"
-        }
+        let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
+        let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
+        
+        systemPrompt = """
+        You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.
+        
+        INPUTS:
+        - Title: \(currentTitle)
+        - Content: \(currentContent)
+        
+        INSTRUCTIONS:
+        1. TITLE: If the title is empty or generic, generate a catchy, short title (max 1 line). If it's provided, fix only grammar/spelling while keeping the original meaning.
+        2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
+        3. CONTENT: Generate/Improve the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential.
+        
+        RESPONSE FORMAT:
+        Respond ONLY with the following format, using the pipe symbol (|) as separator:
+        GeneratedTitle|GeneratedDescription|GeneratedContent
+        
+        DO NOT include any other text, labels, or explanations. Just the three parts separated by |.
+        """
         
         let publisher: AnyPublisher<String, Error>
         switch preferences.preferredAIService {
@@ -1874,8 +1885,23 @@ struct NewPromptView: View {
                 } else {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
-                        withAnimation(.spring()) {
-                            self.content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let parts = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
+                        if parts.count >= 3 {
+                            withAnimation(.spring()) {
+                                self.title = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                                self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                                self.content = parts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespacesAndNewlines)
+                            }
+                            
+                            // 🪄 Auto-Categorizar automáticamente después de generar el contenido
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.autoCategorizePrompt()
+                            }
+                        } else if !fullResponse.contains("|") {
+                            // Fallback if AI didn't follow format strictly but gave content
+                            withAnimation(.spring()) {
+                                self.content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                            }
                         }
                     }
                 }
