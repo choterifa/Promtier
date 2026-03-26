@@ -222,7 +222,7 @@ struct VariableFillView: View {
                 VStack(spacing: 0) {
                     previewArea
                 }
-                .frame(width: 320)
+                .frame(width: 340)
                 .background(Color.primary.opacity(0.01))
             }
             
