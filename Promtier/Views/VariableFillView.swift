@@ -385,31 +385,34 @@ struct VariableFillView: View {
                 }
             }
             
-            ScrollView {
-                Text(processedContent.isEmpty ? "preview_placeholder".localized(for: preferences.language) : processedContent)
-                    .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                    .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.85))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
-                    .padding(16)
-            }
-            .frame(maxHeight: showAIPlayground ? 160 : .infinity)
-            .background(
-                ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                    Color.primary.opacity(0.01)
+            ZStack {
+                if showAIPlayground && isAIAvailable {
+                    AIPlaygroundView(prompt: processedContent)
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                        .frame(maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        Text(processedContent.isEmpty ? "preview_placeholder".localized(for: preferences.language) : processedContent)
+                            .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                            .foregroundColor(processedContent.isEmpty ? .secondary.opacity(0.4) : .primary.opacity(0.85))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
+                            .padding(16)
+                    }
+                    .background(
+                        ZStack {
+                            VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                            Color.primary.opacity(0.01)
+                        }
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+                    .transition(.scale(scale: 1.05).combined(with: .opacity))
                 }
-            )
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
-            
-            if showAIPlayground && isAIAvailable {
-                AIPlaygroundView(prompt: processedContent)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .frame(height: 280)
             }
         }
-        .padding(24)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
         .frame(maxHeight: .infinity)
     }
     

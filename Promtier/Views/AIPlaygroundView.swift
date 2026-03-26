@@ -87,7 +87,7 @@ struct AIPlaygroundView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
             
             Divider()
             
@@ -125,13 +125,14 @@ struct AIPlaygroundView: View {
                         Label("copy", systemImage: "doc.on.doc")
                     }
                     .buttonStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.blue)
-                    .padding(12)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
             }
         }
-        .frame(minHeight: 200)
+        .frame(maxHeight: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
         .overlay(
