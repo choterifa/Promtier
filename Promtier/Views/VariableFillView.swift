@@ -388,7 +388,7 @@ struct VariableFillView: View {
             ZStack {
                 if showAIPlayground && isAIAvailable {
                     AIPlaygroundView(prompt: processedContent)
-                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                         .frame(maxHeight: .infinity)
                 } else {
                     ScrollView {
@@ -407,7 +407,7 @@ struct VariableFillView: View {
                     )
                     .cornerRadius(16)
                     .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
-                    .transition(.scale(scale: 1.05).combined(with: .opacity))
+                    .transition(.opacity)
                 }
             }
         }
