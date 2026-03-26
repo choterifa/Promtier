@@ -444,7 +444,7 @@
 "generate_test" = "Test Prompt";
 "ai_response" = "AI Response";
 "apply_ai_changes" = "Apply changes";
-"ai_improvement_placeholder" = "Improvement command (e.g. 'Make it formal')...";
+"ai_improvement_placeholder" = "Write a command to test or improve the result...";
 "ai_action_create_from_text" = "Create New Prompt";
 "prompt_created_success" = "New prompt created!";
 "ai_action_instruct" = "Execute Command";

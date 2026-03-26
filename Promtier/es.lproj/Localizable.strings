@@ -456,7 +456,7 @@
 "sort_most_used" = "Más usados";
 "sort_prompts_help" = "Cambiar orden de los prompts";
 
-"ai_improvement_placeholder" = "Instrucción de mejora (ej. 'Hazlo formal')...";
+"ai_improvement_placeholder" = "Escribe un comando para probar o mejorar el resultado...";
 "ai_action_create_from_text" = "Crear como nuevo Prompt";
 "prompt_created_success" = "¡Nuevo prompt creado!";
 "ai_action_instruct" = "Ejecutar como Comando";

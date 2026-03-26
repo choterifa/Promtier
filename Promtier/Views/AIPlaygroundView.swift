@@ -18,6 +18,7 @@ struct AIPlaygroundView: View {
     @State private var isGenerating: Bool = false
     @State private var error: String?
     @State private var improvementText: String = ""
+    @FocusState private var isFieldFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +49,7 @@ struct AIPlaygroundView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
-                        .disabled(isGenerating)
+                        .disabled(isGenerating || improvementText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 } else {
                     Text("ai_service_not_configured".localized(for: preferences.language))
@@ -70,6 +71,12 @@ struct AIPlaygroundView: View {
                     .padding(8)
                     .background(Color.primary.opacity(0.03))
                     .cornerRadius(8)
+                    .focused($isFieldFocused)
+                    .onSubmit {
+                        if !improvementText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            generateResponse()
+                        }
+                    }
                 
                 if !improvementText.isEmpty {
                     Button(action: { improvementText = "" }) {
@@ -92,8 +99,8 @@ struct AIPlaygroundView: View {
                             .foregroundColor(.red)
                             .font(.system(size: 13, design: .monospaced))
                     } else if responseText.isEmpty && !isGenerating {
-                        Text("preview_placeholder".localized(for: preferences.language))
-                            .foregroundColor(.secondary.opacity(0.5))
+                        Text(prompt)
+                            .foregroundColor(.primary.opacity(0.85))
                             .font(.system(size: 13, design: .monospaced))
                     } else {
                         Text(responseText)
@@ -131,6 +138,12 @@ struct AIPlaygroundView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
+        .onAppear {
+            // Auto-focus al abrir
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isFieldFocused = true
+            }
+        }
     }
     
     private func generateResponse() {
@@ -144,14 +157,25 @@ struct AIPlaygroundView: View {
         error = nil
         HapticService.shared.playImpact()
         
-        let finalPrompt = improvementText.isEmpty ? prompt : "\(prompt)\n\n[Instruction: \(improvementText)]"
+        let systemPrompt = """
+        You are an AI assistant helping to refine a prompt result.
+        
+        CURRENT RESULT:
+        \(prompt)
+        
+        USER COMMAND:
+        \(improvementText)
+        
+        INSTRUCTIONS:
+        Apply the USER COMMAND to the CURRENT RESULT. Respond ONLY with the refined text.
+        """
         
         let publisher: AnyPublisher<String, Error>
         
         if useOpenAI {
-            publisher = OpenAIService.shared.generate(prompt: finalPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
         } else {
-            publisher = GeminiService.shared.generate(prompt: finalPrompt, model: preferences.geminiDefaultModel)
+            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
         }
         
         cancellable = publisher
