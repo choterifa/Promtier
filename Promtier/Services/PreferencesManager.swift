@@ -480,7 +480,7 @@ class PreferencesManager: ObservableObject {
         // Gemini
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
         self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
-        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-1.5-flash-latest"
+        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.0-flash"
         
         // OpenAI
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
@@ -593,7 +593,7 @@ class PreferencesManager: ObservableObject {
         self.isHaloEffectEnabled = true
         self.geminiEnabled = false
         self.geminiAPIKey = ""
-        self.geminiDefaultModel = "gemini-1.5-flash-latest"
+        self.geminiDefaultModel = "gemini-2.0-flash"
         self.preferredAIService = .openai
         self.openAIApiKey = ""
         self.openAIDefaultModel = "gpt-4o"

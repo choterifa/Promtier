@@ -609,9 +609,8 @@ struct BehaviorTab: View {
                 }
             }
             
-            SettingsSection(title: "apple_intelligence", icon: "sparkles") {
-                
-                SettingsRow("preferred_ai_provider", subtitle: "preferred_ai_provider") {
+            SettingsSection(title: "Preferred AI Service", icon: "sparkles") {
+                SettingsRow("default_service", subtitle: "preferred_ai_provider") {
                     Picker("", selection: $preferences.preferredAIService) {
                         Text("Gemini").tag(AIService.gemini)
                         Text("OpenAI").tag(AIService.openai)
@@ -619,12 +618,16 @@ struct BehaviorTab: View {
                     .pickerStyle(.segmented)
                     .frame(width: 250)
                 }
-                
-                Divider().padding(.leading, 20)
-
-                // Configuración de OpenAI
-                SettingsRow("openai_service", subtitle: "openai_subtitle", icon: "cloud.fill", iconColor: .green) {
-                    EmptyView()
+            }
+            
+            SettingsSection(title: "OpenAI ChatGPT", icon: "cloud.fill") {
+                SettingsRow("openai_service", subtitle: "openai_subtitle") {
+                    Toggle("", isOn: Binding(
+                        get: { !preferences.openAIApiKey.isEmpty },
+                        set: { _ in } // Sólo informativo o podríamos añadir un toggle dedicado si fuera necesario
+                    ))
+                    .toggleStyle(.switch)
+                    .disabled(true)
                 }
                 
                 VStack(spacing: 12) {
@@ -671,11 +674,10 @@ struct BehaviorTab: View {
                 .padding(.leading, 40)
                 .padding(.trailing, 20)
                 .padding(.bottom, 16)
+            }
 
-                Divider().padding(.leading, 20)
-
-                // Configuración de Gemini
-                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini", icon: "sparkles", iconColor: .blue) {
+            SettingsSection(title: "Google Gemini", icon: "sparkles") {
+                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
                     Toggle("", isOn: $preferences.geminiEnabled)
                         .toggleStyle(.switch)
                 }
@@ -690,16 +692,41 @@ struct BehaviorTab: View {
                         
                         SettingsRow("model_id", subtitle: "gemini_model_subtitle") {
                             HStack(spacing: 8) {
-                                TextField("gemini-1.5-flash-latest", text: $preferences.geminiDefaultModel)
+                                TextField("gemini-2.0-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
                                     .frame(width: 200)
                                 
                                 Menu {
-                                    ForEach(["gemini-2.0-flash", "gemini-2.0-flash-lite-preview-02-05", "gemini-2.0-pro-exp-02-05", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest"], id: \.self) { model in
-                                        Button(model) {
-                                            preferences.geminiDefaultModel = model
-                                        }
+                                    Section("Gemini 3 & 3.1 (Preview)") {
+                                        Button("gemini-3.1-pro-preview") { preferences.geminiDefaultModel = "gemini-3.1-pro-preview" }
+                                        Button("gemini-3.1-flash-lite-preview") { preferences.geminiDefaultModel = "gemini-3.1-flash-lite-preview" }
+                                        Button("gemini-3-pro-preview") { preferences.geminiDefaultModel = "gemini-3-pro-preview" }
+                                        Button("gemini-3-flash-preview") { preferences.geminiDefaultModel = "gemini-3-flash-preview" }
+                                        Button("gemini-3-flash") { preferences.geminiDefaultModel = "gemini-3-flash" }
+                                    }
+                                    Section("Gemini 2.5 (Stable)") {
+                                        Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
+                                        Button("gemini-2.5-flash") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
+                                        Button("gemini-2.5-flash-lite") { preferences.geminiDefaultModel = "gemini-2.5-flash-lite" }
+                                    }
+                                    Section("Gemini 2.0") {
+                                        Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
+                                        Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
+                                        Button("gemini-2.0-flash-001") { preferences.geminiDefaultModel = "gemini-2.0-flash-001" }
+                                        Button("gemini-2.0-flash-lite-001") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite-001" }
+                                    }
+                                    Section("Gemma 3 (Open Models)") {
+                                        Button("gemma-3-27b-it") { preferences.geminiDefaultModel = "gemma-3-27b-it" }
+                                        Button("gemma-3-12b-it") { preferences.geminiDefaultModel = "gemma-3-12b-it" }
+                                        Button("gemma-3-4b-it") { preferences.geminiDefaultModel = "gemma-3-4b-it" }
+                                        Button("gemma-3-1b-it") { preferences.geminiDefaultModel = "gemma-3-1b-it" }
+                                    }
+                                    Section("Legacy / Aliases") {
+                                        Button("gemini-pro-latest") { preferences.geminiDefaultModel = "gemini-pro-latest" }
+                                        Button("gemini-flash-latest") { preferences.geminiDefaultModel = "gemini-flash-latest" }
+                                        Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
+                                        Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
                                     }
                                 } label: {
                                     Image(systemName: "list.bullet.indent")
@@ -717,7 +744,6 @@ struct BehaviorTab: View {
                     }
                     .padding(.leading, 20)
                 }
-                
             }
             
             SettingsSection(title: "system", icon: "macwindow") {
