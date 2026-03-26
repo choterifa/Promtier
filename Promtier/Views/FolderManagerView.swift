@@ -268,6 +268,11 @@ struct FolderManagerView: View {
                                     newFolderName = String(newValue.prefix(30))
                                 }
                             }
+                            .onSubmit {
+                                if !newFolderName.isEmpty {
+                                    saveFolder()
+                                }
+                            }
                     }
                     
                     HStack(alignment: .top, spacing: 24) {
@@ -472,10 +477,10 @@ struct FolderManagerView: View {
                     }
                     .buttonStyle(.plain)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(editingFolder == nil ? .red.opacity(0.8) : .secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Capsule().fill(Color.primary.opacity(0.05)))
+                    .background(Capsule().fill(editingFolder == nil ? Color.red.opacity(0.12) : Color.primary.opacity(0.05)))
             
             Spacer()
             
@@ -499,6 +504,7 @@ struct FolderManagerView: View {
                 )
                 .cornerRadius(12)
                 .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(0.25) : .clear, radius: 8, y: 4)
+                .keyboardShortcut(.return, modifiers: .command)
             }
             .buttonStyle(.plain)
             .disabled(newFolderName.isEmpty)

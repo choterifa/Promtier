@@ -12,47 +12,55 @@ struct IconPickerView: View {
     let color: Color
     @EnvironmentObject var preferences: PreferencesManager
     
-    // Lista curada de iconos útiles para prompts de IA
     let icons = [
-        // AI / Inteligencia / Creatividad
-        "cpu", "sparkles", "sparkle", "bolt.fill", "bulb",
-        "wand.and.stars", "face.smiling", "eyes", "brain", "atom", "magicmouse.fill",
-        "square.stack.3d.up.fill", "icloud.and.arrow.down", "network", "waveform.path.ecg", "antenna.radiowaves.left.and.right",
+        // Inteligencia Artificial y Pensamiento
+        "brain.fill", "sparkles", "bolt.fill", "lightbulb.fill", "brain.headlight.fill",
+        "cpu.fill", "network", "wand.and.stars.inverse", "bolt.shield.fill", "atom",
+        "waveform.path.ecg.rectangle.fill", "square.stack.3d.up.fill", "bolt.square.fill", "sparkle",
+        "brain.headlight.inverse", "bolt.horizontal.circle.fill", "wand.and.rays",
 
-        // Escritura / Documentos / Notas
-        "doc.text.fill", "pencil.tip.crop.circle", "keyboard", "text.quote", "signature",
-        "book.fill", "books.vertical.fill", "square.and.pencil", "doc.plaintext.fill", "list.bullet.rectangle",
-        "character.cursor.ibeam", "text.justify.left", "doc.plaintext", "text.bubble.fill", "note.text", "doc.richtext.fill",
+        // Escritura, Documentos y Creatividad
+        "doc.text.fill", "pencil.and.outline", "paragraphsign", "text.quote", "signature",
+        "book.closed.fill", "books.vertical.fill", "square.and.pencil", "doc.on.doc.fill",
+        "list.bullet.indent", "character.bubble.fill", "fountainpen.tip", "doc.append.fill",
+        "text.badge.plus", "quote.bubble.fill", "note.text", "doc.richtext.fill",
+        "text.badge.checkmark", "doc.text.magnifyingglass", "character.cursor.ibeam",
 
-        // Código / Desarrollo / Terminal
-        "terminal.fill", "command", "curlybraces", "chevron.left.forwardslash.chevron.right", "gearshape.fill",
-        "hammer.fill", "wrench.and.screwdriver.fill", "macwindow", "scroll.fill",
-        "arrow.left.and.right", "app.badge.fill", "laptopcomputer", "puzzlepiece.fill", "ant.fill", "externaldrive.fill", "memorychip", "case.fill",
+        // Programación y Herramientas Técnicas
+        "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces.square.fill",
+        "command.circle.fill", "gearshape.2.fill", "hammer.circle.fill", "wrench.fill",
+        "applescript.fill", "macwindow.badge.plus", "puzzlepiece.fill", "ant.fill",
+        "memorychip.fill", "cpu", "command.square.fill", "shippingbox.fill",
+        "hammer.fill", "wrench.and.screwdriver.fill", "curlybraces",
 
-        // Comunicación / Redacción / Social
-        "bubble.left.and.bubble.right.fill", "envelope.fill", "paperplane.fill", "megaphone.fill", "person.fill",
-        "person.2.fill", "person.3.fill", "person.text.rectangle.fill", "phone.fill",
-        "video.fill", "message.fill", "hand.thumbsup.fill", "quote.bubble.fill",
+        // Marketing, Datos y Análisis
+        "chart.bar.xaxis", "chart.line.uptrend.xyaxis.circle.fill", "target", "briefcase.fill",
+        "magnifyingglass.circle.fill", "cube.transparent.fill", "dollarsign.circle.fill",
+        "chart.pie.fill", "line.3.horizontal.decrease.circle.fill", "bag.fill", "cart.fill",
+        "tag.fill", "bookmark.fill", "link", "timer", "stopwatch",
+        "chart.xyaxis.line", "percent", "banknote.fill", "creditcard.fill",
 
-        // Análisis / Datos / Negocios / Finanzas
-        "chart.bar.fill", "magnifyingglass", "cube.fill", "square.stack.3d.up.fill", "target",
-        "briefcase.fill", "creditcard.fill", "banknote.fill", "dollarsign.circle.fill", "eurosign.circle.fill", "cart.fill", "bag.fill",
-        "line.diagonal", "slider.horizontal.3", "timer", "stopwatch.fill",
+        // Comunicación y Social
+        "bubble.left.and.bubble.right.fill", "paperplane.fill", "megaphone.fill", "person.fill",
+        "person.2.fill", "person.text.rectangle.fill", "message.and.waveform.fill",
+        "envelope.badge.shield.half.filled.fill", "hand.thumbsup.fill", "heart.fill",
+        "person.crop.circle.badge.checkmark", "at", "phone.circle.fill",
+        "video.fill", "message.fill", "hand.raised.fill",
 
-        // Multimedia / Diseño / Arte
-        "photo.fill", "camera.fill", "paintbrush.fill", "paintpalette.fill", "film.fill",
-        "play.fill", "music.note", "music.mic", "speaker.wave.3.fill", "mic.fill", "headphones",
-        "crop", "perspective", "scissors", "metronome.fill",
+        // Multimedia, Diseño y Arte
+        "photo.on.rectangle.angled.fill", "camera.aperture", "paintbrush.pointed.fill",
+        "paintpalette.fill", "film.fill", "play.rectangle.on.rectangle.fill", "mic.badge.plus",
+        "headphones", "video.and.waveform.fill", "scissors.circle.fill", "eye.fill",
+        "circle.grid.cross.fill", "camera.fill", "music.note.list",
+        "photo.fill", "play.circle.fill", "speaker.wave.2.fill",
 
-        // Ciencia / Naturaleza / Educación
-        "leaf.fill", "drop.fill", "sun.max.fill", "moon.fill", "cloud.fill",
-        "thermometer.medium", "flask.fill", "testtube.2", "graduationcap.fill",
-        "globe.americas.fill", "mountain.2.fill", "ruler.fill", "pills.fill", "medical.thermometer.fill",
-
-        // General / Otros
-        "gift.fill", "gamecontroller.fill", "die.face.5.fill", "cup.and.saucer.fill",
-        "fork.knife", "trophy.fill", "medal.fill", "flag.fill", "bell.fill", "flame.fill", "bicycle", "airplane",
-        "key.fill", "lock.fill", "calendar", "map.fill", "star.fill", "party.popper.fill"
+        // General y Utilidades
+        "star.bubble.fill", "flame.circle.fill", "flag.checkered.2.crossed", "bell.fill",
+        "lock.fill", "lock.open.fill", "key.fill", "calendar.badge.clock", "map.fill",
+        "gift.fill", "gamecontroller.fill", "trophy.fill", "medal.fill", "party.popper.fill",
+        "exclamationmark.triangle.fill", "questionmark.circle.fill", "checkmark.seal.fill",
+        "gavel.fill", "function", "globe.americas.fill", "leaf.fill",
+        "house.fill", "airplane.circle.fill", "car.fill", "graduationcap.fill"
     ]
     
     @Environment(\.dismiss) private var dismiss
