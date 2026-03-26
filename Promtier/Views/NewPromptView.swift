@@ -631,8 +631,6 @@ struct NewPromptView: View {
                     )
                 }
 
-                Spacer().frame(height: 20)
-
                 // Prompt Results (Moved here per user request)
                 imageGallery(width: geometry.size.width * 0.9)
                     .padding(.horizontal, 4)
@@ -1478,7 +1476,7 @@ struct NewPromptView: View {
                     let slotWidth = (width - 52) / 3
                     let slotHeight = slotWidth * 0.66
                     
-                    return VStack(alignment: .leading, spacing: 12) {
+                    return VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 8) {
                             Image(systemName: "photo.stack.fill")
                                 .font(.system(size: 12, weight: .bold))
@@ -1500,7 +1498,7 @@ struct NewPromptView: View {
                             Spacer()
                         }
                         .padding(.horizontal, 8)
-                        .padding(.bottom, 4)
+                        .padding(.bottom, 0)
 
                         ScrollView(.horizontal, showsIndicators: false) {                HStack(spacing: 12) {
                     // Imágenes actuales
