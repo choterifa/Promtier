@@ -470,3 +470,4 @@
 "shortcut_help_desc" = "Set a key combination to copy this prompt instantly from any application without opening Promtier.";
 "smart_recommendation_help" = "Smart Recommendation";
 "smart_recommendation_help_desc" = "Associate this prompt with specific apps. When using those apps, Promtier will prioritize it in the list for faster access.";
+"required_fields" = "Title and Prompt are required";

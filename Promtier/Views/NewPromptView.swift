@@ -1042,6 +1042,20 @@ struct NewPromptView: View {
             // Cmd + S -> Save
             if modifiers.contains(.command) && event.keyCode == 1 { // 'S' is key code 1
                 DispatchQueue.main.async {
+                    let trimmedTitle = self.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedContent = self.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    guard !trimmedTitle.isEmpty && !trimmedContent.isEmpty else {
+                        HapticService.shared.playError()
+                        withAnimation {
+                            self.branchMessage = "required_fields".localized(for: self.preferences.language)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                            withAnimation { if self.branchMessage == "required_fields".localized(for: self.preferences.language) { self.branchMessage = nil } }
+                        }
+                        return
+                    }
+
                     if self.showingZenEditor {
                         self.savePrompt(closeAfter: false)
                         withAnimation(.spring()) {
@@ -1341,16 +1355,6 @@ struct NewPromptView: View {
                 Spacer()
 
                 HStack(spacing: 12) {
-                    if let msg = branchMessage {
-                        Text(msg)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.green)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.green.opacity(0.1))
-                            .cornerRadius(6)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
 
                     if originalPrompt != nil && !originalPrompt!.versionHistory.isEmpty {
                         Button(action: {
@@ -1417,7 +1421,19 @@ struct NewPromptView: View {
                         .help("create_branch".localized(for: preferences.language))
                     }
 
-                    Button(action: { savePrompt() }) {
+                    Button(action: { 
+                        if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            savePrompt() 
+                        } else {
+                            HapticService.shared.playError()
+                            withAnimation {
+                                self.branchMessage = "required_fields".localized(for: self.preferences.language)
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                withAnimation { if self.branchMessage == "required_fields".localized(for: self.preferences.language) { self.branchMessage = nil } }
+                            }
+                        }
+                    }) {
                         Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)

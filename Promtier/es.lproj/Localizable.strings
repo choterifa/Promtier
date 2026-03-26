@@ -482,4 +482,5 @@
 "shortcut_help" = "Atajo Global";
 "shortcut_help_desc" = "Configura una combinación de teclas para copiar este prompt instantáneamente desde cualquier aplicación sin abrir Promtier.";
 "smart_recommendation_help" = "Recomendación Inteligente";
-"smart_recommendation_help_desc" = "Asocia este prompt a aplicaciones específicas. Cuando estés usando esas apps, Promtier lo priorizará en la lista para que lo encuentres más rápido.";
+"smart_recommendation_help_desc" = "Asocia este prompt con aplicaciones específicas. Al usar esas apps, Promtier lo priorizará en la lista para un acceso más rápido.";
+"required_fields" = "El Título y el Prompt son obligatorios";
