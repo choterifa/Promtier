@@ -11,7 +11,7 @@ import AppKit
 class PassThroughScrollView: NSScrollView {
     private var isMouseInside = false
     private var trackingArea: NSTrackingArea?
-    
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let existing = trackingArea { removeTrackingArea(existing) }
@@ -24,17 +24,17 @@ class PassThroughScrollView: NSScrollView {
         addTrackingArea(area)
         trackingArea = area
     }
-    
+
     override func mouseEntered(with event: NSEvent) {
         super.mouseEntered(with: event)
         isMouseInside = true
     }
-    
+
     override func mouseExited(with event: NSEvent) {
         super.mouseExited(with: event)
         isMouseInside = false
     }
-    
+
     override func scrollWheel(with event: NSEvent) {
         // When mouse is hovering over the editor, always scroll inside it
         if isMouseInside {
@@ -47,11 +47,11 @@ class PassThroughScrollView: NSScrollView {
 
 class PromtierTextView: NSTextView {
     var editorID: String = ""
-    
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let command = event.modifierFlags.contains(.command)
         let shift = event.modifierFlags.contains(.shift)
-        
+
         if command && !shift {
             if event.charactersIgnoringModifiers == "b" {
                 PromtierEditorCommandCenter.post(.bold, to: editorID)
@@ -69,7 +69,7 @@ class PromtierTextView: NSTextView {
                 return true
             }
         }
-        
+
         // Let Tab handle indent if multi-line selection
         if event.keyCode == 48 && selectedRange().length > 0 { // Tab key
             if event.modifierFlags.contains(.shift) {
@@ -79,7 +79,7 @@ class PromtierTextView: NSTextView {
             }
             return true
         }
-        
+
         return super.performKeyEquivalent(with: event)
     }
 }
@@ -98,32 +98,32 @@ struct HighlightedEditor: NSViewRepresentable {
     @Binding var aiResult: AIResult?
     var fontSize: CGFloat
     var themeColor: NSColor = .systemOrange // Color por defecto si no se provee
-    
+
     // Autocompletado (Snippets)
     @Binding var showSnippets: Bool
     @Binding var snippetSearchQuery: String
     @Binding var snippetSelectedIndex: Int
     @Binding var triggerSnippetSelection: Bool
-    
+
     // Autocompletado (Variables)
     @Binding var showVariables: Bool
     @Binding var variablesSelectedIndex: Int
     @Binding var triggerVariablesSelection: Bool
-    
+
     var isPremium: Bool
     var isHaloEffectEnabled: Bool = true
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-    
+
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = PassThroughScrollView()
-        scrollView.hasVerticalScroller = true 
+        scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
         scrollView.autohidesScrollers = true
         scrollView.scrollerStyle = .overlay
-        
+
         let textView = PromtierTextView(frame: .zero)
         textView.editorID = editorID
         textView.delegate = context.coordinator
@@ -137,16 +137,16 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.font = .systemFont(ofSize: fontSize)
         textView.textColor = .labelColor
         textView.insertionPointColor = .controlAccentColor
-        
+
         // Smart behavior settings
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
-        
+
         // Optimizar para scrolling suave y performance
         textView.textContainerInset = NSSize(width: 10, height: 14)
         textView.textContainer?.lineFragmentPadding = 6
-        
+
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 5
         paragraphStyle.paragraphSpacing = 10
@@ -156,44 +156,44 @@ struct HighlightedEditor: NSViewRepresentable {
             .foregroundColor: NSColor.labelColor,
             .paragraphStyle: paragraphStyle
         ]
-        
+
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
-        
+
         // Optimización de renderizado
         textView.layoutManager?.allowsNonContiguousLayout = true
         textView.layerContentsRedrawPolicy = .onSetNeedsDisplay
-        
+
         // Smooth scrolling
         scrollView.contentView.postsBoundsChangedNotifications = false
-        
+
         scrollView.documentView = textView
         context.coordinator.installObservers(for: textView)
         context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
-        
+
         return scrollView
     }
-    
+
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? PromtierTextView else { return }
 
         if context.coordinator.lastSerializedMarkdown != text {
             context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
         }
-        
+
         // Aplicar resultados de IA con soporte para Undo
         if let result = aiResult {
             DispatchQueue.main.async {
                 applyAIResult(result, to: textView)
-                self.aiResult = nil 
+                self.aiResult = nil
             }
         }
-        
+
         // Manejar petición de inserción
         if let toInsert = insertionRequest {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
-            
+
             // PREVENCIÓN DE ANIDAMIENTO ROBUSTA: Si ya estamos dentro de un bloque {{...}}
             if toInsert.hasPrefix("{{") {
                 let text = textView.string as NSString
@@ -201,7 +201,7 @@ struct HighlightedEditor: NSViewRepresentable {
                 let lineRange = text.lineRange(for: sel)
                 let line = text.substring(with: lineRange) as NSString
                 let relLoc = sel.location - lineRange.location
-                
+
                 // 1. Buscar hacia atrás el {{ en la misma línea
                 var foundStart = false
                 if relLoc >= 2 {
@@ -214,7 +214,7 @@ struct HighlightedEditor: NSViewRepresentable {
                         if sub == "}}" { break } // Cierre previo, estamos fuera
                     }
                 }
-                
+
                 if foundStart {
                     // 2. Buscar hacia adelante el }} en la misma línea
                     var foundEnd = false
@@ -229,7 +229,7 @@ struct HighlightedEditor: NSViewRepresentable {
                             if sub == "{{" { break } // Nueva apertura antes de cierre, algo raro
                         }
                     }
-                    
+
                     if foundEnd {
                         // YA ESTAMOS DENTRO DE UNA VARIABLE, cancelar inserción para evitar anidamiento
                         DispatchQueue.main.async { self.insertionRequest = nil }
@@ -237,10 +237,10 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
             }
-            
+
             var actualInsert = toInsert
             var shiftFocus = 0
-            
+
             // Asegurar espacio antes si es una variable {{...}}
             if toInsert.hasPrefix("{{") {
                 if selectedRange.location > 0 && selectedRange.length == 0 { // Solo si es inserción en punto, no reemplazo
@@ -252,10 +252,10 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
             }
-            
+
             // Insertar el texto
             textView.insertText(actualInsert, replacementRange: selectedRange)
-            
+
             // Si insertamos una variable, posicionar el cursor adentro seleccionando el nombre
             if toInsert == "{{variable}}" {
                 let newLocation = selectedRange.location + 2 + shiftFocus
@@ -266,7 +266,7 @@ struct HighlightedEditor: NSViewRepresentable {
                 let newRange = NSRange(location: newLocation, length: 8) // Seleccionar "variable"
                 textView.setSelectedRange(newRange)
             }
-            
+
             // Actualizar el binding padre inmediatamente
             DispatchQueue.main.async {
                 self.plainText = textView.string
@@ -274,23 +274,23 @@ struct HighlightedEditor: NSViewRepresentable {
                 self.insertionRequest = nil
             }
         }
-        
+
         // Manejar petición de reemplazar snippet
         if let snippetText = replaceSnippetRequest {
             let nsString = textView.string as NSString
             let selectedRange = textView.selectedRange()
-            
+
             // Buscar la última "/" antes del cursor
             let textBeforeCursor = nsString.substring(to: selectedRange.location)
             if let lastSlashIndex = textBeforeCursor.lastIndex(of: "/") {
                 let distance = textBeforeCursor.distance(from: textBeforeCursor.startIndex, to: lastSlashIndex)
                 let replacementRange = NSRange(location: distance, length: selectedRange.location - distance)
-                
+
                 textView.insertText(snippetText, replacementRange: replacementRange)
             } else {
                 textView.insertText(snippetText, replacementRange: selectedRange) // fallback
             }
-            
+
             DispatchQueue.main.async {
                 self.plainText = textView.string
                 self.text = context.coordinator.serializedMarkdown(from: textView)
@@ -298,15 +298,15 @@ struct HighlightedEditor: NSViewRepresentable {
                 self.showSnippets = false
             }
         }
-        
+
         // triggerAIRequest is now handled by the parent view for Ollama integration
-        
+
         // Actualizar fuente si cambió
         if textView.font?.pointSize != fontSize {
             textView.font = .systemFont(ofSize: fontSize)
             context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text, force: true)
         }
-        
+
         // Manejar petición de foco
         if let focusRequest = focusRequest, focusRequest.wrappedValue {
             DispatchQueue.main.async {
@@ -319,9 +319,9 @@ struct HighlightedEditor: NSViewRepresentable {
     static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
         coordinator.teardownObservers()
     }
-    
+
     // MARK: - Coordinator
-    
+
     class Coordinator: NSObject, NSTextViewDelegate {
         private enum HighlightMode {
             case full
@@ -334,7 +334,7 @@ struct HighlightedEditor: NSViewRepresentable {
         private var isApplyingExternalUpdate = false
         private var highlightWorkItem: DispatchWorkItem?
         private var appliedBracketRanges: [NSRange] = []
-        
+
         init(_ parent: HighlightedEditor) {
             self.parent = parent
         }
@@ -414,7 +414,7 @@ struct HighlightedEditor: NSViewRepresentable {
         func serializedMarkdown(from textView: NSTextView) -> String {
             MarkdownRTFConverter.generateMarkdown(from: textView.attributedString())
         }
-        
+
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             if isApplyingExternalUpdate { return }
@@ -430,14 +430,14 @@ struct HighlightedEditor: NSViewRepresentable {
             self.parent.selectedRange = textView.selectedRange()
             syncTypingAttributes(for: textView)
             scheduleHighlighting(for: textView, mode: .full)
-            
+
             // Actualizar búsqueda de snippets si está activo
             if self.parent.showSnippets {
                 let text = textView.string
                 let selectedRange = textView.selectedRange()
                 let index = text.index(text.startIndex, offsetBy: selectedRange.location)
                 let textBeforeCursor = text[..<index]
-                
+
                 if let lastSlashIndex = textBeforeCursor.lastIndex(of: "/") {
                     let query = textBeforeCursor[text.index(after: lastSlashIndex)...]
                     if !query.contains(" ") && !query.contains("\n") {
@@ -450,12 +450,12 @@ struct HighlightedEditor: NSViewRepresentable {
                 }
             }
         }
-        
+
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             scheduleHighlighting(for: textView, mode: .bracketOnly, debounce: false)
             syncTypingAttributes(for: textView)
-            
+
             // Notion-style floating format menu
             let range = textView.selectedRange()
             if range.length > 0 {
@@ -475,14 +475,14 @@ struct HighlightedEditor: NSViewRepresentable {
                 FormatMenuPopover.shared.hide()
             }
         }
-        
+
         func textDidBeginEditing(_ notification: Notification) {
             guard notification.object as? NSTextView != nil else { return }
             DispatchQueue.main.async {
                 self.parent.isFocused = true
             }
         }
-        
+
         func textDidEndEditing(_ notification: Notification) {
             guard notification.object as? NSTextView != nil else { return }
             DispatchQueue.main.async {
@@ -498,8 +498,10 @@ struct HighlightedEditor: NSViewRepresentable {
                 toggleTrait(.italicFontMask, in: textView)
             case .inlineCode:
                 toggleInlineCode(in: textView)
+            case .strikethrough:
+                toggleStrikethrough(in: textView)
             case .bulletList:
-                applyList(prefix: "- ", in: textView)
+                applyList(prefix: "• ", in: textView)
             case .numberedList:
                 applyNumberedList(in: textView)
             case .indent:
@@ -526,6 +528,37 @@ struct HighlightedEditor: NSViewRepresentable {
                     let current = (value as? NSFont) ?? baseFont
                     let updated = MarkdownRTFConverter.toggledFont(from: current, add: trait)
                     textView.textStorage?.addAttribute(.font, value: updated, range: subRange)
+                }
+                textView.textStorage?.endEditing()
+            }
+
+            textView.didChangeText()
+            textView.undoManager?.endUndoGrouping()
+        }
+
+        private func toggleStrikethrough(in textView: NSTextView) {
+            let selection = textView.selectedRange()
+
+            textView.undoManager?.beginUndoGrouping()
+
+            if selection.length == 0 {
+                var typing = textView.typingAttributes
+                let current = (typing[.strikethroughStyle] as? NSNumber)?.intValue ?? 0
+                if current == 0 {
+                    typing[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+                } else {
+                    typing.removeValue(forKey: .strikethroughStyle)
+                }
+                textView.typingAttributes = typing
+            } else {
+                textView.textStorage?.beginEditing()
+                textView.textStorage?.enumerateAttribute(.strikethroughStyle, in: selection, options: []) { value, subRange, _ in
+                    let current = (value as? NSNumber)?.intValue ?? 0
+                    if current == 0 {
+                        textView.textStorage?.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: subRange)
+                    } else {
+                        textView.textStorage?.removeAttribute(.strikethroughStyle, range: subRange)
+                    }
                 }
                 textView.textStorage?.endEditing()
             }
@@ -597,8 +630,20 @@ struct HighlightedEditor: NSViewRepresentable {
             transformSelectedLines(in: textView) { lines in
                 lines.map { line in
                     if line.trimmingCharacters(in: .whitespaces).isEmpty { return line }
-                    if line.trimmingCharacters(in: .whitespaces).hasPrefix("- ") { return line }
-                    return prefix + line
+                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+                    // Si ya es una lista del mismo tipo, se quita (toggle off)
+                    if trimmed.hasPrefix("- ") || trimmed.hasPrefix("• ") {
+                        return line.replacingOccurrences(of: "^(\\s*)[-•]\\s", with: "$1", options: .regularExpression)
+                    }
+
+                    // Si es una lista numerada, se cambia a viñetas
+                    if line.range(of: "^\\s*\\d+\\.\\s", options: .regularExpression) != nil {
+                        return line.replacingOccurrences(of: "^(\\s*)\\d+\\.\\s", with: "$1\(prefix)", options: .regularExpression)
+                    }
+
+                    // Se agrega el prefijo manteniendo la indentación
+                    return line.replacingOccurrences(of: "^(\\s*)", with: "$1\(prefix)", options: .regularExpression)
                 }
             }
         }
@@ -608,11 +653,23 @@ struct HighlightedEditor: NSViewRepresentable {
                 var counter = 1
                 return lines.map { line in
                     if line.trimmingCharacters(in: .whitespaces).isEmpty { return line }
-                    if line.trimmingCharacters(in: .whitespaces).range(of: "^\\d+\\.\\s", options: .regularExpression) != nil {
-                        return line
+
+                    // Si ya es una lista numerada, se quita (toggle off)
+                    if line.range(of: "^\\s*\\d+\\.\\s", options: .regularExpression) != nil {
+                        return line.replacingOccurrences(of: "^(\\s*)\\d+\\.\\s", with: "$1", options: .regularExpression)
                     }
-                    defer { counter += 1 }
-                    return "\(counter). \(line)"
+
+                    // Si es una lista de viñetas, se cambia a numerada
+                    if line.range(of: "^\\s*[-•]\\s", options: .regularExpression) != nil {
+                        let replaced = line.replacingOccurrences(of: "^(\\s*)[-•]\\s", with: "$1\(counter). ", options: .regularExpression)
+                        counter += 1
+                        return replaced
+                    }
+
+                    // Se agrega el número manteniendo la indentación
+                    let replaced = line.replacingOccurrences(of: "^(\\s*)", with: "$1\(counter). ", options: .regularExpression)
+                    counter += 1
+                    return replaced
                 }
             }
         }
@@ -679,7 +736,7 @@ struct HighlightedEditor: NSViewRepresentable {
             attrs[.foregroundColor] = attrs[.foregroundColor] ?? NSColor.labelColor
             textView.typingAttributes = attrs
         }
-        
+
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if self.parent.showVariables {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
@@ -704,7 +761,7 @@ struct HighlightedEditor: NSViewRepresentable {
                     return true
                 }
             }
-            
+
             if self.parent.showSnippets {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
                     DispatchQueue.main.async {
@@ -728,12 +785,12 @@ struct HighlightedEditor: NSViewRepresentable {
                     return true
                 }
             }
-            
+
             // Lógica para saltar fuera de variables {{...}} con TAB o ENTER
             if commandSelector == #selector(NSResponder.insertTab(_:)) ||
                 commandSelector == #selector(NSResponder.insertNewline(_:)) ||
                 commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)) {
-                
+
                 if let varRange = isInsideVariable(textView) {
                     let targetLoc = varRange.location + varRange.length
                     textView.setSelectedRange(NSRange(location: targetLoc, length: 0))
@@ -741,10 +798,10 @@ struct HighlightedEditor: NSViewRepresentable {
                     return true
                 }
             }
-            
+
             return false
         }
-        
+
         // Helper para detectar si estamos dentro de una variable
         private func isInsideVariable(_ textView: NSTextView) -> NSRange? {
             let text = textView.string as NSString
@@ -752,7 +809,7 @@ struct HighlightedEditor: NSViewRepresentable {
             let lineRange = text.lineRange(for: sel)
             let line = text.substring(with: lineRange) as NSString
             let relLoc = sel.location - lineRange.location
-            
+
             // Buscar hacia atrás el {{
             var startLocInLine = -1
             if relLoc >= 2 {
@@ -767,9 +824,9 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
             }
-            
+
             if startLocInLine == -1 { return nil }
-            
+
             // Buscar hacia adelante el }}
             var endLocInLine = -1
             if relLoc < line.length {
@@ -784,12 +841,12 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
             }
-            
+
             if endLocInLine == -1 { return nil }
-            
+
             return NSRange(location: lineRange.location + startLocInLine, length: endLocInLine - startLocInLine)
         }
-        
+
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
             // Lógica para saltar fuera con ESPACIO
             if replacementString == " " {
@@ -806,26 +863,26 @@ struct HighlightedEditor: NSViewRepresentable {
                     self.parent.snippetSearchQuery = ""
                 }
             }
-            
+
             if replacementString == "\n" {
                 if self.parent.showSnippets {
                     DispatchQueue.main.async { self.parent.showSnippets = false }
                 }
-                
+
                 // Lógica Inteligente de Auto-indentado y Listas Continuas
                 let content = textView.string as NSString
                 let lineRange = content.lineRange(for: NSRange(location: affectedCharRange.location, length: 0))
                 let line = content.substring(with: lineRange)
-                
+
                 // Extraer la línea real ignorando saltos de línea finales
                 let rawLine = line.replacingOccurrences(of: "\n", with: "")
                 let trimmedLine = rawLine.trimmingCharacters(in: .whitespaces)
-                
+
                 // 1. Detección de marcadores vacíos para cancelar la lista (Doble Enter)
                 let emptyListMarkers = ["- ", "* ", "• "]
                 let isEmptyBullet = emptyListMarkers.contains(trimmedLine)
                 let isEmptyNumber = trimmedLine.range(of: "^\\d+\\.\\s$", options: .regularExpression) != nil
-                
+
                 if isEmptyBullet || isEmptyNumber {
                     // Borrar el marcador vacío actual y saltar de línea normalmente
                     textView.undoManager?.beginUndoGrouping()
@@ -833,7 +890,7 @@ struct HighlightedEditor: NSViewRepresentable {
                     textView.undoManager?.endUndoGrouping()
                     return false
                 }
-                
+
                 // 2. Extraer indentación base (espacios al inicio)
                 var indentation = ""
                 for char in rawLine {
@@ -841,7 +898,7 @@ struct HighlightedEditor: NSViewRepresentable {
                         indentation.append(char)
                     } else { break }
                 }
-                
+
                 // 3. Continuación de listas
                 var nextPrefix = ""
                 if trimmedLine.hasPrefix("- ") {
@@ -859,7 +916,7 @@ struct HighlightedEditor: NSViewRepresentable {
                         nextPrefix = "1. " // Fallback de seguridad
                     }
                 }
-                
+
                 // 4. Aplicar auto-indentado o lista
                 if !indentation.isEmpty || !nextPrefix.isEmpty {
                     let newString = "\n" + indentation + nextPrefix
@@ -871,9 +928,9 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             return true
         }
-        
+
         // MARK: - Highlighting Logic (Rich Text + Temporary Overlays)
-        
+
         private static let varRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
         private static let chainRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
         private static let listRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
@@ -1013,16 +1070,16 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             appliedBracketRanges.removeAll()
         }
-        
+
         /// Algoritmo para encontrar el bracket correspondiente
         private func findMatchingBracket(in text: String, for bracket: String, at location: Int) -> Int? {
             let nsText = text as NSString
             let pairs: [String: String] = ["{": "}", "}": "{", "[": "]", "]": "[", "(": ")", ")": "("]
             guard let target = pairs[bracket] else { return nil }
-            
+
             let isOpen = "{[(".contains(bracket)
             var stack = 0
-            
+
             if isOpen {
                 for i in (location + 1)..<nsText.length {
                     let char = nsText.substring(with: NSRange(location: i, length: 1))
@@ -1044,9 +1101,9 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             return nil
         }
-        
+
         // MARK: - Writing Tools (macOS 15+)
-        
+
         // Usamos Any para que compile en versiones anteriores del SDK, pero selectors de macOS 15
         @objc(textView:writingToolsWillBeginSession:)
         func writingToolsWillBegin(_ textView: NSTextView, session: Any) {
@@ -1054,14 +1111,14 @@ struct HighlightedEditor: NSViewRepresentable {
                 self.parent.isAIActive = true
             }
         }
-        
+
         @objc(textView:writingToolsDidEndSession:)
         func writingToolsDidEnd(_ textView: NSTextView, session: Any) {
             DispatchQueue.main.async {
                 self.parent.isAIActive = false
             }
         }
-        
+
         // Variante alternativa de selector
         @objc(textView:writingToolsWillBegin:)
         func writingToolsWillBeginAlt(_ textView: NSTextView, session: Any) {
@@ -1077,11 +1134,11 @@ struct HighlightedEditor: NSViewRepresentable {
     private func applyAIResult(_ aiRes: AIResult, to textView: NSTextView) {
         let range = aiRes.range
         let text = aiRes.result
-        
+
         // Verificar rango para evitar crash
         let currentLen = (textView.string as NSString).length
         guard range.location + range.length <= currentLen else { return }
-        
+
         if textView.shouldChangeText(in: range, replacementString: text) {
             textView.replaceCharacters(in: range, with: text)
             textView.didChangeText()
@@ -1099,7 +1156,7 @@ class FormatMenuPopover {
     private var popover: NSPopover?
     private var hideWorkItem: DispatchWorkItem?
     private var lastEditorID: String?
-    
+
     func show(in view: NSView, at rect: NSRect, editorID: String, themeColor: NSColor) {
         hideWorkItem?.cancel()
 
@@ -1126,7 +1183,7 @@ class FormatMenuPopover {
 
         lastEditorID = editorID
     }
-    
+
     func hide() {
         hideWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
@@ -1141,11 +1198,12 @@ class FormatMenuPopover {
 struct FloatingFormatBar: View {
     let editorID: String
     let themeColor: Color
-    
+
     var body: some View {
         HStack(spacing: 6) {
             formatButton(icon: "bold", action: .bold)
             formatButton(icon: "italic", action: .italic)
+            formatButton(icon: "strikethrough", action: .strikethrough)
             formatButton(icon: "chevron.left.forwardslash.chevron.right", action: .inlineCode)
 
             separator
@@ -1171,7 +1229,7 @@ struct FloatingFormatBar: View {
         )
         .padding(8)
     }
-    
+
     private var separator: some View {
         Rectangle()
             .fill(Color.primary.opacity(0.12))

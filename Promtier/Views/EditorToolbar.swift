@@ -5,24 +5,24 @@ struct EditorToolbar: View {
     let color: Color
     let editorID: String
     var vertical: Bool = false
-    
+
     @Binding var content: String
     @Binding var selectedRange: NSRange?
-    
+
     // AI Actions
     var isAIGenerating: Bool
     var onAIAction: (AIAction) -> Void
     var aiEnabled: Bool
-    
+
     // Snippets & Variables
     var onShowVariables: () -> Void
     var onShowSnippets: () -> Void
     var onShowChains: () -> Void
-    
+
     // Zen Mode & Other
     var onZenMode: () -> Void
     var onFloatingMode: (() -> Void)? = nil
-    
+
     var body: some View {
         Group {
             if vertical {
@@ -43,7 +43,7 @@ struct EditorToolbar: View {
         )
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 0.5))
     }
-    
+
     @ViewBuilder
     private var buttons: some View {
         Menu {
@@ -52,6 +52,9 @@ struct EditorToolbar: View {
             }
             Button(action: { send(.italic) }) {
                 Label("Italic", systemImage: "italic")
+            }
+            Button(action: { send(.strikethrough) }) {
+                Label("Strikethrough", systemImage: "strikethrough")
             }
             Button(action: { send(.inlineCode) }) {
                 Label("Inline Code", systemImage: "code")
@@ -100,19 +103,19 @@ struct EditorToolbar: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
         }
-        
+
         Button(action: onShowVariables) {
             toolbarButton(icon: "curlybraces")
         }
         .buttonStyle(.plain)
         .help("Insert Variable")
-        
+
         Button(action: onShowSnippets) {
             toolbarButton(text: "/")
         }
         .buttonStyle(.plain)
         .help("Insert Snippet")
-        
+
         Button(action: onShowChains) {
             toolbarButton(icon: "link.badge.plus")
         }
@@ -126,29 +129,29 @@ struct EditorToolbar: View {
             .buttonStyle(.plain)
             .help("Floating Zen Mode")
         }
-        
+
         Button(action: onZenMode) {
             toolbarButton(icon: "arrow.up.left.and.arrow.down.right")
         }
         .buttonStyle(.plain)
         .help("Zen Mode")
     }
-    
+
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? color : .blue
     }
-    
+
     private var activeColor: Color {
         preferences.isHaloEffectEnabled ? .purple : .blue
     }
-    
+
     @ViewBuilder
     private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
         ZStack {
             Circle()
                 .fill(active ? activeColor.opacity(0.2) : (isSpecial ? themeColor.opacity(0.12) : Color.primary.opacity(0.04)))
                 .frame(width: 28, height: 28)
-            
+
             if let icon = icon {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .bold))

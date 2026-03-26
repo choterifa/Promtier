@@ -8,8 +8,9 @@ extension NSAttributedString.Key {
 final class MarkdownRTFConverter {
     private static let boldRegex = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
     private static let italicRegex = try! NSRegularExpression(pattern: "(?<![\\*_])\\*([^\\*\\n]+)\\*(?!\\*)|(?<!_)_([^_\\n]+)_(?!_)")
+    private static let strikethroughRegex = try! NSRegularExpression(pattern: "~~([^~]+)~~")
     private static let inlineCodeRegex = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
-    private static let bulletListRegex = try! NSRegularExpression(pattern: "^\\s*([-*+])\\s+", options: [.anchorsMatchLines])
+    private static let bulletListRegex = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
     private static let numberedListRegex = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
 
     static func parseMarkdown(_ markdown: String, baseFont: NSFont, textColor: NSColor) -> NSMutableAttributedString {
@@ -50,6 +51,10 @@ final class MarkdownRTFConverter {
         applyInlineMarkdown(regex: italicRegex, markerLength: 1, to: attributed) { innerRange in
             let currentFont = (attributed.attribute(.font, at: innerRange.location, effectiveRange: nil) as? NSFont) ?? baseFont
             attributed.addAttribute(.font, value: toggledFont(from: currentFont, add: .italicFontMask), range: innerRange)
+        }
+
+        applyInlineMarkdown(regex: strikethroughRegex, markerLength: 2, to: attributed) { innerRange in
+            attributed.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: innerRange)
         }
 
         applyParagraphStyles(to: attributed, baseFont: baseFont)
@@ -130,6 +135,7 @@ final class MarkdownRTFConverter {
         let traits = font?.fontDescriptor.symbolicTraits ?? []
         let isBold = traits.contains(.bold)
         let isItalic = traits.contains(.italic)
+        let isStrikethrough = (attributes[.strikethroughStyle] as? NSNumber)?.intValue ?? 0 > 0
 
         var prefix = ""
         var suffix = ""
@@ -138,6 +144,10 @@ final class MarkdownRTFConverter {
             prefix = "`"
             suffix = "`"
         } else {
+            if isStrikethrough {
+                prefix += "~~"
+                suffix = "~~" + suffix
+            }
             if isBold {
                 prefix += "**"
                 suffix = "**" + suffix

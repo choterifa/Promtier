@@ -4,6 +4,7 @@ enum PromtierEditorCommandAction: String {
     case bold
     case italic
     case inlineCode
+    case strikethrough
     case bulletList
     case numberedList
     case indent
