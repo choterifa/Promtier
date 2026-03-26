@@ -1,6 +1,11 @@
 import AppKit
 import Foundation
 
+enum PromptPreviewInterfaceStyle: String, Sendable {
+    case light
+    case dark
+}
+
 struct PromptPreviewThemeColor: Sendable {
     let red: CGFloat
     let green: CGFloat
@@ -29,29 +34,44 @@ final class PromptPreviewTextCache: @unchecked Sendable {
         cache.totalCostLimit = 24 * 1024 * 1024
     }
 
-    nonisolated func cacheKey(promptId: UUID, modifiedAt: Date, scale: CGFloat) -> String {
-        "\(promptId.uuidString):\(Int(scale * 100)):\(modifiedAt.timeIntervalSince1970)"
+    nonisolated func cacheKey(promptId: UUID, modifiedAt: Date, scale: CGFloat, interfaceStyle: PromptPreviewInterfaceStyle) -> String {
+        "\(promptId.uuidString):\(Int(scale * 100)):\(modifiedAt.timeIntervalSince1970):\(interfaceStyle.rawValue)"
     }
 
     nonisolated func cachedAttributedString(forKey key: String) -> NSAttributedString? {
         cache.object(forKey: key as NSString)
     }
 
-    nonisolated func highlightedString(for prompt: Prompt, themeColor: PromptPreviewThemeColor, scale: CGFloat) -> NSAttributedString {
-        let key = cacheKey(promptId: prompt.id, modifiedAt: prompt.modifiedAt, scale: scale)
+    nonisolated func highlightedString(
+        for prompt: Prompt,
+        themeColor: PromptPreviewThemeColor,
+        scale: CGFloat,
+        interfaceStyle: PromptPreviewInterfaceStyle
+    ) -> NSAttributedString {
+        let key = cacheKey(promptId: prompt.id, modifiedAt: prompt.modifiedAt, scale: scale, interfaceStyle: interfaceStyle)
         if let cached = cachedAttributedString(forKey: key) {
             return cached
         }
 
         let text = prompt.content
-        let highlighted = Self.buildHighlightedString(text: text, themeColor: themeColor, scale: scale)
+        let highlighted = Self.buildHighlightedString(
+            text: text,
+            themeColor: themeColor,
+            scale: scale,
+            interfaceStyle: interfaceStyle
+        )
 
         let cost = max(1, min(text.utf16.count * 4, 512_000))
         cache.setObject(highlighted, forKey: key as NSString, cost: cost)
         return highlighted
     }
 
-    nonisolated private static func buildHighlightedString(text: String, themeColor: PromptPreviewThemeColor, scale: CGFloat) -> NSAttributedString {
+    nonisolated private static func buildHighlightedString(
+        text: String,
+        themeColor: PromptPreviewThemeColor,
+        scale: CGFloat,
+        interfaceStyle: PromptPreviewInterfaceStyle
+    ) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 6
         let accentColor = NSColor(
@@ -60,13 +80,16 @@ final class PromptPreviewTextCache: @unchecked Sendable {
             blue: themeColor.blue,
             alpha: themeColor.alpha
         )
+        let bodyColor: NSColor = interfaceStyle == .dark
+            ? NSColor.white.withAlphaComponent(0.9)
+            : NSColor.black.withAlphaComponent(0.88)
 
         let baseFont = NSFont.systemFont(ofSize: 16 * scale, weight: .regular)
         let attributed = NSMutableAttributedString(
             string: text,
             attributes: [
                 .font: baseFont,
-                .foregroundColor: NSColor.labelColor.withAlphaComponent(0.9),
+                .foregroundColor: bodyColor,
                 .paragraphStyle: paragraph
             ]
         )

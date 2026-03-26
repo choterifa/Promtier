@@ -20,6 +20,7 @@ struct PromptPreviewView: View {
     @State private var showcaseImagePaths: [String] = []
     @State private var isLoadingImages: Bool = false
     @State private var cachedAttributedContent: AttributedString? = nil
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
@@ -87,6 +88,9 @@ struct PromptPreviewView: View {
             updateCachedContent()
         }
         .onChange(of: preferences.fontSize.scale) { _, _ in
+            updateCachedContent()
+        }
+        .onChange(of: colorScheme) { _, _ in
             updateCachedContent()
         }
         .task(id: prompt.id) {
@@ -461,7 +465,8 @@ struct PromptPreviewView: View {
         let key = PromptPreviewTextCache.shared.cacheKey(
             promptId: prompt.id,
             modifiedAt: prompt.modifiedAt,
-            scale: scale
+            scale: scale,
+            interfaceStyle: previewInterfaceStyle
         )
 
         if let cached = PromptPreviewTextCache.shared.cachedAttributedString(forKey: key),
@@ -474,13 +479,18 @@ struct PromptPreviewView: View {
             let highlighted = PromptPreviewTextCache.shared.highlightedString(
                 for: prompt,
                 themeColor: previewThemeColor,
-                scale: scale
+                scale: scale,
+                interfaceStyle: previewInterfaceStyle
             )
             let converted = try? AttributedString(highlighted, including: \.appKit)
             await MainActor.run {
                 self.cachedAttributedContent = converted
             }
         }
+    }
+
+    private var previewInterfaceStyle: PromptPreviewInterfaceStyle {
+        colorScheme == .dark ? .dark : .light
     }
 }
 

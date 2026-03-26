@@ -15,6 +15,7 @@ struct SearchViewSimple: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
     @EnvironmentObject var batchService: BatchOperationsService
+    @Environment(\.colorScheme) private var colorScheme
     
     @FocusState private var isSearchFocused: Bool
     @State private var localEventMonitor: Any?
@@ -1027,8 +1028,14 @@ struct SearchViewSimple: View {
 
         let scale = preferences.fontSize.scale
         let themeColor = previewThemeColor(for: prompt)
+        let interfaceStyle = previewInterfaceStyle
         prewarmTask = Task(priority: .utility) {
-            let prewarmedText = PromptPreviewTextCache.shared.highlightedString(for: prompt, themeColor: themeColor, scale: scale)
+            let prewarmedText = PromptPreviewTextCache.shared.highlightedString(
+                for: prompt,
+                themeColor: themeColor,
+                scale: scale,
+                interfaceStyle: interfaceStyle
+            )
 
             if prompt.showcaseImageCount > 0 {
                 let paths: [String] = !prompt.showcaseImagePaths.isEmpty
@@ -1051,6 +1058,10 @@ struct SearchViewSimple: View {
             return PromptPreviewThemeColor(NSColor(category.color))
         }
         return PromptPreviewThemeColor(.systemBlue)
+    }
+
+    private var previewInterfaceStyle: PromptPreviewInterfaceStyle {
+        colorScheme == .dark ? .dark : .light
     }
     
     private func scheduleNextGhostTip(initialDelay: Double? = nil) {
