@@ -71,11 +71,17 @@ struct SearchViewSimple: View {
             GhostTip(title: "settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
             
             // Editor
-            GhostTip(title: "save_prompt".localized(for: preferences.language), icon: "square.and.arrow.down", shortcut: "Cmd + S"),
+            GhostTip(title: "gt_save_prompt".localized(for: preferences.language), icon: "square.and.arrow.down", shortcut: "Cmd + S"),
             GhostTip(title: "gt_snippets_shortcut".localized(for: preferences.language), icon: "text.quote", shortcut: "/"),
             GhostTip(title: "insert_variable".localized(for: preferences.language), icon: "curlybraces", shortcut: "gt_variables_shortcut".localized(for: preferences.language)),
             GhostTip(title: "focus_negative".localized(for: preferences.language), icon: "minus.circle", shortcut: "⌥ N"),
             GhostTip(title: "focus_alternative".localized(for: preferences.language), icon: "plus.circle", shortcut: "⌥ A"),
+            
+            // Format & Magic
+            GhostTip(title: "gt_magic_autocomplete".localized(for: preferences.language), icon: "wand.and.stars", shortcut: "Cmd + J"),
+            GhostTip(title: "gt_bold".localized(for: preferences.language), icon: "bold", shortcut: "Cmd + B"),
+            GhostTip(title: "gt_italic".localized(for: preferences.language), icon: "italic", shortcut: "Cmd + I"),
+            GhostTip(title: "gt_list".localized(for: preferences.language), icon: "list.bullet", shortcut: "Cmd + ⇧ + L"),
             
             // Variables y Otros
             GhostTip(title: "copy_final_prompt".localized(for: preferences.language), icon: "doc.on.doc.fill", shortcut: "gt_copy_final_shortcut".localized(for: preferences.language)),

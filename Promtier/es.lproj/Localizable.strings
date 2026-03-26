@@ -337,6 +337,10 @@
 "gt_next_field_shortcut" = "Tab / Enter";
 "gt_close_window" = "Cerrar Ventana";
 "gt_close_window_shortcut" = "Esc";
+"gt_magic_autocomplete" = "Autocompletar Mágico";
+"gt_bold" = "Texto en Negrita";
+"gt_italic" = "Texto en Cursiva";
+"gt_list" = "Lista de Viñetas";
 
 "duplicate_category_title" = "Categoría Duplicada";
 "duplicate_category_msg" = "Ya existe una categoría con este nombre. Por favor, elige uno diferente.";

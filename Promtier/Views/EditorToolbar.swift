@@ -109,7 +109,7 @@ struct EditorToolbar: View {
         .menuIndicator(.hidden)
         .help("Markdown Formatting")
         
-        if aiEnabled {
+        if aiEnabled && onMagicAutocomplete != nil {
             Button(action: { onMagicAutocomplete?() }) {
                 ZStack {
                     Circle()

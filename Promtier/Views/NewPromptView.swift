@@ -241,7 +241,7 @@ struct NewPromptView: View {
 
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
             // Invisible button for Global Shortcuts
             Button("") {
                 autocompletePromptContent()
@@ -291,7 +291,9 @@ struct NewPromptView: View {
                 editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
-            .frame(minHeight: geometry.size.height * 0.85)
+            .frame(minHeight: geometry.size.height * 0.98)
+            
+            Spacer().frame(height: 20)
 
             // SECTION 2: ADVANCED FIELDS
             if preferences.showAdvancedFields || !negativePrompt.isEmpty || alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
@@ -454,6 +456,8 @@ struct NewPromptView: View {
                     )
                 }
             }
+
+            Spacer().frame(height: 20)
 
             // SECTION 3: UTILITIES
             VStack(alignment: .leading, spacing: 20) {
@@ -627,13 +631,16 @@ struct NewPromptView: View {
                     )
                 }
 
+                Spacer().frame(height: 20)
+
                 // Prompt Results (Moved here per user request)
                 imageGallery(width: geometry.size.width * 0.9)
                     .padding(.horizontal, 4)
             }
-            .padding(.bottom, 40)
+            .padding(.bottom, 20)
         }
-        .padding(.vertical, 24)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder
@@ -1843,6 +1850,11 @@ struct NewPromptView: View {
         isAutocompleting = true
         HapticService.shared.playImpact()
         
+        // ✨ Mostrar aviso de que se está ejecutando la magia
+        withAnimation {
+            branchMessage = "ai_thinking".localized(for: preferences.language)
+        }
+        
         let systemPrompt: String
         let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
         let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
@@ -1879,6 +1891,7 @@ struct NewPromptView: View {
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { completion in
                 isAutocompleting = false
+                withAnimation { branchMessage = nil }
                 if case .failure(let error) = completion {
                     print("❌ Autocomplete Error: \(error.localizedDescription)")
                     HapticService.shared.playError()
@@ -2205,11 +2218,41 @@ struct EditorCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(alignment: .firstTextBaseline) {
+                            TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
+                                .lineLimit(2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            // ✨ Botón Mágico: Autocompletar Título
+                            if editorID == "main" {
+                                Button(action: { onMagicAutocomplete?() }) {
+                                    HStack(spacing: 4) {
+                                        if isAutocompleting {
+                                            ProgressView().controlSize(.small).scaleEffect(0.6)
+                                        } else {
+                                            Image(systemName: "wand.and.stars")
+                                                .font(.system(size: 10, weight: .bold))
+                                        }
+                                        Text("MAGIC")
+                                            .font(.system(size: 9, weight: .heavy))
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
+                                            .opacity(0.15)
+                                    )
+                                    .foregroundColor(.purple)
+                                    .overlay(Capsule().stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: 0.5).opacity(0.3))
+                                }
+                                .buttonStyle(.plain)
+                                .help("Autocomplete content based on title (Cmd+J)")
+                                .padding(.top, 2)
+                            }
+                        }
 
                         TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
                             .textFieldStyle(.plain)
@@ -2217,34 +2260,6 @@ struct EditorCard: View {
                             .foregroundColor(.secondary.opacity(0.8))
                             .lineLimit(2)
                             .frame(minHeight: 28, alignment: .topLeading)
-                        
-                        // ✨ Botón Mágico: Autocompletar Título
-                        if editorID == "main" {
-                            Button(action: { onMagicAutocomplete?() }) {
-                                HStack(spacing: 4) {
-                                    if isAutocompleting {
-                                        ProgressView().controlSize(.small).scaleEffect(0.6)
-                                    } else {
-                                        Image(systemName: "wand.and.stars")
-                                            .font(.system(size: 10, weight: .bold))
-                                    }
-                                    Text("MAGIC")
-                                        .font(.system(size: 9, weight: .heavy))
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    Capsule()
-                                        .fill(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
-                                        .opacity(0.15)
-                                )
-                                .foregroundColor(.purple)
-                                .overlay(Capsule().stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: 0.5).opacity(0.3))
-                            }
-                            .buttonStyle(.plain)
-                            .help("Autocomplete content based on title (Cmd+J)")
-                            .padding(.top, 2)
-                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -2322,7 +2337,7 @@ struct EditorCard: View {
                     },
                     onFloatingMode: nil,
                     isAutocompleting: isAutocompleting,
-                    onMagicAutocomplete: { onMagicAutocomplete?() }
+                    onMagicAutocomplete: editorID == "main" ? nil : { onMagicAutocomplete?() }
                 )
                 .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
                     PromptPickerPopover(excludePromptId: prompt?.id) { selected in
@@ -2363,23 +2378,6 @@ struct EditorCard: View {
             // ✅ Selector de Categoría (Restaurado aquí)
             HStack(spacing: 8) {
                 CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
-                
-                if editorID == "main" && onMagicCategorize != nil {
-                    Button(action: { onMagicCategorize?() }) {
-                        if isCategorizing {
-                            ProgressView().controlSize(.small).scaleEffect(0.6)
-                                .frame(width: 28, height: 28)
-                        } else {
-                            Image(systemName: "wand.and.stars.inverse")
-                                .font(.system(size: 14))
-                                .foregroundColor(.purple)
-                                .frame(width: 28, height: 28)
-                                .background(Circle().fill(Color.purple.opacity(0.1)))
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help("Auto-categorize based on content")
-                }
             }
             .padding(.horizontal, 8)
             .padding(.top, 8)
@@ -2594,11 +2592,6 @@ struct SecondaryEditorCard<Actions: View>: View {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(iconColor)
-
-                Text(title.uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
 
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .bold))

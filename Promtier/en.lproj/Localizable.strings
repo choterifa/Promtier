@@ -312,6 +312,10 @@
 "gt_next_field_shortcut" = "Tab / Enter";
 "gt_close_window" = "Close Window";
 "gt_close_window_shortcut" = "Esc";
+"gt_magic_autocomplete" = "Magic Autocomplete";
+"gt_bold" = "Bold Text";
+"gt_italic" = "Italic Text";
+"gt_list" = "Bullet List";
 
 "duplicate_category_title" = "Duplicate Category";
 "duplicate_category_msg" = "A category with this name already exists. Please choose a different one.";
