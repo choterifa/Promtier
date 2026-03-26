@@ -109,6 +109,8 @@ struct NewPromptView: View {
     @State private var showingAppPicker = false
 
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var isAutocompleting: Bool = false
+    @State private var isCategorizing: Bool = false
 
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -240,6 +242,15 @@ struct NewPromptView: View {
     @ViewBuilder
     private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 32) {
+            // Invisible button for Global Shortcuts
+            Button("") {
+                autocompletePromptContent()
+            }
+            .keyboardShortcut("j", modifiers: .command)
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+
             // SEC 1: MAIN
             EditorCard(
                 title: $title,
@@ -268,6 +279,10 @@ struct NewPromptView: View {
                     get: { activeGeneratingID == "main" },
                     set: { val in activeGeneratingID = val ? "main" : nil }
                 ),
+                isAutocompleting: isAutocompleting,
+                isCategorizing: isCategorizing,
+                onMagicAutocomplete: { autocompletePromptContent() },
+                onMagicCategorize: { autoCategorizePrompt() },
                 selectedRange: $selectedRange,
                 aiResult: $aiResult,
                 originalPrompt: originalPrompt,
@@ -1792,6 +1807,123 @@ struct NewPromptView: View {
         }
     }
 
+    // MARK: - AI Magic Features
+
+    private func autocompletePromptContent() {
+        guard preferences.isPremiumActive else {
+            showingPremiumFor = "ai_magic"
+            return
+        }
+        
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedTitle.isEmpty || !trimmedContent.isEmpty else {
+            // Animación de error sutil si ambos están vacíos
+            HapticService.shared.playError()
+            return
+        }
+        
+        isAutocompleting = true
+        HapticService.shared.playImpact()
+        
+        let systemPrompt: String
+        if !trimmedTitle.isEmpty && trimmedContent.isEmpty {
+            // Caso 1: Solo hay título -> Generar contenido desde cero. NO crear variables nuevas.
+            systemPrompt = "You are an expert prompt engineer. Given the title '\(trimmedTitle)', generate a high-quality, detailed AI prompt. Do NOT include dynamic variables like {{variable}}, provide a ready-to-use prompt. Respond ONLY with the prompt content."
+        } else if !trimmedTitle.isEmpty && !trimmedContent.isEmpty {
+            // Caso 2: Hay ambos -> Mejorar el contenido usando el título como contexto. Mantener existentes, no crear nuevas.
+            systemPrompt = "You are an expert prompt engineer. Improve and expand the following AI prompt based on the title '\(trimmedTitle)'. Maintain any EXISTING variables {{...}} but do NOT add new ones. Respond ONLY with the improved prompt:\n\n\(trimmedContent)"
+        } else {
+            // Caso 3: Solo hay contenido -> Mejorar/Completar el contenido actual. Mantener existentes, no crear nuevas.
+            systemPrompt = "You are an expert prompt engineer. Improve, fix grammar, and expand the following AI prompt draft. Maintain any EXISTING variables {{...}} but do NOT add new ones. Respond ONLY with the improved prompt:\n\n\(trimmedContent)"
+        }
+        
+        let publisher: AnyPublisher<String, Error>
+        switch preferences.preferredAIService {
+        case .gemini:
+            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
+        case .openai:
+            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+        }
+        
+        var fullResponse = ""
+        publisher
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                isAutocompleting = false
+                if case .failure(let error) = completion {
+                    print("❌ Autocomplete Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                } else {
+                    HapticService.shared.playSuccess()
+                    if !fullResponse.isEmpty {
+                        withAnimation(.spring()) {
+                            self.content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
+                }
+            }, receiveValue: { chunk in
+                fullResponse += chunk
+            })
+            .store(in: &cancellables)
+    }
+
+    private func autoCategorizePrompt() {
+        guard preferences.isPremiumActive else {
+            showingPremiumFor = "ai_magic"
+            return
+        }
+        
+        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            HapticService.shared.playError()
+            return
+        }
+        
+        isCategorizing = true
+        HapticService.shared.playImpact()
+        
+        let folderNames = promptService.folders.map { $0.name }.joined(separator: ", ")
+        let systemPrompt = """
+        Based on the title '\(title)' and content '\(content)', select the best category from this list: [\(folderNames)]. 
+        Also suggest the most appropriate SF Symbol name from a standard set (e.g., terminal.fill, pencil, brain, etc.).
+        Format your response EXACTLY as: CategoryName|SymbolName
+        Respond ONLY with this format, nothing else.
+        """
+        
+        let publisher: AnyPublisher<String, Error>
+        switch preferences.preferredAIService {
+        case .gemini:
+            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
+        case .openai:
+            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+        }
+        
+        var fullResponse = ""
+        publisher
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                isCategorizing = false
+                if case .failure(let error) = completion {
+                    print("❌ Categorization Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                } else {
+                    HapticService.shared.playSuccess()
+                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let parts = result.components(separatedBy: "|")
+                    if parts.count == 2 {
+                        withAnimation(.spring()) {
+                            self.selectedFolder = parts[0]
+                            self.selectedIcon = parts[1]
+                        }
+                    }
+                }
+            }, receiveValue: { chunk in
+                fullResponse += chunk
+            })
+            .store(in: &cancellables)
+    }
+
     // MARK: - App Association Helpers
 
     private func getRunningApps() -> [RunningApp] {
@@ -1933,6 +2065,11 @@ struct EditorCard: View {
     let editorID: String
 
     let currentCategoryColor: Color
+    
+    var isAutocompleting: Bool = false
+    var isCategorizing: Bool = false
+    var onMagicAutocomplete: (() -> Void)? = nil
+    var onMagicCategorize: (() -> Void)? = nil
 
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : .blue
@@ -1941,6 +2078,58 @@ struct EditorCard: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     
+    init(title: Binding<String>, content: Binding<String>, promptDescription: Binding<String>, 
+         isFavorite: Binding<Bool>, selectedFolder: Binding<String?>, selectedIcon: Binding<String?>, 
+         fallbackIconName: String, showingIconPicker: Binding<Bool>, showingZenEditor: Binding<Bool>, 
+         zenTarget: Binding<NewPromptView.ZenEditorTarget?>, showingPremiumFor: Binding<String?>, 
+         insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>, 
+         showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>, 
+         snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>, 
+         showVariables: Binding<Bool>, variablesSelectedIndex: Binding<Int>, 
+         triggerVariablesSelection: Binding<Bool>, triggerAIRequest: Binding<String?>, 
+         isAIActive: Binding<Bool>, isAIGenerating: Binding<Bool>, 
+         isAutocompleting: Bool = false, isCategorizing: Bool = false, 
+         onMagicAutocomplete: (() -> Void)? = nil, onMagicCategorize: (() -> Void)? = nil, 
+         selectedRange: Binding<NSRange?>, aiResult: Binding<AIResult?>, 
+         originalPrompt: Prompt? = nil, prompt: Prompt? = nil, 
+         branchMessage: Binding<String?>, editorID: String, 
+         currentCategoryColor: Color) {
+        self._title = title
+        self._content = content
+        self._promptDescription = promptDescription
+        self._isFavorite = isFavorite
+        self._selectedFolder = selectedFolder
+        self._selectedIcon = selectedIcon
+        self.fallbackIconName = fallbackIconName
+        self._showingIconPicker = showingIconPicker
+        self._showingZenEditor = showingZenEditor
+        self._zenTarget = zenTarget
+        self._showingPremiumFor = showingPremiumFor
+        self._insertionRequest = insertionRequest
+        self._replaceSnippetRequest = replaceSnippetRequest
+        self._showSnippets = showSnippets
+        self._snippetSearchQuery = snippetSearchQuery
+        self._snippetSelectedIndex = snippetSelectedIndex
+        self._triggerSnippetSelection = triggerSnippetSelection
+        self._showVariables = showVariables
+        self._variablesSelectedIndex = variablesSelectedIndex
+        self._triggerVariablesSelection = triggerVariablesSelection
+        self._triggerAIRequest = triggerAIRequest
+        self._isAIActive = isAIActive
+        self._isAIGenerating = isAIGenerating
+        self.isAutocompleting = isAutocompleting
+        self.isCategorizing = isCategorizing
+        self.onMagicAutocomplete = onMagicAutocomplete
+        self.onMagicCategorize = onMagicCategorize
+        self._selectedRange = selectedRange
+        self._aiResult = aiResult
+        self.originalPrompt = originalPrompt
+        self.prompt = prompt
+        self._branchMessage = branchMessage
+        self.editorID = editorID
+        self.currentCategoryColor = currentCategoryColor
+    }
+
     private var isAIAvailable: Bool {
         let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
         let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
@@ -1986,6 +2175,34 @@ struct EditorCard: View {
                             .foregroundColor(.secondary.opacity(0.8))
                             .lineLimit(2)
                             .frame(minHeight: 28, alignment: .topLeading)
+                        
+                        // ✨ Botón Mágico: Autocompletar Título
+                        if editorID == "main" {
+                            Button(action: { onMagicAutocomplete?() }) {
+                                HStack(spacing: 4) {
+                                    if isAutocompleting {
+                                        ProgressView().controlSize(.small).scaleEffect(0.6)
+                                    } else {
+                                        Image(systemName: "wand.and.stars")
+                                            .font(.system(size: 10, weight: .bold))
+                                    }
+                                    Text("MAGIC")
+                                        .font(.system(size: 9, weight: .heavy))
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule()
+                                        .fill(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
+                                        .opacity(0.15)
+                                )
+                                .foregroundColor(.purple)
+                                .overlay(Capsule().stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: 0.5).opacity(0.3))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Autocomplete content based on title (Cmd+J)")
+                            .padding(.top, 2)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -2023,7 +2240,7 @@ struct EditorCard: View {
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
 
                 // Barra de Herramientas Lateral
-                EditorToolbar(
+                  EditorToolbar(
                     color: currentCategoryColor,
                     editorID: editorID,
                     vertical: true,
@@ -2060,7 +2277,10 @@ struct EditorCard: View {
                             showingZenEditor = true
                             zenTarget = .main
                         }
-                    }
+                    },
+                    onFloatingMode: nil,
+                    isAutocompleting: isAutocompleting,
+                    onMagicAutocomplete: { onMagicAutocomplete?() }
                 )
                 .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
                     PromptPickerPopover(excludePromptId: prompt?.id) { selected in
@@ -2099,9 +2319,28 @@ struct EditorCard: View {
             }
 
             // ✅ Selector de Categoría (Restaurado aquí)
-            CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
+            HStack(spacing: 8) {
+                CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
+                
+                if editorID == "main" && onMagicCategorize != nil {
+                    Button(action: { onMagicCategorize?() }) {
+                        if isCategorizing {
+                            ProgressView().controlSize(.small).scaleEffect(0.6)
+                                .frame(width: 28, height: 28)
+                        } else {
+                            Image(systemName: "wand.and.stars.inverse")
+                                .font(.system(size: 14))
+                                .foregroundColor(.purple)
+                                .frame(width: 28, height: 28)
+                                .background(Circle().fill(Color.purple.opacity(0.1)))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .help("Auto-categorize based on content")
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 8)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -2240,21 +2479,12 @@ struct SecondaryEditorCard<Actions: View>: View {
     let currentCategoryColor: Color
 
     let actions: Actions
+    
+    var isAutocompleting: Bool = false
+    var onMagicAutocomplete: (() -> Void)? = nil
 
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
-
-    private var isAIAvailable: Bool {
-        let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOpenAI
-    }
-
-    @State private var isEditorFocused: Bool = false
-    @State private var isHovering: Bool = false
-    @State private var showingPromptChainPicker: Bool = false
-    @State private var cancellables = Set<AnyCancellable>()
-    @State private var plainTextContent: String = ""
 
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
@@ -2262,18 +2492,13 @@ struct SecondaryEditorCard<Actions: View>: View {
          showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
          snippetSelectedIndex: Binding<Int>, triggerSnippetSelection: Binding<Bool>,
          showVariables: Binding<Bool>, variablesSelectedIndex: Binding<Int>,
-         triggerVariablesSelection: Binding<Bool>,
-         triggerAIRequest: Binding<String?>,
-         isAIActive: Binding<Bool>,
-         isAIGenerating: Binding<Bool>,
-         selectedRange: Binding<NSRange?>,
-         aiResult: Binding<AIResult?>,
-         showingPremiumFor: Binding<String?>,
-         originalPrompt: Prompt?,
-         prompt: Prompt?,
-         branchMessage: Binding<String?>,
-         editorID: String,
-         currentCategoryColor: Color,
+         triggerVariablesSelection: Binding<Bool>, triggerAIRequest: Binding<String?>,
+         isAIActive: Binding<Bool>, isAIGenerating: Binding<Bool>,
+         isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil,
+         selectedRange: Binding<NSRange?>, aiResult: Binding<AIResult?>,
+         showingPremiumFor: Binding<String?>, originalPrompt: Prompt? = nil,
+         prompt: Prompt? = nil, branchMessage: Binding<String?>,
+         editorID: String, currentCategoryColor: Color,
          @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
         self.placeholder = placeholder
@@ -2297,6 +2522,8 @@ struct SecondaryEditorCard<Actions: View>: View {
         self._selectedRange = selectedRange
         self._aiResult = aiResult
         self._showingPremiumFor = showingPremiumFor
+        self.isAutocompleting = isAutocompleting
+        self.onMagicAutocomplete = onMagicAutocomplete
         self.originalPrompt = originalPrompt
         self.prompt = prompt
         self._branchMessage = branchMessage
@@ -2304,6 +2531,18 @@ struct SecondaryEditorCard<Actions: View>: View {
         self.currentCategoryColor = currentCategoryColor
         self.actions = actions()
     }
+
+    private var isAIAvailable: Bool {
+        let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
+        let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+        return useGemini || useOpenAI
+    }
+
+    @State private var isEditorFocused: Bool = false
+    @State private var isHovering: Bool = false
+    @State private var showingPromptChainPicker: Bool = false
+    @State private var cancellables = Set<AnyCancellable>()
+    @State private var plainTextContent: String = ""
 
     var body: some View {
         let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : themeColor
@@ -2313,6 +2552,11 @@ struct SecondaryEditorCard<Actions: View>: View {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(iconColor)
+
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .tracking(1)
 
                 Text(title.uppercased())
                     .font(.system(size: 11, weight: .bold))
@@ -2406,7 +2650,10 @@ struct SecondaryEditorCard<Actions: View>: View {
                     },
                     onZenMode: {
                         onZenMode?()
-                    }
+                    },
+                    onFloatingMode: nil,
+                    isAutocompleting: isAutocompleting,
+                    onMagicAutocomplete: { onMagicAutocomplete?() }
                 )
                 .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
                     PromptPickerPopover(excludePromptId: prompt?.id) { selected in

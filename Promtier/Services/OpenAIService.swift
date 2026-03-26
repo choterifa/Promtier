@@ -8,9 +8,9 @@
 import Foundation
 import Combine
 
-struct OpenAIResponse: Codable {
-    struct Choice: Codable {
-        struct Message: Codable {
+struct OpenAIResponse: Codable, Sendable {
+    struct Choice: Codable, Sendable {
+        struct Message: Codable, Sendable {
             let content: String?
         }
         let message: Message?

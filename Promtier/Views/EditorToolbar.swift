@@ -22,6 +22,34 @@ struct EditorToolbar: View {
     // Zen Mode & Other
     var onZenMode: () -> Void
     var onFloatingMode: (() -> Void)? = nil
+    
+    // Magic
+    var isAutocompleting: Bool = false
+    var onMagicAutocomplete: (() -> Void)? = nil
+
+    init(color: Color, editorID: String, vertical: Bool = false,
+         content: Binding<String>, selectedRange: Binding<NSRange?>,
+         isAIGenerating: Bool, onAIAction: @escaping (AIAction) -> Void, aiEnabled: Bool,
+         onShowVariables: @escaping () -> Void, onShowSnippets: @escaping () -> Void,
+         onShowChains: @escaping () -> Void, onZenMode: @escaping () -> Void,
+         onFloatingMode: (() -> Void)? = nil,
+         isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil) {
+        self.color = color
+        self.editorID = editorID
+        self.vertical = vertical
+        self._content = content
+        self._selectedRange = selectedRange
+        self.isAIGenerating = isAIGenerating
+        self.onAIAction = onAIAction
+        self.aiEnabled = aiEnabled
+        self.onShowVariables = onShowVariables
+        self.onShowSnippets = onShowSnippets
+        self.onShowChains = onShowChains
+        self.onZenMode = onZenMode
+        self.onFloatingMode = onFloatingMode
+        self.isAutocompleting = isAutocompleting
+        self.onMagicAutocomplete = onMagicAutocomplete
+    }
 
     var body: some View {
         Group {
@@ -80,6 +108,26 @@ struct EditorToolbar: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .help("Markdown Formatting")
+        
+        if aiEnabled {
+            Button(action: { onMagicAutocomplete?() }) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(isAutocompleting ? 0.3 : 0.15))
+                        .frame(width: 28, height: 28)
+                    
+                    if isAutocompleting {
+                        ProgressView().controlSize(.small).scaleEffect(0.5)
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundColor(.purple)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .help("AI Magic: Autocomplete or Improve (Cmd+J)")
+        }
 
         if aiEnabled {
             Menu {

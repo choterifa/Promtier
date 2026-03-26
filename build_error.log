@@ -1,23 +1,11 @@
 Command line invocation:
-    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Promtier.xcodeproj -scheme Promtier -configuration Debug clean build
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme Promtier -project Promtier.xcodeproj -configuration Debug
 
 Resolve Package Graph
 
 
 Resolved source packages:
   Sparkle: https://github.com/sparkle-project/Sparkle @ 2.9.0
-
---- xcodebuild: WARNING: Using the first of multiple matching destinations:
-{ platform:macOS, arch:arm64, id:00008103-000C15190AE2001E, name:My Mac }
-{ platform:macOS, arch:x86_64, id:00008103-000C15190AE2001E, name:My Mac }
-{ platform:macOS, name:Any Mac }
-CreateBuildRequest
-
-SendProjectDescription
-
-CreateBuildOperation
-
-** CLEAN SUCCEEDED **
 
 --- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:macOS, arch:arm64, id:00008103-000C15190AE2001E, name:My Mac }
@@ -54,131 +42,11 @@ ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeD
 
 ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
 
-Build description signature: 34a36c71e0e58a1229f37fa9061d6c50
-Build description path: /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/XCBuildData/34a36c71e0e58a1229f37fa9061d6c50.xcbuilddata
+Build description signature: 2db863e993a26a8ca31cef49d0a51137
+Build description path: /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/XCBuildData/2db863e993a26a8ca31cef49d0a51137.xcbuilddata
 ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
     cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -o /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/ExplicitPrecompiledModules
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/ExplicitPrecompiledModules
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/EagerLinkingTBDs/Debug
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/EagerLinkingTBDs/Debug
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier-40709bb3878281eafcef82abe2dffa79-VFS/all-product-headers.yaml
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier-40709bb3878281eafcef82abe2dffa79-VFS/all-product-headers.yaml
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug
-
-CreateBuildDirectory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/PackageFrameworks
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-create-build-directory /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/PackageFrameworks
-
-ProcessXCFramework /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Sparkle.framework macos
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier.xcodeproj
-    builtin-process-xcframework --xcframework /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework --platform macos --target-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.DependencyStaticMetadataFileList (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.DependencyStaticMetadataFileList
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.DependencyMetadataFileList (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.DependencyMetadataFileList
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-non-framework-target-headers.hmap (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-non-framework-target-headers.hmap
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-DebugDylibPath-normal-arm64.txt (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-DebugDylibPath-normal-arm64.txt
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-DebugDylibInstallName-normal-arm64.txt (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-DebugDylibInstallName-normal-arm64.txt
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftFileList (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftFileList
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftConstValuesFileList (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftConstValuesFileList
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.LinkFileList (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.LinkFileList
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-OutputFileMap.json (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-OutputFileMap.json
-
-WriteAuxiliaryFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/Entitlements.plist (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    write-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/Entitlements.plist
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/MacOS (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/MacOS
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app
 
 ProcessProductPackaging /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.entitlements /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent (in target 'Promtier' from project 'Promtier')
     cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
@@ -186,8 +54,10 @@ ProcessProductPackaging /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promt
     Entitlements:
     
     {
+    "com.apple.security.app-sandbox" = 1;
     "com.apple.security.automation.apple-events" = 1;
     "com.apple.security.cs.disable-library-validation" = 1;
+    "com.apple.security.files.user-selected.read-write" = 1;
     "com.apple.security.get-task-allow" = 1;
     "com.apple.security.network.client" = 1;
 }
@@ -198,464 +68,39 @@ ProcessProductPackagingDER /Users/valencia/Library/Developer/Xcode/DerivedData/P
     cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
     /usr/bin/derq query -f xml -i /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier.app.xcent.der --raw
 
-Ld /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/MacOS/__preview.dylib normal (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos15.6 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -O0 -L/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -F/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -install_name @rpath/Promtier.debug.dylib -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_dependency_info.dat -Xlinker -no_adhoc_codesign -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/MacOS/__preview.dylib
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/unthinned (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/unthinned
-
-MkDir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /bin/mkdir -p /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned
-
-GenerateAssetSymbols /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Assets.xcassets /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.icon (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Assets.xcassets /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.icon --compile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources --output-format human-readable-text --notices --warnings --export-dependency-info /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_dependencies --output-partial-info-plist /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist --app-icon Promtier --accent-color AccentColor --enable-on-demand-resources NO --development-region en --target-device mac --minimum-deployment-target 15.6 --platform macosx --bundle-identifier com.valencia.Promtier.app --generate-swift-asset-symbols /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols-Index.plist
-/* com.apple.actool.compilation-results */
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols-Index.plist
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.h
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift
-
-
-DataModelCompile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/ /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/Promtier.xcdatamodeld (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /Applications/Xcode.app/Contents/Developer/usr/bin/momc --sdkroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk --macosx-deployment-target 15.6 --module Promtier /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/Promtier.xcdatamodeld /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/
-Promtier.xcdatamodel: note: Model Promtier version checksum: V5/1tyOKhL5W10T82MMpJuIBOWcZ1B7d1q13JnhJTcQ=
-
-CopyStringsFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/es.lproj/Localizable.strings /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/es.lproj/Localizable.strings (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copyStrings --validate --outputencoding UTF-16 --outfilename Localizable.strings --outdir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/es.lproj -- /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/es.lproj/Localizable.strings
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/es.lproj/Localizable.strings:1:1: note: detected encoding of input file as Unicode (UTF-8) (in target 'Promtier' from project 'Promtier')
-
-CopyStringsFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/en.lproj/Localizable.strings /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/en.lproj/Localizable.strings (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copyStrings --validate --outputencoding UTF-16 --outfilename Localizable.strings --outdir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/en.lproj -- /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/en.lproj/Localizable.strings
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/en.lproj/Localizable.strings:1:1: note: detected encoding of input file as Unicode (UTF-8) (in target 'Promtier' from project 'Promtier')
-
-CopyPlistFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/Info.plist /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Info.plist (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copyPlist --outdir /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources -- /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Info.plist
-
-Copy /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks
-
-CompileAssetCatalogVariant thinned /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Assets.xcassets /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.icon (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Assets.xcassets /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.icon --compile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist_thinned --app-icon Promtier --accent-color AccentColor --enable-on-demand-resources NO --development-region en --target-device mac --minimum-deployment-target 15.6 --platform macosx
-/* com.apple.actool.compilation-results */
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist_thinned
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned/Assets.car
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned/Promtier.icns
-
-
-CodeSign /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework/Versions/B (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-    Signing Identity:     "Sign to Run Locally"
-    
-    /usr/bin/codesign --force --sign - --timestamp\=none --preserve-metadata\=identifier,entitlements,flags --generate-entitlement-der /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework/Versions/B
-/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework/Versions/B: replacing existing signature
-
 SwiftDriver Promtier normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Promtier' from project 'Promtier')
     cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
     builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Promtier -Onone -enforce-exclusivity\=checked @/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.6 -g -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -F /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/include -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources-normal/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-Swift.h -working-directory /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -experimental-emit-module-separately -disable-cmo
 
-SwiftExplicitDependencyGeneratePcm arm64 /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/Sparkle-7GKEPRQIXP43L213DOCHHV0YY.pcm
+SwiftCompile normal arm64 Compiling\ NewPromptView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift (in target 'Promtier' from project 'Promtier')
 
+SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift (in target 'Promtier' from project 'Promtier')
+    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
+    
+/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Views/NewPromptView.swift:248:23: error: incorrect argument labels in call (have 'title:content:promptDescription:isFavorite:selectedFolder:selectedIcon:fallbackIconName:showingIconPicker:showingZenEditor:zenTarget:showingPremiumFor:insertionRequest:replaceSnippetRequest:showSnippets:snippetSearchQuery:snippetSelectedIndex:triggerSnippetSelection:showVariables:variablesSelectedIndex:triggerVariablesSelection:triggerAIRequest:isAIActive:isAIGenerating:selectedRange:aiResult:originalPrompt:prompt:branchMessage:editorID:currentCategoryColor:showingAICommandInput:aiCommandInput:pendingAIAction:handleAIError:', expected 'title:content:promptDescription:isFavorite:selectedFolder:selectedIcon:fallbackIconName:showingIconPicker:showingZenEditor:zenTarget:showingPremiumFor:insertionRequest:replaceSnippetRequest:showSnippets:snippetSearchQuery:snippetSelectedIndex:triggerSnippetSelection:showVariables:variablesSelectedIndex:triggerVariablesSelection:triggerAIRequest:isAIActive:isAIGenerating:selectedRange:aiResult:originalPrompt:prompt:branchMessage:editorID:showingAICommandInput:aiCommandInput:pendingAIAction:handleAIError:currentCategoryColor:promptService:preferences:')
+            EditorCard(
+                      ^
+/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Views/NewPromptView.swift:2235:46: error: 'weak' may only be applied to class and class-bound protocol types, not 'EditorCard'
+            .sink(receiveCompletion: { [weak self] completion in
+                                             ^
+/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Views/NewPromptView.swift:2235:46: warning: variable 'self' was never mutated; consider changing to 'let' constant
+            .sink(receiveCompletion: { [weak self] completion in
+                                             ^
+
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/DataController.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/NSManagedObjectContext+Compat.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/UTI+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/Color+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/String+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/View+VisualEffect.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/BackupArchive.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Folder.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/IdentifiableURL.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Prompt.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Snippet.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/TemplateVariable.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/BatchOperationsService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ClipboardService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/DraftService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/FloatingZenManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/GeminiService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/HapticService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeCache.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeThrottler.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageOptimizer.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageStore.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/MarkdownRTFConverter.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/MenuBarManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OmniSearchManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OpenAIService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PlaceholderResolver.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PreferencesManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PromptPreviewTextCache.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PromptService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ShortcutManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/SoundService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/UpdateProvider.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ZipService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIAssistantBar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIPlaygroundView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/BatchToolbarView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategoryPillPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySelectorButton.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySidebar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DiffView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageURLView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/EditorToolbar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FloatingZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FolderManagerView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FullScreenImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/GhostTipView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/HighlightedEditor.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/IconPickerView.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/OmniSearchView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ParticleSystemView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PreferencesView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PremiumUpsellView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptGridCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPickerPopover.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPreviewView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromtierEditorCommand.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ResizeHandle.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SearchViewSimple.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SharedAppPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsManagerTab.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/TrashView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariableFillView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariablesPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VersionHistoryView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/ContentView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/PromtierApp.swift /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift -emit-dependencies-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.d -emit-const-values-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.swiftconstvalues -emit-reference-dependencies-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.swiftdeps -serialize-diagnostics-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.dia -emit-localized-strings -emit-localized-strings-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64 -target arm64-apple-macos15.6 -module-can-import-version AppKit 2685.30.107 2685.30.107 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version SwiftUI 7.2.5.1 7.2.5 -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -I /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -F /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -enable-anonymous-context-mangled-names -file-compilation-dir /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/include -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources-normal/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name Promtier -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name macosx26.2 -clang-target arm64-apple-macos26.2 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/NewPromptView.o -index-store-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Index.noindex/DataStore -index-system-modules
 SwiftEmitModule normal arm64 Emitting\ module\ for\ Promtier (in target 'Promtier' from project 'Promtier')
 
 EmitSwiftModule normal arm64 (in target 'Promtier' from project 'Promtier')
     cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
     
 
-SwiftCompile normal arm64 Compiling\ SnippetsPopupList.swift,\ TrashView.swift,\ VariableFillView.swift,\ VariablesPopupList.swift,\ VersionHistoryView.swift,\ ZenEditorView.swift,\ ContentView.swift,\ PromtierApp.swift,\ GeneratedAssetSymbols.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/TrashView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariableFillView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariablesPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VersionHistoryView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/ContentView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/PromtierApp.swift /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Promtier' from project 'Promtier')
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsPopupList.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/TrashView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariableFillView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariablesPopupList.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VersionHistoryView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ZenEditorView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/ContentView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/PromtierApp.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ FolderManagerView.swift,\ FullScreenImageView.swift,\ GhostTipView.swift,\ HighlightedEditor.swift,\ IconPickerView.swift,\ NewPromptView.swift,\ OmniSearchView.swift,\ ParticleSystemView.swift,\ PreferencesView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FolderManagerView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FullScreenImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/GhostTipView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/HighlightedEditor.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/IconPickerView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/OmniSearchView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ParticleSystemView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PreferencesView.swift (in target 'Promtier' from project 'Promtier')
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FolderManagerView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FullScreenImageView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/GhostTipView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/HighlightedEditor.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/IconPickerView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/OmniSearchView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ParticleSystemView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PreferencesView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ PremiumUpsellView.swift,\ PromptCard.swift,\ PromptGridCard.swift,\ PromptPreviewView.swift,\ ResizeHandle.swift,\ SearchViewSimple.swift,\ SharedAppPicker.swift,\ ShortcutRecorderView.swift,\ SnippetsManagerTab.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PremiumUpsellView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptGridCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPreviewView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ResizeHandle.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SearchViewSimple.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SharedAppPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsManagerTab.swift (in target 'Promtier' from project 'Promtier')
-Failed frontend command:
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/DataController.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/NSManagedObjectContext+Compat.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/UTI+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/Color+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/String+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/View+VisualEffect.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/BackupArchive.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Folder.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/IdentifiableURL.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Prompt.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Snippet.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/TemplateVariable.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/BatchOperationsService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ClipboardService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/DraftService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/FloatingZenManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/GeminiService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/HapticService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeCache.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeThrottler.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageOptimizer.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageStore.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/MenuBarManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OllamaService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OmniSearchManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PlaceholderResolver.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PreferencesManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PromptService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ShortcutManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/SoundService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/UpdateProvider.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ZipService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIAssistantBar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIPlaygroundView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/BatchToolbarView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategoryPillPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySelectorButton.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySidebar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DiffView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageURLView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/EditorToolbar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FloatingZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FolderManagerView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FullScreenImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/GhostTipView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/HighlightedEditor.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/IconPickerView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/OmniSearchView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ParticleSystemView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PreferencesView.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PremiumUpsellView.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptCard.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptGridCard.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPreviewView.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ResizeHandle.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SearchViewSimple.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SharedAppPicker.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift -primary-file /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsManagerTab.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/TrashView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariableFillView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VariablesPopupList.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/VersionHistoryView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/ContentView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/PromtierApp.swift /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/supplementaryOutputs-7 -emit-localized-strings -emit-localized-strings-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64 -target arm64-apple-macos15.6 -module-can-import-version AppKit 2685.30.107 2685.30.107 -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version SwiftUI 7.2.5.1 7.2.5 -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -I /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -F /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -enable-anonymous-context-mangled-names -file-compilation-dir /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/include -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources-normal/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name Promtier -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name macosx26.2 -clang-target arm64-apple-macos26.2 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PremiumUpsellView.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptCard.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptGridCard.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptPreviewView.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/ResizeHandle.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SearchViewSimple.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SharedAppPicker.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/ShortcutRecorderView.o -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SnippetsManagerTab.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PremiumUpsellView.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptCard.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptGridCard.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/PromptPreviewView.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/ResizeHandle.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SearchViewSimple.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SharedAppPicker.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/ShortcutRecorderView.o -index-unit-output-path /Promtier.build/Debug/Promtier.build/Objects-normal/arm64/SnippetsManagerTab.o -index-store-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Index.noindex/DataStore -index-system-modules
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PremiumUpsellView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptCard.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptGridCard.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPreviewView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ResizeHandle.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SearchViewSimple.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SharedAppPicker.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift:167:57: error: cannot find 'UCKeyLayout' in scope
-        let keyLayout = dataPtr.assumingMemoryBound(to: UCKeyLayout.self)
-                                                        ^~~~~~~~~~~
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift:167:33: error: generic parameter 'T' could not be inferred
-        let keyLayout = dataPtr.assumingMemoryBound(to: UCKeyLayout.self)
-                                ^
-Swift.UnsafeRawPointer.assumingMemoryBound:2:13: note: in call to function 'assumingMemoryBound(to:)'
-public func assumingMemoryBound<T>(to: T.Type) -> UnsafePointer<T> where T : ~Copyable}
-            ^
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsManagerTab.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ DataController.swift,\ FolderEntity.swift,\ FolderEntity+Extensions.swift,\ NSManagedObjectContext+Compat.swift,\ PromptEntity.swift,\ PromptEntity+Extensions.swift,\ UTI+Extensions.swift,\ Color+Extensions.swift,\ String+Extensions.swift,\ View+VisualEffect.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/DataController.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/NSManagedObjectContext+Compat.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/UTI+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/Color+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/String+Extensions.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/View+VisualEffect.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/DataController.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/FolderEntity+Extensions.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/NSManagedObjectContext+Compat.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/PromptEntity+Extensions.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Core/UTI+Extensions.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/Color+Extensions.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/String+Extensions.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Extensions/View+VisualEffect.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ BackupArchive.swift,\ Folder.swift,\ IdentifiableURL.swift,\ Prompt.swift,\ Snippet.swift,\ TemplateVariable.swift,\ BatchOperationsService.swift,\ ClipboardService.swift,\ DraftService.swift,\ FloatingZenManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/BackupArchive.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Folder.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/IdentifiableURL.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Prompt.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Snippet.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/TemplateVariable.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/BatchOperationsService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ClipboardService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/DraftService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/FloatingZenManager.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/BackupArchive.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Folder.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/IdentifiableURL.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Prompt.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/Snippet.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Models/TemplateVariable.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/BatchOperationsService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ClipboardService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/DraftService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/FloatingZenManager.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ BatchToolbarView.swift,\ CategoryPillPicker.swift,\ CategorySelectorButton.swift,\ CategorySidebar.swift,\ DiffView.swift,\ DownsampledImageURLView.swift,\ DownsampledImageView.swift,\ EditorToolbar.swift,\ FloatingZenEditorView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/BatchToolbarView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategoryPillPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySelectorButton.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySidebar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DiffView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageURLView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/EditorToolbar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FloatingZenEditorView.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/BatchToolbarView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategoryPillPicker.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySelectorButton.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/CategorySidebar.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DiffView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageURLView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/DownsampledImageView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/EditorToolbar.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/FloatingZenEditorView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 Compiling\ GeminiService.swift,\ HapticService.swift,\ ImageDecodeCache.swift,\ ImageDecodeThrottler.swift,\ ImageOptimizer.swift,\ ImageStore.swift,\ MenuBarManager.swift,\ OllamaService.swift,\ OmniSearchManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/GeminiService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/HapticService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeCache.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeThrottler.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageOptimizer.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageStore.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/MenuBarManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OllamaService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OmniSearchManager.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/GeminiService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Services/GeminiService.swift:91:57: warning: main actor-isolated conformance of 'GeminiResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
-                let decodedResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
-                                                        ^
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/HapticService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeCache.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageDecodeThrottler.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageOptimizer.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ImageStore.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/MenuBarManager.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OllamaService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Services/OllamaService.swift:114:51: warning: main actor-isolated conformance of 'OllamaGenerateResponse' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
-                   let chunk = try? JSONDecoder().decode(OllamaGenerateResponse.self, from: lineData) {
-                                                  ^
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/OmniSearchManager.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Services/OmniSearchManager.swift:110:44: warning: 'activateIgnoringOtherApps' was deprecated in macOS 14.0: ignoringOtherApps is deprecated in macOS 14 and will have no effect.
-            previousApp.activate(options: .activateIgnoringOtherApps)
-                                           ^
-
-SwiftDriverJobDiscovery normal arm64 Compiling DataController.swift, FolderEntity.swift, FolderEntity+Extensions.swift, NSManagedObjectContext+Compat.swift, PromptEntity.swift, PromptEntity+Extensions.swift, UTI+Extensions.swift, Color+Extensions.swift, String+Extensions.swift, View+VisualEffect.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 Compiling\ PlaceholderResolver.swift,\ PreferencesManager.swift,\ PromptService.swift,\ ShortcutManager.swift,\ SoundService.swift,\ UpdateProvider.swift,\ ZipService.swift,\ AIAssistantBar.swift,\ AIPlaygroundView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PlaceholderResolver.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PreferencesManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PromptService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ShortcutManager.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/SoundService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/UpdateProvider.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ZipService.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIAssistantBar.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIPlaygroundView.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PlaceholderResolver.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PreferencesManager.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/PromptService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ShortcutManager.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/SoundService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/UpdateProvider.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Services/ZipService.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIAssistantBar.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/AIPlaygroundView.swift (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    
-
-SwiftDriverJobDiscovery normal arm64 Emitting module for Promtier (in target 'Promtier' from project 'Promtier')
-
-SwiftDriver\ Compilation\ Requirements Promtier normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Promtier -Onone -enforce-exclusivity\=checked @/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.6 -g -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -F /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/valencia/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier_const_extract_protocols.json -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-generated-files.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-own-target-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-all-target-headers.hmap -Xcc -iquote -Xcc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Promtier-project-headers.hmap -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/include -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources-normal/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/arm64 -Xcc -I/Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-Swift.h -working-directory /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier -experimental-emit-module-separately -disable-cmo
-
-SwiftDriverJobDiscovery normal arm64 Compiling BackupArchive.swift, Folder.swift, IdentifiableURL.swift, Prompt.swift, Snippet.swift, TemplateVariable.swift, BatchOperationsService.swift, ClipboardService.swift, DraftService.swift, FloatingZenManager.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftMergeGeneratedHeaders /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/Promtier-Swift.h /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-Swift.h (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-swiftHeaderTool -arch arm64 /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier-Swift.h -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/DerivedSources/Promtier-Swift.h
-
-Copy /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.swiftmodule /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftmodule (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftmodule /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.swiftmodule
-
-Copy /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.swiftdoc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftdoc (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftdoc /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.swiftdoc
-
-Copy /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.abi.json /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.abi.json (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.abi.json /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/arm64-apple-macos.abi.json
-
-Copy /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftsourceinfo (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/Objects-normal/arm64/Promtier.swiftsourceinfo /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
-
-LinkAssetCatalog /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Assets.xcassets /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Promtier.icon (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-linkAssetCatalog --thinned /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/thinned --thinned-dependencies /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist_unthinned --output /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources --plist-output /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist
-note: Emplaced /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/Assets.car (in target 'Promtier' from project 'Promtier')
-note: Emplaced /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Resources/Promtier.icns (in target 'Promtier' from project 'Promtier')
-
-ProcessInfoPlistFile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Info.plist /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Info.plist (in target 'Promtier' from project 'Promtier')
-    cd /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier
-    builtin-infoPlistUtility /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Intermediates.noindex/Promtier.build/Debug/Promtier.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Frameworks/Sparkle.framework -o /Users/valencia/Library/Developer/Xcode/DerivedData/Promtier-gwtwqauqniqqumfryffqozcsjphv/Build/Products/Debug/Promtier.app/Contents/Info.plist
-
-SwiftDriverJobDiscovery normal arm64 Compiling GeminiService.swift, HapticService.swift, ImageDecodeCache.swift, ImageDecodeThrottler.swift, ImageOptimizer.swift, ImageStore.swift, MenuBarManager.swift, OllamaService.swift, OmniSearchManager.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftDriverJobDiscovery normal arm64 Compiling BatchToolbarView.swift, CategoryPillPicker.swift, CategorySelectorButton.swift, CategorySidebar.swift, DiffView.swift, DownsampledImageURLView.swift, DownsampledImageView.swift, EditorToolbar.swift, FloatingZenEditorView.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftDriverJobDiscovery normal arm64 Compiling SnippetsPopupList.swift, TrashView.swift, VariableFillView.swift, VariablesPopupList.swift, VersionHistoryView.swift, ZenEditorView.swift, ContentView.swift, PromtierApp.swift, GeneratedAssetSymbols.swift (in target 'Promtier' from project 'Promtier')
-
-SwiftDriverJobDiscovery normal arm64 Compiling PlaceholderResolver.swift, PreferencesManager.swift, PromptService.swift, ShortcutManager.swift, SoundService.swift, UpdateProvider.swift, ZipService.swift, AIAssistantBar.swift, AIPlaygroundView.swift (in target 'Promtier' from project 'Promtier')
-
 note: Disabling hardened runtime with ad-hoc codesigning. (in target 'Promtier' from project 'Promtier')
-/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier.xcodeproj: warning: The Copy Bundle Resources build phase contains this target's Info.plist file '/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/Info.plist'. (in target 'Promtier' from project 'Promtier')
 ** BUILD FAILED **
 
 
 The following build commands failed:
-	SwiftCompile normal arm64 Compiling\ PremiumUpsellView.swift,\ PromptCard.swift,\ PromptGridCard.swift,\ PromptPreviewView.swift,\ ResizeHandle.swift,\ SearchViewSimple.swift,\ SharedAppPicker.swift,\ ShortcutRecorderView.swift,\ SnippetsManagerTab.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PremiumUpsellView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptGridCard.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/PromptPreviewView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ResizeHandle.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SearchViewSimple.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SharedAppPicker.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/SnippetsManagerTab.swift (in target 'Promtier' from project 'Promtier')
-	SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/ShortcutRecorderView.swift (in target 'Promtier' from project 'Promtier')
+	SwiftCompile normal arm64 /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift (in target 'Promtier' from project 'Promtier')
+	SwiftCompile normal arm64 Compiling\ NewPromptView.swift /Users/valencia/Downloads/Apps\ Menu\ Bar/Promtier/Promtier/Views/NewPromptView.swift (in target 'Promtier' from project 'Promtier')
 	Building project Promtier with scheme Promtier and configuration Debug
 (3 failures)

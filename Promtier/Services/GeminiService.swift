@@ -8,14 +8,14 @@
 import Foundation
 import Combine
 
-struct GeminiRequest: Codable {
+struct GeminiRequest: Codable, Sendable {
     let contents: [GeminiContent]
     
-    struct GeminiContent: Codable {
+    struct GeminiContent: Codable, Sendable {
         let parts: [GeminiPart]
     }
     
-    struct GeminiPart: Codable {
+    struct GeminiPart: Codable, Sendable {
         let text: String
     }
 }

@@ -5,10 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Models/TemplateVariable.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Models/TemplateVariable.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/PlaceholderResolver.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PlaceholderResolver.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/VariableFillView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/VariableFillView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Services/GeminiService.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/GeminiService.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Services/OpenAIService.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/OpenAIService.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_error.log" beforeDir="false" afterPath="$PROJECT_DIR$/build_error.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,7 +18,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="129" />
+    <option name="cachedIndexableFilesCount" value="126" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -25,9 +27,9 @@
     <commands />
     <urls />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="3BT4CYitTEpRXmdSuNa01jFn2a5" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -42,7 +44,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "2b618f68",
+    "git-widget-placeholder": "579dd2d4",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
     "node.js.detected.package.eslint": "true",
@@ -70,6 +72,7 @@
       <option name="presentableId" value="Default" />
       <updated>1774499600131</updated>
       <workItem from="1774499601189" duration="1291000" />
+      <workItem from="1774504883574" duration="485000" />
     </task>
     <servers />
   </component>
