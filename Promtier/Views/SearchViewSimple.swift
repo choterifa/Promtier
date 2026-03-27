@@ -218,7 +218,7 @@ struct SearchViewSimple: View {
                         removal: .scale(scale: 0.9).combined(with: .opacity)
                     ))
                 }
-                .padding(.bottom, batchService.isSelectionModeActive ? 90 : 24) // Evitar solapamiento con la barra de lote
+                .padding(.bottom, 24)
                 .zIndex(500)
             }
         }
