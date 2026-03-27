@@ -157,8 +157,8 @@ struct NewPromptView: View {
     }
 
     private var isAIAvailable: Bool {
-        let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         return useGemini || useOpenAI
     }
 
@@ -2256,8 +2256,8 @@ struct EditorCard: View {
     }
 
     private var isAIAvailable: Bool {
-        let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         return useGemini || useOpenAI
     }
     @State private var isEditorFocused: Bool = false
@@ -2455,8 +2455,8 @@ struct EditorCard: View {
         }
     }
     private func performAIAction(_ action: AIAction) {
-            let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-            let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+            let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+            let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
             
             guard useGemini || useOpenAI else { return }
 
@@ -2643,8 +2643,8 @@ struct SecondaryEditorCard<Actions: View>: View {
     }
 
     private var isAIAvailable: Bool {
-        let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         return useGemini || useOpenAI
     }
 
@@ -2806,8 +2806,8 @@ struct SecondaryEditorCard<Actions: View>: View {
         }
     }
         private func performAIAction(_ action: AIAction) {
-            let useGemini = preferences.preferredAIService == .gemini && !preferences.geminiAPIKey.isEmpty
-            let useOpenAI = preferences.preferredAIService == .openai && !preferences.openAIApiKey.isEmpty
+            let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+            let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
             
             guard useGemini || useOpenAI else { return }
 

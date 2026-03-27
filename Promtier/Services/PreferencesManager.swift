@@ -319,6 +319,12 @@ class PreferencesManager: ObservableObject {
             userDefaults.set(preferredAIService.rawValue, forKey: "preferredAIService")
         }
     }
+
+    @Published var openAIEnabled: Bool {
+        didSet {
+            userDefaults.set(openAIEnabled, forKey: "openAIEnabled")
+        }
+    }
     
     @Published var openAIApiKey: String {
         didSet {
@@ -499,6 +505,7 @@ class PreferencesManager: ObservableObject {
         
         // OpenAI
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
+        self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
         self.openAIApiKey = userDefaults.string(forKey: "openAIApiKey") ?? ""
         self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
         
@@ -508,11 +515,29 @@ class PreferencesManager: ObservableObject {
         // Sincronizar dimensiones para el HUD
         self.previewWidth = self.windowWidth
         self.previewHeight = self.windowHeight
+
+        normalizeAISettings()
         
         // Aplicar configuración inicial
         applyAppearance()
         applyDockPolicy()
         applyLaunchAtLogin()
+    }
+
+    private func normalizeAISettings() {
+        // Exclusividad: solo un proveedor activo a la vez.
+        if openAIEnabled && geminiEnabled {
+            switch preferredAIService {
+            case .gemini:
+                openAIEnabled = false
+            case .openai:
+                geminiEnabled = false
+            }
+        } else if openAIEnabled {
+            preferredAIService = .openai
+        } else if geminiEnabled {
+            preferredAIService = .gemini
+        }
     }
     
     // MARK: - Métodos de Configuración
@@ -610,6 +635,7 @@ class PreferencesManager: ObservableObject {
         self.geminiAPIKey = ""
         self.geminiDefaultModel = "gemini-2.0-flash"
         self.preferredAIService = .openai
+        self.openAIEnabled = true
         self.openAIApiKey = ""
         self.openAIDefaultModel = "gpt-4o"
         

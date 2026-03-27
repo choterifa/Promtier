@@ -46,6 +46,14 @@
 "font_size" = "Tamaño de fuente";
 "font_size_subtitle" = "Ajusta el texto de tus prompts";
 "preferred_ai_provider" = "IA Preferida";
+"openai_service" = "OpenAI (Cloud)";
+"openai_subtitle" = "Usa tu API Key de OpenAI para mejorar prompts";
+"openai_api_key_subtitle" = "Tu API Key personal de la plataforma OpenAI";
+"api_key" = "API Key";
+"openai_model_id" = "ID del modelo";
+"openai_model_presets" = "Selecciona un modelo";
+"gemini_service" = "Google Gemini";
+"gemini_subtitle" = "Usa la API de Google Gemini";
 "gemini_model_subtitle" = "ID del modelo Gemini (ej. gemini-2.0-flash)";
 "preview_priority" = "Prioridad en Preview";
 "preview_priority_subtitle" = "Orden de elementos en la vista rápida";

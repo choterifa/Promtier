@@ -87,7 +87,24 @@ class GeminiService: ObservableObject {
             }
             
             do {
-                let decodedResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+                // En este target el default isolation es MainActor; decodificamos de forma explícita en MainActor.
+                var decodedResponse: GeminiResponse?
+                if Thread.isMainThread {
+                    MainActor.assumeIsolated {
+                        decodedResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data)
+                    }
+                } else {
+                    DispatchQueue.main.sync {
+                        MainActor.assumeIsolated {
+                            decodedResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data)
+                        }
+                    }
+                }
+
+                guard let decodedResponse else {
+                    throw NSError(domain: "GeminiAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Respuesta inválida"])
+                }
+
                 if let text = decodedResponse.candidates?.first?.content?.parts?.first?.text {
                     subject.send(text)
                 }

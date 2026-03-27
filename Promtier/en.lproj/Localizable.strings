@@ -448,9 +448,12 @@
 "openai_service" = "OpenAI (Cloud)";
 "openai_subtitle" = "Use your own OpenAI API Key to enhance prompts";
 "openai_api_key_subtitle" = "Your personal API Key from OpenAI platform";
+"api_key" = "API Key";
 "openai_model_id" = "Model ID";
 "openai_model_presets" = "Select a model";
 "preferred_ai_provider" = "AI Provider";
+"gemini_service" = "Google Gemini";
+"gemini_subtitle" = "Use Google Gemini API";
 "gemini_model_subtitle" = "Gemini Model ID (e.g., gemini-2.0-flash)";
 "generate_test" = "Test Prompt";
 "ai_response" = "AI Response";

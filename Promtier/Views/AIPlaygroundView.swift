@@ -30,7 +30,7 @@ struct AIPlaygroundView: View {
                 
                 Spacer()
                 
-                let useOpenAI = !preferences.openAIApiKey.isEmpty
+                let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
                 let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
                 
                 if useOpenAI || useGemini {
@@ -148,7 +148,7 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
-        let useOpenAI = !preferences.openAIApiKey.isEmpty
+        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
         
         guard useOpenAI || useGemini else { return }

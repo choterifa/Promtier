@@ -173,7 +173,7 @@ struct VariableFillView: View {
     }
     
     private var isAIAvailable: Bool {
-        let useOpenAI = !preferences.openAIApiKey.isEmpty
+        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
         return useOpenAI || useGemini
     }

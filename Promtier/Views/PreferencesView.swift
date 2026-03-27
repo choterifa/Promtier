@@ -669,98 +669,89 @@ struct AITab: View {
 
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Preferred AI Service", icon: "sparkles") {
-                SettingsRow("default_service", subtitle: "preferred_ai_provider") {
-                    Picker("", selection: $preferences.preferredAIService) {
-                        Text("Gemini").tag(AIService.gemini)
-                        Text("OpenAI").tag(AIService.openai)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 250)
-                }
-            }
-
             SettingsSection(title: "OpenAI ChatGPT", icon: "cloud.fill") {
-                SettingsRow("openai_service", subtitle: "openai_subtitle") {
+                SettingsRow(
+                    LocalizedStringKey("openai_service".localized(for: preferences.language)),
+                    subtitle: LocalizedStringKey("openai_subtitle".localized(for: preferences.language))
+                ) {
                     Toggle("", isOn: Binding(
-                        get: { !preferences.openAIApiKey.isEmpty },
-                        set: { _ in }
+                        get: { preferences.openAIEnabled },
+                        set: { newValue in
+                            preferences.openAIEnabled = newValue
+                            if newValue {
+                                preferences.geminiEnabled = false
+                                preferences.preferredAIService = .openai
+                            }
+                        }
                     ))
                     .toggleStyle(.switch)
-                    .disabled(true)
                 }
 
-                VStack(spacing: 12) {
-                    HStack {
-                        Text("api_key".localized(for: preferences.language))
-                            .font(.system(size: 13, weight: .bold))
-                        Spacer()
+                VStack(spacing: 1) {
+                    SettingsRow(LocalizedStringKey("api_key".localized(for: preferences.language))) {
                         SecureField("sk-...", text: $preferences.openAIApiKey)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 250)
                     }
 
-                    HStack {
-                        Text("model_id".localized(for: preferences.language))
-                            .font(.system(size: 13, weight: .bold))
-                        SettingsRow("openai_model_id") {
-                            HStack(spacing: 8) {
-                                TextField("gpt-4o", text: $preferences.openAIDefaultModel)
-                                    .textFieldStyle(.roundedBorder)
-                                    .font(.system(.body, design: .monospaced))
+                    Divider().padding(.leading, 20)
 
-                                Menu {
-                                    Section("Suggested") {
-                                        ForEach(OpenAIService.suggestedChatModels, id: \.self) { model in
+                    SettingsRow(LocalizedStringKey("openai_model_id".localized(for: preferences.language))) {
+                        HStack(spacing: 8) {
+                            TextField("gpt-4o", text: $preferences.openAIDefaultModel)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(.body, design: .monospaced))
+
+                            Menu {
+                                Section("Suggested") {
+                                    ForEach(OpenAIService.suggestedChatModels, id: \.self) { model in
+                                        Button(model) { preferences.openAIDefaultModel = model }
+                                    }
+                                }
+
+                                if !openAIAvailableModels.isEmpty {
+                                    Section("From your account") {
+                                        ForEach(openAIAvailableModels, id: \.self) { model in
                                             Button(model) { preferences.openAIDefaultModel = model }
                                         }
                                     }
+                                }
+                            } label: {
+                                Image(systemName: "list.bullet.indent")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .padding(4)
+                                    .background(Color.primary.opacity(0.05))
+                                    .cornerRadius(4)
+                            }
+                            .menuStyle(.button)
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                            .help("openai_model_presets".localized(for: preferences.language))
 
-                                    if !openAIAvailableModels.isEmpty {
-                                        Section("From your account") {
-                                            ForEach(openAIAvailableModels, id: \.self) { model in
-                                                Button(model) { preferences.openAIDefaultModel = model }
-                                            }
-                                        }
-                                    }
-                                } label: {
-                                    Image(systemName: "list.bullet.indent")
-                                        .font(.system(size: 14, weight: .medium))
+                            Button(action: {
+                                Task { await refreshOpenAIModels() }
+                            }) {
+                                if isRefreshingOpenAIModels {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 13, weight: .medium))
                                         .foregroundColor(.secondary)
                                         .padding(4)
                                         .background(Color.primary.opacity(0.05))
                                         .cornerRadius(4)
                                 }
-                                .menuStyle(.button)
-                                .buttonStyle(.plain)
-                                .fixedSize()
-                                .help("openai_model_presets".localized(for: preferences.language))
-
-                                Button(action: {
-                                    Task { await refreshOpenAIModels() }
-                                }) {
-                                    if isRefreshingOpenAIModels {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                    } else {
-                                        Image(systemName: "arrow.clockwise")
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundColor(.secondary)
-                                            .padding(4)
-                                            .background(Color.primary.opacity(0.05))
-                                            .cornerRadius(4)
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .help("refresh_models".localized(for: preferences.language))
-                                .disabled(isRefreshingOpenAIModels || preferences.openAIApiKey.isEmpty)
                             }
+                            .buttonStyle(.plain)
+                            .help("refresh_models".localized(for: preferences.language))
+                            .disabled(isRefreshingOpenAIModels || preferences.openAIApiKey.isEmpty)
                         }
                     }
                 }
-                .padding(.leading, 40)
-                .padding(.trailing, 20)
-                .padding(.bottom, 16)
+                .disabled(!preferences.openAIEnabled)
+                .opacity(preferences.openAIEnabled ? 1 : 0.55)
             }
             .overlay(alignment: .bottomLeading) {
                 if let openAIModelsError, !openAIModelsError.isEmpty {
@@ -773,11 +764,23 @@ struct AITab: View {
             }
 
             SettingsSection(title: "Google Gemini", icon: "sparkles") {
-                SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
-                    Toggle("", isOn: $preferences.geminiEnabled)
+                SettingsRow(
+                    LocalizedStringKey("gemini_service".localized(for: preferences.language)),
+                    subtitle: LocalizedStringKey("gemini_subtitle".localized(for: preferences.language))
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.geminiEnabled },
+                        set: { newValue in
+                            preferences.geminiEnabled = newValue
+                            if newValue {
+                                preferences.openAIEnabled = false
+                                preferences.preferredAIService = .gemini
+                            }
+                        }
+                    ))
                         .toggleStyle(.switch)
                 }
-
+                
                 if preferences.geminiEnabled {
                     VStack(spacing: 12) {
                         SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
