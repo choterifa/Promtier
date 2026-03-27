@@ -465,15 +465,30 @@ class PreferencesManager: ObservableObject {
             self.isHaloEffectEnabled = true
         }
         
+        // Usar un idioma "seed" local para evitar acceder a `self.language` antes de terminar init
+        let seedLanguage = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
+
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
             self.snippets = decoded
         } else {
             // Snippets de ejemplo
             self.snippets = [
-                Snippet(title: NSLocalizedString("snippet_signature_title", comment: ""), content: NSLocalizedString("snippet_signature_content", comment: ""), shortcut: NSLocalizedString("snippet_signature_shortcut", comment: "")),
-                Snippet(title: NSLocalizedString("snippet_bug_title", comment: ""), content: NSLocalizedString("snippet_bug_content", comment: ""), shortcut: NSLocalizedString("snippet_bug_shortcut", comment: "")),
-                Snippet(title: NSLocalizedString("snippet_review_title", comment: ""), content: NSLocalizedString("snippet_review_content", comment: ""), shortcut: NSLocalizedString("snippet_review_shortcut", comment: ""))
+                Snippet(
+                    title: "snippet_signature_title".localized(for: seedLanguage),
+                    content: "snippet_signature_content".localized(for: seedLanguage),
+                    shortcut: "snippet_signature_shortcut".localized(for: seedLanguage)
+                ),
+                Snippet(
+                    title: "snippet_bug_title".localized(for: seedLanguage),
+                    content: "snippet_bug_content".localized(for: seedLanguage),
+                    shortcut: "snippet_bug_shortcut".localized(for: seedLanguage)
+                ),
+                Snippet(
+                    title: "snippet_review_title".localized(for: seedLanguage),
+                    content: "snippet_review_content".localized(for: seedLanguage),
+                    shortcut: "snippet_review_shortcut".localized(for: seedLanguage)
+                )
             ]
         }
         

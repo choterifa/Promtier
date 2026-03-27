@@ -450,7 +450,7 @@
 "popup_title_snippets" = "Snippets";
 "popup_hint_escape_cancel" = "ESC para cancelar";
 "snippets_empty_state" = "No hay snippets para '%@'";
-"variables_example_options" = "{{option1, option2}}";
+"variables_example_options" = "{{opcion1, opcion2}}";
 "tooltip_images" = "Imágenes";
 "tooltip_use_count" = "Veces usado";
 "tooltip_versions" = "Historial de versiones";

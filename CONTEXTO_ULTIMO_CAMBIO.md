@@ -1,4 +1,4 @@
-# 🧠 Registro de Último Cambio - 25 de Marzo de 2026
+# 🧠 Registro de Último Cambio - 27 de Marzo de 2026
 
 ## 🛠️ Estado actual del trabajo más reciente
 
@@ -45,6 +45,16 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
    - Negative Prompt y Alternatives siguen funcionando dentro del mismo sistema.
    - El soporte previo de imágenes en disco, ZIP backup/import, prewarm y throttling no se tocó en esta pasada.
 
+10. **Transición Grid↔List restaurada (UX)**
+   - Se revirtió el experimento de “sidebar con delay/cancelable” en el cambio de vista.
+   - El toggle volvió a ser directo con animación tipo spring (más natural y sin glitches visuales).
+
+11. **Snippets demo localizables por idioma de la app**
+   - Los snippets de ejemplo ahora se inicializan usando el `language` interno de Promtier (no el idioma del sistema).
+
+12. **Highlight más barato cuando no aplica**
+   - Se añadió un fast-path para no limpiar/recalcular decoraciones cuando el texto no contiene variables/cadenas/listas.
+
 ## 📁 Archivos más relevantes tocados
 
 - `Promtier/Views/HighlightedEditor.swift`
@@ -61,6 +71,7 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
 - `Promtier/Services/PromptPreviewTextCache.swift`
 - `Promtier/Services/ImageDecodeCache.swift`
 - `Promtier/Services/ClipboardService.swift`
+- `Promtier/Services/PreferencesManager.swift`
 - `Promtier.xcodeproj/project.pbxproj`
 
 ## 🧩 Decisiones técnicas importantes

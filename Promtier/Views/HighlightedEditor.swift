@@ -334,6 +334,7 @@ struct HighlightedEditor: NSViewRepresentable {
         private var isApplyingExternalUpdate = false
         private var highlightWorkItem: DispatchWorkItem?
         private var appliedBracketRanges: [NSRange] = []
+        private var lastDecorationFlags: (variables: Bool, chains: Bool, lists: Bool) = (false, false, false)
 
         init(_ parent: HighlightedEditor) {
             self.parent = parent
@@ -984,13 +985,40 @@ struct HighlightedEditor: NSViewRepresentable {
                   textStorage.string == text else { return }
 
             let fullRange = NSRange(location: 0, length: textStorage.length)
+
+            // Fast-path: si no hay nada que decorar, evitamos limpiar/recalcular en cada keystroke.
+            let hasVariables = text.contains("{{")
+            let hasChains = text.contains("[[@Prompt:")
+            let hasLists = text.hasPrefix("- ")
+                || text.hasPrefix("* ")
+                || text.hasPrefix("+ ")
+                || text.hasPrefix("• ")
+                || text.contains("\n- ")
+                || text.contains("\n* ")
+                || text.contains("\n+ ")
+                || text.contains("\n• ")
+                || text.hasPrefix("1. ")
+                || text.contains("\n1. ")
+
+            let newFlags = (variables: hasVariables, chains: hasChains, lists: hasLists)
+            if newFlags.variables == false,
+               newFlags.chains == false,
+               newFlags.lists == false,
+               lastDecorationFlags.variables == false,
+               lastDecorationFlags.chains == false,
+               lastDecorationFlags.lists == false {
+                return
+            }
+
+            lastDecorationFlags = newFlags
+
             layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
             layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: fullRange)
             layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: fullRange)
 
-            let listMatches = Self.listRegex?.matches(in: text, options: [], range: fullRange) ?? []
-            let variableMatches = Self.varRegex?.matches(in: text, options: [], range: fullRange) ?? []
-            let chainMatches = Self.chainRegex?.matches(in: text, options: [], range: fullRange) ?? []
+            let listMatches = hasLists ? (Self.listRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
+            let variableMatches = hasVariables ? (Self.varRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
+            let chainMatches = hasChains ? (Self.chainRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
 
             let listMarkerColor = parent.isHaloEffectEnabled ? parent.themeColor : NSColor.systemOrange
             for match in listMatches {

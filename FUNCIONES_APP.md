@@ -94,5 +94,21 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Efectos Visuales**: Sistema de partículas y animaciones fluidas al guardar o copiar.
 - **Historial Extendido**: Hasta 20 versiones guardadas por cada prompt.
 
+## ⚡ Rendimiento (Ideas rápidas)
+- **Decoración inteligente**: saltar regex/atributos cuando el texto no contiene `{{`, listas o cadenas `[[...]]`.
+- **Umbral por tamaño**: si un prompt supera X caracteres, usar solo resaltado básico (variables) o desactivar decoraciones completas.
+- **Rango visible**: aplicar resaltado solo al rango visible del editor (TextKit) en vez de todo el documento.
+- **Cache de rangos**: recordar matches anteriores y actualizar solo diferencias (incremental).
+- **Warm start**: precalentar caches (texto + thumbs) en background con prioridad `.utility`, sin bloquear UI.
+
+## 🔥 Kill Features (Ideas que quedarían muy bien)
+- **Presets por tipo de prompt**: Code / Image / Writing / Marketing con formato base, snippets sugeridos y variables comunes.
+- **Prompt Packs**: agrupar prompts + categorías + snippets + historial, exportables/importables como un solo pack (ZIP).
+- **Variables avanzadas**: defaults, validación, tipos (date/time/select), y “quick fill” con autocompletado.
+- **Versioning serio**: diff inline, rollback, “branch from alternative”, y etiquetas por versión.
+- **Prompt chaining visual**: UI para componer prompts por bloques (como Notion) y resolver `[[...]]` con preview.
+- **Index + búsqueda instantánea**: index local (title/desc/tags/variables) para que 10k+ prompts sigan volando.
+- **Telemetry local (opcional)**: métricas locales de uso (sin enviar nada) para sugerir limpieza/organización.
+
 ---
-*Última actualización: 25 de Marzo de 2026*
+*Última actualización: 27 de Marzo de 2026*

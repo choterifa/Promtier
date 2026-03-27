@@ -102,5 +102,13 @@ No elimines las anteriores; simplemente agrega más preguntas, máximo 100.
 **Para humanos:** No. También puede guardar negative prompt, alternativas, imágenes, categoría, atajo, apps asociadas y más.
 **Técnico:** El modelo `Prompt` ya contempla metadata extendida como `negativePrompt`, `alternatives`, `promptDescription`, `targetAppBundleIDs`, `customShortcut` e imágenes.
 
+## 25) ¿El resaltado (regex) de variables `{{...}}`, listas y links tipo `[[...]]` afecta el rendimiento?
+**Para humanos:** En prompts normales no deberías notarlo. En prompts gigantes (muy largos) puede costar un poco más porque el editor “pinta” cosas en tiempo real.
+**Técnico:** El editor usa regex precompiladas + `layoutManager.addTemporaryAttributes(...)` con debounce. Para reducir trabajo, se hace fast-path cuando no hay nada que decorar (no variables/cadenas/listas) y el bracket-matching se calcula aparte (solo cerca del cursor).
+
+## 26) ¿Qué puedo hacer si siento el editor pesado con prompts muy largos?
+**Para humanos:** Mantén prompts mega-largos en “modo sobrio” (sin halo) y evita tener múltiples editores abiertos a la vez. Si sigues viendo lentitud, conviene partir prompts enormes en versiones o usar snippets.
+**Técnico:** Las optimizaciones típicas son: subir el debounce del resaltado, limitar decoraciones a rango visible, cachear rangos de matches, y desactivar decoraciones completas por encima de cierto tamaño.
+
 ---
-*Última actualización: 25 de Marzo de 2026*
+*Última actualización: 27 de Marzo de 2026*

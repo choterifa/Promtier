@@ -92,6 +92,7 @@ Política de activación para aplicaciones de menu bar.
 ## 🔄 Desarrollo Futuro
 
 - Thumbnails persistentes en Core Data
+- Resaltado incremental (rango visible) para prompts enormes
 - Copia/export dual: Markdown / texto limpio / rich text
 - Sincronización con iCloud
 - Interfaz de preferencias completa
