@@ -107,8 +107,16 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var windowWidth: CGFloat
-    @Published var windowHeight: CGFloat
+    @Published var windowWidth: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowWidth), forKey: "windowWidth")
+        }
+    }
+    @Published var windowHeight: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+        }
+    }
     
     /// Guarda las dimensiones en UserDefaults (llamar al terminar de redimensionar)
     func saveWindowDimensions() {
@@ -417,11 +425,11 @@ class PreferencesManager: ObservableObject {
         }
         
         // Dimensiones de ventana (Defaults: 800x570, Max: 900x750, Min: 500x450)
-        let savedWidth = userDefaults.double(forKey: "windowWidth")
-        self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 800
+        let savedWidth = userDefaults.object(forKey: "windowWidth") as? Double
+        self.windowWidth = (savedWidth != nil && savedWidth! > 0) ? min(900, max(500, CGFloat(savedWidth!))) : 800
         
-        let savedHeight = userDefaults.double(forKey: "windowHeight")
-        self.windowHeight = savedHeight > 0 ? min(750, max(450, CGFloat(savedHeight))) : 570
+        let savedHeight = userDefaults.object(forKey: "windowHeight") as? Double
+        self.windowHeight = (savedHeight != nil && savedHeight! > 0) ? min(750, max(450, CGFloat(savedHeight!))) : 570
         
         // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")

@@ -186,7 +186,9 @@ class MenuBarManager: NSObject, ObservableObject {
                 .environmentObject(self)
                 .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
-            popover?.contentViewController = NSHostingController(rootView: AnyView(contentView))
+            let controller = NSHostingController(rootView: AnyView(contentView))
+            controller.view.frame.size = size
+            popover?.contentViewController = controller
             popover?.contentViewController?.preferredContentSize = size
             
             // Aplicar apariencia inicial al popover
@@ -530,6 +532,7 @@ class MenuBarManager: NSObject, ObservableObject {
         let size = NSSize(width: width, height: height)
         popover?.contentSize = size
         popover?.contentViewController?.preferredContentSize = size
+        popover?.contentViewController?.view.frame.size = size
     }
     
     /// Actualiza el comportamiento del popover basado en el estado

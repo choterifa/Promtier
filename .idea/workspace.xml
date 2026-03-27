@@ -7,10 +7,9 @@
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/GeminiService.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/GeminiService.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/OpenAIService.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/OpenAIService.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build_error.log" beforeDir="false" afterPath="$PROJECT_DIR$/build_error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,7 +17,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="126" />
+    <option name="cachedIndexableFilesCount" value="135" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -44,7 +43,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "579dd2d4",
+    "git-widget-placeholder": "nueva",
     "javascript.preferred.runtime.type.id": "node",
     "junie.onboarding.icon.badge.shown": "true",
     "node.js.detected.package.eslint": "true",
@@ -52,7 +51,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "ml.llm.AcpAgentsConfigurable",
+    "settings.editor.selected.configurable": "advanced.settings",
     "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
@@ -73,6 +72,7 @@
       <updated>1774499600131</updated>
       <workItem from="1774499601189" duration="1291000" />
       <workItem from="1774504883574" duration="485000" />
+      <workItem from="1774646753775" duration="717000" />
     </task>
     <servers />
   </component>

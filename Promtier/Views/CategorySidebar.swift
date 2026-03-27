@@ -33,6 +33,10 @@ struct CategorySidebar: View {
     @State private var folderToDelete: Folder? = nil
     @State private var showingDeleteAlert = false
     
+    // Header hover states
+    @State private var isAddFolderHovered = false
+    @State private var isSortMenuHovered = false
+    
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
@@ -59,26 +63,55 @@ struct CategorySidebar: View {
                 
                 Spacer()
                 
-                // Botón de Ordenamiento de Prompts
-                Menu {
-                    Button { promptService.promptSortMode = .name } label: {
-                        Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
+                // Botones de Acción (Ordenamiento y Nueva Categoría)
+                HStack(spacing: 4) {
+                    // Botón de Ordenamiento de Prompts
+                    Menu {
+                        Button { promptService.promptSortMode = .name } label: {
+                            Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
+                        }
+                        Button { promptService.promptSortMode = .newest } label: {
+                            Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
+                        }
+                        Button { promptService.promptSortMode = .mostUsed } label: {
+                            Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
+                        }
+                    } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "line.3.horizontal.decrease")
+                                .font(.system(size: 11, weight: .bold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 7, weight: .bold))
+                        }
+                        .foregroundColor(isSortMenuHovered ? .primary : .secondary)
+                        .scaleEffect(isSortMenuHovered ? 1.15 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSortMenuHovered)
                     }
-                    Button { promptService.promptSortMode = .newest } label: {
-                        Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("sort_prompts_help".localized(for: preferences.language))
+                    .onHover { isSortMenuHovered = $0 }
+                    
+                    // Botón de Nueva Categoría
+                    Button {
+                        menuBarManager.folderToEdit = nil
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            menuBarManager.activeViewState = .folderManager
+                        }
+                        HapticService.shared.playLight()
+                    } label: {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 11))
+                            .foregroundColor(isAddFolderHovered ? .blue : .secondary)
+                            .offset(y: -0.5) // Alineación visual perfecta
+                            .scaleEffect(isAddFolderHovered ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isAddFolderHovered)
                     }
-                    Button { promptService.promptSortMode = .mostUsed } label: {
-                        Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                    .buttonStyle(.plain)
+                    .frame(width: 24, height: 24)
+                    .help("create_category".localized(for: preferences.language))
+                    .onHover { isAddFolderHovered = $0 }
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help("sort_prompts_help".localized(for: preferences.language))
-                .padding(.trailing, 4)
             }
             .padding(.horizontal, 24)
             .padding(.top, 32)
@@ -149,30 +182,12 @@ struct CategorySidebar: View {
             .frame(maxWidth: .infinity)
             
             VStack(spacing: 0) {
-                // Divider con botón de "Nueva Categoría" al final
-                HStack(spacing: 8) {
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.1))
-                        .frame(height: 1)
-                    
-                    Button {
-                        menuBarManager.folderToEdit = nil
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            menuBarManager.activeViewState = .folderManager
-                        }
-                        HapticService.shared.playLight()
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(.blue.opacity(0.7))
-                    }
-                    .buttonStyle(.plain)
-                    .help("create_category".localized(for: preferences.language))
-                    .opacity(menuBarManager.isSidebarHovered ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: menuBarManager.isSidebarHovered)
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 24) // Regresado al ancho original de la sidebar
+                // Divider (Cleanup)
+                Rectangle()
+                    .fill(Color.primary.opacity(0.1))
+                    .frame(height: 1)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 24)
                 
                 // Lista de categorías (Extraído para reducir complejidad)
                 foldersListView
