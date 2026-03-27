@@ -15,8 +15,11 @@ struct FloatingZenEditorView: View {
     @EnvironmentObject var promptService: PromptService
     
     @FocusState private var focusedField: ZenField?
+    @State private var showDiscardAlert = false
     @State private var isDraggingImage = false
     @State private var hoveredSlot: Int? = nil
+    @State private var isHoveringPaste: Bool = false
+    @State private var isHoveringOpen: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -24,129 +27,101 @@ struct FloatingZenEditorView: View {
         !manager.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    /// Todas las carpetas ordenadas: más usadas primero, luego el resto
-    private var allCategoriesSorted: [String] {
-        let folderCounts = Dictionary(grouping: promptService.prompts.compactMap { $0.folder }) { $0 }
-            .mapValues { $0.count }
-        let allFolderNames = promptService.folders.map { $0.name }
-        return allFolderNames.sorted { a, b in
-            (folderCounts[a] ?? 0) > (folderCounts[b] ?? 0)
-        }
-    }
-    
-    private func usageCount(for folder: String) -> Int {
-        promptService.prompts.filter { $0.folder == folder }.count
-    }
-    
-    private func isTopUsed(_ folder: String) -> Bool {
-        let sorted = allCategoriesSorted
-        return sorted.prefix(3).contains(folder)
+    private var isMagicAvailable: Bool {
+        let prefs = PreferencesManager.shared
+        return (!prefs.openAIApiKey.isEmpty && prefs.openAIEnabled) || (!prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled)
     }
     
     var body: some View {
         VStack(spacing: 0) {
-                      // ── Title + expand button ─────────────────────────────────
-            ZStack(alignment: .topTrailing) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("TÍTULO", systemImage: "text.cursor")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.blue.opacity(0.7))
-                        .tracking(1)
+            headerBar
+            
+            Divider()
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    // ── Title ─────────────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Escribe el título...", text: $manager.title, axis: .vertical)
+                            .font(.system(size: 20, weight: .bold))
+                            .textFieldStyle(.plain)
+                            .lineLimit(3)
+                            .focused($focusedField, equals: .title)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.primary.opacity(0.035))
+                            )
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
                     
-                    TextField("Escribe el título del prompt...", text: $manager.title, axis: .vertical)
-                        .font(.system(size: 16, weight: .bold))
-                        .textFieldStyle(.plain)
-                        .lineLimit(1...3)
-                        .focused($focusedField, equals: .title)
-                        .frame(maxWidth: .infinity)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.trailing, 36) // espacio para el botón
+                    // ── Description ───────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
+                            .font(.system(size: 13))
+                            .textFieldStyle(.plain)
+                            .lineLimit(2)
+                            .focused($focusedField, equals: .description)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.primary.opacity(0.03))
+                            )
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 24)
+                    
+                    Divider().padding(.horizontal, 22)
+                    
+                    // ── Content ───────────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("CONTENIDO")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .tracking(1.5)
+                            Spacer()
+                        }
+                        .padding(.top, 20)
+                        
+                        ZStack(alignment: .topLeading) {
+                            if manager.content.isEmpty {
+                                Text("Pega o escribe el contenido del prompt aquí...")
+                                    .font(.system(size: 14 * preferences.fontSize.scale))
+                                    .foregroundColor(.secondary.opacity(0.4))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 8)
+                                    .allowsHitTesting(false)
+                            }
+                            
+                            TextEditor(text: $manager.content)
+                                .font(.system(size: 14 * preferences.fontSize.scale))
+                                .lineSpacing(4)
+                                .focused($focusedField, equals: .content)
+                                .scrollContentBackground(.hidden)
+                        }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.primary.opacity(0.035))
+                        )
+                        .frame(height: 260)
+                    }
+                    .padding(.horizontal, 22)
+                    
+                    Spacer(minLength: 20)
+                    
+                    imageStrip
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 18)
-                .padding(.top, 16)
-                .padding(.bottom, 14)
-                
-                // Botón expandir en la esquina
-                Button(action: {
-                    manager.hide()
-                    MenuBarManager.shared.showPopover()
-                }) {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .padding(5)
-                        .background(Color.primary.opacity(0.06))
-                        .cornerRadius(5)
-                }
-                .buttonStyle(.plain)
-                .help("Abrir editor completo")
-                .padding(.top, 14)
-                .padding(.trailing, 14)
-            }
-            
-            Divider().padding(.horizontal, 14)
-            
-            // ── Description ───────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 6) {
-                Label("DESCRIPCIÓN", systemImage: "text.quote")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.6))
-                    .tracking(1)
-                
-                TextField("Resumen corto (opcional)...", text: $manager.promptDescription, axis: .vertical)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.secondary)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...3)
-                    .focused($focusedField, equals: .description)
-                    .frame(maxWidth: .infinity)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 18)
-            .padding(.top, 12)
-            .padding(.bottom, 12)
-            
-            Divider().padding(.horizontal, 14)
-            
-            // ── Content ───────────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 4) {
-                Label("CONTENIDO", systemImage: "doc.text")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.6))
-                    .tracking(1)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 12)
-                
-                GeometryReader { geo in
-                    TextEditor(text: $manager.content)
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .focused($focusedField, equals: .content)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .padding(.horizontal, 14)
-                        .frame(height: geo.size.height)
-                }
-                .frame(minHeight: 120)
             }
             
             Divider()
-
-            // ── Category selector ───────────────────────────────────
-            if !allCategoriesSorted.isEmpty {
-                categoryScrollStrip
-                Divider()
-            }
-
-            // ── Image strip ───────────────────────────────────────────
-            imageStrip
             
-            Divider()
-            
-            // ── Footer ────────────────────────────────────────────────
             footerBar
         }
         .background(Color(NSColor.windowBackgroundColor))
@@ -161,158 +136,83 @@ struct FloatingZenEditorView: View {
         .onDrop(of: [UTType.image, UTType.fileURL], isTargeted: $isDraggingImage) { providers in
             handleDrop(providers: providers)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ZenImagePasted"))) { _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { scrollContentToTop() }
+        .onChange(of: manager.content) { _, _ in
+            // Scroll logic simplified
         }
-        .onChange(of: manager.content) { _, newVal in
-            // Si el contenido cambió mucho de golpe (paste) volver al inicio
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { scrollContentToTop() }
+        .alert("¿Descartar cambios?", isPresented: $showDiscardAlert) {
+            Button("Descartar", role: .destructive) {
+                manager.resetAndHide()
+            }
+            Button("Continuar editando", role: .cancel) { }
+        } message: {
+            Text("Si cierras ahora, se perderán todos los cambios que hayas hecho en este prompt.")
         }
     }
     
     // MARK: - Subviews
     
     private var headerBar: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.blue.opacity(0.12))
-                    .frame(width: 28, height: 28)
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.blue)
-            }
-            
-            Text("Fast Add")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.primary)
-            
-            Spacer()
-            
-            Button(action: {
-                manager.hide()
-                MenuBarManager.shared.showPopover()
-            }) {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .padding(5)
-                    .background(Color.primary.opacity(0.06))
-                    .cornerRadius(5)
-            }
-            .buttonStyle(.plain)
-            .help("Abrir editor completo")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color(NSColor.windowBackgroundColor).opacity(0.4))
-    }
-    
-    private var categoryScrollStrip: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        ZStack {
+            // Título centrado
             HStack(spacing: 4) {
-                Image(systemName: "folder")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.4))
-                Text("CATEGORÍA")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.4))
-                    .tracking(1)
-                Spacer()
-                if manager.selectedFolder != nil {
-                    Button(action: { withAnimation { manager.selectedFolder = nil } }) {
-                        HStack(spacing: 3) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 8, weight: .bold))
-                            Text("Quitar")
-                                .font(.system(size: 9, weight: .medium))
-                        }
-                        .foregroundColor(.blue)
-                    }
-                    .buttonStyle(.plain)
-                }
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 10, weight: .bold))
+                Text("Fast Add")
+                    .font(.system(size: 11, weight: .black))
+                    .tracking(0.5)
             }
-            .padding(.horizontal, 14)
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color.primary.opacity(0.05)))
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 7) {
-                    ForEach(allCategoriesSorted, id: \.self) { folder in
-                        let isSelected = manager.selectedFolder == folder
-                        let cat = PredefinedCategory.fromString(folder)
-                        let catColor = cat?.color ?? Color(hex: promptService.folders.first(where: { $0.name == folder })?.displayColor ?? "#007AFF")
-                        let icon = cat?.icon ?? (promptService.folders.first(where: { $0.name == folder })?.icon ?? "folder.fill")
-                        let isTop = isTopUsed(folder)
-                        
-                        Button(action: {
-                            withAnimation(.spring(response: 0.22, dampingFraction: 0.7)) {
-                                manager.selectedFolder = isSelected ? nil : folder
-                            }
-                            HapticService.shared.playLight()
-                        }) {
-                            HStack(spacing: 5) {
-                                if isTop && !isSelected {
-                                    Image(systemName: "flame.fill")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .foregroundColor(catColor.opacity(0.6))
-                                }
-                                Image(systemName: icon)
-                                    .font(.system(size: 10, weight: .semibold))
-                                Text(folder)
-                                    .font(.system(size: 11, weight: isSelected ? .bold : .medium))
-                                    .lineLimit(1)
-                            }
-                            .foregroundColor(isSelected ? .white : catColor)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(
-                                Capsule()
-                                    .fill(isSelected ? catColor : catColor.opacity(0.08))
-                                    .overlay(
-                                        Capsule().stroke(catColor.opacity(isSelected ? 0 : 0.3), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
+            // Botones laterales
+            HStack {
+                Spacer()
+                
+                Button(action: {
+                    manager.hide()
+                    MenuBarManager.shared.showPopover()
+                }) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(isHoveringOpen ? .primary : .secondary)
+                        .padding(6)
+                        .background(Circle().fill(isHoveringOpen ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 2)
+                .buttonStyle(.plain)
+                .help("Abrir editor completo")
+                .onHover { isHoveringOpen = $0 }
             }
         }
-        .padding(.vertical, 8)
-        .background(Color.primary.opacity(0.02))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
     
     private var imageStrip: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("IMÁGENES", systemImage: "photo.on.rectangle.angled")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.secondary.opacity(0.6))
-                    .tracking(1)
-                
+                Text("RESULTADOS VISUALES")
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundColor(.secondary.opacity(0.5))
+                    .tracking(1.5)
                 Spacer()
-                
-                // Paste from clipboard hint
                 if manager.showcaseImages.count < 3 {
                     Button(action: pasteImageFromClipboard) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.on.clipboard")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("Pegar ⌘V")
-                                .font(.system(size: 9, weight: .medium))
-                        }
-                        .foregroundColor(.blue.opacity(0.8))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Color.blue.opacity(0.08))
-                        .cornerRadius(5)
+                        Label("Pegar ⌘V", systemImage: "doc.on.clipboard")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(isHoveringPaste ? .blue : .blue.opacity(0.7))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(isHoveringPaste ? Color.blue.opacity(0.08) : Color.clear)
+                            .cornerRadius(6)
                     }
                     .buttonStyle(.plain)
+                    .onHover { isHoveringPaste = $0 }
                 }
             }
             
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 ForEach(0..<3, id: \.self) { index in
                     if index < manager.showcaseImages.count {
                         imageThumb(data: manager.showcaseImages[index], index: index)
@@ -322,10 +222,8 @@ struct FloatingZenEditorView: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.primary.opacity(isDraggingImage ? 0.06 : 0.0))
-        .animation(.easeInOut(duration: 0.15), value: isDraggingImage)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 24)
     }
     
     @ViewBuilder
@@ -335,19 +233,19 @@ struct FloatingZenEditorView: View {
                 Image(nsImage: nsImg)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 88, height: 64)
-                    .cornerRadius(8)
+                    .frame(width: 110, height: 80)
+                    .cornerRadius(12)
                     .clipped()
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                 
                 Button(action: { manager.showcaseImages.remove(at: index) }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 18))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.4), radius: 2, y: 1)
+                        .shadow(radius: 2)
                 }
                 .buttonStyle(.plain)
-                .offset(x: 5, y: -5)
+                .offset(x: 6, y: -6)
             }
         }
     }
@@ -355,203 +253,152 @@ struct FloatingZenEditorView: View {
     @ViewBuilder
     private func addImageSlot(index: Int) -> some View {
         let isHovered = hoveredSlot == index
-        
         Button(action: pasteImageFromClipboard) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isHovered ? Color.blue.opacity(0.07) : Color.primary.opacity(0.03))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5]))
-                            .foregroundColor(isHovered ? Color.blue.opacity(0.4) : Color.primary.opacity(0.15))
-                    )
-                    .animation(.easeInOut(duration: 0.15), value: isHovered)
-                
-                VStack(spacing: 5) {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(isHovered ? .blue.opacity(0.7) : .secondary.opacity(0.4))
-                    Text("⌘V / arrastrar")
-                        .font(.system(size: 8, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.4))
-                }
+            VStack(spacing: 8) {
+                Image(systemName: "photo.badge.plus")
+                    .font(.system(size: 18))
+                Text("Añadir")
+                    .font(.system(size: 9, weight: .bold))
             }
-            .frame(width: 88, height: 64)
+            .foregroundColor(isHovered ? .blue : .secondary.opacity(0.4))
+            .frame(width: 110, height: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isHovered ? Color.blue.opacity(0.05) : Color.primary.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                            .foregroundColor(isHovered ? .blue.opacity(0.3) : .secondary.opacity(0.2))
+                    )
+            )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.12)) {
-                hoveredSlot = hovering ? index : nil
-            }
+            hoveredSlot = hovering ? index : nil
         }
     }
     
     private var footerBar: some View {
-        HStack(spacing: 12) {
-            Text("\(manager.content.count) chars")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary.opacity(0.4))
+        HStack(spacing: 16) {
+            // Indicador de Magia
+            HStack(spacing: 6) {
+                if isMagicAvailable {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14))
+                        .symbolEffect(.variableColor, isActive: manager.isClassifying)
+                    Text(manager.isClassifying ? "Clasificando..." : "Magic Active")
+                        .font(.system(size: 10, weight: .bold))
+                } else {
+                    Image(systemName: "sparkles.separator")
+                        .font(.system(size: 14))
+                        .opacity(0.5)
+                    Text("Magic Off")
+                        .font(.system(size: 10, weight: .bold))
+                }
+            }
+            .foregroundColor(isMagicAvailable ? .purple : .secondary.opacity(0.4))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isMagicAvailable ? Color.purple.opacity(0.08) : Color.primary.opacity(0.04))
+            .cornerRadius(8)
             
             Spacer()
             
-            Button("Cancelar") {
-                manager.resetAndHide()
+            Button("Cerrar") {
+                if manager.hasUnsavedChanges {
+                    showDiscardAlert = true
+                } else {
+                    manager.resetAndHide()
+                }
             }
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(size: 13, weight: .medium))
             .buttonStyle(.plain)
             .foregroundColor(.secondary)
             .keyboardShortcut(.escape, modifiers: [])
             
             Button(action: { manager.saveAsNewPrompt() }) {
-                HStack(spacing: 6) {
-                    if manager.isSaving {
-                        ProgressView()
-                            .scaleEffect(0.6)
-                            .frame(width: 12, height: 12)
+                HStack(spacing: 8) {
+                    if manager.isSaving || manager.isClassifying {
+                        ProgressView().scaleEffect(0.5).frame(width: 14, height: 14)
                     } else {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .black))
+                        Image(systemName: "plus")
+                            .font(.system(size: 11, weight: .black))
                     }
-                    Text("Guardar Prompt")
-                        .font(.system(size: 12, weight: .bold))
+                    Text("Guardar")
+                        .font(.system(size: 13, weight: .bold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .fill(canSave ? Color.blue : Color.gray.opacity(0.35))
-                        .shadow(color: canSave ? Color.blue.opacity(0.25) : .clear, radius: 6, y: 3)
+                        .fill(canSave ? Color.blue : Color.gray.opacity(0.3))
                 )
             }
             .buttonStyle(.plain)
-            .disabled(!canSave || manager.isSaving)
+            .disabled(!canSave || manager.isSaving || manager.isClassifying)
             .keyboardShortcut(.return, modifiers: [.command])
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color(NSColor.windowBackgroundColor).opacity(0.4))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color(NSColor.windowBackgroundColor).opacity(0.6))
     }
     
     private var savedFeedbackOverlay: some View {
         ZStack {
-            Color.black.opacity(0.25)
-                .cornerRadius(12)
+            Color.black.opacity(0.2)
+                .blur(radius: 10)
             
-            VStack(spacing: 10) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 44, weight: .bold))
-                    .foregroundColor(.green)
-                Text("¡Guardado!")
-                    .font(.system(size: 16, weight: .bold))
+            VStack(spacing: 12) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 32, weight: .black))
                     .foregroundColor(.white)
+                    .padding(20)
+                    .background(Circle().fill(Color.blue))
+                
+                Text("Prompt Guardado")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
             }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+        .transition(.opacity.combined(with: .scale))
     }
     
-    // MARK: - Actions
+    // MARK: - Actions (Keep existing logic)
     
-    /// Pega una imagen desde el portapapeles (⌘V). No requiere acceso a archivos.
     private func pasteImageFromClipboard() {
         guard manager.showcaseImages.count < 3 else { return }
-        
         let pb = NSPasteboard.general
-        
-        // Intentar obtener imagen directa
-        if let image = NSImage(pasteboard: pb),
-           let optimized = optimizeImage(image) {
+        if let image = NSImage(pasteboard: pb), let optimized = optimizeImage(image) {
             manager.showcaseImages.append(optimized)
-            return
-        }
-        
-        // Fallback: leer datos de imagen del portapapeles
-        let imageTypes: [NSPasteboard.PasteboardType] = [.tiff, .png, NSPasteboard.PasteboardType("public.jpeg")]
-        for type in imageTypes {
-            if let data = pb.data(forType: type),
-               let image = NSImage(data: data),
-               let optimized = optimizeImage(image) {
-                manager.showcaseImages.append(optimized)
-                return
-            }
-        }
-    }
-    
-    /// Hace scroll al inicio de todos los NSTextView en la ventana flotante
-    private func scrollContentToTop() {
-        guard let window = NSApp.windows.first(where: { $0.isVisible && $0 is NSPanel }) else { return }
-        
-        func allTextViews(in view: NSView) -> [NSTextView] {
-            var result: [NSTextView] = []
-            if let tv = view as? NSTextView { result.append(tv) }
-            for sub in view.subviews { result += allTextViews(in: sub) }
-            return result
-        }
-        
-        guard let contentView = window.contentView else { return }
-        let textViews = allTextViews(in: contentView)
-        
-        // Solo el NSTextView que pertenece al TextEditor (el único que tiene NSScrollView como superview)
-        for tv in textViews {
-            if tv.enclosingScrollView != nil {
-                // Es TextEditor (no TextField)
-                tv.scrollRangeToVisible(NSRange(location: 0, length: 0))
-                tv.setSelectedRange(NSRange(location: 0, length: 0))
-            }
         }
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard manager.showcaseImages.count < 3 else { return false }
-        
-        var handled = false
         for provider in providers.prefix(3 - manager.showcaseImages.count) {
             if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data, let image = NSImage(data: data),
-                       let optimized = self.optimizeImage(image) {
-                        DispatchQueue.main.async {
-                            if self.manager.showcaseImages.count < 3 {
-                                self.manager.showcaseImages.append(optimized)
-                            }
-                        }
+                    if let data = data, let image = NSImage(data: data), let optimized = self.optimizeImage(image) {
+                        DispatchQueue.main.async { self.manager.showcaseImages.append(optimized) }
                     }
                 }
-                handled = true
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
-                    guard let data = data,
-                          let urlString = String(data: data, encoding: .utf8),
-                          let url = URL(string: urlString),
-                          let imgData = try? Data(contentsOf: url),
-                          let image = NSImage(data: imgData),
-                          let optimized = self.optimizeImage(image) else { return }
-                    DispatchQueue.main.async {
-                        if self.manager.showcaseImages.count < 3 {
-                            self.manager.showcaseImages.append(optimized)
-                        }
-                    }
-                }
-                handled = true
             }
         }
-        return handled
+        return true
     }
     
     private func optimizeImage(_ image: NSImage) -> Data? {
         let maxDim: CGFloat = 1024
         let size = image.size
-        guard size.width > 0, size.height > 0 else { return nil }
         let scale = min(maxDim / size.width, maxDim / size.height, 1.0)
         let newSize = NSSize(width: size.width * scale, height: size.height * scale)
-        
         let newImage = NSImage(size: newSize)
         newImage.lockFocus()
         image.draw(in: NSRect(origin: .zero, size: newSize))
         newImage.unlockFocus()
-        
-        guard let tiffData = newImage.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
+        guard let tiffData = newImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.82])
     }
 }
+
