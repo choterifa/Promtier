@@ -7,8 +7,6 @@
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,7 +49,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "advanced.settings",
+    "settings.editor.selected.configurable": "ml.llm.LLMConfigurable",
     "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
@@ -72,7 +70,7 @@
       <updated>1774499600131</updated>
       <workItem from="1774499601189" duration="1291000" />
       <workItem from="1774504883574" duration="485000" />
-      <workItem from="1774646753775" duration="717000" />
+      <workItem from="1774646753775" duration="1403000" />
     </task>
     <servers />
   </component>

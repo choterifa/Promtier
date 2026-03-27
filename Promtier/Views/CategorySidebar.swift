@@ -36,6 +36,8 @@ struct CategorySidebar: View {
     // Header hover states
     @State private var isAddFolderHovered = false
     @State private var isSortMenuHovered = false
+    @State private var isHeaderHovered = false
+    @State private var isSystemSectionExpanded = true
     
     
     private var categories: [PredefinedCategory] {
@@ -54,12 +56,27 @@ struct CategorySidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header sutil
-            HStack {
-                Text("explore")
-                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(1.2 * preferences.fontSize.scale)
+            HStack(spacing: 0) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isSystemSectionExpanded ? 90 : 0))
+                    
+                    Text("explore")
+                        .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
+                        .foregroundColor(isHeaderHovered ? .primary : .secondary)
+                        .textCase(.uppercase)
+                        .tracking(1.2 * preferences.fontSize.scale)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        isSystemSectionExpanded.toggle()
+                    }
+                    HapticService.shared.playLight()
+                }
+                .onHover { isHeaderHovered = $0 }
                 
                 Spacer()
                 
@@ -108,7 +125,11 @@ struct CategorySidebar: View {
                             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isAddFolderHovered)
                     }
                     .buttonStyle(.plain)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.primary.opacity(isAddFolderHovered ? 0.06 : 0))
+                    )
                     .help("create_category".localized(for: preferences.language))
                     .onHover { isAddFolderHovered = $0 }
                 }
@@ -117,69 +138,75 @@ struct CategorySidebar: View {
             .padding(.top, 32)
             .padding(.bottom, 16)
             
-            VStack(spacing: 4) {
-                // Botón "Todas"
-                SidebarItem(
-                    title: "all",
-                    icon: "square.grid.2x2.fill",
-                    color: .blue,
-                    count: promptService.prompts.count,
-                    isSelected: promptService.selectedCategory == nil
-                ) {
-                    promptService.selectedCategory = nil
-                }
-                
-                // Botón "Recientes"
-                SidebarItem(
-                    title: "recent",
-                    icon: "clock.arrow.2.circlepath",
-                    color: .purple,
-                    count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
-                    isSelected: promptService.selectedCategory == "recent"
-                ) {
-                    promptService.selectedCategory = "recent"
-                }
-                
-                // Botón "Favoritos"
-                SidebarItem(
-                    title: "favorites",
-                    icon: "star.fill",
-                    color: .yellow,
-                    count: promptService.prompts.filter { $0.isFavorite }.count,
-                    isSelected: promptService.selectedCategory == "favorites",
-                    isDropTarget: isTargetedFavoritos,
-                    action: {
-                        promptService.selectedCategory = "favorites"
-                    },
-                    dropHandler: { promptId in
-                        markAsFavorite(id: promptId)
+            if isSystemSectionExpanded {
+                VStack(spacing: 4) {
+                    // Botón "Todas"
+                    SidebarItem(
+                        title: "all",
+                        icon: "square.grid.2x2.fill",
+                        color: .blue,
+                        count: promptService.prompts.count,
+                        isSelected: promptService.selectedCategory == nil
+                    ) {
+                        promptService.selectedCategory = nil
                     }
-                )
-                .onDrop(of: [.json, .plainText], isTargeted: $isTargetedFavoritos) { providers in
-                    handleQuickDrop(providers: providers, to: "favorites")
-                }
-                
-                // Botón "Sin categoría"
-                SidebarItem(
-                    title: "uncategorized",
-                    icon: "folder.fill",
-                    color: .gray,
-                    count: categoryCounts["uncategorized"] ?? 0,
-                    isSelected: promptService.selectedCategory == "uncategorized",
-                    isDropTarget: isTargetedSinCategoria,
-                    action: {
-                        promptService.selectedCategory = "uncategorized"
-                    },
-                    dropHandler: { promptId in
-                        movePrompt(id: promptId, to: nil)
+                    
+                    // Botón "Recientes"
+                    SidebarItem(
+                        title: "recent",
+                        icon: "clock.arrow.2.circlepath",
+                        color: .purple,
+                        count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
+                        isSelected: promptService.selectedCategory == "recent"
+                    ) {
+                        promptService.selectedCategory = "recent"
                     }
-                )
-                .onDrop(of: [.json, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
-                    handleQuickDrop(providers: providers, to: nil)
+                    
+                    // Botón "Favoritos"
+                    SidebarItem(
+                        title: "favorites",
+                        icon: "star.fill",
+                        color: .yellow,
+                        count: promptService.prompts.filter { $0.isFavorite }.count,
+                        isSelected: promptService.selectedCategory == "favorites",
+                        isDropTarget: isTargetedFavoritos,
+                        action: {
+                            promptService.selectedCategory = "favorites"
+                        },
+                        dropHandler: { promptId in
+                            markAsFavorite(id: promptId)
+                        }
+                    )
+                    .onDrop(of: [.json, .plainText], isTargeted: $isTargetedFavoritos) { providers in
+                        handleQuickDrop(providers: providers, to: "favorites")
+                    }
+                    
+                    // Botón "Sin categoría"
+                    SidebarItem(
+                        title: "uncategorized",
+                        icon: "folder.fill",
+                        color: .gray,
+                        count: categoryCounts["uncategorized"] ?? 0,
+                        isSelected: promptService.selectedCategory == "uncategorized",
+                        isDropTarget: isTargetedSinCategoria,
+                        action: {
+                            promptService.selectedCategory = "uncategorized"
+                        },
+                        dropHandler: { promptId in
+                            movePrompt(id: promptId, to: nil)
+                        }
+                    )
+                    .onDrop(of: [.json, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
+                        handleQuickDrop(providers: providers, to: nil)
+                    }
                 }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity.combined(with: .move(edge: .top))
+                ))
             }
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity)
             
             VStack(spacing: 0) {
                 // Divider (Cleanup)
