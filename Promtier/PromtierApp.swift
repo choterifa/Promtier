@@ -35,13 +35,10 @@ struct PromtierApp: App {
 // CONFIGURABLE: Escena que no crea ninguna ventana
 struct EmptyScene: Scene {
     var body: some Scene {
-        // No crear ninguna ventana en absoluto
-        WindowGroup {
+        // Evitar crear una ventana “vacía” al lanzar (menu bar app).
+        Settings {
             EmptyView()
         }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultSize(width: 0, height: 0)
         .commands {
             // Cmd + N -> Nuevo Prompt
             // Cmd + Shift + N -> Nueva Categoría

@@ -168,7 +168,8 @@ class MenuBarManager: NSObject, ObservableObject {
     private func showPopover(relativeTo rect: NSRect, of view: NSView) {
         if popover == nil {
             popover = NSPopover()
-            popover?.contentSize = NSSize(width: preferencesManager.windowWidth, height: preferencesManager.windowHeight)
+            let size = NSSize(width: preferencesManager.windowWidth, height: preferencesManager.windowHeight)
+            popover?.contentSize = size
             popover?.behavior = .transient
             popover?.animates = true
             popover?.delegate = self
@@ -182,12 +183,15 @@ class MenuBarManager: NSObject, ObservableObject {
                 .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
             popover?.contentViewController = NSHostingController(rootView: AnyView(contentView))
+            popover?.contentViewController?.preferredContentSize = size
             
             // Aplicar apariencia inicial al popover
             updatePopoverAppearance()
         }
         
-    
+        // Asegurar tamaño correcto incluso en el primer show (evita que el popover “crezca” por layout inicial).
+        updatePopoverSize(width: preferencesManager.windowWidth, height: preferencesManager.windowHeight)
+
         popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
         
         // Asegurar foco inmediato para evitar el "doble click"
@@ -261,6 +265,10 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Cierra el popover
     func closePopover() {
         popover?.performClose(nil)
+        
+        // Safety: si el HUD/ghost window quedó visible por algún bug, ocultarlo al cerrar.
+        preferencesManager.isResizingVisible = false
+        hideGhostWindow()
         
         // Restaurar icono normal
         statusItem?.button?.image = NSImage(systemSymbolName: menuBarIcon, 

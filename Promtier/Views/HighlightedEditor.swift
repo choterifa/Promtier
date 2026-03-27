@@ -404,7 +404,11 @@ struct HighlightedEditor: NSViewRepresentable {
                 textView.setSelectedRange(NSRange(location: min(markdown.count, textView.string.utf16.count), length: 0))
             }
 
-            parent.plainText = textView.string
+            // Evitar "Modifying state during view update" (updateNSView/makeNSView)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.parent.plainText = textView.string
+            }
             lastSerializedMarkdown = markdown
             syncTypingAttributes(for: textView)
             scheduleHighlighting(for: textView, mode: .full, debounce: false)

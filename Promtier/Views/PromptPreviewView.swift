@@ -20,6 +20,7 @@ struct PromptPreviewView: View {
     @State private var showcaseImagePaths: [String] = []
     @State private var isLoadingImages: Bool = false
     @State private var cachedAttributedContent: AttributedString? = nil
+    @State private var cachedContentTask: Task<Void, Never>? = nil
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
@@ -83,6 +84,7 @@ struct PromptPreviewView: View {
         }
         .onDisappear {
             isVisible = false
+            cachedContentTask?.cancel()
         }
         .onChange(of: prompt.id) { _, _ in
             updateCachedContent()
@@ -468,21 +470,27 @@ struct PromptPreviewView: View {
             scale: scale,
             interfaceStyle: previewInterfaceStyle
         )
+        let promptSnapshot = prompt
+        let themeColor = previewThemeColor
+        let interfaceStyle = previewInterfaceStyle
 
-        if let cached = PromptPreviewTextCache.shared.cachedAttributedString(forKey: key),
-           let attributed = try? AttributedString(cached, including: \.appKit) {
-            cachedAttributedContent = attributed
-            return
-        }
+        cachedContentTask?.cancel()
+        cachedContentTask = Task(priority: .utility) {
+            let converted: AttributedString? = await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .utility).async {
+                    let source = PromptPreviewTextCache.shared.cachedAttributedString(forKey: key)
+                        ?? PromptPreviewTextCache.shared.highlightedString(
+                            for: promptSnapshot,
+                            themeColor: themeColor,
+                            scale: scale,
+                            interfaceStyle: interfaceStyle
+                        )
+                    let converted = try? AttributedString(source, including: \.appKit)
+                    continuation.resume(returning: converted)
+                }
+            }
 
-        Task(priority: .utility) {
-            let highlighted = PromptPreviewTextCache.shared.highlightedString(
-                for: prompt,
-                themeColor: previewThemeColor,
-                scale: scale,
-                interfaceStyle: previewInterfaceStyle
-            )
-            let converted = try? AttributedString(highlighted, including: \.appKit)
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 self.cachedAttributedContent = converted
             }

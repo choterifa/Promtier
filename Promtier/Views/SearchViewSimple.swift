@@ -34,6 +34,7 @@ struct SearchViewSimple: View {
     @State private var isFullScreenImageOpen: Bool = false
     // Prewarm de preview/texto para evitar beachball al abrir preview tras arrancar.
     @State private var prewarmTask: Task<Void, Never>? = nil
+    @State private var delayedPrewarmTask: Task<Void, Never>? = nil
     @State private var lastPrewarmedPreviewKey: String? = nil
     
     // Resizing Sidebar
@@ -285,7 +286,7 @@ struct SearchViewSimple: View {
             let threshold: CGFloat = 565
             
             // Solo auto-ocultar/mostrar en la vista principal
-            guard menuBarManager.activeViewState == .main else { return }
+            guard menuBarManager.activeViewState == .main, !preferences.isGridView else { return }
             
             if newWidth < threshold && preferences.showSidebar {
                 // Auto-hide when shrinking past 565
@@ -314,9 +315,14 @@ struct SearchViewSimple: View {
                     return handleLocalKeyEvent(event)
                 }
             }
-
+            delayedPrewarmTask?.cancel()
             if let firstPrompt = promptService.filteredPrompts.first {
-                prewarmPreviewAssets(for: firstPrompt, force: true)
+                delayedPrewarmTask = Task(priority: .utility) {
+                    try? await Task.sleep(nanoseconds: 80_000_000)
+                    await MainActor.run {
+                        prewarmPreviewAssets(for: firstPrompt, force: true)
+                    }
+                }
             }
         }
         .onDisappear {
@@ -325,6 +331,7 @@ struct SearchViewSimple: View {
                 localEventMonitor = nil
             }
             prewarmTask?.cancel()
+            delayedPrewarmTask?.cancel()
         }
         .onChange(of: selectedPrompt?.id) { _, _ in
             guard let selectedPrompt else { return }
@@ -753,10 +760,14 @@ struct SearchViewSimple: View {
                 return nil
             }
             let currentState = menuBarManager.activeViewState
+            // En el editor (NewPromptView) dejamos que ese view maneje ESC primero
+            // (overlays de variables/snippets, perder foco, etc.)
+            if currentState == .newPrompt {
+                return event
+            }
             if currentState != .main {
                 DispatchQueue.main.async {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        if currentState == .newPrompt { DraftService.shared.clearDraft() }
                         menuBarManager.activeViewState = .main
                         selectedPrompt = nil
                         menuBarManager.folderToEdit = nil
@@ -1036,12 +1047,18 @@ struct SearchViewSimple: View {
         let themeColor = previewThemeColor(for: prompt)
         let interfaceStyle = previewInterfaceStyle
         prewarmTask = Task(priority: .utility) {
-            let prewarmedText = PromptPreviewTextCache.shared.highlightedString(
-                for: prompt,
-                themeColor: themeColor,
-                scale: scale,
-                interfaceStyle: interfaceStyle
-            )
+            // Prewarm del texto en background (evita trabajo pesado en el primer preview).
+            _ = await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .utility).async {
+                    let prewarmedText = PromptPreviewTextCache.shared.highlightedString(
+                        for: prompt,
+                        themeColor: themeColor,
+                        scale: scale,
+                        interfaceStyle: interfaceStyle
+                    )
+                    continuation.resume(returning: prewarmedText)
+                }
+            }
 
             if prompt.showcaseImageCount > 0 {
                 let paths: [String] = !prompt.showcaseImagePaths.isEmpty
@@ -1054,8 +1071,6 @@ struct SearchViewSimple: View {
                     await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey, maxPixelSize: 1600)
                 }
             }
-
-            _ = prewarmedText
         }
     }
 

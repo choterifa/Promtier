@@ -85,7 +85,7 @@ struct EditorToolbar: View {
                 Label("Strikethrough", systemImage: "strikethrough")
             }
             Button(action: { send(.inlineCode) }) {
-                Label("Inline Code", systemImage: "code")
+                Label("Inline Code", systemImage: "chevron.left.forwardslash.chevron.right")
             }
             Divider()
             Button(action: { send(.bulletList) }) {

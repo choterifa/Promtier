@@ -6,6 +6,7 @@
 //  Created by Carlos on 15/03/26.
 //
 
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -53,42 +54,19 @@ struct PromptCard: View {
     
     @State private var isTargetedForDrop = false
     
-    // Statically cached Regex patterns to prevent massive main-thread blocking during scroll
-    static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
-    static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    @Environment(\.colorScheme) private var colorScheme
     
     private var highlightedContent: AttributedString {
-        // Truncate the content to a reasonable length for a preview card (e.g. 500 characters max)
-        // This is the #1 fix for performance issues on massive prompts during scroll.
-        let previewText = String(prompt.content.prefix(500))
-        var attrString = AttributedString(previewText)
-        
-        // 1. Resaltado de Brackets
-        if let bracketRegex = Self.bracketRegex {
-            let nsRange = NSRange(previewText.startIndex..., in: previewText)
-            let matches = bracketRegex.matches(in: previewText, options: [], range: nsRange)
-            for match in matches {
-                if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = currentCategoryColor.opacity(0.8)
-                }
-            }
-        }
-        
-        // 2. Resaltado de Variables
-        if let variableRegex = Self.variableRegex {
-            let nsRange = NSRange(previewText.startIndex..., in: previewText)
-            let matches = variableRegex.matches(in: previewText, options: [], range: nsRange)
-            
-            for match in matches.reversed() {
-                if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = .blue
-                    attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
-                    attrString[range].backgroundColor = Color.blue.opacity(0.08)
-                }
-            }
-        }
-        
-        return attrString
+        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
+        let categoryNSColor = NSColor(currentCategoryColor)
+        let cached = PromptCardTextCache.shared.highlightedSnippet(
+            for: prompt,
+            maxCharacters: 500,
+            categoryColor: categoryNSColor,
+            scale: preferences.fontSize.scale,
+            interfaceStyle: interfaceStyle
+        )
+        return AttributedString(cached)
     }
     
     // EXTENSIÓN: Contador de variables

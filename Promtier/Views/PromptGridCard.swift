@@ -5,6 +5,7 @@
 //  VISTA: Card tipo grid (estilo RemNote) para mostrar prompts con imágenes y más detalles
 //
 
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -25,38 +26,19 @@ struct PromptGridCard: View {
     @State private var isTargetedForDrop = false
     @State private var fallbackShowcasePath: String? = nil
     
-    // Cached Regex patterns
-    static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
-    static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    @Environment(\.colorScheme) private var colorScheme
     
     private var highlightedContent: AttributedString {
-        let previewText = String(prompt.content.prefix(250))
-        var attrString = AttributedString(previewText)
-        
-        if let bracketRegex = Self.bracketRegex {
-            let nsRange = NSRange(previewText.startIndex..., in: previewText)
-            let matches = bracketRegex.matches(in: previewText, options: [], range: nsRange)
-            for match in matches {
-                if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = currentCategoryColor.opacity(0.8)
-                }
-            }
-        }
-        
-        if let variableRegex = Self.variableRegex {
-            let nsRange = NSRange(previewText.startIndex..., in: previewText)
-            let matches = variableRegex.matches(in: previewText, options: [], range: nsRange)
-            
-            for match in matches.reversed() {
-                if let range = Range(match.range, in: attrString) {
-                    attrString[range].foregroundColor = .blue
-                    attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
-                    attrString[range].backgroundColor = Color.blue.opacity(0.08)
-                }
-            }
-        }
-        
-        return attrString
+        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
+        let categoryNSColor = NSColor(currentCategoryColor)
+        let cached = PromptCardTextCache.shared.highlightedSnippet(
+            for: prompt,
+            maxCharacters: 250,
+            categoryColor: categoryNSColor,
+            scale: preferences.fontSize.scale,
+            interfaceStyle: interfaceStyle
+        )
+        return AttributedString(cached)
     }
     
     private var variableCount: Int { prompt.extractTemplateVariables().count }

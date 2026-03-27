@@ -1004,40 +1004,8 @@ struct NewPromptView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(150)
             }
-            if showSnippets {
-                ZStack {
-                    Color.black.opacity(0.001)
-                        .ignoresSafeArea()
-                        .onTapGesture { dismissSnippetsOverlay() }
-                    snippetOverlay
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onExitCommand { dismissSnippetsOverlay() }
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95, anchor: .bottom)
-                            .combined(with: .opacity)
-                            .combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                    ))
-                    .zIndex(200)
-            }
-            if showVariables {
-                ZStack {
-                    Color.black.opacity(0.001)
-                        .ignoresSafeArea()
-                        .onTapGesture { dismissVariablesOverlay() }
-                    variablesOverlay
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onExitCommand { dismissVariablesOverlay() }
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95, anchor: .bottom)
-                            .combined(with: .opacity)
-                            .combined(with: .move(edge: .bottom)),
-                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                    ))
-                    .zIndex(201)
-            }
+            snippetsOverlayLayer
+            variablesOverlayLayer
             if showParticles {
                 ParticleSystemView(accentColor: currentCategoryColor)
                     .allowsHitTesting(false)
@@ -1061,10 +1029,90 @@ struct NewPromptView: View {
         }
     }
 
+    private var snippetsOverlayLayer: some View {
+        ZStack {
+            Color.black.opacity(0.001)
+                .ignoresSafeArea()
+                .onTapGesture { dismissSnippetsOverlay() }
+            snippetOverlay
+                .scaleEffect(showSnippets ? 1.0 : 0.98, anchor: .bottom)
+                .offset(y: showSnippets ? 0 : 10)
+                .opacity(showSnippets ? 1.0 : 0.0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .opacity(showSnippets ? 1.0 : 0.0)
+        .allowsHitTesting(showSnippets)
+        .animation(.easeOut(duration: 0.15), value: showSnippets)
+        .zIndex(200)
+    }
+
+    private var variablesOverlayLayer: some View {
+        ZStack {
+            Color.black.opacity(0.001)
+                .ignoresSafeArea()
+                .onTapGesture { dismissVariablesOverlay() }
+            variablesOverlay
+                .scaleEffect(showVariables ? 1.0 : 0.98, anchor: .bottom)
+                .offset(y: showVariables ? 0 : 10)
+                .opacity(showVariables ? 1.0 : 0.0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .opacity(showVariables ? 1.0 : 0.0)
+        .allowsHitTesting(showVariables)
+        .animation(.easeOut(duration: 0.15), value: showVariables)
+        .zIndex(201)
+    }
+
     private func setupKeyboardMonitor() {
         if localMonitor != nil { return }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+            // Navegación por teclado dentro de overlays (Variables / Snippets)
+            // Esto asegura que las flechas sigan funcionando incluso si el foco se va al popover.
+            if self.showVariables {
+                switch event.keyCode {
+                case 126: // Up Arrow
+                    DispatchQueue.main.async {
+                        self.variablesSelectedIndex = max(0, self.variablesSelectedIndex - 1)
+                    }
+                    return nil
+                case 125: // Down Arrow
+                    DispatchQueue.main.async {
+                        self.variablesSelectedIndex += 1
+                    }
+                    return nil
+                case 36, 76: // Return / Enter
+                    DispatchQueue.main.async {
+                        self.triggerVariablesSelection = true
+                    }
+                    return nil
+                default:
+                    break
+                }
+            }
+
+            if self.showSnippets {
+                switch event.keyCode {
+                case 126: // Up Arrow
+                    DispatchQueue.main.async {
+                        self.snippetSelectedIndex = max(0, self.snippetSelectedIndex - 1)
+                    }
+                    return nil
+                case 125: // Down Arrow
+                    DispatchQueue.main.async {
+                        self.snippetSelectedIndex += 1
+                    }
+                    return nil
+                case 36, 76: // Return / Enter
+                    DispatchQueue.main.async {
+                        self.triggerSnippetSelection = true
+                    }
+                    return nil
+                default:
+                    break
+                }
+            }
 
             // Cmd + S -> Save
             if modifiers.contains(.command) && event.keyCode == 1 { // 'S' is key code 1
@@ -1150,6 +1198,8 @@ struct NewPromptView: View {
 
                     // Si no estamos editando nada y presionan ESC, cerramos la ventana
                     DispatchQueue.main.async {
+                        DraftService.shared.clearDraft()
+                        MenuBarManager.shared.isModalActive = false
                         self.onClose()
                     }
                     return nil
