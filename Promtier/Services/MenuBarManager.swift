@@ -40,6 +40,10 @@ class MenuBarManager: NSObject, ObservableObject {
     // Estado de hover compartido para la sidebar y su tirador de redimensionamiento
     @Published var isSidebarHovered = false
     
+    // CONTROL DE FRECUENCIA: Último texto sugerido (para no repetir el banner si el popover se abre varias veces)
+    private var lastSuggestedText: String? = nil
+    private var lastSuggestedCount: Int = 0
+    
     enum PopoverViewState {
         case main
         case newPrompt
@@ -230,8 +234,12 @@ class MenuBarManager: NSObject, ObservableObject {
         
         let pasteboard = NSPasteboard.general
         if let text = pasteboard.string(forType: .string), 
-           text.count > 10, text.count < 5000,
-           text != suggestedClipboardContent {
+           text.count > 10, text.count < 5000 {
+            
+            // Si el texto es igual al último sugerido, permitimos máximo 2 veces
+            if text == lastSuggestedText && lastSuggestedCount >= 2 {
+                return 
+            }
             
             // CONTEXTO: Filtrar origen (Navegadores o Apps permitidas)
             // Obtenemos el ID de la app de donde viene el copiado
@@ -249,7 +257,14 @@ class MenuBarManager: NSObject, ObservableObject {
             // Solo sugerir si no hay un borrador activo (para no interrumpir)
             guard !DraftService.shared.hasDraft else { return }
             
+            if text != lastSuggestedText {
+                self.lastSuggestedCount = 1
+            } else {
+                self.lastSuggestedCount += 1
+            }
+            
             self.suggestedClipboardContent = text
+            self.lastSuggestedText = text
             
             // Auto-hide suggestion after 4.0 seconds to be less intrusive
             DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {

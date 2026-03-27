@@ -1203,7 +1203,7 @@ struct ClipboardSuggestionBanner: View {
             Button(action: { withAnimation(.easeOut(duration: 0.25)) { menuBarManager.suggestedClipboardContent = nil } }) {
                 Image(systemName: "xmark").font(.system(size: 10, weight: .black)).foregroundColor(.secondary.opacity(0.5)).frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.04)))
             }.buttonStyle(.plain)
-        }.padding(12).frame(maxWidth: preferences.windowWidth * 0.9).background(RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial).shadow(color: .black.opacity(0.15), radius: 20, y: 10))
+        }.padding(12).frame(maxWidth: preferences.windowWidth * 0.75).background(RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial).shadow(color: .black.opacity(0.15), radius: 20, y: 10))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.primary.opacity(0.12), lineWidth: 1)).padding(.bottom, 8)
     }
 }
