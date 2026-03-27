@@ -189,14 +189,11 @@ struct OmniSearchView: View {
             .padding(.vertical, 14)
             .background(Color.primary.opacity(0.04))
         }
+        .frame(width: 650, height: 450, alignment: .top)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .background(
             RoundedRectangle(cornerRadius: 22)
                 .fill(Color(NSColor.windowBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                )
                 .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
         )
         .onAppear {
@@ -215,6 +212,7 @@ struct OmniSearchView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
             guard let direction = notification.object as? String else { return }
             let count = filteredPrompts.count
+            guard count > 0 else { return }
             
             if direction == "down" {
                 if selectedIndex < count - 1 {
@@ -229,28 +227,8 @@ struct OmniSearchView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchSubmit"))) { _ in
-            if !filteredPrompts.isEmpty {
+            if !filteredPrompts.isEmpty && selectedIndex < filteredPrompts.count {
                 copyAndClose(filteredPrompts[selectedIndex])
-            }
-        }
-        .onMoveCommand { direction in
-            // Mantener como backup pero priorizar notificaciones
-            let count = filteredPrompts.count
-            guard count > 0 else { return }
-            
-            switch direction {
-            case .down:
-                if selectedIndex < count - 1 {
-                    selectedIndex += 1
-                    HapticService.shared.playLight()
-                }
-            case .up:
-                if selectedIndex > 0 {
-                    selectedIndex -= 1
-                    HapticService.shared.playLight()
-                }
-            default:
-                break
             }
         }
     }

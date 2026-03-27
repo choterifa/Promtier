@@ -1102,7 +1102,7 @@ struct SearchViewSimple: View {
                         }
                     }
                     Task {
-                        try? await Task.sleep(nanoseconds: 7_000_000_000)
+                        try? await Task.sleep(nanoseconds: 7_500_000_000)
                         if !Task.isCancelled {
                             await MainActor.run {
                                 if self.currentGhostTip != nil {

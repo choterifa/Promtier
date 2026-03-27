@@ -193,6 +193,24 @@ struct PromptPreviewView: View {
                     .buttonStyle(.plain)
                     .help(preferences.previewImagesFirst ? "Mostrar fotos al final" : "Mostrar fotos primero")
                 }
+                
+                // Botón de Copiar Principal
+                Button(action: {
+                    ClipboardService.shared.copyToClipboard(prompt.content)
+                    if preferences.soundEnabled {
+                        SoundService.shared.playSuccessSound()
+                    }
+                    HapticService.shared.playLight()
+                }) {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05)))
+                }
+                .buttonStyle(.plain)
+                .help("copy_to_clipboard".localized(for: preferences.language))
             }
         }
         .padding(.horizontal, 24)
