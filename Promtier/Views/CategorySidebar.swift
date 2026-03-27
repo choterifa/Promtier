@@ -203,8 +203,8 @@ struct CategorySidebar: View {
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity)
                 .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .leading)),
-                    removal: .opacity.combined(with: .move(edge: .leading))
+                    insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
                 ))
             }
             
