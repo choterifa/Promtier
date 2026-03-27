@@ -5,12 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/CategorySidebar.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/OmniSearchView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/OmniSearchView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/SearchViewSimple.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/SearchViewSimple.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,7 +68,7 @@
       <updated>1774499600131</updated>
       <workItem from="1774499601189" duration="1291000" />
       <workItem from="1774504883574" duration="485000" />
-      <workItem from="1774646753775" duration="4357000" />
+      <workItem from="1774646753775" duration="4660000" />
     </task>
     <servers />
   </component>

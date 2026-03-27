@@ -816,10 +816,12 @@ struct SearchViewSimple: View {
                 }
             }
         }
-        if keyCode == 3 { // 'f' key for fork
-            if showingPreview, let prompt = selectedPrompt {
+        if keyCode == 14 { // 'e' key for edit
+            if showingPreview, let _ = selectedPrompt {
                 DispatchQueue.main.async {
-                    forkPrompt(prompt)
+                    showingPreview = false
+                    if preferences.soundEnabled { SoundService.shared.playMagicSound() }
+                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 }
                 return nil
             }
@@ -873,6 +875,7 @@ struct SearchViewSimple: View {
                 let resolvedContent = PlaceholderResolver.shared.resolveAll(in: prompt.content)
                 self.promptService.usePrompt(prompt, contentOverride: resolvedContent)
             } else {
+                if self.showingPreview { self.showingPreview = false }
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { fillingVariablesFor = prompt }
                 return
             }
