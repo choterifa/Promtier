@@ -54,6 +54,14 @@
 "openai_model_presets" = "Selecciona un modelo";
 "gemini_service" = "Google Gemini";
 "gemini_subtitle" = "Usa la API de Google Gemini";
+"ai_error_invalid_api_key" = "API Key inválida. Revísala en Configuración → IA.";
+"ai_error_model_not_found" = "El modelo no existe. Elige otro en Configuración → IA.";
+"ai_error_rate_limited" = "Límite alcanzado. Intenta de nuevo en un momento.";
+"ai_error_server_busy" = "Servidor saturado. Intenta de nuevo pronto.";
+"ai_error_bad_request" = "Error en la solicitud. Revisa el modelo y el prompt.";
+"ai_error_network" = "Error de red. Revisa tu conexión.";
+"ai_error_empty_response" = "Respuesta vacía del servicio de IA.";
+"ai_error_unknown" = "Error de IA.";
 "gemini_model_subtitle" = "ID del modelo Gemini (ej. gemini-2.0-flash)";
 "preview_priority" = "Prioridad en Preview";
 "preview_priority_subtitle" = "Orden de elementos en la vista rápida";

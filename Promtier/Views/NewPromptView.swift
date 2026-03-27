@@ -1020,7 +1020,11 @@ struct NewPromptView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(Capsule().fill(Color.purple).shadow(radius: 10))
+                        .background(
+                            Capsule()
+                                .fill(msg.hasPrefix("❌") ? Color.red : Color.purple)
+                                .shadow(radius: 10)
+                        )
                         .padding(.bottom, 40)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1965,6 +1969,12 @@ struct NewPromptView: View {
                 if case .failure(let error) = completion {
                     print("❌ Autocomplete Error: \(error.localizedDescription)")
                     HapticService.shared.playError()
+                    withAnimation {
+                        branchMessage = userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
+                    }
                 } else {
                     HapticService.shared.playSuccess()
                     if !fullResponse.isEmpty {
@@ -2032,6 +2042,12 @@ struct NewPromptView: View {
                 if case .failure(let error) = completion {
                     print("❌ Categorization Error: \(error.localizedDescription)")
                     HapticService.shared.playError()
+                    withAnimation {
+                        branchMessage = userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
+                    }
                 } else {
                     HapticService.shared.playSuccess()
                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2047,6 +2063,82 @@ struct NewPromptView: View {
                 fullResponse += chunk
             })
             .store(in: &cancellables)
+    }
+
+    private func userFacingAIErrorToast(for error: Error) -> String {
+        let nsError = error as NSError
+
+        let baseKey: String = {
+            if let openAIError = error as? OpenAIAPIError {
+                switch openAIError.kind {
+                case .invalidAPIKey: return "ai_error_invalid_api_key"
+                case .modelNotFound: return "ai_error_model_not_found"
+                case .rateLimited: return "ai_error_rate_limited"
+                case .serverBusy: return "ai_error_server_busy"
+                case .badRequest: return "ai_error_bad_request"
+                case .emptyResponse: return "ai_error_empty_response"
+                case .unknown: return "ai_error_unknown"
+                }
+            }
+
+            if nsError.domain == NSURLErrorDomain {
+                return "ai_error_network"
+            }
+
+            if nsError.domain == "GeminiAPI" {
+                switch nsError.code {
+                case 400: return "ai_error_bad_request"
+                case 401, 403: return "ai_error_invalid_api_key"
+                case 404: return "ai_error_model_not_found"
+                case 429: return "ai_error_rate_limited"
+                case 500, 502, 503, 504: return "ai_error_server_busy"
+                default: return "ai_error_unknown"
+                }
+            }
+
+            let lower = nsError.localizedDescription.lowercased()
+            if lower.contains("model") && (lower.contains("not found") || lower.contains("does not exist")) {
+                return "ai_error_model_not_found"
+            }
+            if lower.contains("rate limit") || lower.contains("too many requests") || lower.contains("429") {
+                return "ai_error_rate_limited"
+            }
+            if lower.contains("invalid api key") || (lower.contains("api key") && lower.contains("invalid")) || lower.contains("401") {
+                return "ai_error_invalid_api_key"
+            }
+            if lower.contains("overloaded") || lower.contains("server busy") || lower.contains("503") {
+                return "ai_error_server_busy"
+            }
+
+            return "ai_error_unknown"
+        }()
+
+        let base = baseKey.localized(for: preferences.language)
+        let detail = compactErrorDetail(from: error)
+        if detail.isEmpty {
+            return "❌ \(base)"
+        }
+        return "❌ \(base)\n\(detail)"
+    }
+
+    private func compactErrorDetail(from error: Error) -> String {
+        let raw: String = {
+            if let openAIError = error as? OpenAIAPIError {
+                return openAIError.message
+            }
+            return (error as NSError).localizedDescription
+        }()
+
+        let cleaned = raw
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if cleaned.isEmpty { return "" }
+        if cleaned.count <= 180 { return cleaned }
+        let idx = cleaned.index(cleaned.startIndex, offsetBy: 180)
+        return String(cleaned[..<idx]) + "…"
     }
 
     // MARK: - App Association Helpers
@@ -2503,6 +2595,12 @@ struct EditorCard: View {
                     case .failure(let error):
                         print("❌ AI Generation Error: \(error.localizedDescription)")
                         HapticService.shared.playError()
+                        withAnimation {
+                            branchMessage = userFacingAIErrorToast(for: error)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
+                        }
                     case .finished:
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
@@ -2518,6 +2616,83 @@ struct EditorCard: View {
                 })
                 .store(in: &cancellables)
         }
+
+    private func userFacingAIErrorToast(for error: Error) -> String {
+        let nsError = error as NSError
+
+        let baseKey: String = {
+            if let openAIError = error as? OpenAIAPIError {
+                switch openAIError.kind {
+                case .invalidAPIKey: return "ai_error_invalid_api_key"
+                case .modelNotFound: return "ai_error_model_not_found"
+                case .rateLimited: return "ai_error_rate_limited"
+                case .serverBusy: return "ai_error_server_busy"
+                case .badRequest: return "ai_error_bad_request"
+                case .emptyResponse: return "ai_error_empty_response"
+                case .unknown: return "ai_error_unknown"
+                }
+            }
+
+            if nsError.domain == NSURLErrorDomain {
+                return "ai_error_network"
+            }
+
+            if nsError.domain == "GeminiAPI" {
+                switch nsError.code {
+                case 400: return "ai_error_bad_request"
+                case 401, 403: return "ai_error_invalid_api_key"
+                case 404: return "ai_error_model_not_found"
+                case 429: return "ai_error_rate_limited"
+                case 500, 502, 503, 504: return "ai_error_server_busy"
+                default: return "ai_error_unknown"
+                }
+            }
+
+            let lower = nsError.localizedDescription.lowercased()
+            if lower.contains("model") && (lower.contains("not found") || lower.contains("does not exist")) {
+                return "ai_error_model_not_found"
+            }
+            if lower.contains("rate limit") || lower.contains("too many requests") || lower.contains("429") {
+                return "ai_error_rate_limited"
+            }
+            if lower.contains("invalid api key") || (lower.contains("api key") && lower.contains("invalid")) || lower.contains("401") {
+                return "ai_error_invalid_api_key"
+            }
+            if lower.contains("overloaded") || lower.contains("server busy") || lower.contains("503") {
+                return "ai_error_server_busy"
+            }
+
+            return "ai_error_unknown"
+        }()
+
+        let base = baseKey.localized(for: preferences.language)
+        let detail = compactErrorDetail(from: error)
+        if detail.isEmpty {
+            return "❌ \(base)"
+        }
+        return "❌ \(base)\n\(detail)"
+    }
+
+    private func compactErrorDetail(from error: Error) -> String {
+        let raw: String = {
+            if let openAIError = error as? OpenAIAPIError {
+                return openAIError.message
+            }
+            return (error as NSError).localizedDescription
+        }()
+
+        let cleaned = raw
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if cleaned.isEmpty { return "" }
+        if cleaned.count <= 180 { return cleaned }
+        let idx = cleaned.index(cleaned.startIndex, offsetBy: 180)
+        return String(cleaned[..<idx]) + "…"
+    }
+
     private func createNewPromptFromEditor() {
         let newTitle = "New Prompt from Editor"
         let newPrompt = Prompt(
@@ -2850,9 +3025,16 @@ struct SecondaryEditorCard<Actions: View>: View {
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
                     isAIGenerating = false
-                    if case .failure = completion {
+                    switch completion {
+                    case .failure(let error):
                         HapticService.shared.playError()
-                    } else {
+                        withAnimation {
+                            branchMessage = userFacingAIErrorToast(for: error)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
+                        }
+                    case .finished:
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
                             let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2863,6 +3045,82 @@ struct SecondaryEditorCard<Actions: View>: View {
                     fullResponse += chunk
                 })
                 .store(in: &cancellables)
+        }
+
+        private func userFacingAIErrorToast(for error: Error) -> String {
+            let nsError = error as NSError
+
+            let baseKey: String = {
+                if let openAIError = error as? OpenAIAPIError {
+                    switch openAIError.kind {
+                    case .invalidAPIKey: return "ai_error_invalid_api_key"
+                    case .modelNotFound: return "ai_error_model_not_found"
+                    case .rateLimited: return "ai_error_rate_limited"
+                    case .serverBusy: return "ai_error_server_busy"
+                    case .badRequest: return "ai_error_bad_request"
+                    case .emptyResponse: return "ai_error_empty_response"
+                    case .unknown: return "ai_error_unknown"
+                    }
+                }
+
+                if nsError.domain == NSURLErrorDomain {
+                    return "ai_error_network"
+                }
+
+                if nsError.domain == "GeminiAPI" {
+                    switch nsError.code {
+                    case 400: return "ai_error_bad_request"
+                    case 401, 403: return "ai_error_invalid_api_key"
+                    case 404: return "ai_error_model_not_found"
+                    case 429: return "ai_error_rate_limited"
+                    case 500, 502, 503, 504: return "ai_error_server_busy"
+                    default: return "ai_error_unknown"
+                    }
+                }
+
+                let lower = nsError.localizedDescription.lowercased()
+                if lower.contains("model") && (lower.contains("not found") || lower.contains("does not exist")) {
+                    return "ai_error_model_not_found"
+                }
+                if lower.contains("rate limit") || lower.contains("too many requests") || lower.contains("429") {
+                    return "ai_error_rate_limited"
+                }
+                if lower.contains("invalid api key") || (lower.contains("api key") && lower.contains("invalid")) || lower.contains("401") {
+                    return "ai_error_invalid_api_key"
+                }
+                if lower.contains("overloaded") || lower.contains("server busy") || lower.contains("503") {
+                    return "ai_error_server_busy"
+                }
+
+                return "ai_error_unknown"
+            }()
+
+            let base = baseKey.localized(for: preferences.language)
+            let detail = compactErrorDetail(from: error)
+            if detail.isEmpty {
+                return "❌ \(base)"
+            }
+            return "❌ \(base)\n\(detail)"
+        }
+
+        private func compactErrorDetail(from error: Error) -> String {
+            let raw: String = {
+                if let openAIError = error as? OpenAIAPIError {
+                    return openAIError.message
+                }
+                return (error as NSError).localizedDescription
+            }()
+
+            let cleaned = raw
+                .replacingOccurrences(of: "\n", with: " ")
+                .replacingOccurrences(of: "\t", with: " ")
+                .replacingOccurrences(of: "  ", with: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if cleaned.isEmpty { return "" }
+            if cleaned.count <= 180 { return cleaned }
+            let idx = cleaned.index(cleaned.startIndex, offsetBy: 180)
+            return String(cleaned[..<idx]) + "…"
         }
     private func createNewPromptFromEditor() {
         let newTitle = "New Prompt from Editor"

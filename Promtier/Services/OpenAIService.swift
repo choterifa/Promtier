@@ -16,6 +16,38 @@ private struct OpenAIModelListResponse: Codable, Sendable {
     let data: [Model]
 }
 
+private struct OpenAIErrorEnvelope: Codable, Sendable {
+    struct OpenAIError: Codable, Sendable {
+        let message: String?
+        let type: String?
+        let code: String?
+    }
+
+    let error: OpenAIError?
+}
+
+enum OpenAIAPIErrorKind: String, Sendable {
+    case invalidAPIKey
+    case modelNotFound
+    case rateLimited
+    case serverBusy
+    case badRequest
+    case emptyResponse
+    case unknown
+}
+
+struct OpenAIAPIError: LocalizedError, Sendable {
+    let kind: OpenAIAPIErrorKind
+    let statusCode: Int?
+    let message: String
+    let code: String?
+    let type: String?
+
+    var errorDescription: String? {
+        message
+    }
+}
+
 struct OpenAIResponse: Codable, Sendable {
     struct Choice: Codable, Sendable {
         struct Message: Codable, Sendable {
@@ -119,9 +151,54 @@ class OpenAIService: ObservableObject {
             if let httpResponse = response as? HTTPURLResponse {
                 print("📡 OpenAI Status Code: \(httpResponse.statusCode)")
                 if httpResponse.statusCode != 200 {
-                    if let data = data, let errorMsg = String(data: data, encoding: .utf8) {
-                        print("⚠️ OpenAI Error Body: \(errorMsg)")
+                    let rawBody = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                    if !rawBody.isEmpty {
+                        print("⚠️ OpenAI Error Body: \(rawBody)")
                     }
+
+                    var serverMessage = rawBody
+                    var serverCode: String?
+                    var serverType: String?
+                    if let data {
+                        var decoded: OpenAIErrorEnvelope?
+                        if Thread.isMainThread {
+                            MainActor.assumeIsolated {
+                                decoded = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data)
+                            }
+                        } else {
+                            DispatchQueue.main.sync {
+                                MainActor.assumeIsolated {
+                                    decoded = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data)
+                                }
+                            }
+                        }
+
+                        if let openAIError = decoded?.error {
+                            serverMessage = openAIError.message ?? serverMessage
+                            serverCode = openAIError.code
+                            serverType = openAIError.type
+                        }
+                    }
+
+                    let kind: OpenAIAPIErrorKind
+                    switch httpResponse.statusCode {
+                    case 400: kind = .badRequest
+                    case 401: kind = .invalidAPIKey
+                    case 404: kind = .modelNotFound
+                    case 429: kind = .rateLimited
+                    case 500, 502, 503, 504: kind = .serverBusy
+                    default: kind = .unknown
+                    }
+
+                    let message = serverMessage.isEmpty ? "OpenAI HTTP \(httpResponse.statusCode)" : serverMessage
+                    subject.send(completion: .failure(OpenAIAPIError(
+                        kind: kind,
+                        statusCode: httpResponse.statusCode,
+                        message: message,
+                        code: serverCode,
+                        type: serverType
+                    )))
+                    return
                 }
             }
             
@@ -174,6 +251,14 @@ class OpenAIService: ObservableObject {
             
             if !hasFoundContent && (response as? HTTPURLResponse)?.statusCode == 200 {
                 print("⚠️ OpenAI: No content chunks found in 200 OK response")
+                subject.send(completion: .failure(OpenAIAPIError(
+                    kind: .emptyResponse,
+                    statusCode: 200,
+                    message: "Empty response from OpenAI",
+                    code: nil,
+                    type: nil
+                )))
+                return
             }
             
             subject.send(completion: .finished)

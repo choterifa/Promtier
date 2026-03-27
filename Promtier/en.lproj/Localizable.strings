@@ -461,6 +461,14 @@
 "ai_improvement_placeholder" = "Write a command to test or improve the result...";
 "ai_action_create_from_text" = "Create New Prompt";
 "prompt_created_success" = "New prompt created!";
+"ai_error_invalid_api_key" = "Invalid API key. Check it in Settings → AI.";
+"ai_error_model_not_found" = "Model not found. Choose another model in Settings → AI.";
+"ai_error_rate_limited" = "Rate limit reached. Try again in a moment.";
+"ai_error_server_busy" = "Server is busy. Try again soon.";
+"ai_error_bad_request" = "Request error. Check your model and prompt.";
+"ai_error_network" = "Network error. Check your connection.";
+"ai_error_empty_response" = "Empty response from the AI service.";
+"ai_error_unknown" = "AI error.";
 "ai_action_instruct" = "Execute Command";
 "ai_thinking" = "AI is thinking...";
 "ai_crafting_message" = "Designing your prompt for perfection";
