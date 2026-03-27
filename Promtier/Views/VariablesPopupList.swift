@@ -36,8 +36,8 @@ struct VariablesPopupList: View {
             VariableOption(
                 id: "multivar",
                 title: "variable_multiline".localized(for: preferences.language),
-                subtitle: "{{variable,varia2}}",
-                insertionText: "{{variable,varia2}}",
+                subtitle: "variables_example_options".localized(for: preferences.language),
+                insertionText: "variables_example_options".localized(for: preferences.language),
                 icon: "{…}"
             )
         ]
@@ -47,11 +47,11 @@ struct VariablesPopupList: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Variables")
+                Text("popup_title_variables".localized(for: preferences.language))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("ESC para cancelar")
+                Text("popup_hint_escape_cancel".localized(for: preferences.language))
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.5))
             }
@@ -101,6 +101,9 @@ struct VariablesPopupList: View {
         }
         .onAppear {
             self.selectedIndex = 0
+        }
+        .onExitCommand {
+            onDismiss()
         }
     }
 }

@@ -421,6 +421,11 @@
 "tooltip_alternative_prompt" = "Alternative Prompt";
 "tooltip_alternatives" = "Alternatives";
 "tooltip_variables" = "Variables";
+"popup_title_variables" = "Variables";
+"popup_title_snippets" = "Snippets";
+"popup_hint_escape_cancel" = "ESC to cancel";
+"snippets_empty_state" = "No snippets for '%@'";
+"variables_example_options" = "{{option1, option2}}";
 "tooltip_images" = "Images";
 "tooltip_use_count" = "Times used";
 "tooltip_versions" = "Version History";

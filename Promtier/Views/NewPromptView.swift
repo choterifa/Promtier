@@ -960,6 +960,14 @@ struct NewPromptView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
 
+    private func dismissSnippetsOverlay() {
+        withAnimation { showSnippets = false }
+    }
+
+    private func dismissVariablesOverlay() {
+        withAnimation { showVariables = false }
+    }
+
     @ViewBuilder
     private var overlays: some View {
         Group {
@@ -997,7 +1005,14 @@ struct NewPromptView: View {
                 .zIndex(150)
             }
             if showSnippets {
-                snippetOverlay
+                ZStack {
+                    Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .onTapGesture { dismissSnippetsOverlay() }
+                    snippetOverlay
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onExitCommand { dismissSnippetsOverlay() }
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95, anchor: .bottom)
                             .combined(with: .opacity)
@@ -1007,7 +1022,14 @@ struct NewPromptView: View {
                     .zIndex(200)
             }
             if showVariables {
-                variablesOverlay
+                ZStack {
+                    Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .onTapGesture { dismissVariablesOverlay() }
+                    variablesOverlay
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onExitCommand { dismissVariablesOverlay() }
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.95, anchor: .bottom)
                             .combined(with: .opacity)
@@ -1102,11 +1124,11 @@ struct NewPromptView: View {
             // ESC (KeyCode 53) -> Cerrar o salir de overlays
             if event.keyCode == 53 {
                 if self.showSnippets {
-                    DispatchQueue.main.async { withAnimation { self.showSnippets = false } }
+                    DispatchQueue.main.async { self.dismissSnippetsOverlay() }
                     return nil
                 }
                 if self.showVariables {
-                    DispatchQueue.main.async { withAnimation { self.showVariables = false } }
+                    DispatchQueue.main.async { self.dismissVariablesOverlay() }
                     return nil
                 }
 
@@ -2685,8 +2707,16 @@ struct SecondaryEditorCard<Actions: View>: View {
                         onZenMode?()
                     },
                     onFloatingMode: nil,
-                    isAutocompleting: isAutocompleting,
-                    onMagicAutocomplete: { onMagicAutocomplete?() }
+                    isAutocompleting: isAIGenerating,
+                    onMagicAutocomplete: isAIAvailable
+                        ? {
+                            if let onMagicAutocomplete {
+                                onMagicAutocomplete()
+                            } else {
+                                performAIAction(.enhance)
+                            }
+                        }
+                        : nil
                 )
                 .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
                     PromptPickerPopover(excludePromptId: prompt?.id) { selected in

@@ -31,11 +31,11 @@ struct SnippetsPopupList: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Snippets")
+                Text("popup_title_snippets".localized(for: preferences.language))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("ESC para cancelar")
+                Text("popup_hint_escape_cancel".localized(for: preferences.language))
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.5))
             }
@@ -50,7 +50,7 @@ struct SnippetsPopupList: View {
                     Image(systemName: "text.badge.xmark")
                         .font(.system(size: 20))
                         .foregroundColor(.secondary.opacity(0.5))
-                    Text("No hay snippets para '\(query)'")
+                    Text(String(format: "snippets_empty_state".localized(for: preferences.language), query))
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -111,6 +111,9 @@ struct SnippetsPopupList: View {
         }
         .onChange(of: query) { _, _ in
             self.selectedIndex = 0
+        }
+        .onExitCommand {
+            onDismiss()
         }
     }
 }
