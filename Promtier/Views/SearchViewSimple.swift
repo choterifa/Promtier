@@ -692,7 +692,8 @@ struct SearchViewSimple: View {
         ) {
             PromptPreviewView(
                 prompt: prompt,
-                isFullScreenImageOpen: $isFullScreenImageOpen
+                isFullScreenImageOpen: $isFullScreenImageOpen,
+                onUse: { usePrompt(prompt) }
             )
         }
     }
@@ -813,6 +814,14 @@ struct SearchViewSimple: View {
                     }
                     return nil
                 }
+            }
+        }
+        if keyCode == 3 { // 'f' key for fork
+            if showingPreview, let prompt = selectedPrompt {
+                DispatchQueue.main.async {
+                    forkPrompt(prompt)
+                }
+                return nil
             }
         }
         if modifiers == .command && keyCode == 8 {
@@ -972,6 +981,22 @@ struct SearchViewSimple: View {
             if batchService.isSelectionModeActive { batchService.selectedPromptIds.remove(prompt.id) }
         }
         if self.preferences.soundEnabled { SoundService.shared.playDeleteSound() }
+    }
+
+    private func forkPrompt(_ prompt: Prompt) {
+        showingPreview = false
+        menuBarManager.showWithState(.newPrompt)
+        
+        var forkedPrompt = prompt
+        forkedPrompt.id = UUID() // New ID
+        forkedPrompt.title = prompt.title + " (Copy)"
+        forkedPrompt.createdAt = Date()
+        forkedPrompt.modifiedAt = Date()
+        forkedPrompt.useCount = 0
+        forkedPrompt.lastUsedAt = nil
+        forkedPrompt.isFavorite = false
+        
+        DraftService.shared.saveDraft(prompt: forkedPrompt, isEditing: false)
     }
     
     private func exportPromptsToFile(_ prompt: Prompt) {

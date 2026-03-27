@@ -71,7 +71,7 @@ struct CategorySidebar: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) {
                         isSystemSectionExpanded.toggle()
                     }
                     HapticService.shared.playLight()
@@ -202,9 +202,10 @@ struct CategorySidebar: View {
                 }
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity)
+                .clipped()
                 .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
-                    removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity.combined(with: .move(edge: .top))
                 ))
             }
             

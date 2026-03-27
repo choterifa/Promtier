@@ -169,6 +169,8 @@ struct OmniSearchView: View {
                 .frame(height: 200)
             }
             
+            Spacer(minLength: 0)
+            
             // Footer Informativo
             HStack(spacing: 20) {
                 HStack(spacing: 6) {

@@ -26,6 +26,8 @@ struct PromptPreviewView: View {
     @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
     @Binding var isFullScreenImageOpen: Bool
+    
+    var onUse: (() -> Void)?
 
     private var previewThemeColor: PromptPreviewThemeColor {
         if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
@@ -34,9 +36,10 @@ struct PromptPreviewView: View {
         return PromptPreviewThemeColor(.systemBlue)
     }
     
-    init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false)) {
+    init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false), onUse: (() -> Void)? = nil) {
         self.prompt = prompt
         self._isFullScreenImageOpen = isFullScreenImageOpen
+        self.onUse = onUse
     }
     
     var body: some View {
@@ -196,11 +199,15 @@ struct PromptPreviewView: View {
                 
                 // Botón de Copiar Principal
                 Button(action: {
-                    ClipboardService.shared.copyToClipboard(prompt.content)
-                    if preferences.soundEnabled {
-                        SoundService.shared.playSuccessSound()
+                    if let onUse = onUse {
+                        onUse()
+                    } else {
+                        ClipboardService.shared.copyToClipboard(prompt.content)
+                        if preferences.soundEnabled {
+                            SoundService.shared.playSuccessSound()
+                        }
+                        HapticService.shared.playLight()
                     }
-                    HapticService.shared.playLight()
                 }) {
                     Image(systemName: "doc.on.doc")
                         .font(.system(size: 11))
