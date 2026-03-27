@@ -266,8 +266,8 @@ class MenuBarManager: NSObject, ObservableObject {
             self.suggestedClipboardContent = text
             self.lastSuggestedText = text
             
-            // Auto-hide suggestion after 4.0 seconds to be less intrusive
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            // Auto-hide suggestion after 4.3 seconds to be less intrusive
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                 if self.suggestedClipboardContent == text {
                     withAnimation(.easeOut(duration: 0.3)) {
                         self.suggestedClipboardContent = nil
