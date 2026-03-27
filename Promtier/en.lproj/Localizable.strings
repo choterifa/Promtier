@@ -27,6 +27,7 @@
 /* Tabs */
 "appearance_tab" = "Appearance";
 "general_tab" = "General";
+"ai_tab" = "AI";
 "shortcuts_tab" = "Shortcuts";
 "snippets_tab" = "Snippets";
 "data_tab" = "Data";
@@ -128,6 +129,7 @@
 "snippet_down" = "Navigate snippet down";
 "insert_snippet" = "Insert snippet / Close menu";
 "insert_variable" = "Insert variable";
+"refresh_models" = "Refresh models";
 "focus_negative" = "Focus Negative Prompt";
 "focus_alternative" = "Focus Alternative Prompt";
 "fill_variables" = "Fill Variables";

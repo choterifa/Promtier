@@ -322,31 +322,38 @@ struct HighlightedEditor: NSViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, NSTextViewDelegate {
+	    class Coordinator: NSObject, NSTextViewDelegate {
         private enum HighlightMode {
             case full
             case bracketOnly
         }
 
-        var parent: HighlightedEditor
-        var observerTokens: [NSObjectProtocol] = []
-        var lastSerializedMarkdown: String = ""
-        private var isApplyingExternalUpdate = false
-        private var highlightWorkItem: DispatchWorkItem?
-        private var appliedBracketRanges: [NSRange] = []
-        private var lastDecorationFlags: (variables: Bool, chains: Bool, lists: Bool) = (false, false, false)
+	        var parent: HighlightedEditor
+	        var observerTokens: [NSObjectProtocol] = []
+	        var lastSerializedMarkdown: String = ""
+	        private var isApplyingExternalUpdate = false
+	        private var highlightWorkItem: DispatchWorkItem?
+	        private var markdownSerializeWorkItem: DispatchWorkItem?
+	        private var appliedBracketRanges: [NSRange] = []
+	        private var lastDecorationFlags: (variables: Bool, chains: Bool, lists: Bool) = (false, false, false)
+	        private var lastDecoratedRange: NSRange?
+	        private var pendingInsertedNewline = false
+	        private var pendingLargeEdit = false
+	        private var pendingLastReplacementCount = 0
+	        private var markdownSerializationToken = UUID()
 
         init(_ parent: HighlightedEditor) {
             self.parent = parent
         }
 
-        deinit {
-            highlightWorkItem?.cancel()
-            teardownObservers()
-        }
+	        deinit {
+	            highlightWorkItem?.cancel()
+	            markdownSerializeWorkItem?.cancel()
+	            teardownObservers()
+	        }
 
-        func installObservers(for textView: PromtierTextView) {
-            teardownObservers()
+	        func installObservers(for textView: PromtierTextView) {
+	            teardownObservers()
 
             let aiToken = NotificationCenter.default.addObserver(
                 forName: NSNotification.Name("TriggerAppleIntelligence"),
@@ -370,8 +377,22 @@ struct HighlightedEditor: NSViewRepresentable {
                 self.handleEditorCommand(action, in: textView)
             }
 
-            observerTokens = [aiToken, commandToken]
-        }
+	            observerTokens = [aiToken, commandToken]
+
+	            // Re-aplicar decoraciones (rango visible) al hacer scroll: mantiene el highlight al navegar docs grandes
+	            if let scrollView = textView.enclosingScrollView {
+	                scrollView.contentView.postsBoundsChangedNotifications = true
+	                let scrollToken = NotificationCenter.default.addObserver(
+	                    forName: NSView.boundsDidChangeNotification,
+	                    object: scrollView.contentView,
+	                    queue: .main
+	                ) { [weak self, weak textView] _ in
+	                    guard let self, let textView else { return }
+	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.10)
+	                }
+	                observerTokens.append(scrollToken)
+	            }
+	        }
 
         func teardownObservers() {
             observerTokens.forEach(NotificationCenter.default.removeObserver)
@@ -412,7 +433,7 @@ struct HighlightedEditor: NSViewRepresentable {
             }
             lastSerializedMarkdown = markdown
             syncTypingAttributes(for: textView)
-            scheduleHighlighting(for: textView, mode: .full, debounce: false)
+            scheduleHighlighting(for: textView, mode: .full, debounce: false, delayOverride: nil)
             isApplyingExternalUpdate = false
         }
 
@@ -423,18 +444,25 @@ struct HighlightedEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             if isApplyingExternalUpdate { return }
-            MarkdownRTFConverter.applyParagraphStyles(
-                to: textView.textStorage ?? NSMutableAttributedString(),
-                baseFont: .systemFont(ofSize: parent.fontSize)
-            )
+            if pendingInsertedNewline || pendingLargeEdit {
+                MarkdownRTFConverter.applyParagraphStyles(
+                    to: textView.textStorage ?? NSMutableAttributedString(),
+                    baseFont: .systemFont(ofSize: parent.fontSize)
+                )
+            }
 
-            let markdown = serializedMarkdown(from: textView)
-            lastSerializedMarkdown = markdown
-            self.parent.text = markdown
+            // Serializar a Markdown con debounce (mejor pegado y docs grandes)
+            scheduleMarkdownSerialization(for: textView)
+
             self.parent.plainText = textView.string
             self.parent.selectedRange = textView.selectedRange()
             syncTypingAttributes(for: textView)
-            scheduleHighlighting(for: textView, mode: .full)
+            let highlightDelay: TimeInterval? = (pendingLargeEdit || pendingLastReplacementCount > 2000) ? 0.14 : nil
+            scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: highlightDelay)
+
+            pendingInsertedNewline = false
+            pendingLargeEdit = false
+            pendingLastReplacementCount = 0
 
             // Actualizar búsqueda de snippets si está activo
             if self.parent.showSnippets {
@@ -458,7 +486,7 @@ struct HighlightedEditor: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            scheduleHighlighting(for: textView, mode: .bracketOnly, debounce: false)
+            scheduleHighlighting(for: textView, mode: .bracketOnly, debounce: false, delayOverride: nil)
             syncTypingAttributes(for: textView)
 
             // Notion-style floating format menu
@@ -489,7 +517,14 @@ struct HighlightedEditor: NSViewRepresentable {
         }
 
         func textDidEndEditing(_ notification: Notification) {
-            guard notification.object as? NSTextView != nil else { return }
+            guard let textView = notification.object as? NSTextView else { return }
+
+            // Flush: asegurar que el Markdown canónico queda sincronizado al salir de foco
+            markdownSerializeWorkItem?.cancel()
+            let markdown = serializedMarkdown(from: textView)
+            lastSerializedMarkdown = markdown
+            parent.text = markdown
+
             DispatchQueue.main.async {
                 self.parent.isFocused = false
             }
@@ -853,6 +888,16 @@ struct HighlightedEditor: NSViewRepresentable {
         }
 
         func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+            if let replacementString {
+                pendingInsertedNewline = replacementString.contains("\n")
+                pendingLastReplacementCount = replacementString.utf16.count
+                pendingLargeEdit = pendingLastReplacementCount > 2000
+            } else {
+                pendingInsertedNewline = false
+                pendingLastReplacementCount = 0
+                pendingLargeEdit = false
+            }
+
             // Lógica para saltar fuera con ESPACIO
             if replacementString == " " {
                 if let varRange = isInsideVariable(textView) {
@@ -940,12 +985,17 @@ struct HighlightedEditor: NSViewRepresentable {
         private static let chainRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
         private static let listRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
 
-        private func scheduleHighlighting(for textView: NSTextView, mode: HighlightMode, debounce: Bool = true) {
+        private func scheduleHighlighting(
+            for textView: NSTextView,
+            mode: HighlightMode,
+            debounce: Bool = true,
+            delayOverride: TimeInterval? = nil
+        ) {
             if mode == .full {
                 highlightWorkItem?.cancel()
             }
 
-            let delay = debounce ? 0.03 : 0
+            let delay = delayOverride ?? (debounce ? 0.03 : 0)
             let workItem = DispatchWorkItem { [weak self, weak textView] in
                 guard let self, let textView else { return }
                 self.applyHighlighting(to: textView, mode: mode)
@@ -960,6 +1010,32 @@ struct HighlightedEditor: NSViewRepresentable {
             } else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
             }
+        }
+
+        private func scheduleMarkdownSerialization(for textView: NSTextView) {
+            markdownSerializeWorkItem?.cancel()
+
+            let plainCount = textView.string.utf16.count
+            let delay: TimeInterval = pendingLargeEdit || plainCount > 12_000 ? 0.14 : 0.05
+            let token = UUID()
+            markdownSerializationToken = token
+
+            let workItem = DispatchWorkItem { [weak self, weak textView] in
+                guard let self, let textView else { return }
+                let snapshot = NSAttributedString(attributedString: textView.attributedString())
+                DispatchQueue.global(qos: .utility).async { [weak self] in
+                    guard let self else { return }
+                    let markdown = MarkdownRTFConverter.generateMarkdown(from: snapshot)
+                    DispatchQueue.main.async {
+                        guard self.markdownSerializationToken == token else { return }
+                        self.lastSerializedMarkdown = markdown
+                        self.parent.text = markdown
+                    }
+                }
+            }
+
+            markdownSerializeWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
         }
 
         private func applyHighlighting(to textView: NSTextView, mode: HighlightMode) {
@@ -1000,7 +1076,12 @@ struct HighlightedEditor: NSViewRepresentable {
                 || text.hasPrefix("1. ")
                 || text.contains("\n1. ")
 
-            let newFlags = (variables: hasVariables, chains: hasChains, lists: hasLists)
+            // Umbral por tamaño: en documentos enormes priorizamos variables (lo más útil) y evitamos listas/cadenas.
+            let isVeryLargeDocument = textStorage.length > 80_000
+            let shouldDecorateChains = hasChains && !isVeryLargeDocument
+            let shouldDecorateLists = hasLists && !isVeryLargeDocument
+
+            let newFlags = (variables: hasVariables, chains: shouldDecorateChains, lists: shouldDecorateLists)
             if newFlags.variables == false,
                newFlags.chains == false,
                newFlags.lists == false,
@@ -1012,13 +1093,25 @@ struct HighlightedEditor: NSViewRepresentable {
 
             lastDecorationFlags = newFlags
 
-            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: fullRange)
-            layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: fullRange)
-            layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: fullRange)
+            // Si ya no hay decoraciones, limpiamos (evita atributos "fantasma")
+            if !hasVariables && !shouldDecorateChains && !shouldDecorateLists {
+                clearFullDecorations(in: textView)
+                lastDecoratedRange = nil
+                return
+            }
 
-            let listMatches = hasLists ? (Self.listRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
-            let variableMatches = hasVariables ? (Self.varRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
-            let chainMatches = hasChains ? (Self.chainRegex?.matches(in: text, options: [], range: fullRange) ?? []) : []
+            // Decorar solo lo visible (+buffer) para mantener fluidez en docs grandes
+            let targetRange = decorationTargetRange(in: textView, fullRange: fullRange)
+            let clearRange = unionRanges(lastDecoratedRange, targetRange, within: fullRange)
+            lastDecoratedRange = targetRange
+
+            layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: clearRange)
+            layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: clearRange)
+            layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: clearRange)
+
+            let listMatches = shouldDecorateLists ? (Self.listRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
+            let variableMatches = hasVariables ? (Self.varRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
+            let chainMatches = shouldDecorateChains ? (Self.chainRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
 
             let listMarkerColor = parent.isHaloEffectEnabled ? parent.themeColor : NSColor.systemOrange
             for match in listMatches {
@@ -1042,6 +1135,42 @@ struct HighlightedEditor: NSViewRepresentable {
                     .underlineStyle: NSUnderlineStyle.single.rawValue
                 ], forCharacterRange: match.range)
             }
+        }
+
+        private func decorationTargetRange(in textView: NSTextView, fullRange: NSRange) -> NSRange {
+            guard let layoutManager = textView.layoutManager,
+                  let textContainer = textView.textContainer,
+                  let scrollView = textView.enclosingScrollView else {
+                return fullRange
+            }
+
+            let visibleRect = scrollView.contentView.documentVisibleRect
+            let glyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
+            var charRange = layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
+
+            // Buffer para que al scroll el highlight "entre" sin saltos
+            let buffer = 1200
+            let start = max(0, charRange.location - buffer)
+            let end = min(fullRange.length, charRange.location + charRange.length + buffer)
+            charRange = NSRange(location: start, length: max(0, end - start))
+
+            // Expandir a líneas completas (listRegex usa anchorsMatchLines)
+            let nsText = textView.string as NSString
+            let lineRange = nsText.lineRange(for: charRange)
+            return clampRange(lineRange, within: fullRange)
+        }
+
+        private func unionRanges(_ a: NSRange?, _ b: NSRange, within fullRange: NSRange) -> NSRange {
+            guard let a else { return clampRange(b, within: fullRange) }
+            let start = min(a.location, b.location)
+            let end = max(a.location + a.length, b.location + b.length)
+            return clampRange(NSRange(location: start, length: max(0, end - start)), within: fullRange)
+        }
+
+        private func clampRange(_ range: NSRange, within fullRange: NSRange) -> NSRange {
+            let start = max(fullRange.location, min(range.location, fullRange.location + fullRange.length))
+            let end = max(start, min(range.location + range.length, fullRange.location + fullRange.length))
+            return NSRange(location: start, length: max(0, end - start))
         }
 
         private func clearFullDecorations(in textView: NSTextView) {

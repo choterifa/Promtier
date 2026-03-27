@@ -55,6 +55,10 @@ Este es el último bloque fuerte de cambios implementado para que otro modelo o 
 12. **Highlight más barato cuando no aplica**
    - Se añadió un fast-path para no limpiar/recalcular decoraciones cuando el texto no contiene variables/cadenas/listas.
 
+13. **Editor escalable (rango visible + pegado más rápido)**
+   - El resaltado completo se aplica solo al rango visible (+buffer) y usa un umbral para evitar decoraciones costosas en documentos gigantes.
+   - La serialización a Markdown ahora usa debounce para que pegar texto grande no bloquee la UI.
+
 ## 📁 Archivos más relevantes tocados
 
 - `Promtier/Views/HighlightedEditor.swift`

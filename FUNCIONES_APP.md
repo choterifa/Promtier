@@ -82,6 +82,7 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **ZIP**: Recomendado para respaldos grandes; conserva textos, imágenes, categorías e historial sin inflar memoria.
 - **Botón Copiar**: Rediseñado para estar siempre visible a la derecha de cada card.
 - **Ghost Tips**: Sistema de consejos flotantes que enseñan los atajos de teclado dinámicamente.
+- **Ajustes IA dedicados**: Tab separado para OpenAI/Gemini (API Keys + modelo + refresh de modelos).
 
 ## 💎 Funciones Premium
 - **Variables Dinámicas (Rellenar Variables)**:

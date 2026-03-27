@@ -28,6 +28,7 @@ struct PreferencesView: View {
     private let tabs: [(title: LocalizedStringKey, icon: String)] = [
         (title: "appearance_tab", icon: "paintbrush.fill"),
         (title: "general_tab", icon: "gearshape.fill"),
+        (title: "ai_tab", icon: "sparkles"),
         (title: "shortcuts_tab", icon: "keyboard.fill"),
         (title: "snippets_tab", icon: "text.quote"),
         (title: "data_tab", icon: "externaldrive.fill"),
@@ -138,7 +139,7 @@ struct PreferencesView: View {
                 // Scroll de opciones
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
-                        if selectedTab == 3 && !preferences.isPremiumActive {
+                        if selectedTab == 4 && !preferences.isPremiumActive {
                             premiumLockedSnippets
                         } else {
                             activeTabContent
@@ -176,11 +177,12 @@ struct PreferencesView: View {
         switch selectedTab {
         case 0: AppearanceTab()
         case 1: BehaviorTab()
-        case 2: ShortcutsTab()
-        case 3: SnippetsManagerTab()
-        case 4: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)
-        case 5: SupportTab()
-        case 6: TrashView()
+        case 2: AITab()
+        case 3: ShortcutsTab()
+        case 4: SnippetsManagerTab()
+        case 5: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)
+        case 6: SupportTab()
+        case 7: TrashView()
         default: EmptyView()
         }
     }
@@ -609,6 +611,64 @@ struct BehaviorTab: View {
                 }
             }
             
+            SettingsSection(title: "system", icon: "macwindow") {
+                SettingsRow("launch_at_login", subtitle: "launch_at_login_subtitle") {
+                    Toggle("", isOn: $preferences.launchAtLogin)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("updates", subtitle: "updates_subtitle", icon: "arrow.clockwise.circle", iconColor: .blue) {
+                    Button("check_now") {
+                        UpdateProvider.shared.checkForUpdates()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+            
+            SettingsSection(title: "premium", icon: "crown.fill") {
+                SettingsRow("activate_premium", subtitle: "activate_premium_subtitle", icon: "sparkles", iconColor: .purple) {
+                    Toggle("", isOn: $preferences.isPremiumActive)
+                        .toggleStyle(.switch)
+                }
+            }
+        }
+    }
+
+    private func getAppName(from bundleID: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return url.lastPathComponent.replacingOccurrences(of: ".app", with: "")
+        }
+        return bundleID
+    }
+
+    private func selectApplication() {
+        let panel = NSOpenPanel()
+        panel.message = "add_app".localized(for: preferences.language)
+        panel.prompt = "add".localized(for: preferences.language)
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [UTType.application]
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if preferences.addAppToWhitelist(at: url) {
+                HapticService.shared.playLight()
+            }
+        }
+    }
+}
+
+struct AITab: View {
+    @EnvironmentObject var preferences: PreferencesManager
+    @State private var openAIAvailableModels: [String] = []
+    @State private var isRefreshingOpenAIModels = false
+    @State private var openAIModelsError: String?
+
+    var body: some View {
+        VStack(spacing: 32) {
             SettingsSection(title: "Preferred AI Service", icon: "sparkles") {
                 SettingsRow("default_service", subtitle: "preferred_ai_provider") {
                     Picker("", selection: $preferences.preferredAIService) {
@@ -619,17 +679,17 @@ struct BehaviorTab: View {
                     .frame(width: 250)
                 }
             }
-            
+
             SettingsSection(title: "OpenAI ChatGPT", icon: "cloud.fill") {
                 SettingsRow("openai_service", subtitle: "openai_subtitle") {
                     Toggle("", isOn: Binding(
                         get: { !preferences.openAIApiKey.isEmpty },
-                        set: { _ in } // Sólo informativo o podríamos añadir un toggle dedicado si fuera necesario
+                        set: { _ in }
                     ))
                     .toggleStyle(.switch)
                     .disabled(true)
                 }
-                
+
                 VStack(spacing: 12) {
                     HStack {
                         Text("api_key".localized(for: preferences.language))
@@ -639,7 +699,7 @@ struct BehaviorTab: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 250)
                     }
-                    
+
                     HStack {
                         Text("model_id".localized(for: preferences.language))
                             .font(.system(size: 13, weight: .bold))
@@ -648,11 +708,19 @@ struct BehaviorTab: View {
                                 TextField("gpt-4o", text: $preferences.openAIDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                
+
                                 Menu {
-                                    ForEach(["o3-mini", "o1", "o1-mini", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"], id: \.self) { model in
-                                        Button(model) {
-                                            preferences.openAIDefaultModel = model
+                                    Section("Suggested") {
+                                        ForEach(OpenAIService.suggestedChatModels, id: \.self) { model in
+                                            Button(model) { preferences.openAIDefaultModel = model }
+                                        }
+                                    }
+
+                                    if !openAIAvailableModels.isEmpty {
+                                        Section("From your account") {
+                                            ForEach(openAIAvailableModels, id: \.self) { model in
+                                                Button(model) { preferences.openAIDefaultModel = model }
+                                            }
                                         }
                                     }
                                 } label: {
@@ -667,6 +735,25 @@ struct BehaviorTab: View {
                                 .buttonStyle(.plain)
                                 .fixedSize()
                                 .help("openai_model_presets".localized(for: preferences.language))
+
+                                Button(action: {
+                                    Task { await refreshOpenAIModels() }
+                                }) {
+                                    if isRefreshingOpenAIModels {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                    } else {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .padding(4)
+                                            .background(Color.primary.opacity(0.05))
+                                            .cornerRadius(4)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .help("refresh_models".localized(for: preferences.language))
+                                .disabled(isRefreshingOpenAIModels || preferences.openAIApiKey.isEmpty)
                             }
                         }
                     }
@@ -675,13 +762,22 @@ struct BehaviorTab: View {
                 .padding(.trailing, 20)
                 .padding(.bottom, 16)
             }
+            .overlay(alignment: .bottomLeading) {
+                if let openAIModelsError, !openAIModelsError.isEmpty {
+                    Text(openAIModelsError)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 40)
+                        .padding(.bottom, 10)
+                }
+            }
 
             SettingsSection(title: "Google Gemini", icon: "sparkles") {
                 SettingsRow("Google Gemini", subtitle: "Usar API de Google Gemini") {
                     Toggle("", isOn: $preferences.geminiEnabled)
                         .toggleStyle(.switch)
                 }
-                
+
                 if preferences.geminiEnabled {
                     VStack(spacing: 12) {
                         SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
@@ -689,14 +785,14 @@ struct BehaviorTab: View {
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 250)
                         }
-                        
+
                         SettingsRow("model_id", subtitle: "gemini_model_subtitle") {
                             HStack(spacing: 8) {
                                 TextField("gemini-2.0-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
                                     .frame(width: 200)
-                                
+
                                 Menu {
                                     Section("Gemini 3 & 3.1 (Preview)") {
                                         Button("gemini-3.1-pro-preview") { preferences.geminiDefaultModel = "gemini-3.1-pro-preview" }
@@ -745,53 +841,21 @@ struct BehaviorTab: View {
                     .padding(.leading, 20)
                 }
             }
-            
-            SettingsSection(title: "system", icon: "macwindow") {
-                SettingsRow("launch_at_login", subtitle: "launch_at_login_subtitle") {
-                    Toggle("", isOn: $preferences.launchAtLogin)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("updates", subtitle: "updates_subtitle", icon: "arrow.clockwise.circle", iconColor: .blue) {
-                    Button("check_now") {
-                        UpdateProvider.shared.checkForUpdates()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            
-            SettingsSection(title: "premium", icon: "crown.fill") {
-                SettingsRow("activate_premium", subtitle: "activate_premium_subtitle", icon: "sparkles", iconColor: .purple) {
-                    Toggle("", isOn: $preferences.isPremiumActive)
-                        .toggleStyle(.switch)
-                }
-            }
         }
     }
 
-    private func getAppName(from bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return url.lastPathComponent.replacingOccurrences(of: ".app", with: "")
-        }
-        return bundleID
-    }
+    @MainActor
+    private func refreshOpenAIModels() async {
+        guard !preferences.openAIApiKey.isEmpty else { return }
+        isRefreshingOpenAIModels = true
+        openAIModelsError = nil
+        defer { isRefreshingOpenAIModels = false }
 
-    private func selectApplication() {
-        let panel = NSOpenPanel()
-        panel.message = "add_app".localized(for: preferences.language)
-        panel.prompt = "add".localized(for: preferences.language)
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [UTType.application]
-
-        if panel.runModal() == .OK, let url = panel.url {
-            if preferences.addAppToWhitelist(at: url) {
-                HapticService.shared.playLight()
-            }
+        do {
+            let models = try await OpenAIService.shared.listModelIDs(apiKey: preferences.openAIApiKey)
+            openAIAvailableModels = models
+        } catch {
+            openAIModelsError = "OpenAI models: \(error.localizedDescription)"
         }
     }
 }

@@ -110,5 +110,9 @@ No elimines las anteriores; simplemente agrega más preguntas, máximo 100.
 **Para humanos:** Mantén prompts mega-largos en “modo sobrio” (sin halo) y evita tener múltiples editores abiertos a la vez. Si sigues viendo lentitud, conviene partir prompts enormes en versiones o usar snippets.
 **Técnico:** Las optimizaciones típicas son: subir el debounce del resaltado, limitar decoraciones a rango visible, cachear rangos de matches, y desactivar decoraciones completas por encima de cierto tamaño.
 
+## 27) ¿Por qué pegar un texto grande a veces se sentía lento?
+**Para humanos:** Porque antes la app intentaba “recalcular todo” inmediatamente al pegar, y eso podía bloquear un momento.
+**Técnico:** Se cambió a serialización Markdown con debounce + resaltado por rango visible (+buffer), para que el pegado grande no dispare trabajo completo del documento.
+
 ---
 *Última actualización: 27 de Marzo de 2026*

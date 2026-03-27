@@ -8,6 +8,14 @@
 import Foundation
 import Combine
 
+private struct OpenAIModelListResponse: Codable, Sendable {
+    struct Model: Codable, Sendable {
+        let id: String
+    }
+
+    let data: [Model]
+}
+
 struct OpenAIResponse: Codable, Sendable {
     struct Choice: Codable, Sendable {
         struct Message: Codable, Sendable {
@@ -26,6 +34,53 @@ class OpenAIService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private init() {}
+
+    /// Lista de modelos sugeridos (curados). Se usa como fallback si no hay fetch dinámico.
+    static let suggestedChatModels: [String] = [
+        "gpt-5.2",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        "gpt-5",
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "o3-mini",
+        "o1",
+        "o1-mini",
+        "o4-mini",
+        "gpt-4-turbo"
+    ]
+
+    /// Intenta obtener los modelos disponibles desde la cuenta (API Key).
+    func listModelIDs(apiKey: String) async throws -> [String] {
+        guard let url = URL(string: "https://api.openai.com/v1/models") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        guard (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoded = try JSONDecoder().decode(OpenAIModelListResponse.self, from: data)
+
+        // Filtrado simple: mostrar solo modelos de texto/chat razonables
+        let allowedPrefixes = ["gpt-", "o1", "o3", "o4"]
+        let ids = decoded.data
+            .map { $0.id }
+            .filter { id in allowedPrefixes.contains(where: { id.hasPrefix($0) }) }
+            .sorted()
+        return ids
+    }
     
     /// Genera una respuesta basada en un prompt (Streaming soportado)
     func generate(prompt: String, model: String, apiKey: String) -> AnyPublisher<String, Error> {
@@ -84,15 +139,35 @@ class OpenAIService: ObservableObject {
                 guard trimmed.hasPrefix("data: "), trimmed != "data: [DONE]" else { continue }
                 
                 let jsonString = String(trimmed.dropFirst(6))
-                if let jsonData = jsonString.data(using: .utf8),
-                   let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
-                    if let content = chunk.choices.first?.delta?.content {
-                        subject.send(content)
-                        hasFoundContent = true
-                    } else if let content = chunk.choices.first?.message?.content {
-                        // Non-streaming fallback
-                        subject.send(content)
-                        hasFoundContent = true
+                guard let jsonData = jsonString.data(using: .utf8) else { continue }
+
+                if Thread.isMainThread {
+                    MainActor.assumeIsolated {
+                        if let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
+                            if let content = chunk.choices.first?.delta?.content {
+                                subject.send(content)
+                                hasFoundContent = true
+                            } else if let content = chunk.choices.first?.message?.content {
+                                // Non-streaming fallback
+                                subject.send(content)
+                                hasFoundContent = true
+                            }
+                        }
+                    }
+                } else {
+                    DispatchQueue.main.sync {
+                        MainActor.assumeIsolated {
+                            if let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
+                                if let content = chunk.choices.first?.delta?.content {
+                                    subject.send(content)
+                                    hasFoundContent = true
+                                } else if let content = chunk.choices.first?.message?.content {
+                                    // Non-streaming fallback
+                                    subject.send(content)
+                                    hasFoundContent = true
+                                }
+                            }
+                        }
                     }
                 }
             }
