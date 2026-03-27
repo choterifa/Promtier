@@ -256,6 +256,7 @@
 /* New Keys for Audit */
 "advanced_variables" = "Advanced Variables";
 "preview_placeholder" = "The preview will appear here...";
+"edit_from_preview" = "Edit from Preview";
 "create_tool" = "Design custom prompts";
 "update_details" = "Update prompt details";
 
@@ -304,6 +305,7 @@
 "gt_save_shortcut" = "Cmd + S";
 "gt_edit" = "Edit Prompt";
 "gt_edit_shortcut" = "Enter / Double Tap";
+"gt_edit_from_preview" = "Edit from Preview";
 "gt_focus_negative" = "Negative Prompt";
 "gt_focus_negative_shortcut" = "Opt + N";
 "gt_focus_alternative" = "Alternative Prompt";

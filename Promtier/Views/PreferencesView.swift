@@ -929,6 +929,8 @@ struct ShortcutsTab: View {
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "preview",         shortcut: "Espacio")
                 Divider().padding(.leading, 20)
+                ShortcutRow(label: "edit_from_preview", shortcut: "E")
+                Divider().padding(.leading, 20)
                 ShortcutRow(label: "copy", shortcut: "⌘C")
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "edit", shortcut: "Double Tap / ↩ Enter")

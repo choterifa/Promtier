@@ -62,6 +62,7 @@ struct SearchViewSimple: View {
             GhostTip(title: "preview".localized(for: preferences.language), icon: "eye", shortcut: "gt_spacebar".localized(for: preferences.language)),
             GhostTip(title: "copy".localized(for: preferences.language), icon: "doc.on.doc", shortcut: "Cmd + C"),
             GhostTip(title: "edit".localized(for: preferences.language), icon: "pencil", shortcut: "gt_edit_shortcut".localized(for: preferences.language)),
+            GhostTip(title: "gt_edit_from_preview".localized(for: preferences.language), icon: "pencil.and.outline", shortcut: "E"),
             GhostTip(title: "toggle_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
             GhostTip(title: "new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
             

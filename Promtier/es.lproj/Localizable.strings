@@ -279,6 +279,7 @@
 "edit" = "Editar";
 "copy" = "Copiar";
 "preview" = "Vista Previa";
+"edit_from_preview" = "Editar desde Preview";
 "add_favorite" = "Añadir a Favoritos";
 "remove_favorite" = "Quitar de Favoritos";
 "export_plain_text" = "Exportar como Texto Plano";
@@ -345,6 +346,7 @@
 "gt_save_shortcut" = "Cmd + S";
 "gt_edit" = "Editar Prompt";
 "gt_edit_shortcut" = "Enter / Doble Clic";
+"gt_edit_from_preview" = "Editar desde Preview";
 "gt_focus_negative" = "Prompt Negativo";
 "gt_focus_negative_shortcut" = "Alt + N";
 "gt_focus_alternative" = "Prompt Alternativo";
