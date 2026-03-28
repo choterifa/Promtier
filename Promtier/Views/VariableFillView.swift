@@ -17,6 +17,8 @@ struct VariableFillView: View {
     @State private var variableValues: [String: String] = [:]
     @FocusState private var focusedField: String?
     @State private var showAIPlayground: Bool = false
+    @State private var isCloseHovering: Bool = false
+    @State private var isCancelHovering: Bool = false
     
     enum VariableType: Equatable {
         case text
@@ -230,7 +232,7 @@ struct VariableFillView: View {
             
             footerSection
         }
-        .frame(width: preferences.windowWidth * 0.95, height: preferences.windowHeight * 0.85)
+        .frame(width: preferences.windowWidth * 0.95, height: preferences.windowHeight * 0.86)
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(24)
         .overlay(
@@ -283,7 +285,7 @@ struct VariableFillView: View {
     
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("fill_variables".localized(for: preferences.language))
                     .font(.system(size: 18 * preferences.fontSize.scale, weight: .bold))
                 Text(prompt.title)
@@ -294,13 +296,18 @@ struct VariableFillView: View {
             Button(action: onCancel) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundColor(.secondary.opacity(0.3))
+                    .foregroundColor(.secondary.opacity(isCloseHovering ? 0.7 : 0.3))
             }
             .buttonStyle(.plain)
+            .onHover { hovering in 
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCloseHovering = hovering
+                }
+            }
         }
         .padding(.horizontal, 28)
-        .padding(.top, 24)
-        .padding(.bottom, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
     
     @ViewBuilder
@@ -338,7 +345,8 @@ struct VariableFillView: View {
                 .id(variable.id)
             }
         }
-        .padding(28)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 20)
     }
     
     private var previewArea: some View {
@@ -424,9 +432,14 @@ struct VariableFillView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(isCancelHovering ? 0.1 : 0.05)))
             }
             .buttonStyle(ScaleButtonStyle())
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCancelHovering = hovering
+                }
+            }
             
             Button(action: {
                 HapticService.shared.playImpact()
@@ -452,8 +465,8 @@ struct VariableFillView: View {
             .keyboardShortcut(.return, modifiers: [.command]) 
         }
         .padding(.horizontal, 28)
-        .padding(.top, 16)
-        .padding(.bottom, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
     }
     
     @ViewBuilder

@@ -5,14 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier.xcodeproj/project.xcworkspace/xcuserdata/valencia.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/MenuBarManager.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/ShortcutManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/ShortcutManager.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/IconPickerView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/IconPickerView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/SearchViewSimple.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/SearchViewSimple.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/ShortcutRecorderView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/ShortcutRecorderView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
