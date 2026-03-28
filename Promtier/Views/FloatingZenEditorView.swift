@@ -84,7 +84,6 @@ struct FloatingZenEditorView: View {
                         .padding(.horizontal, 22)
                         .padding(.bottom, 12)
                         
-                        Divider().padding(.horizontal, 22)
                         
                         // ── Content ──
                         VStack(alignment: .leading, spacing: 12) {
@@ -192,12 +191,12 @@ struct FloatingZenEditorView: View {
         .onChange(of: manager.content) { oldValue, newValue in
             // Scroll logic simplified
             
-            // Animación "Hey úsame" (pulseMagic) si pegan un bloque grande y falta título
-            if newValue.count - oldValue.count >= 10, manager.title.isEmpty, isMagicAvailable {
+            // Animación "Hey úsame" (pulseMagic) al pegar contenido en el prompt
+            if newValue.count - oldValue.count >= 5, isMagicAvailable {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                     pulseMagic = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         pulseMagic = false
                     }
@@ -409,18 +408,17 @@ struct FloatingZenEditorView: View {
                             .font(.system(size: 10, weight: .bold))
                     }
                 }
-                .foregroundColor(isMagicAvailable ? (pulseMagic ? .white : .purple) : .secondary.opacity(0.4))
+                .foregroundColor(isMagicAvailable ? ((pulseMagic || isHoveringMagic) ? .white : .purple) : .secondary.opacity(0.4))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     isMagicAvailable ? 
-                        (pulseMagic ? Color.purple.opacity(0.8) : (isHoveringMagic ? Color.purple.opacity(0.12) : Color.purple.opacity(0.06))) 
+                        ((pulseMagic || isHoveringMagic) ? Color.purple.opacity(0.85) : Color.purple.opacity(0.06)) 
                     : Color.primary.opacity(0.04)
                 )
                 .cornerRadius(8)
-                .scaleEffect(pulseMagic ? 1.03 : (isHoveringMagic && isMagicAvailable ? 1.01 : 1.0))
-                .shadow(color: pulseMagic ? Color.purple.opacity(0.3) : .clear, radius: pulseMagic ? 4 : 0)
-                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: pulseMagic)
+                .shadow(color: (pulseMagic || isHoveringMagic) && isMagicAvailable ? Color.purple.opacity(0.2) : .clear, radius: 4)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: pulseMagic)
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHoveringMagic)
             }
             .buttonStyle(.plain)
