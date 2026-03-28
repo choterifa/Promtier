@@ -37,8 +37,12 @@ struct SearchViewSimple: View {
     @State private var delayedPrewarmTask: Task<Void, Never>? = nil
     @State private var lastPrewarmedPreviewKey: String? = nil
     
-    // Resizing Sidebar
     @State private var dragStartedSidebarWidth: CGFloat = 0
+    
+    @State private var isPlusHovered = false
+    @State private var isBatchHovered = false
+    @State private var isSettingsHovered = false
+    @State private var isViewToggleHovered = false
     
     // Ghost Tips logic
     private var selectedPromptCategoryColor: Color {
@@ -408,23 +412,30 @@ struct SearchViewSimple: View {
                     VStack(spacing: 0) {
                         HStack(spacing: 16) {
                             // Botón Colapsar Sidebar / Cambiar a Grid
-                            Button(action: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    preferences.isGridView.toggle()
-                                    preferences.showSidebar = !preferences.isGridView
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        preferences.isGridView.toggle()
+                                        preferences.showSidebar = !preferences.isGridView
+                                    }
+                                }) {
+                                    Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(preferences.isGridView ? .blue : .secondary)
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.15 : 0.1) : Color.primary.opacity(isViewToggleHovered ? 0.08 : 0.04))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.3 : 0.15) : Color.primary.opacity(isViewToggleHovered ? 0.12 : 0.06), lineWidth: 1)
+                                                )
+                                        )
                                 }
-                            }) {
-                                Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(preferences.isGridView ? .blue : .secondary)
-                                    .frame(width: 32, height: 32)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(preferences.isGridView ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .help(preferences.isGridView ? "List View" : "Grid View")
+                                .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    isViewToggleHovered = hovering
+                                }
+                                .help(preferences.isGridView ? "List View" : "Grid View")
                             
                             // Buscador Estilizado
                             HStack(spacing: 12) {
@@ -480,11 +491,21 @@ struct SearchViewSimple: View {
                                         .frame(width: 34, height: 34)
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.blue)
-                                                .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
+                                                .fill(isPlusHovered ? Color.blue.opacity(0.85) : Color.blue)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(Color.white.opacity(isPlusHovered ? 0.2 : 0), lineWidth: 1)
+                                                )
+                                                .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(isPlusHovered ? 0.4 : 0.3) : .clear, radius: isPlusHovered ? 6 : 4, y: 2)
                                         )
+                                        .scaleEffect(isPlusHovered ? 1.03 : 1.0)
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        isPlusHovered = hovering
+                                    }
+                                }
                                 .help("new_prompt".localized(for: preferences.language) + " (N)")
                                 
                                 // Botón de Selección en Lote
@@ -503,14 +524,17 @@ struct SearchViewSimple: View {
                                         .frame(width: 34, height: 34)
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                                                .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.12) : Color.primary.opacity(isBatchHovered ? 0.08 : 0.04))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.2) : Color.primary.opacity(0.06), lineWidth: 1)
+                                                        .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.3) : Color.primary.opacity(isBatchHovered ? 0.12 : 0.06), lineWidth: 1)
                                                 )
                                         )
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    isBatchHovered = hovering
+                                }
                                 .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
 
                                 Button(action: {
@@ -524,14 +548,17 @@ struct SearchViewSimple: View {
                                         .frame(width: 34, height: 34)
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.primary.opacity(0.04))
+                                                .fill(Color.primary.opacity(isSettingsHovered ? 0.08 : 0.04))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                                        .stroke(Color.primary.opacity(isSettingsHovered ? 0.12 : 0.06), lineWidth: 1)
                                                 )
                                         )
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    isSettingsHovered = hovering
+                                }
                                 .help("settings".localized(for: preferences.language) + " (Cmd+,)")
                             }
                         }

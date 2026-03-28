@@ -21,6 +21,7 @@ struct CategoryPillPicker: View {
     @State private var showingNewCategoryPopover = false
     @State private var newCategoryName = ""
     @State private var selectedNewColor: Color = .blue
+    @State private var isPlusHovered = false
     
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
@@ -207,15 +208,19 @@ struct CategoryPillPicker: View {
         Button(action: { showingNewCategoryPopover = true }) {
             ZStack {
                 Circle()
-                    .fill(Color.primary.opacity(0.06))
+                    .fill(Color.primary.opacity(isPlusHovered ? 0.1 : 0.06))
                     .frame(width: 36, height: 36)
                 
                 Image(systemName: "plus")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(isPlusHovered ? .primary : .secondary)
             }
+            .scaleEffect(1.0)
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            isPlusHovered = hovering
+        }
         .popover(isPresented: $showingNewCategoryPopover, arrowEdge: .top) {
             newCategoryForm
         }
