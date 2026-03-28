@@ -35,6 +35,16 @@ struct FolderManagerView: View {
     @State private var showingDuplicateAlert = false
     @State private var showingReservedNameAlert = false
     
+    @FocusState private var isNameFocused: Bool
+    
+    // Hover States
+    @State private var isSidebarHovered = false
+    @State private var isDoneHovered = false
+    @State private var isIconHovered = false
+    @State private var isNewHovered = false
+    @State private var isClearHovered = false
+    @State private var isCreateHovered = false
+    
     private var categoryCounts: [String: Int] {
         var counts: [String: Int] = [:]
         for prompt in promptService.prompts {
@@ -105,7 +115,8 @@ struct FolderManagerView: View {
                 startEditing(initialFolder)
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                isNameFocused = true
                 animateColors = true
             }
         }
@@ -148,10 +159,11 @@ struct FolderManagerView: View {
                     .frame(width: 36, height: 36)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(preferences.showSidebar ? Color.blue.opacity(0.1) : Color.primary.opacity(0.04))
+                            .fill(preferences.showSidebar ? Color.blue.opacity(isSidebarHovered ? 0.15 : 0.1) : Color.primary.opacity(isSidebarHovered ? 0.08 : 0.04))
                     )
             }
             .buttonStyle(.plain)
+            .onHover { h in withAnimation(.spring(response: 0.3)) { isSidebarHovered = h } }
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("manage_categories".localized(for: preferences.language))
@@ -173,13 +185,14 @@ struct FolderManagerView: View {
                     .padding(.vertical, 8)
                     .background(
                         preferences.isHaloEffectEnabled ? 
-                        AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
+                        AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [.blue.opacity(isDoneHovered ? 1.0 : 0.9), .blue.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
                         AnyShapeStyle(Color.blue)
                     )
                     .cornerRadius(10)
-                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.3) : .clear, radius: 5, y: 2)
+                    .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(isDoneHovered ? 0.4 : 0.3) : .clear, radius: isDoneHovered ? 8 : 5, y: isDoneHovered ? 3 : 2)
             }
             .buttonStyle(.plain)
+            .onHover { h in withAnimation(.spring(response: 0.3)) { isDoneHovered = h } }
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 20)
@@ -255,6 +268,7 @@ struct FolderManagerView: View {
                         
                         TextField("name_placeholder".localized(for: preferences.language), text: $newFolderName)
                             .textFieldStyle(.plain)
+                            .focused($isNameFocused)
                             .font(.system(size: 15))
                             .padding(12)
                             .background(Color.primary.opacity(0.03))
@@ -297,9 +311,10 @@ struct FolderManagerView: View {
                                     )
                                     .foregroundColor(selectedColor)
                                     .cornerRadius(16)
-                                    .shadow(color: preferences.isHaloEffectEnabled ? selectedColor.opacity(0.1) : .clear, radius: 8, y: 4)
+                                    .shadow(color: preferences.isHaloEffectEnabled ? selectedColor.opacity(isIconHovered ? 0.2 : 0.1) : .clear, radius: isIconHovered ? 12 : 8, y: 4)
                             }
                             .buttonStyle(.plain)
+                            .onHover { h in withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isIconHovered = h } }
                         }
                         
                         // Selector de Color
@@ -348,6 +363,7 @@ struct FolderManagerView: View {
             selectedColor = .blue
             selectedIcon = "folder.fill"
             menuBarManager.folderToEdit = nil
+            isNameFocused = true
         }
     }
     
@@ -463,7 +479,8 @@ struct FolderManagerView: View {
                         .foregroundColor(.blue)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(Capsule().fill(Color.blue.opacity(0.1)))
+                        .background(Capsule().fill(Color.blue.opacity(isNewHovered ? 0.15 : 0.1)))
+                        .onHover { h in withAnimation(.spring(response: 0.3)) { isNewHovered = h } }
                     }
                     
                     Button {
@@ -480,7 +497,8 @@ struct FolderManagerView: View {
                     .foregroundColor(editingFolder == nil ? .red.opacity(0.8) : .secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Capsule().fill(editingFolder == nil ? Color.red.opacity(0.12) : Color.primary.opacity(0.05)))
+                    .background(Capsule().fill(editingFolder == nil ? Color.red.opacity(isClearHovered ? 0.18 : 0.12) : Color.primary.opacity(isClearHovered ? 0.08 : 0.05)))
+                    .onHover { h in withAnimation(.spring(response: 0.3)) { isClearHovered = h } }
             
             Spacer()
             
@@ -503,11 +521,13 @@ struct FolderManagerView: View {
                             AnyShapeStyle(Color.blue))
                 )
                 .cornerRadius(12)
-                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(0.25) : .clear, radius: 8, y: 4)
+                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
+                .scaleEffect((isCreateHovered && !newFolderName.isEmpty) ? 1.015 : 1.0)
                 .keyboardShortcut(.return, modifiers: .command)
             }
             .buttonStyle(.plain)
             .disabled(newFolderName.isEmpty)
+            .onHover { h in withAnimation(.spring(response: 0.3)) { isCreateHovered = h } }
         }
         .padding(.top, 8)
     }
