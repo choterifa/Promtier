@@ -20,9 +20,9 @@ struct SnippetsManagerTab: View {
                     // Header de la sección
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("my_snippets")
+                            Text("my_snippets".localized(for: preferences.language))
                                 .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                            Text("snippets_desc")
+                            Text("snippets_desc".localized(for: preferences.language))
                                 .font(.system(size: 12 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }
@@ -32,7 +32,7 @@ struct SnippetsManagerTab: View {
                         Button(action: { showingAddSheet = true }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
-                                Text("add")
+                                Text("add".localized(for: preferences.language))
                             }
                             .font(.system(size: 12 * preferences.fontSize.scale, weight: .bold))
                             .foregroundColor(.white)
@@ -56,7 +56,7 @@ struct SnippetsManagerTab: View {
                             Image(systemName: "text.badge.xmark")
                                 .font(.system(size: 32))
                                 .foregroundColor(.secondary.opacity(0.3))
-                            Text("no_snippets_configured")
+                            Text("no_snippets_configured".localized(for: preferences.language))
                                 .font(.system(size: 13 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary)
                         }

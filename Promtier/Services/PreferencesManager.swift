@@ -396,8 +396,8 @@ class PreferencesManager: ObservableObject {
         self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
         self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
-        // Atajo Fast-Add por defecto: ⌘⇧N (KeyCode 45, Command + Shift)
-        self.fastAddHotkeyCode = userDefaults.object(forKey: "fastAddHotkeyCode") as? Int ?? 45
+        // Atajo Fast-Add por defecto: ⌘⇧F (KeyCode 3, Command + Shift)
+        self.fastAddHotkeyCode = userDefaults.object(forKey: "fastAddHotkeyCode") as? Int ?? 3
         self.fastAddHotkeyModifiers = userDefaults.object(forKey: "fastAddHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
         // Atajo Nueva Categoría por defecto: ⌘⌥N (KeyCode 45, Command + Option)
@@ -770,6 +770,7 @@ class PreferencesManager: ObservableObject {
     
     /// Devuelve una cadena legible para el atajo (ej: "⌘⇧N")
     func shortcutDisplayString(keyCode: Int, modifiers: Int) -> String {
+        if keyCode == -1 { return "" }
         var result = ""
         let flags = NSEvent.ModifierFlags(rawValue: UInt(modifiers))
         

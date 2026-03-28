@@ -136,6 +136,8 @@ class MenuBarManager: NSObject, ObservableObject {
                 activeViewState = .main
             }
             
+            closeEmptyFastAddWindows()
+            
             // Sugerir desde el portapapeles si está habilitado y estamos en la vista principal
             if activeViewState == .main {
                 // CAPTURAR APP ACTIVA PARA CONTEXTO
@@ -160,11 +162,25 @@ class MenuBarManager: NSObject, ObservableObject {
             self.isModalActive = (state == .folderManager)
         }
         
+        closeEmptyFastAddWindows()
+        
         showPopover(relativeTo: button.bounds, of: button)
         
         // Si es búsqueda, asegurar que el query esté limpio o enfocado (esto se manejará en la vista)
         if state == .main {
             // Podríamos limpiar la búsqueda aquí si quisiéramos
+        }
+    }
+    
+    private func closeEmptyFastAddWindows() {
+        let shared = FloatingZenManager.shared
+        let secondary = FloatingZenManager.secondary
+        
+        if shared.isVisible && !shared.hasUnsavedChanges {
+            shared.hide()
+        }
+        if secondary.isVisible && !secondary.hasUnsavedChanges {
+            secondary.hide()
         }
     }
     

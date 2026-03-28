@@ -731,15 +731,14 @@ struct SearchViewSimple: View {
         Button(action: { usePrompt(prompt) }) {
             Label("copy".localized(for: preferences.language), systemImage: "doc.on.doc")
         }
-        Button(action: { copyPromptPack(prompt) }) {
-            Label("copy_pack".localized(for: preferences.language), systemImage: "doc.on.doc")
-        }
-        Menu("Copy As…") {
+        Menu {
             Button("Plain Text") { copyPrompt(prompt, as: .plainText) }
             Button("Markdown") { copyPrompt(prompt, as: .markdown) }
             Button("Rich Text") { copyPrompt(prompt, as: .richText) }
             Divider()
             Button("Copy Pack") { copyPrompt(prompt, as: .pack) }
+        } label: {
+            Label("Copy As…", systemImage: "doc.on.clipboard")
         }
         Button(action: {
             selectedPrompt = prompt
@@ -857,6 +856,12 @@ struct SearchViewSimple: View {
         if modifiers == .command && keyCode == 8 {
             if let prompt = selectedPrompt {
                 DispatchQueue.main.async { usePrompt(prompt) }
+                return nil
+            }
+        }
+        if modifiers == .command && keyCode == 51 { // Cmd + Backspace
+            if let prompt = selectedPrompt {
+                DispatchQueue.main.async { deletePrompt(prompt) }
                 return nil
             }
         }
@@ -1031,10 +1036,10 @@ struct SearchViewSimple: View {
     }
     
     private func exportPromptsToFile(_ prompt: Prompt) {
-        let exportContent = "# \(prompt.title)\n\n\(prompt.content)"
-        let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).md"
+        let exportContent = "\(prompt.title)\n\n\(prompt.content)"
+        let fileName = "\(prompt.title.replacingOccurrences(of: " ", with: "_")).txt"
         let savePanel = NSSavePanel()
-        if let mdType = UTType(filenameExtension: "md") { savePanel.allowedContentTypes = [mdType, .plainText] }
+        if let txtType = UTType(filenameExtension: "txt") { savePanel.allowedContentTypes = [txtType, .plainText] }
         else { savePanel.allowedContentTypes = [.plainText] }
         savePanel.nameFieldStringValue = fileName
         savePanel.title = "export_prompts_title".localized(for: preferences.language)

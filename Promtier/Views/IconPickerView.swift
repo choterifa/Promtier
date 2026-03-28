@@ -65,7 +65,31 @@ struct IconPickerView: View {
         "globe", "location.fill", "folder", "archivebox", "trash", 
         "square.and.arrow.up", "square.and.arrow.down", "paperclip", "calendar",
         "sun.max.fill", "moon.fill", "cloud.fill", "drop.fill", 
-        "flashlight.on.fill", "camera"
+        "flashlight.on.fill", "camera",
+        
+        // 100 Iconos adicionales nativos
+        "folder.badge.plus", "doc.text", "note", "network.badge.shield.half.filled", 
+        "laptopcomputer", "desktopcomputer", "smartphone", "iphone", "ipad", "applewatch", 
+        "mic.fill", "photo.artframe", "paintbrush.fill", "ruler.fill", "wrench.and.screwdriver", 
+        "hammer", "gear", "gearshape.2.fill", "slider.horizontal.3", "slider.vertical.3", 
+        "switch.2", "magnifyingglass", "plus.magnifyingglass", "minus.magnifyingglass", 
+        "1.magnifyingglass", "sparkle.magnifyingglass", "mic.circle.fill", "waveform", 
+        "speaker.wave.3.fill", "speaker.slash.fill", "music.mic", "play.fill", "pause.fill", 
+        "stop.fill", "forward.fill", "backward.fill", "shuffle", "repeat", "arrow.rectanglepath", 
+        "arrow.triangle.2.circlepath", "arrow.clockwise", "arrow.counterclockwise", 
+        "arrow.up.circle.fill", "arrow.down.circle.fill", "arrow.left.circle.fill", 
+        "arrow.right.circle.fill", "chevron.up", "chevron.down", "chevron.left", 
+        "chevron.right", "chevron.left.2", "chevron.right.2", "star.circle.fill", 
+        "heart.circle.fill", "flag.circle.fill", "bell.circle.fill", "tag.circle.fill", 
+        "bookmark.circle.fill", "paperplane.circle.fill", "tray.circle.fill", "tray.full.fill", 
+        "archivebox.fill", "doc.on.clipboard.fill", "doc.append", "doc.text.below.ecg.fill", 
+        "chart.bar.doc.horizontal", "chart.pie", "chart.bar.xaxis", 
+        "chart.line.uptrend.xyaxis.circle.fill", "dollarsign.circle", "yensign.circle", 
+        "eurosign.circle", "sterlingsign.circle", "bitcoinsign.circle", "creditcard", 
+        "banknote", "wallet.pass.fill", "cart", "bag", "gift", "cube.box.fill", "shippingbox", 
+        "clock.fill", "alarm.fill", "stopwatch.fill", "timer.square", "calendar.badge.plus", 
+        "calendar.badge.minus", "cloud.sun.fill", "cloud.rain.fill", "cloud.snow.fill", 
+        "cloud.bolt.fill", "thermometer.sun.fill", "thermometer.snowflake", "flame", "drop"
     ]
     
     @Environment(\.dismiss) private var dismiss

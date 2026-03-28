@@ -65,6 +65,17 @@ struct ShortcutRecorderView: View {
             
             if !isRecording {
                 Button(action: {
+                    hotkeyCode = -1
+                    hotkeyModifiers = 0
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .help("Sin atajo")
+                
+                Button(action: {
                     hotkeyCode = defaultKeyCode
                     hotkeyModifiers = defaultModifiers
                 }) {
@@ -74,6 +85,15 @@ struct ShortcutRecorderView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Restablecer atajo")
+            } else {
+                Button(action: {
+                    stopRecording()
+                }) {
+                    Text("Cancelar")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -83,16 +103,31 @@ struct ShortcutRecorderView: View {
         return ShortcutFormatter.format(keyCode: hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(hotkeyModifiers)))
     }
     
+    @State private var globalMonitor: Any?
+    
     private func startRecording() {
         isRecording = true
         
         // Monitor local para capturar teclas
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged, .leftMouseDown]) { event in
+            if event.type == .leftMouseDown {
+                stopRecording()
+                return event
+            }
+            
             if event.type == .flagsChanged {
                 return event
             }
             
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            
+            // Delete / Backspace para borrar
+            if event.keyCode == 51 {
+                hotkeyCode = -1
+                hotkeyModifiers = 0
+                stopRecording()
+                return nil
+            }
             
             // Requerir al menos un modificador (Cmd, Opt, Ctrl, Shift)
             if modifiers.isEmpty && event.keyCode != 53 { // 53 is Escape
@@ -112,6 +147,10 @@ struct ShortcutRecorderView: View {
             stopRecording()
             return nil
         }
+        
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { _ in
+            stopRecording()
+        }
     }
     
     private func stopRecording() {
@@ -120,12 +159,17 @@ struct ShortcutRecorderView: View {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
         }
+        if let monitor = globalMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalMonitor = nil
+        }
     }
 }
 
 // MARK: - Helper de Formateo
 struct ShortcutFormatter {
     static func format(keyCode: Int, modifiers: NSEvent.ModifierFlags) -> String {
+        if keyCode == -1 { return "Sin atajo" }
         var str = ""
         
         if modifiers.contains(.control) { str += "⌃" }
@@ -244,15 +288,37 @@ struct ReusableShortcutRecorderView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Eliminar atajo")
+            } else if isRecording {
+                Button(action: {
+                    stopRecording()
+                }) {
+                    Text("Cancelar")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
     
+    @State private var globalMonitor: Any?
+    
     private func startRecording() {
         isRecording = true
         
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged, .leftMouseDown]) { event in
+            if event.type == .leftMouseDown {
+                stopRecording()
+                return event
+            }
+            
             if event.type == .flagsChanged { return event }
+            
+            if event.keyCode == 51 { // Backspace
+                shortcutString = nil
+                stopRecording()
+                return nil
+            }
             
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if modifiers.isEmpty && event.keyCode != 53 { return event }
@@ -266,6 +332,10 @@ struct ReusableShortcutRecorderView: View {
             stopRecording()
             return nil
         }
+        
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { _ in
+            stopRecording()
+        }
     }
     
     private func stopRecording() {
@@ -273,6 +343,10 @@ struct ReusableShortcutRecorderView: View {
         if let monitor = localMonitor {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
+        }
+        if let monitor = globalMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalMonitor = nil
         }
     }
 }

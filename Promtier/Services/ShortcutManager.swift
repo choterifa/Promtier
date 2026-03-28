@@ -84,52 +84,60 @@ class ShortcutManager: ObservableObject {
         guard prefs.globalShortcutEnabled else { return }
         
         // 1. HotKey Principal: Toggle Popover
-        let keyCode = UInt32(prefs.hotkeyCode)
-        var carbonModifiers: UInt32 = 0
-        let flags = NSEvent.ModifierFlags(rawValue: UInt(prefs.hotkeyModifiers))
-        if flags.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
-        if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
-        if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
-        if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
-        
-        let hotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 1) // 'PROM'
-        _ = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        if prefs.hotkeyCode != -1 {
+            let keyCode = UInt32(prefs.hotkeyCode)
+            var carbonModifiers: UInt32 = 0
+            let flags = NSEvent.ModifierFlags(rawValue: UInt(prefs.hotkeyModifiers))
+            if flags.contains(.command) { carbonModifiers |= UInt32(cmdKey) }
+            if flags.contains(.shift) { carbonModifiers |= UInt32(shiftKey) }
+            if flags.contains(.option) { carbonModifiers |= UInt32(optionKey) }
+            if flags.contains(.control) { carbonModifiers |= UInt32(controlKey) }
+            
+            let hotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 1) // 'PROM'
+            _ = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        }
         
         // 2. HotKey Omni-Search: configurable en ajustes
-        let omniKeyCode = UInt32(prefs.omniHotkeyCode)
-        var omniCarbonMods: UInt32 = 0
-        let omniFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.omniHotkeyModifiers))
-        if omniFlags.contains(.command) { omniCarbonMods |= UInt32(cmdKey) }
-        if omniFlags.contains(.shift) { omniCarbonMods |= UInt32(shiftKey) }
-        if omniFlags.contains(.option) { omniCarbonMods |= UInt32(optionKey) }
-        if omniFlags.contains(.control) { omniCarbonMods |= UInt32(controlKey) }
-        
-        let omniHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 100)
-        _ = RegisterEventHotKey(omniKeyCode, omniCarbonMods, omniHotKeyID, GetApplicationEventTarget(), 0, &omniHotKeyRef)
+        if prefs.omniHotkeyCode != -1 {
+            let omniKeyCode = UInt32(prefs.omniHotkeyCode)
+            var omniCarbonMods: UInt32 = 0
+            let omniFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.omniHotkeyModifiers))
+            if omniFlags.contains(.command) { omniCarbonMods |= UInt32(cmdKey) }
+            if omniFlags.contains(.shift) { omniCarbonMods |= UInt32(shiftKey) }
+            if omniFlags.contains(.option) { omniCarbonMods |= UInt32(optionKey) }
+            if omniFlags.contains(.control) { omniCarbonMods |= UInt32(controlKey) }
+            
+            let omniHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 100)
+            _ = RegisterEventHotKey(omniKeyCode, omniCarbonMods, omniHotKeyID, GetApplicationEventTarget(), 0, &omniHotKeyRef)
+        }
         
         // 3. HotKey Fast Add: personalizable
-        let fastAddKeyCode = UInt32(prefs.fastAddHotkeyCode)
-        var fastAddCarbonMods: UInt32 = 0
-        let fastAddFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.fastAddHotkeyModifiers))
-        if fastAddFlags.contains(.command) { fastAddCarbonMods |= UInt32(cmdKey) }
-        if fastAddFlags.contains(.shift) { fastAddCarbonMods |= UInt32(shiftKey) }
-        if fastAddFlags.contains(.option) { fastAddCarbonMods |= UInt32(optionKey) }
-        if fastAddFlags.contains(.control) { fastAddCarbonMods |= UInt32(controlKey) }
-        
-        let fastAddHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 101)
-        _ = RegisterEventHotKey(fastAddKeyCode, fastAddCarbonMods, fastAddHotKeyID, GetApplicationEventTarget(), 0, &fastAddHotKeyRef)
+        if prefs.fastAddHotkeyCode != -1 {
+            let fastAddKeyCode = UInt32(prefs.fastAddHotkeyCode)
+            var fastAddCarbonMods: UInt32 = 0
+            let fastAddFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.fastAddHotkeyModifiers))
+            if fastAddFlags.contains(.command) { fastAddCarbonMods |= UInt32(cmdKey) }
+            if fastAddFlags.contains(.shift) { fastAddCarbonMods |= UInt32(shiftKey) }
+            if fastAddFlags.contains(.option) { fastAddCarbonMods |= UInt32(optionKey) }
+            if fastAddFlags.contains(.control) { fastAddCarbonMods |= UInt32(controlKey) }
+            
+            let fastAddHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 101)
+            _ = RegisterEventHotKey(fastAddKeyCode, fastAddCarbonMods, fastAddHotKeyID, GetApplicationEventTarget(), 0, &fastAddHotKeyRef)
+        }
         
         // 4. HotKey Create Category: personalizable
-        let catKeyCode = UInt32(prefs.categoryHotkeyCode)
-        var catCarbonMods: UInt32 = 0
-        let catFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.categoryHotkeyModifiers))
-        if catFlags.contains(.command) { catCarbonMods |= UInt32(cmdKey) }
-        if catFlags.contains(.shift) { catCarbonMods |= UInt32(shiftKey) }
-        if catFlags.contains(.option) { catCarbonMods |= UInt32(optionKey) }
-        if catFlags.contains(.control) { catCarbonMods |= UInt32(controlKey) }
-        
-        let catHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 102)
-        _ = RegisterEventHotKey(catKeyCode, catCarbonMods, catHotKeyID, GetApplicationEventTarget(), 0, &categoryHotKeyRef)
+        if prefs.categoryHotkeyCode != -1 {
+            let catKeyCode = UInt32(prefs.categoryHotkeyCode)
+            var catCarbonMods: UInt32 = 0
+            let catFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.categoryHotkeyModifiers))
+            if catFlags.contains(.command) { catCarbonMods |= UInt32(cmdKey) }
+            if catFlags.contains(.shift) { catCarbonMods |= UInt32(shiftKey) }
+            if catFlags.contains(.option) { catCarbonMods |= UInt32(optionKey) }
+            if catFlags.contains(.control) { catCarbonMods |= UInt32(controlKey) }
+            
+            let catHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 102)
+            _ = RegisterEventHotKey(catKeyCode, catCarbonMods, catHotKeyID, GetApplicationEventTarget(), 0, &categoryHotKeyRef)
+        }
         
         // Instalar el manejador de eventos una sola vez globalmente
         if !ShortcutManager.isHandlerInstalled {
