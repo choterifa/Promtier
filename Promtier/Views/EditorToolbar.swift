@@ -111,18 +111,15 @@ struct EditorToolbar: View {
         
         if aiEnabled && onMagicAutocomplete != nil {
             Button(action: { onMagicAutocomplete?() }) {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(isAutocompleting ? 0.3 : 0.15))
-                        .frame(width: 28, height: 28)
-                    
-                    if isAutocompleting {
+                if isAutocompleting {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.04))
+                            .frame(width: 28, height: 28)
                         ProgressView().controlSize(.small).scaleEffect(0.5)
-                    } else {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 11, weight: .black))
-                            .foregroundColor(.purple)
                     }
+                } else {
+                    toolbarButton(icon: "wand.and.stars")
                 }
             }
             .buttonStyle(.plain)
@@ -145,7 +142,7 @@ struct EditorToolbar: View {
                     Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                 }
             } label: {
-                toolbarButton(icon: "pencil.and.outline", isSpecial: true, active: isAIGenerating)
+                toolbarButton(icon: "pencil.and.outline", isSpecial: false, active: isAIGenerating)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -197,7 +194,7 @@ struct EditorToolbar: View {
     private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
         ZStack {
             Circle()
-                .fill(active ? activeColor.opacity(0.2) : (isSpecial ? themeColor.opacity(0.12) : Color.primary.opacity(0.04)))
+                .fill(active ? activeColor.opacity(0.2) : Color.primary.opacity(0.04))
                 .frame(width: 28, height: 28)
 
             if let icon = icon {
