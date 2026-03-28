@@ -24,6 +24,7 @@ struct PreferencesView: View {
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
     @State private var showingPremiumUpsell = false
+    @State private var hoveredTab: Int? = nil
     
     private let tabs: [(title: LocalizedStringKey, icon: String)] = [
         (title: "appearance_tab", icon: "paintbrush.fill"),
@@ -75,11 +76,12 @@ struct PreferencesView: View {
                     .contentShape(Rectangle())
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(selectedTab == index ? Color.blue : Color.clear)
+                            .fill(selectedTab == index ? Color.blue : (hoveredTab == index ? Color.primary.opacity(0.06) : Color.clear))
                             .shadow(color: selectedTab == index ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
                     )
                 }
                 .buttonStyle(.plain)
+                .onHover { h in withAnimation(.spring(response: 0.3)) { hoveredTab = h ? index : nil } }
                 .padding(.horizontal, 12)
             }
             
