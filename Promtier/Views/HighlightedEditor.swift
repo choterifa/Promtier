@@ -63,11 +63,21 @@ class PromtierTextView: NSTextView {
             } else if event.charactersIgnoringModifiers == "]" {
                 PromtierEditorCommandCenter.post(.indent, to: editorID)
                 return true
+            } else if event.charactersIgnoringModifiers == "z" {
+                if let um = self.undoManager, um.canUndo {
+                    um.undo()
+                    return true
+                }
             }
         } else if command && shift {
             if event.charactersIgnoringModifiers == "l" {
                 PromtierEditorCommandCenter.post(.bulletList, to: editorID)
                 return true
+            } else if event.charactersIgnoringModifiers == "Z" || event.charactersIgnoringModifiers == "z" {
+                if let um = self.undoManager, um.canRedo {
+                    um.redo()
+                    return true
+                }
             }
         }
 
