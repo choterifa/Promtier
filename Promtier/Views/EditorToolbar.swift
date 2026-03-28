@@ -51,6 +51,9 @@ struct EditorToolbar: View {
         self.onMagicAutocomplete = onMagicAutocomplete
     }
 
+    @State private var isMagicHovered: Bool = false
+    @State private var magicRotationPhase: Double = 0
+    
     var body: some View {
         Group {
             if vertical {
@@ -61,6 +64,11 @@ struct EditorToolbar: View {
                 HStack(spacing: 8) {
                     buttons
                 }
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+                magicRotationPhase = 360
             }
         }
         .padding(vertical ? 6 : 4)
@@ -119,10 +127,15 @@ struct EditorToolbar: View {
                         ProgressView().controlSize(.small).scaleEffect(0.5)
                     }
                 } else {
-                    toolbarButton(icon: "wand.and.stars")
+                    toolbarButton(icon: "wand.and.stars", isSpecial: true, active: isMagicHovered)
                 }
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isMagicHovered = hovering
+                }
+            }
             .help("AI Magic: Autocomplete or Improve (Cmd+J)")
         }
 
@@ -194,19 +207,37 @@ struct EditorToolbar: View {
     private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
         ZStack {
             Circle()
-                .fill(active ? activeColor.opacity(0.2) : Color.primary.opacity(0.04))
+                .fill(isSpecial && active 
+                    ? color.opacity(0.35) 
+                    : (isSpecial ? color.opacity(0.22) : (active ? activeColor.opacity(0.25) : Color.primary.opacity(0.04))))
                 .frame(width: 28, height: 28)
+                .shadow(color: isSpecial && active ? color.opacity(0.7) : .clear, radius: isSpecial && active ? 10 : 0)
 
             if let icon = icon {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(active ? activeColor : themeColor)
+                    .foregroundColor(isSpecial && active ? color : (isSpecial ? color.opacity(0.85) : (active ? activeColor : themeColor)))
             } else if let text = text {
                 Text(text)
                     .font(.system(size: 13, weight: .black, design: .monospaced))
                     .foregroundColor(themeColor)
             }
         }
+        .overlay(
+            Group {
+                if isSpecial && active {
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [color, color.opacity(0.7), color.opacity(0.4), color.opacity(0.8), color, color.opacity(0.7), color.opacity(0.4), color.opacity(0.8)],
+                                startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
+                                endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
+                            ),
+                            lineWidth: 1.2
+                        )
+                }
+            }
+        )
         .scaleEffect(active ? 1.1 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
     }

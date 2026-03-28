@@ -2359,6 +2359,7 @@ struct EditorCard: View {
     @State private var showingPromptChainPicker: Bool = false
     @State private var isMagicPulsing = false
     @State private var isMagicHovered = false
+    @State private var magicRotationPhase: Double = 0
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
 
@@ -2411,27 +2412,44 @@ struct EditorCard: View {
                                     .padding(.vertical, 4)
                                     .background(
                                         Capsule()
-                                            .fill(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
-                                            .opacity(isMagicPulsing ? 0.4 : (isMagicHovered ? 0.25 : 0.15))
-                                            .shadow(color: .purple.opacity(isMagicPulsing ? 0.6 : 0), radius: isMagicPulsing ? 8 : 0)
+                                            .fill(LinearGradient(
+                                                colors: [currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22), currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22)], 
+                                                startPoint: .leading, 
+                                                endPoint: .trailing
+                                            ))
+                                            .opacity(isMagicPulsing ? 0.5 : 1.0)
+                                            .shadow(color: currentCategoryColor.opacity(isMagicPulsing ? 0.7 : (isMagicHovered ? 0.6 : 0)), radius: isMagicPulsing ? 8 : (isMagicHovered ? 14 : 0))
                                     )
-                                    .foregroundColor(.purple)
+                                    .foregroundColor(isMagicHovered ? currentCategoryColor : currentCategoryColor.opacity(0.9))
                                     .overlay(
                                         Capsule()
-                                            .stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: isMagicPulsing ? 1.5 : (isMagicHovered ? 1.0 : 0.5))
-                                            .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 0.6 : 0.3))
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8), currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8)],
+                                                    startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
+                                                    endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
+                                                ),
+                                                lineWidth: isMagicPulsing ? 1.5 : (isMagicHovered ? 1.2 : 0.8)
+                                            )
+                                            .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 1.0 : 0.5))
                                     )
+                                    .scaleEffect(isMagicHovered ? 1.02 : 1.0)
                                 }
                                 .buttonStyle(.plain)
+                                .onAppear {
+                                    withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+                                        magicRotationPhase = 360
+                                    }
+                                }
                                 .onHover { hovering in
-                                    withAnimation(.spring(response: 0.3)) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                         isMagicHovered = hovering
                                     }
                                 }
                                 .animation(
                                     isMagicPulsing 
                                         ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) 
-                                        : .default, 
+                                        : .spring(response: 0.3, dampingFraction: 0.7), 
                                     value: isMagicPulsing
                                 )
                                 .help("Autocomplete content based on title (Cmd+J)")
