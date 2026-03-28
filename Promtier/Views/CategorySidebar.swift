@@ -63,7 +63,7 @@ struct CategorySidebar: View {
                         .foregroundColor(.secondary)
                         .rotationEffect(.degrees(isSystemSectionExpanded ? 90 : 0))
                     
-                    Text("explore")
+                    Text("explore".localized(for: preferences.language))
                         .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isHeaderHovered ? .primary : .secondary)
                         .textCase(.uppercase)
@@ -269,7 +269,7 @@ struct CategorySidebar: View {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.secondary.opacity(0.4))
-                        Text("PINNED")
+                        Text("pinned".localized(for: preferences.language).uppercased())
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.secondary.opacity(0.4))
                             .tracking(1)

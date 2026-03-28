@@ -364,9 +364,9 @@ struct AppearanceTab: View {
                 
                 SettingsRow("appearance", subtitle: "appearance_subtitle") {
                     Picker("", selection: $preferences.appearance) {
-                        Text("light").tag(AppAppearance.light)
-                        Text("dark").tag(AppAppearance.dark)
-                        Text("system").tag(AppAppearance.system)
+                        Text("light".localized(for: preferences.language)).tag(AppAppearance.light)
+                        Text("dark".localized(for: preferences.language)).tag(AppAppearance.dark)
+                        Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 200)
@@ -388,8 +388,8 @@ struct AppearanceTab: View {
                 
                 SettingsRow("preview_priority", subtitle: "preview_priority_subtitle") {
                     Picker("", selection: $preferences.previewImagesFirst) {
-                        Text("images_first").tag(true)
-                        Text("text_first").tag(false)
+                        Text("images_first".localized(for: preferences.language)).tag(true)
+                        Text("text_first".localized(for: preferences.language)).tag(false)
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 240)
