@@ -20,6 +20,7 @@ struct FloatingZenEditorView: View {
     @State private var hoveredSlot: Int? = nil
     @State private var isHoveringPaste: Bool = false
     @State private var isHoveringOpen: Bool = false
+    @State private var isHoveringClose: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -36,9 +37,9 @@ struct FloatingZenEditorView: View {
         VStack(spacing: 0) {
             headerBar
             
-            Divider()
+            Divider().opacity(0.3)
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     // ── Title ─────────────────────────────────────────────────
                     VStack(alignment: .leading, spacing: 4) {
@@ -56,8 +57,8 @@ struct FloatingZenEditorView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal, 22)
-                    .padding(.top, 24)
-                    .padding(.bottom, 16)
+                    .padding(.top, 10) // Un poco más de aire arriba
+                    .padding(.bottom, 12) 
                     
                     // ── Description ───────────────────────────────────────────
                     VStack(alignment: .leading, spacing: 4) {
@@ -74,7 +75,7 @@ struct FloatingZenEditorView: View {
                             )
                     }
                     .padding(.horizontal, 22)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 12) // Reducido de 16
                     
                     Divider().padding(.horizontal, 22)
                     
@@ -120,11 +121,16 @@ struct FloatingZenEditorView: View {
                 }
             }
             
-            Divider()
+            Divider().opacity(0.3)
             
             footerBar
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
+        )
         .overlay {
             if manager.lastSaveSuccess {
                 savedFeedbackOverlay
@@ -152,7 +158,27 @@ struct FloatingZenEditorView: View {
     // MARK: - Subviews
     
     private var headerBar: some View {
-        ZStack {
+        HStack(spacing: 0) {
+            // Botón de Cerrar (sustituye al semáforo)
+            Button(action: {
+                if manager.hasUnsavedChanges {
+                    showDiscardAlert = true
+                } else {
+                    manager.resetAndHide()
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(isHoveringClose ? .primary : .secondary)
+                    .padding(6)
+                    .background(Circle().fill(isHoveringClose ? Color.red.opacity(0.1) : Color.primary.opacity(0.06)))
+            }
+            .buttonStyle(.plain)
+            .help("Cerrar")
+            .onHover { isHoveringClose = $0 }
+            
+            Spacer()
+            
             // Título centrado
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
@@ -163,30 +189,29 @@ struct FloatingZenEditorView: View {
             }
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.vertical, 3)
             .background(Capsule().fill(Color.primary.opacity(0.05)))
             
-            // Botones laterales
-            HStack {
-                Spacer()
-                
-                Button(action: {
-                    manager.hide()
-                    MenuBarManager.shared.showPopover()
-                }) {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(isHoveringOpen ? .primary : .secondary)
-                        .padding(6)
-                        .background(Circle().fill(isHoveringOpen ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
-                }
-                .buttonStyle(.plain)
-                .help("Abrir editor completo")
-                .onHover { isHoveringOpen = $0 }
+            Spacer()
+            
+            // Botón de Abrir
+            Button(action: {
+                manager.hide()
+                MenuBarManager.shared.showPopover()
+            }) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(isHoveringOpen ? .primary : .secondary)
+                    .padding(6)
+                    .background(Circle().fill(isHoveringOpen ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
             }
+            .buttonStyle(.plain)
+            .help("Abrir editor completo")
+            .onHover { isHoveringOpen = $0 }
         }
+        .frame(height: 50) // Más margen vertical como solicitado
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .background(WindowDragView())
     }
     
     private var imageStrip: some View {
@@ -223,7 +248,7 @@ struct FloatingZenEditorView: View {
             }
         }
         .padding(.horizontal, 22)
-        .padding(.bottom, 24)
+        .padding(.bottom, 12) // Reducido de 16
     }
     
     @ViewBuilder
@@ -341,13 +366,15 @@ struct FloatingZenEditorView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color(NSColor.windowBackgroundColor).opacity(0.6))
+        .background(Color.primary.opacity(0.01))
     }
     
     private var savedFeedbackOverlay: some View {
         ZStack {
-            Color.black.opacity(0.2)
-                .blur(radius: 10)
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .blur(radius: 5)
+                .cornerRadius(16)
             
             VStack(spacing: 12) {
                 Image(systemName: "checkmark")
@@ -399,6 +426,21 @@ struct FloatingZenEditorView: View {
         newImage.unlockFocus()
         guard let tiffData = newImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.82])
+    }
+}
+
+// MARK: - Helper para arrastrar la ventana
+struct WindowDragView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        return DraggableNSView()
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+class DraggableNSView: NSView {
+    override func mouseDown(with event: NSEvent) {
+        self.window?.performDrag(with: event)
     }
 }
 

@@ -209,11 +209,16 @@ class FloatingZenManager: NSObject, ObservableObject {
         
         newPanel.titleVisibility = .hidden
         newPanel.titlebarAppearsTransparent = true
+        
+        // Ocultar los botones de semáforo
+        newPanel.standardWindowButton(.closeButton)?.isHidden = true
+        newPanel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        newPanel.standardWindowButton(.zoomButton)?.isHidden = true
         newPanel.isFloatingPanel = true
         newPanel.level = .floating
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         newPanel.isOpaque = false
-        newPanel.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)
+        newPanel.backgroundColor = .clear
         newPanel.hasShadow = true
         newPanel.delegate = self
         newPanel.center()
