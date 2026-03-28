@@ -94,7 +94,7 @@ struct FloatingZenEditorView: View {
                                     .tracking(1.5)
                                 Spacer()
                             }
-                            .padding(.top, 20)
+                            .padding(.top, 8)
                             
                             ZStack(alignment: .topLeading) {
                                 if manager.content.isEmpty {
@@ -193,11 +193,11 @@ struct FloatingZenEditorView: View {
             
             // Animación "Hey úsame" (pulseMagic) al pegar contenido en el prompt
             if newValue.count - oldValue.count >= 5, isMagicAvailable {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                withAnimation(.easeInOut(duration: 0.2)) {
                     pulseMagic = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
                         pulseMagic = false
                     }
                 }
@@ -418,12 +418,12 @@ struct FloatingZenEditorView: View {
                 )
                 .cornerRadius(8)
                 .shadow(color: (pulseMagic || isHoveringMagic) && isMagicAvailable ? Color.purple.opacity(0.2) : .clear, radius: 4)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: pulseMagic)
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHoveringMagic)
+                .animation(.easeInOut(duration: 0.2), value: pulseMagic)
+                .animation(.easeInOut(duration: 0.2), value: isHoveringMagic)
             }
             .buttonStyle(.plain)
             .onHover { isHoveringMagic = $0 }
-            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHoveringMagic)
+            .animation(.easeInOut(duration: 0.2), value: isHoveringMagic)
             .help(isMagicAvailable ? "Clasificar categoría automáticamente" : "No hay IA configurada")
             
             Spacer()

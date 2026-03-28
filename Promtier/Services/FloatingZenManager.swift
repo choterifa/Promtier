@@ -336,9 +336,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
         
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.5
-            // Curva de resorte aproximada
-            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 1.5, 0.5, 1.0)
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             context.allowsImplicitAnimation = true
             panel.animator().setFrame(frame, display: true)
             // Anima el enmascaramiento de AppKit para que no haya picos al rebotar
