@@ -49,6 +49,7 @@ struct FloatingZenEditorView: View {
                             TextField("Escribe el título...", text: $manager.title, axis: .vertical)
                                 .font(.system(size: 20, weight: .bold))
                                 .textFieldStyle(.plain)
+                                .lineLimit(1...3)
                                 .focused($focusedField, equals: .title)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
@@ -63,6 +64,7 @@ struct FloatingZenEditorView: View {
                             TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
                                 .font(.system(size: 13))
                                 .textFieldStyle(.plain)
+                                .lineLimit(1...2)
                                 .focused($focusedField, equals: .description)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 10)
@@ -134,25 +136,25 @@ struct FloatingZenEditorView: View {
                     ZStack {
                         Circle()
                             .fill(Color.primary.opacity(0.05))
-                            .frame(width: 44, height: 44)
+                            .frame(width: 36, height: 36) // Botón más chico
                         
                         Image(systemName: "bolt.fill")
-                            .font(.system(size: 20, weight: .black))
+                            .font(.system(size: 16, weight: .black)) // Ícono más chico
                             .foregroundColor(.blue)
                     }
                 }
                 .buttonStyle(.plain)
             }
-            .frame(width: 60, height: 60)
+            .frame(width: 48, height: 48) // Todo el cuadradito más chico
             .opacity(manager.isCollapsed ? 1 : 0)
             .scaleEffect(manager.isCollapsed ? 1.0 : 0.5)
             .allowsHitTesting(manager.isCollapsed)
         }
-        .frame(width: manager.isCollapsed ? 60 : 440, height: manager.isCollapsed ? 60 : 500)
+        .frame(width: manager.isCollapsed ? 48 : 440, height: manager.isCollapsed ? 48 : 500)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(manager.isCollapsed ? 30 : 16) // Más redondeado si es cuadradito
+        .cornerRadius(manager.isCollapsed ? 24 : 16) // Más redondeado si es cuadradito de 48px
         .overlay(
-            RoundedRectangle(cornerRadius: manager.isCollapsed ? 30 : 16)
+            RoundedRectangle(cornerRadius: manager.isCollapsed ? 24 : 16)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
         )
         .overlay {
@@ -230,8 +232,10 @@ struct FloatingZenEditorView: View {
                     .tracking(0.5)
             }
             .foregroundColor(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 3)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(WindowDragView()) // El propio título permite arrastre
+            .offset(x: -28) // Ajuste por los botones de la izquierda
             .background(Capsule().fill(Color.primary.opacity(0.05)))
             
             Spacer()

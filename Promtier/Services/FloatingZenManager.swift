@@ -11,6 +11,7 @@ import Combine
 
 class FloatingZenManager: NSObject, ObservableObject {
     static let shared = FloatingZenManager()
+    static let secondary = FloatingZenManager() // Segunda instancia para soportar hasta 2 prompts
     
     private var panel: NSPanel?
     private var cancellables = Set<AnyCancellable>()
@@ -95,6 +96,11 @@ class FloatingZenManager: NSObject, ObservableObject {
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         isVisible = true
+    }
+    
+    func bringToFront() {
+        panel?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     /// Guarda directamente como nuevo prompt en PromptService
@@ -217,14 +223,13 @@ class FloatingZenManager: NSObject, ObservableObject {
         guard let panel = panel else { return }
         isCollapsed.toggle()
         
-        let targetWidth: CGFloat = isCollapsed ? 60 : 440
-        let targetHeight: CGFloat = isCollapsed ? 60 : 500
+        let targetWidth: CGFloat = isCollapsed ? 48 : 440
+        let targetHeight: CGFloat = isCollapsed ? 48 : 500
         
         var frame = panel.frame
         let oldWidth = frame.size.width
         let oldHeight = frame.size.height
         
-        // Mantener la esquina superior derecha estable al encoger (anchor top-right)
         let diffW = targetWidth - oldWidth
         let diffH = targetHeight - oldHeight
         
@@ -232,6 +237,20 @@ class FloatingZenManager: NSObject, ObservableObject {
         frame.size.height = targetHeight
         frame.origin.x -= diffW / 2 // Centrar horizontalmente respecto al punto anterior
         frame.origin.y -= diffH / 2 // Centrar verticalmente respecto al punto anterior
+        
+        // Clamping para que no se salga de la pantalla al abrir cerca del borde
+        if !isCollapsed, let screen = panel.screen ?? NSScreen.main {
+            let visibleRect = screen.visibleFrame
+            let margin: CGFloat = 16
+            
+            let minX = visibleRect.minX + margin
+            let minY = visibleRect.minY + margin
+            let maxX = visibleRect.maxX - targetWidth - margin
+            let maxY = visibleRect.maxY - targetHeight - margin
+            
+            frame.origin.x = max(minX, min(frame.origin.x, maxX))
+            frame.origin.y = max(minY, min(frame.origin.y, maxY))
+        }
         
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.5

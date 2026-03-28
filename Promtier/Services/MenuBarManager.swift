@@ -369,7 +369,16 @@ class MenuBarManager: NSObject, ObservableObject {
     }
     
     @objc private func showFastAdd() {
-        FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+        let shared = FloatingZenManager.shared
+        let secondary = FloatingZenManager.secondary
+        
+        if !shared.isVisible || !shared.hasUnsavedChanges {
+            shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+        } else if !secondary.isVisible || !secondary.hasUnsavedChanges {
+            secondary.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+        } else {
+            secondary.bringToFront()
+        }
     }
     
     @objc private func showPreferences() {

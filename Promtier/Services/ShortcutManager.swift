@@ -202,7 +202,17 @@ class ShortcutManager: ObservableObject {
         } else if id == 100 {
             OmniSearchManager.shared.toggle()
         } else if id == 101 {
-            FloatingZenManager.shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+            let shared = FloatingZenManager.shared
+            let secondary = FloatingZenManager.secondary
+            
+            if !shared.isVisible || !shared.hasUnsavedChanges {
+                shared.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+            } else if !secondary.isVisible || !secondary.hasUnsavedChanges {
+                secondary.show(title: "", promptDescription: "", content: "", promptId: nil, isEditing: false)
+            } else {
+                // If both are visible and have content, just bring the secondary to front
+                secondary.bringToFront()
+            }
         } else if id == 102 {
             MenuBarManager.shared.folderToEdit = nil
             MenuBarManager.shared.showWithState(.folderManager)
