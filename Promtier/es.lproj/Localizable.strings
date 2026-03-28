@@ -367,15 +367,15 @@
 "reserved_name_msg" = "Este nombre está reservado para el sistema.";
 
 /* Default Data */
-"snippet_signature_title" = "Firma Profesional";
-"snippet_signature_content" = "Saludos cordiales,\nEquipo Promtier";
-"snippet_signature_shortcut" = "firma";
-"snippet_bug_title" = "Plantilla Bug";
-"snippet_bug_content" = "**Descripción:**\n**Pasos:**\n1. \n**Resultado:**";
-"snippet_bug_shortcut" = "bug";
-"snippet_review_title" = "Revisión Rápida";
-"snippet_review_content" = "Por favor revisa este código:";
-"snippet_review_shortcut" = "revisar";
+"snippet_signature_title" = "MJ Parameters";
+"snippet_signature_content" = "--ar 16:9 --v 6.0 --stylize 250 --relax";
+"snippet_signature_shortcut" = "mj";
+"snippet_bug_title" = "Cinematic Lighting";
+"snippet_bug_content" = "volumetric lighting, ray tracing, golden hour, soft shadows, 8k, ultra detailed";
+"snippet_bug_shortcut" = "lighting";
+"snippet_review_title" = "Art Styles";
+"snippet_review_content" = "{{cyberpunk, impressionist, minimalist, watercolor}} style, vibrant colors, symmetrical composition";
+"snippet_review_shortcut" = "style";
 
 "default_prompt_chatgpt_title" = "Brainstorming de Estrategia de Marketing";
 "default_prompt_chatgpt_content" = "Actúa como un estratega creativo. Ayúdame a generar 5 ángulos de marketing únicos para un {{descripcion_del_producto}}. Enfócate en disparadores psicológicos y potencial viral.";

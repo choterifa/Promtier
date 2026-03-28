@@ -308,9 +308,10 @@ struct HighlightedEditor: NSViewRepresentable {
                 let distance = textBeforeCursor.distance(from: textBeforeCursor.startIndex, to: lastSlashIndex)
                 let replacementRange = NSRange(location: distance, length: selectedRange.location - distance)
 
-                textView.insertText(snippetText, replacementRange: replacementRange)
+                let finalInsert = snippetText + "\n"
+                textView.insertText(finalInsert, replacementRange: replacementRange)
             } else {
-                textView.insertText(snippetText, replacementRange: selectedRange) // fallback
+                textView.insertText(snippetText + "\n", replacementRange: selectedRange) // fallback
             }
 
             DispatchQueue.main.async {

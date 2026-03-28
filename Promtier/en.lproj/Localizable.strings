@@ -326,15 +326,15 @@
 "reserved_name_msg" = "This name is reserved for the system.";
 
 /* Default Data */
-"snippet_signature_title" = "Professional Signature";
-"snippet_signature_content" = "Best regards,\nPromtier Team";
-"snippet_signature_shortcut" = "signature";
-"snippet_bug_title" = "Bug Template";
-"snippet_bug_content" = "**Description:**\n**Steps:**\n1. \n**Expected:**";
-"snippet_bug_shortcut" = "bug";
-"snippet_review_title" = "Quick Review";
-"snippet_review_content" = "Please review this code:";
-"snippet_review_shortcut" = "review";
+"snippet_signature_title" = "MJ Parameters";
+"snippet_signature_content" = "--ar 16:9 --v 6.0 --stylize 250 --relax";
+"snippet_signature_shortcut" = "mj";
+"snippet_bug_title" = "Pro Lighting";
+"snippet_bug_content" = "volumetric lighting, ray tracing, golden hour, soft shadows, 8k, ultra detailed";
+"snippet_bug_shortcut" = "light";
+"snippet_review_title" = "Art Styles";
+"snippet_review_content" = "{{cyberpunk, impressionist, minimalist, watercolor}} style, vibrant colors, symmetrical composition";
+"snippet_review_shortcut" = "style";
 
 "default_prompt_chatgpt_title" = "Marketing Strategy Brainstorm";
 "default_prompt_chatgpt_content" = "Act as a creative strategist. Help me brainstorm 5 unique marketing angles for a {{product_description}}. Focus on psychological triggers and viral potential.";
