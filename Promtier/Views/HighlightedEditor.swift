@@ -46,6 +46,7 @@ class PassThroughScrollView: NSScrollView {
 }
 
 class PromtierTextView: NSTextView {
+    var onPaste: (() -> Void)?
     var editorID: String = ""
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -82,6 +83,11 @@ class PromtierTextView: NSTextView {
 
         return super.performKeyEquivalent(with: event)
     }
+
+    override func paste(_ sender: Any?) {
+        super.paste(sender)
+        onPaste?()
+    }
 }
 
 struct HighlightedEditor: NSViewRepresentable {
@@ -113,6 +119,7 @@ struct HighlightedEditor: NSViewRepresentable {
     var isPremium: Bool
     var isHaloEffectEnabled: Bool = true
     var isTyping: Binding<Bool>? = nil
+    var onPaste: (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -127,6 +134,7 @@ struct HighlightedEditor: NSViewRepresentable {
 
         let textView = PromtierTextView(frame: .zero)
         textView.editorID = editorID
+        textView.onPaste = onPaste
         textView.delegate = context.coordinator
         textView.isRichText = true
         textView.importsGraphics = false
@@ -177,6 +185,9 @@ struct HighlightedEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? PromtierTextView else { return }
+
+        // Update callback
+        textView.onPaste = onPaste
 
         if context.coordinator.lastSerializedMarkdown != text {
             context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
@@ -975,6 +986,7 @@ struct HighlightedEditor: NSViewRepresentable {
                         indentation.append(char)
                     } else { break }
                 }
+
 
                 // 3. Continuación de listas
                 var nextPrefix = ""

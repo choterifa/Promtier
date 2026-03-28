@@ -2357,6 +2357,8 @@ struct EditorCard: View {
     @State private var isHovering: Bool = false
     @State private var isTyping: Bool = false
     @State private var showingPromptChainPicker: Bool = false
+    @State private var isMagicPulsing = false
+    @State private var isMagicHovered = false
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
 
@@ -2391,7 +2393,10 @@ struct EditorCard: View {
                             
                             // ✨ Botón Mágico: Autocompletar Título
                             if editorID == "main" {
-                                Button(action: { onMagicAutocomplete?() }) {
+                                Button(action: { 
+                                    withAnimation { isMagicPulsing = false }
+                                    onMagicAutocomplete?() 
+                                }) {
                                     HStack(spacing: 4) {
                                         if isAutocompleting {
                                             ProgressView().controlSize(.small).scaleEffect(0.6)
@@ -2407,12 +2412,28 @@ struct EditorCard: View {
                                     .background(
                                         Capsule()
                                             .fill(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing))
-                                            .opacity(0.15)
+                                            .opacity(isMagicPulsing ? 0.4 : (isMagicHovered ? 0.25 : 0.15))
+                                            .shadow(color: .purple.opacity(isMagicPulsing ? 0.6 : 0), radius: isMagicPulsing ? 8 : 0)
                                     )
                                     .foregroundColor(.purple)
-                                    .overlay(Capsule().stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: 0.5).opacity(0.3))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing), lineWidth: isMagicPulsing ? 1.5 : (isMagicHovered ? 1.0 : 0.5))
+                                            .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 0.6 : 0.3))
+                                    )
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    withAnimation(.spring(response: 0.3)) {
+                                        isMagicHovered = hovering
+                                    }
+                                }
+                                .animation(
+                                    isMagicPulsing 
+                                        ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) 
+                                        : .default, 
+                                    value: isMagicPulsing
+                                )
                                 .help("Autocomplete content based on title (Cmd+J)")
                                 .padding(.top, 2)
                             }
@@ -2454,7 +2475,18 @@ struct EditorCard: View {
                     triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive,
                     isHaloEffectEnabled: preferences.isHaloEffectEnabled,
-                    isTyping: $isTyping
+                    isTyping: $isTyping,
+                    onPaste: {
+                        withAnimation(.spring()) {
+                            isMagicPulsing = true
+                        }
+                        // Auto-dismiss pulse after 7 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
+                            withAnimation(.easeInOut) {
+                                isMagicPulsing = false
+                            }
+                        }
+                    }
                 )
                 .padding(.vertical, 12)
                 .padding(.leading, 12)
@@ -3149,6 +3181,7 @@ struct ImageSlotView: View {
     let onDragStart: () -> Void
 
     @State private var isTargeted = false
+    @State private var isHovering = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -3169,9 +3202,15 @@ struct ImageSlotView: View {
                         onDragStart()
                         return NSItemProvider(item: imageData as NSData, typeIdentifier: UTType.image.identifier)
                     }
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
-                    .scaleEffect(isTargeted ? 1.05 : 1.0)
+                    .shadow(color: Color.black.opacity(isHovering ? 0.2 : 0.1), radius: isHovering ? 8 : 4, y: isHovering ? 4 : 2)
+                    .scaleEffect(isTargeted ? 1.05 : (isHovering ? 1.03 : 1.0))
                     .animation(.spring(response: 0.3), value: isTargeted)
+                    .animation(.spring(response: 0.3), value: isHovering)
+                    .onHover { hovering in
+                        withAnimation(.spring(response: 0.3)) {
+                            isHovering = hovering
+                        }
+                    }
 
                 Button(action: onRemove) {
                     Image(systemName: "xmark.circle.fill")
@@ -3198,30 +3237,53 @@ struct PlaceholderSlotView: View {
     let onDrop: ([NSItemProvider]) -> Void
     
     @State private var isTargeted = false
+    @State private var isHovering = false
+    @State private var dashPhase: CGFloat = 0
     @EnvironmentObject var preferences: PreferencesManager
 
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
                 .font(.system(size: 24))
-                .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
+                .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 0.8 : 0.4))
 
             Text("add_prompt_results".localized(for: preferences.language))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.4))
+                .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 0.8 : 0.4))
         }
         .frame(width: slotWidth, height: slotHeight)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isTargeted ? Color.blue.opacity(0.05) : Color.clear)
+                .fill(isTargeted ? Color.blue.opacity(0.1) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: isTargeted ? [] : [6, 4]))
-                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(0.8))
+                        .stroke(style: StrokeStyle(lineWidth: (isTargeted || isHovering) ? 2 : 1.5, dash: isTargeted ? [] : [6, 4], dashPhase: dashPhase))
+                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 1.0 : 0.8))
                 )
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isTargeted)
+        .animation(.spring(response: 0.3), value: isHovering)
+        .onChange(of: isHovering || isTargeted) { active in
+            if active {
+                withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+                    dashPhase -= 20
+                }
+            } else {
+                // Forzamos el valor actual sin animación para detener el ciclo del repeatForever
+                withAnimation(nil) {
+                    dashPhase = dashPhase
+                }
+            }
+        }
+        .onHover { hovering in
+            withAnimation(.spring(response: 0.3)) {
+                isHovering = hovering
+            }
+        }
+        .onTapGesture {
+            onSelect()
+        }
         .onDrop(of: [.image, .fileURL, .url], isTargeted: $isTargeted) { providers in
             onDrop(providers)
             return true
