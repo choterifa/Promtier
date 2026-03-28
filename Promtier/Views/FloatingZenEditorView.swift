@@ -22,6 +22,7 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringOpen: Bool = false
     @State private var isHoveringClose: Bool = false
     @State private var isHoveringCollapse: Bool = false
+    @State private var isHoveringMagic: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -32,6 +33,15 @@ struct FloatingZenEditorView: View {
     private var isMagicAvailable: Bool {
         let prefs = PreferencesManager.shared
         return (!prefs.openAIApiKey.isEmpty && prefs.openAIEnabled) || (!prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled)
+    }
+    
+    private var categoryColor: Color? {
+        guard let folderName = manager.selectedFolder,
+              let folder = PromptService.shared.folders.first(where: { $0.name == folderName }),
+              let hex = folder.color else {
+            return nil
+        }
+        return Color(hex: hex)
     }
     
     var body: some View {
@@ -125,25 +135,23 @@ struct FloatingZenEditorView: View {
             
             // ── ESTADO "CUADRADITO" ─────────────────────────────────────────
             ZStack {
-                WindowDragView() // Para permitir arrastrarlo desde cualquier parte libre
-                
-                Button(action: {
+                WindowDragView { // Arrastre Y click combinados mediante lógica nativa de macOS
                     focusedField = nil
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         manager.toggleCollapse()
                     }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.primary.opacity(0.07))
-                            .frame(width: 26, height: 26) // Botón más chico para más área de arrastre
-                        
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 13, weight: .black)) // Ícono más chico
-                            .foregroundColor(.blue)
-                    }
                 }
-                .buttonStyle(.plain)
+                
+                ZStack {
+                    Circle()
+                        .fill(Color.primary.opacity(0.07))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 16, weight: .black))
+                        .foregroundColor(.blue)
+                }
+                .allowsHitTesting(false) // Esto permite clickear la región visual pero pasar el evento al WindowDragView
             }
             .frame(width: 48, height: 48) // Todo el cuadradito más chico
             .opacity(manager.isCollapsed ? 1 : 0)
@@ -151,7 +159,19 @@ struct FloatingZenEditorView: View {
             .allowsHitTesting(manager.isCollapsed)
         }
         .frame(width: manager.isCollapsed ? 48 : 440, height: manager.isCollapsed ? 48 : 500)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(
+            ZStack {
+                Color(NSColor.windowBackgroundColor)
+                
+                if let catColor = categoryColor, !manager.isCollapsed {
+                    LinearGradient(
+                        gradient: Gradient(colors: [catColor.opacity(0.12), Color(NSColor.windowBackgroundColor)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            }
+        )
         .cornerRadius(manager.isCollapsed ? 24 : 16) // Más redondeado si es cuadradito de 48px
         .overlay(
             RoundedRectangle(cornerRadius: manager.isCollapsed ? 24 : 16)
@@ -275,8 +295,10 @@ struct FloatingZenEditorView: View {
                             .foregroundColor(isHoveringPaste ? .blue : .blue.opacity(0.7))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(isHoveringPaste ? Color.blue.opacity(0.08) : Color.clear)
+                            .background(Color.blue.opacity(isHoveringPaste ? 0.12 : 0.05))
                             .cornerRadius(6)
+                            .scaleEffect(isHoveringPaste ? 1.05 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHoveringPaste)
                     }
                     .buttonStyle(.plain)
                     .onHover { isHoveringPaste = $0 }
@@ -304,7 +326,7 @@ struct FloatingZenEditorView: View {
                 Image(nsImage: nsImg)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 110, height: 80)
+                    .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
                     .cornerRadius(12)
                     .clipped()
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
@@ -332,7 +354,7 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 9, weight: .bold))
             }
             .foregroundColor(isHovered ? .blue : .secondary.opacity(0.4))
-            .frame(width: 110, height: 80)
+            .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isHovered ? Color.blue.opacity(0.05) : Color.primary.opacity(0.03))
@@ -342,6 +364,8 @@ struct FloatingZenEditorView: View {
                             .foregroundColor(isHovered ? .blue.opacity(0.3) : .secondary.opacity(0.2))
                     )
             )
+            .scaleEffect(isHovered ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovered)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -351,27 +375,38 @@ struct FloatingZenEditorView: View {
     
     private var footerBar: some View {
         HStack(spacing: 16) {
-            // Indicador de Magia
-            HStack(spacing: 6) {
-                if isMagicAvailable {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                        .symbolEffect(.variableColor, isActive: manager.isClassifying)
-                    Text(manager.isClassifying ? "Clasificando..." : "Magic Active")
-                        .font(.system(size: 10, weight: .bold))
-                } else {
-                    Image(systemName: "sparkles.separator")
-                        .font(.system(size: 14))
-                        .opacity(0.5)
-                    Text("Magic Off")
-                        .font(.system(size: 10, weight: .bold))
+            // Botón de Magia
+            Button(action: {
+                if isMagicAvailable && !manager.isClassifying {
+                    manager.performMagic()
                 }
+            }) {
+                HStack(spacing: 6) {
+                    if isMagicAvailable {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                            .symbolEffect(.variableColor, isActive: manager.isClassifying)
+                        Text(manager.isClassifying ? "Clasificando..." : "Magic Active")
+                            .font(.system(size: 10, weight: .bold))
+                    } else {
+                        Image(systemName: "sparkles.separator")
+                            .font(.system(size: 14))
+                            .opacity(0.5)
+                        Text("Magic Off")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                }
+                .foregroundColor(isMagicAvailable ? .purple : .secondary.opacity(0.4))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(isMagicAvailable ? (isHoveringMagic ? Color.purple.opacity(0.12) : Color.purple.opacity(0.06)) : Color.primary.opacity(0.04))
+                .cornerRadius(8)
+                .scaleEffect(isHoveringMagic && isMagicAvailable ? 1.02 : 1.0)
             }
-            .foregroundColor(isMagicAvailable ? .purple : .secondary.opacity(0.4))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(isMagicAvailable ? Color.purple.opacity(0.08) : Color.primary.opacity(0.04))
-            .cornerRadius(8)
+            .buttonStyle(.plain)
+            .onHover { isHoveringMagic = $0 }
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHoveringMagic)
+            .help(isMagicAvailable ? "Clasificar categoría automáticamente" : "No hay IA configurada")
             
             Spacer()
             
@@ -475,18 +510,52 @@ struct FloatingZenEditorView: View {
     }
 }
 
-// MARK: - Helper para arrastrar la ventana
+// MARK: - Helper para arrastrar la ventana mediante clicks o tap
 struct WindowDragView: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        return DraggableNSView()
+    var onTap: (() -> Void)? = nil
+    
+    func makeNSView(context: Context) -> DraggableNSView {
+        let view = DraggableNSView()
+        view.onTap = onTap
+        return view
     }
     
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: DraggableNSView, context: Context) {
+        nsView.onTap = onTap
+    }
 }
 
 class DraggableNSView: NSView {
+    var onTap: (() -> Void)?
+    private var didDrag = false
+    private var mouseDownPoint: NSPoint = .zero
+    
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
+    
     override func mouseDown(with event: NSEvent) {
-        self.window?.performDrag(with: event)
+        didDrag = false
+        mouseDownPoint = event.locationInWindow
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        let current = event.locationInWindow
+        let dx = abs(current.x - mouseDownPoint.x)
+        let dy = abs(current.y - mouseDownPoint.y)
+        
+        // Evitar que el temblor natural de la mano inicie un drag (margen 3px)
+        if dx > 3 || dy > 3 {
+            didDrag = true
+            self.window?.performDrag(with: event)
+        }
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        // Si nunca se cruzó el umbral de arrastre, llamamos la acción de click!
+        if !didDrag {
+            onTap?()
+        }
     }
 }
 

@@ -148,6 +148,25 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
     }
     
+    /// Auto-completa la clasificación si hay una IA habilitada
+    func performMagic() {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        let prefs = PreferencesManager.shared
+        let hasOpenAI = !prefs.openAIApiKey.isEmpty && prefs.openAIEnabled
+        let hasGemini = !prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled
+        guard hasOpenAI || hasGemini else { return }
+        
+        Task {
+            await MainActor.run { self.isClassifying = true }
+            let folders = PromptService.shared.folders.map { $0.name }
+            if let autoCategory = await classifyCurrentPrompt(title: title, content: content, folders: folders) {
+                await MainActor.run { self.selectedFolder = autoCategory }
+            }
+            await MainActor.run { self.isClassifying = false }
+        }
+    }
+    
     private func classifyCurrentPrompt(title: String, content: String, folders: [String]) async -> String? {
         guard !folders.isEmpty else { return nil }
         
@@ -256,7 +275,10 @@ class FloatingZenManager: NSObject, ObservableObject {
             context.duration = 0.5
             // Curva de resorte aproximada
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 1.5, 0.5, 1.0)
+            context.allowsImplicitAnimation = true
             panel.animator().setFrame(frame, display: true)
+            // Anima el enmascaramiento de AppKit para que no haya picos al rebotar
+            panel.contentView?.layer?.cornerRadius = isCollapsed ? 24 : 16
         }
     }
     
@@ -282,6 +304,9 @@ class FloatingZenManager: NSObject, ObservableObject {
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         newPanel.isOpaque = false
         newPanel.backgroundColor = .clear
+        newPanel.contentView?.wantsLayer = true
+        newPanel.contentView?.layer?.masksToBounds = true
+        newPanel.contentView?.layer?.cornerRadius = 16
         newPanel.hasShadow = true
         newPanel.delegate = self
         newPanel.center()
