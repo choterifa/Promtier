@@ -148,22 +148,86 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
     }
     
-    /// Auto-completa la clasificación si hay una IA habilitada
+    /// Auto-completa la clasificación, título y descripción si hay una IA habilitada
     func performMagic() {
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
         let prefs = PreferencesManager.shared
-        let hasOpenAI = !prefs.openAIApiKey.isEmpty && prefs.openAIEnabled
-        let hasGemini = !prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled
-        guard hasOpenAI || hasGemini else { return }
+        let hasAI = (!prefs.openAIApiKey.isEmpty && prefs.openAIEnabled) || (!prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled)
+        guard hasAI else { return }
         
         Task {
             await MainActor.run { self.isClassifying = true }
-            let folders = PromptService.shared.folders.map { $0.name }
-            if let autoCategory = await classifyCurrentPrompt(title: title, content: content, folders: folders) {
-                await MainActor.run { self.selectedFolder = autoCategory }
+            
+            async let catTask: String? = {
+                if self.selectedFolder != nil { return nil }
+                let folders = PromptService.shared.folders.map { $0.name }
+                return await classifyCurrentPrompt(title: self.title, content: self.content, folders: folders)
+            }()
+            
+            async let titleTask: String? = {
+                if !self.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+                return await generateMagicField(type: "short title (maximum 50 characters)", content: self.content)
+            }()
+            
+            async let descTask: String? = {
+                if !self.promptDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+                return await generateMagicField(type: "short description (maximum 100 characters)", content: self.content)
+            }()
+            
+            let (newCat, newTitle, newDesc) = await (catTask, titleTask, descTask)
+            
+            await MainActor.run {
+                if let nc = newCat { self.selectedFolder = nc }
+                if let nt = newTitle { self.title = nt }
+                if let nd = newDesc { self.promptDescription = nd }
+                self.isClassifying = false
             }
-            await MainActor.run { self.isClassifying = false }
+        }
+    }
+    
+    private func generateMagicField(type: String, content: String) async -> String? {
+        let prefs = PreferencesManager.shared
+        let systemPrompt = """
+        You are an assistant. Based on the following prompt content, generate a \(type) in the same language as the content.
+        Respond ONLY with the generated text, without quotes, extra punctuation, or trailing periods.
+        
+        Content:
+        \(content)
+        """
+        
+        let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
+        let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
+        
+        return await withCheckedContinuation { continuation in
+            var cancellable: AnyCancellable?
+            let publisher: AnyPublisher<String, Error>
+            
+            if prefs.preferredAIService == .openai {
+                publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
+            } else {
+                publisher = GeminiService.shared.generate(prompt: systemPrompt, model: model)
+            }
+            
+            var fullResponse = ""
+            cancellable = publisher
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { completion in
+                    if case .failure = completion {
+                        continuation.resume(returning: nil)
+                    } else {
+                        var final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        // Remover comillas si la IA insiste en ponerlas
+                        if final.hasPrefix("\"") && final.hasSuffix("\"") {
+                            final.removeFirst()
+                            final.removeLast()
+                        }
+                        continuation.resume(returning: final)
+                    }
+                    cancellable?.cancel()
+                }, receiveValue: { value in
+                    fullResponse += value
+                })
         }
     }
     

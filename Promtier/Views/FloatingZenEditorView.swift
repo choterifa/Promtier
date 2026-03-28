@@ -23,6 +23,7 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringClose: Bool = false
     @State private var isHoveringCollapse: Bool = false
     @State private var isHoveringMagic: Bool = false
+    @State private var pulseMagic: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -188,8 +189,20 @@ struct FloatingZenEditorView: View {
         .onDrop(of: [UTType.image, UTType.fileURL], isTargeted: $isDraggingImage) { providers in
             handleDrop(providers: providers)
         }
-        .onChange(of: manager.content) { _, _ in
+        .onChange(of: manager.content) { oldValue, newValue in
             // Scroll logic simplified
+            
+            // Animación "Hey úsame" (pulseMagic) si pegan un bloque grande y falta título
+            if newValue.count - oldValue.count >= 10, manager.title.isEmpty, isMagicAvailable {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    pulseMagic = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        pulseMagic = false
+                    }
+                }
+            }
         }
         .alert("¿Descartar cambios?", isPresented: $showDiscardAlert) {
             Button("Descartar", role: .destructive) {
@@ -326,7 +339,7 @@ struct FloatingZenEditorView: View {
                 Image(nsImage: nsImg)
                     .resizable()
                     .scaledToFill()
-                    .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
+                    .frame(width: 110, height: 80)
                     .cornerRadius(12)
                     .clipped()
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
@@ -354,7 +367,7 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 9, weight: .bold))
             }
             .foregroundColor(isHovered ? .blue : .secondary.opacity(0.4))
-            .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
+            .frame(width: 110, height: 80)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isHovered ? Color.blue.opacity(0.05) : Color.primary.opacity(0.03))
@@ -396,16 +409,23 @@ struct FloatingZenEditorView: View {
                             .font(.system(size: 10, weight: .bold))
                     }
                 }
-                .foregroundColor(isMagicAvailable ? .purple : .secondary.opacity(0.4))
+                .foregroundColor(isMagicAvailable ? (pulseMagic ? .white : .purple) : .secondary.opacity(0.4))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(isMagicAvailable ? (isHoveringMagic ? Color.purple.opacity(0.12) : Color.purple.opacity(0.06)) : Color.primary.opacity(0.04))
+                .background(
+                    isMagicAvailable ? 
+                        (pulseMagic ? Color.purple.opacity(0.8) : (isHoveringMagic ? Color.purple.opacity(0.12) : Color.purple.opacity(0.06))) 
+                    : Color.primary.opacity(0.04)
+                )
                 .cornerRadius(8)
-                .scaleEffect(isHoveringMagic && isMagicAvailable ? 1.02 : 1.0)
+                .scaleEffect(pulseMagic ? 1.03 : (isHoveringMagic && isMagicAvailable ? 1.01 : 1.0))
+                .shadow(color: pulseMagic ? Color.purple.opacity(0.3) : .clear, radius: pulseMagic ? 4 : 0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: pulseMagic)
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHoveringMagic)
             }
             .buttonStyle(.plain)
             .onHover { isHoveringMagic = $0 }
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHoveringMagic)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isHoveringMagic)
             .help(isMagicAvailable ? "Clasificar categoría automáticamente" : "No hay IA configurada")
             
             Spacer()
@@ -444,6 +464,11 @@ struct FloatingZenEditorView: View {
             .buttonStyle(.plain)
             .disabled(!canSave || manager.isSaving || manager.isClassifying)
             .keyboardShortcut(.return, modifiers: [.command])
+            .background(
+                Button("") { manager.saveAsNewPrompt() }
+                    .keyboardShortcut("s", modifiers: [.command])
+                    .opacity(0)
+            )
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -529,6 +554,7 @@ class DraggableNSView: NSView {
     var onTap: (() -> Void)?
     private var didDrag = false
     private var mouseDownPoint: NSPoint = .zero
+    private var mouseDownEvent: NSEvent?
     
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         return true
@@ -537,6 +563,7 @@ class DraggableNSView: NSView {
     override func mouseDown(with event: NSEvent) {
         didDrag = false
         mouseDownPoint = event.locationInWindow
+        mouseDownEvent = event
     }
     
     override func mouseDragged(with event: NSEvent) {
@@ -545,9 +572,11 @@ class DraggableNSView: NSView {
         let dy = abs(current.y - mouseDownPoint.y)
         
         // Evitar que el temblor natural de la mano inicie un drag (margen 3px)
-        if dx > 3 || dy > 3 {
+        if (dx > 3 || dy > 3) && !didDrag {
             didDrag = true
-            self.window?.performDrag(with: event)
+            if let downEvent = mouseDownEvent {
+                self.window?.performDrag(with: downEvent)
+            }
         }
     }
     
