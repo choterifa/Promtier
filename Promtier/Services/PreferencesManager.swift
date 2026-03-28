@@ -810,18 +810,22 @@ class PreferencesManager: ObservableObject {
 class KeychainManager {
     static let shared = KeychainManager()
     
-    private init() {}
+    private let serviceIdentifier: String
+    
+    private init() {
+        self.serviceIdentifier = Bundle.main.bundleIdentifier ?? "app.promtier.keys"
+    }
     
     func save(key: String, data: String) -> OSStatus {
         guard let dataFromString = data.data(using: .utf8, allowLossyConversion: false) else {
             return errSecParam
         }
         
-        // Primero intentamos borrar por si ya existe
         let _ = delete(key: key)
         
         let query: [String: Any] = [
             kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
             kSecAttrAccount as String : key,
             kSecValueData as String   : dataFromString,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
@@ -833,13 +837,34 @@ class KeychainManager {
     func read(key: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
             kSecAttrAccount as String : key,
             kSecReturnData as String  : kCFBooleanTrue!,
             kSecMatchLimit as String  : kSecMatchLimitOne
         ]
         
         var dataTypeRef: AnyObject?
-        let status: OSStatus = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        var status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        
+        // --- Migración desde llaves antiguas sin 'kSecAttrService' ---
+        if status == errSecItemNotFound {
+            let legacyQuery: [String: Any] = [
+                kSecClass as String       : kSecClassGenericPassword,
+                kSecAttrAccount as String : key,
+                kSecReturnData as String  : kCFBooleanTrue!,
+                kSecMatchLimit as String  : kSecMatchLimitOne
+            ]
+            
+            var legacyRef: AnyObject?
+            status = SecItemCopyMatching(legacyQuery as CFDictionary, &legacyRef)
+            
+            if status == errSecSuccess, let legacyData = legacyRef as? Data, let legacyStr = String(data: legacyData, encoding: .utf8) {
+                // Migrar a la nueva estructura segura borrando la insegura
+                SecItemDelete(legacyQuery as CFDictionary)
+                _ = self.save(key: key, data: legacyStr)
+                return legacyStr
+            }
+        }
         
         if status == errSecSuccess {
             if let retrievedData = dataTypeRef as? Data,
@@ -853,6 +878,7 @@ class KeychainManager {
     func delete(key: String) -> OSStatus {
         let query: [String: Any] = [
             kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
             kSecAttrAccount as String : key
         ]
         
