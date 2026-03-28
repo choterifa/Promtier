@@ -254,8 +254,8 @@ class MenuBarManager: NSObject, ObservableObject {
         if let text = pasteboard.string(forType: .string), 
            text.count > 10, text.count < 5000 {
             
-            // Si el texto es igual al último sugerido, permitimos máximo 2 veces
-            if text == lastSuggestedText && lastSuggestedCount >= 2 {
+            // Si el texto es igual al último sugerido, solo lo permitimos una vez
+            if text == lastSuggestedText && lastSuggestedCount >= 1 {
                 return 
             }
             

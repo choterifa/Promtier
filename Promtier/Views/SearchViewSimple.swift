@@ -1261,7 +1261,7 @@ struct ClipboardSuggestionBanner: View {
                     .foregroundColor(.blue)
                     .shadow(color: preferences.isHaloEffectEnabled ? .blue.opacity(0.5) : .clear, radius: isHovered ? 8 : 5)
             }
-            .scaleEffect(isHovered ? 1.1 : 1.0)
+            .scaleEffect(isHovered ? 1.0 : 1.0)
             VStack(alignment: .leading, spacing: 2) {
                 Text("clipboard_banner_title".localized(for: preferences.language)).font(.system(size: 12, weight: .bold)).foregroundColor(.primary.opacity(0.9))
                 Text(content).font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundColor(.secondary).lineLimit(2)
@@ -1302,7 +1302,7 @@ struct ClipboardSuggestionBanner: View {
                 Image(systemName: "xmark").font(.system(size: 10, weight: .black)).foregroundColor(.secondary.opacity(0.5)).frame(width: 26, height: 26).background(Circle().fill(Color.primary.opacity(0.04)))
             }.buttonStyle(.plain)
         }.padding(12)
-        .frame(maxWidth: preferences.windowWidth * 0.75)
+        .frame(maxWidth: preferences.windowWidth * 0.65)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
@@ -1357,8 +1357,8 @@ struct ClipboardSuggestionBanner: View {
                 .opacity(0.8)
             }
         )
-        .scaleEffect(isHovered ? 1.015 : 1.0)
-        .offset(y: isHovered ? -2 : 0)
+        .scaleEffect(isHovered ? 1.008 : 1.0)
+        .offset(y: isHovered ? -1 : 0)
         .onHover { hovering in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                 isHovered = hovering
