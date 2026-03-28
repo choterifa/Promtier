@@ -112,6 +112,7 @@ struct HighlightedEditor: NSViewRepresentable {
 
     var isPremium: Bool
     var isHaloEffectEnabled: Bool = true
+    var isTyping: Binding<Bool>? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -341,6 +342,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	        private var pendingLargeEdit = false
 	        private var pendingLastReplacementCount = 0
 	        private var markdownSerializationToken = UUID()
+	        private var typingWorkItem: DispatchWorkItem?
 
         init(_ parent: HighlightedEditor) {
             self.parent = parent
@@ -453,6 +455,31 @@ struct HighlightedEditor: NSViewRepresentable {
 
             // Serializar a Markdown con debounce (mejor pegado y docs grandes)
             scheduleMarkdownSerialization(for: textView)
+
+            // Typing Pulse Effect: Thick border while typing, resets after 3.5s of inactivity
+            if let isTypingBinding = self.parent.isTyping {
+                self.typingWorkItem?.cancel()
+                
+                // Immediately set typing state to true on change
+                if !isTypingBinding.wrappedValue {
+                    DispatchQueue.main.async {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isTypingBinding.wrappedValue = true
+                        }
+                    }
+                }
+                
+                let workItem = DispatchWorkItem { [weak self] in
+                    guard let self = self else { return }
+                    DispatchQueue.main.async {
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            self.parent.isTyping?.wrappedValue = false
+                        }
+                    }
+                }
+                self.typingWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: workItem)
+            }
 
             self.parent.plainText = textView.string
             self.parent.selectedRange = textView.selectedRange()

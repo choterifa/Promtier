@@ -124,7 +124,8 @@ struct ZenEditorView: View {
                     showVariables: $showVariables,
                     variablesSelectedIndex: $variablesSelectedIndex,
                     triggerVariablesSelection: $triggerVariablesSelection,
-                    isPremium: preferences.isPremiumActive
+                    isPremium: preferences.isPremiumActive,
+                    isTyping: .constant(false)
                 )
                 .focused($isEditorFocused)
             }

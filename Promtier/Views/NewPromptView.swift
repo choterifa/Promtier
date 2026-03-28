@@ -2355,6 +2355,7 @@ struct EditorCard: View {
     }
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
+    @State private var isTyping: Bool = false
     @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
@@ -2452,7 +2453,8 @@ struct EditorCard: View {
                     variablesSelectedIndex: $variablesSelectedIndex,
                     triggerVariablesSelection: $triggerVariablesSelection,
                     isPremium: preferences.isPremiumActive,
-                    isHaloEffectEnabled: preferences.isHaloEffectEnabled
+                    isHaloEffectEnabled: preferences.isHaloEffectEnabled,
+                    isTyping: $isTyping
                 )
                 .padding(.vertical, 12)
                 .padding(.leading, 12)
@@ -2516,8 +2518,8 @@ struct EditorCard: View {
                     .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
+                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? 2 : 1.5)
+                            .shadow(color: preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
@@ -2529,6 +2531,7 @@ struct EditorCard: View {
             }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isTyping)
             .onHover { hovering in
                 isHovering = hovering
             }
@@ -2822,6 +2825,7 @@ struct SecondaryEditorCard<Actions: View>: View {
 
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
+    @State private var isTyping: Bool = false
     @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
@@ -2875,7 +2879,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                         variablesSelectedIndex: $variablesSelectedIndex,
                         triggerVariablesSelection: $triggerVariablesSelection,
                         isPremium: preferences.isPremiumActive,
-                        isHaloEffectEnabled: preferences.isHaloEffectEnabled
+                        isHaloEffectEnabled: preferences.isHaloEffectEnabled,
+                        isTyping: $isTyping
                     )
                     .padding(.vertical, 12)
                     .padding(.leading, 12)
@@ -2955,8 +2960,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeColor.opacity(isEditorFocused ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isEditorFocused ? 2 : 1.5)
-                            .shadow(color: preferences.isHaloEffectEnabled ? themeColor.opacity(isEditorFocused ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isEditorFocused ? 10 : (isHovering ? 6 : 4))
+                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? 2 : 1.5)
+                            .shadow(color: preferences.isHaloEffectEnabled ? themeColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
             .overlay {
@@ -2967,6 +2972,7 @@ struct SecondaryEditorCard<Actions: View>: View {
             }
             .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isTyping)
             .onHover { hovering in
                 isHovering = hovering
             }
