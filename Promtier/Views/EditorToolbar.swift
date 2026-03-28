@@ -132,7 +132,7 @@ struct EditorToolbar: View {
         if aiEnabled {
             Menu {
                 Button(action: { onAIAction(.enhance) }) {
-                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "sparkles")
+                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "pencil.and.outline")
                 }
                 Button(action: { onAIAction(.fix) }) {
                     Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
@@ -145,7 +145,7 @@ struct EditorToolbar: View {
                     Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                 }
             } label: {
-                toolbarButton(icon: "sparkles", isSpecial: true, active: isAIGenerating)
+                toolbarButton(icon: "pencil.and.outline", isSpecial: true, active: isAIGenerating)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
