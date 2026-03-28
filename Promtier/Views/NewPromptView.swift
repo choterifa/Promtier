@@ -1153,18 +1153,29 @@ struct NewPromptView: View {
                 let pb = NSPasteboard.general
                 // Check if the primary item is an image
                 if let types = pb.types, types.contains(where: { $0.rawValue.starts(with: "public.image") || $0 == .png || $0 == .tiff }) {
-                    if let image = pb.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage,
-                       let tiffData = image.tiffRepresentation,
-                       let bitmap = NSBitmapImageRep(data: tiffData),
-                       let pngData = bitmap.representation(using: .png, properties: [:]) {
-
+                    if let pbData = pb.data(forType: .png) ?? pb.data(forType: .tiff) ?? pb.data(forType: NSPasteboard.PasteboardType("public.jpeg")) {
                         DispatchQueue.global(qos: .userInitiated).async {
-                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData) {
+                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pbData) {
                                 DispatchQueue.main.async {
                                     if self.showcaseImages.count < 3 {
                                         self.showcaseImages.append(optimizedData)
                                         NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                                     }
+                                }
+                            }
+                        }
+                        return nil // Consume event
+                    } else if let image = pb.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            guard let tiffData = image.tiffRepresentation,
+                                  let bitmap = NSBitmapImageRep(data: tiffData),
+                                  let jpData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]),
+                                  let optimizedData = ImageOptimizer.shared.optimize(imageData: jpData) else { return }
+                            
+                            DispatchQueue.main.async {
+                                if self.showcaseImages.count < 3 {
+                                    self.showcaseImages.append(optimizedData)
+                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
                                 }
                             }
                         }
@@ -1626,17 +1637,18 @@ struct NewPromptView: View {
         for provider in providers {
             if provider.canLoadObject(ofClass: NSImage.self) {
                 _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let nsImage = image as? NSImage,
-                       let tiffData = nsImage.tiffRepresentation,
-                       let bitmap = NSBitmapImageRep(data: tiffData),
-                       let pngData = bitmap.representation(using: .png, properties: [:]) {
-                        
-                        // Optimize in background thread (current)
-                        let optimizedData = ImageOptimizer.shared.optimize(imageData: pngData)
-                        
-                        DispatchQueue.main.async {
-                            if let data = optimizedData {
-                                self.insertImage(data, at: index)
+                    if let nsImage = image as? NSImage {
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            guard let tiffData = nsImage.tiffRepresentation,
+                                  let bitmap = NSBitmapImageRep(data: tiffData),
+                                  let baseData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else { return }
+                            
+                            let optimizedData = ImageOptimizer.shared.optimize(imageData: baseData)
+                            
+                            DispatchQueue.main.async {
+                                if let data = optimizedData {
+                                    self.insertImage(data, at: index)
+                                }
                             }
                         }
                     }
