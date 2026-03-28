@@ -49,11 +49,11 @@ struct FloatingZenEditorView: View {
                             TextField("Escribe el título...", text: $manager.title, axis: .vertical)
                                 .font(.system(size: 20, weight: .bold))
                                 .textFieldStyle(.plain)
-                                .lineLimit(1...3)
+                                .frame(minHeight: 24, maxHeight: 80)
                                 .focused($focusedField, equals: .title)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.035)))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.04)))
                         }
                         .padding(.horizontal, 22)
                         .padding(.top, 10)
@@ -64,7 +64,7 @@ struct FloatingZenEditorView: View {
                             TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
                                 .font(.system(size: 13))
                                 .textFieldStyle(.plain)
-                                .lineLimit(1...2)
+                                .frame(minHeight: 18, maxHeight: 54)
                                 .focused($focusedField, equals: .description)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 10)
@@ -92,7 +92,7 @@ struct FloatingZenEditorView: View {
                                         .font(.system(size: 14 * preferences.fontSize.scale))
                                         .foregroundColor(.secondary.opacity(0.4))
                                         .padding(.horizontal, 5)
-                                        .padding(.vertical, 8)
+                                        .padding(.vertical, 1) // Alineado preciso con el TextEditor interno de macOS
                                         .allowsHitTesting(false)
                                 }
                                 
@@ -135,11 +135,11 @@ struct FloatingZenEditorView: View {
                 }) {
                     ZStack {
                         Circle()
-                            .fill(Color.primary.opacity(0.05))
-                            .frame(width: 36, height: 36) // Botón más chico
+                            .fill(Color.primary.opacity(0.07))
+                            .frame(width: 26, height: 26) // Botón más chico para más área de arrastre
                         
                         Image(systemName: "bolt.fill")
-                            .font(.system(size: 16, weight: .black)) // Ícono más chico
+                            .font(.system(size: 13, weight: .black)) // Ícono más chico
                             .foregroundColor(.blue)
                     }
                 }
@@ -235,7 +235,7 @@ struct FloatingZenEditorView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .background(WindowDragView()) // El propio título permite arrastre
-            .offset(x: -28) // Ajuste por los botones de la izquierda
+            .offset(x: -8) // Ajuste perfecto al centro visual considerando botones
             .background(Capsule().fill(Color.primary.opacity(0.05)))
             
             Spacer()
