@@ -445,15 +445,6 @@ struct NewPromptView: View {
                         }
                         .id("alternatives_section")
                     }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.1) : Color.primary.opacity(0.05))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.08), lineWidth: 1)
-                    )
                 }
             }
 
