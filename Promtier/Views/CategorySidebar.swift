@@ -101,8 +101,12 @@ struct CategorySidebar: View {
                                 .font(.system(size: 7, weight: .bold))
                         }
                         .foregroundColor(isSortMenuHovered ? .primary : .secondary)
-                        .scaleEffect(isSortMenuHovered ? 1.15 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSortMenuHovered)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(isSortMenuHovered ? 0.06 : 0))
+                        )
+                        .contentShape(Rectangle())
                     }
                     .menuStyle(.borderlessButton)
                     .fixedSize()
@@ -121,15 +125,16 @@ struct CategorySidebar: View {
                             .font(.system(size: 11))
                             .foregroundColor(isAddFolderHovered ? .blue : .secondary)
                             .offset(y: -0.5) // Alineación visual perfecta
-                            .scaleEffect(isAddFolderHovered ? 1.15 : 1.0)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.primary.opacity(isAddFolderHovered ? 0.06 : 0))
+                            )
+                            .contentShape(Rectangle())
+                            .scaleEffect(isAddFolderHovered ? 1.03 : 1.0)
                             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isAddFolderHovered)
                     }
                     .buttonStyle(.plain)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.primary.opacity(isAddFolderHovered ? 0.06 : 0))
-                    )
                     .help("create_category".localized(for: preferences.language))
                     .onHover { isAddFolderHovered = $0 }
                 }
