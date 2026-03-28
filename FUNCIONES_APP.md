@@ -72,6 +72,17 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **Markdown**: conserva estructura y formato textual.
     - **Rich Text**: pega con negritas/cursivas reales en apps compatibles.
     - **Copy Pack**: copia `Main + Negative + Alternative(s)` en un solo bloque.
+### 🖼️ Motor de Optimización de Imágenes (Smart Downsampling)
+- **Formatos Soportados**:
+    - **Entrada**: PNG, JPEG, TIFF, BMP, HEIC (iPhone), WebP y RAW.
+    - **Salida Inteligente**: Convierte a **PNG** si hay transparencia (preserva logos) o a **JPEG (.jpg)** si la imagen es opaca (preserva espacio).
+- **Procesamiento Asíncrono**:
+    - **Cmd + V (Pegar)**: El pegado de imágenes ocurre en hilos secundarios (Background Task), eliminando bloqueos de la interfaz (Beachballs).
+    - **Optimización en Caliente**: Lee directamente los bytes del portapapeles (`NSPasteboard`) para saltar decodificaciones pesadas en el hilo principal.
+- **Límites de Calidad**:
+    - **Resolución**: Redimensionado automático (downsampling) a un máximo de **1200px** en su lado más largo.
+    - **Compresión**: Calidad fija de **82% (0.82)** para JPEG, garantizando nitidez profesional con un peso mínimo ( < 300KB promedio).
+    - **Generación de Miniaturas**: Creación automática de thumbnails de **480px** para cargar galerías de cientos de prompts instantáneamente.
 
 ### 🛠️ Utilidades y UX
 - **Dimensiones Pro**: Ancho predeterminado de **740px** y alto de **530px**.
@@ -112,4 +123,4 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Telemetry local (opcional)**: métricas locales de uso (sin enviar nada) para sugerir limpieza/organización.
 
 ---
-*Última actualización: 27 de Marzo de 2026*
+*Última actualización: 28 de Marzo de 2026*

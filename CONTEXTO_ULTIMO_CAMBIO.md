@@ -1,137 +1,54 @@
-# 🧠 Registro de Último Cambio - 27 de Marzo de 2026
+# 🧠 Registro de Última Gran Modernización - 28 de Marzo de 2026
 
-## 🛠️ Estado actual del trabajo más reciente
+## 🛠️ Estado actual de la arquitectura y rendimiento
 
-Este es el último bloque fuerte de cambios implementado para que otro modelo o desarrollador pueda retomarlo sin perder contexto.
+Hoy se ha completado un ciclo de modernización crítica que resuelve los 3 cuellos de botella más importantes detectados en la auditoría de rendimiento y seguridad.
 
-### ✅ Cambios implementados
+### ✅ Cambios implementados (Fases 1, 2 y 3)
 
-1. **Editor híbrido nativo (principal cambio)**
-   - El editor dejó de comportarse como campo plano “disfrazado”.
-   - Ahora usa `NSTextView` con formato visual real (bold, italic, inline code, listas e indentación).
-   - Aun así, el contenido se sigue serializando a Markdown canónico para guardar/copiar/exportar de forma estable.
+1. **Seguridad Nativa de API Keys (Keychain)**
+   - Se eliminó el rastro de OpenAI y Gemini API Keys de `UserDefaults` (texto plano).
+   - Ahora se guardan en el **Keychain de macOS** bajo el `Bundle Identifier` (`kSecAttrService`).
+   - Se implementó un sistema de **migración automática**: al abrir la app, las llaves viejas se mueven a la bóveda segura y se borra el rastro inseguro.
 
-2. **Barra flotante de formato corregida**
-   - La toolbar contextual al seleccionar texto ahora ejecuta comandos reales sobre el editor activo.
-   - Se introdujo un sistema de ruteo por `editorID` para evitar que varias instancias del editor se mezclen.
+2. **Modernización de Red (Async/Await)**
+   - Se erradicó el uso del framework `Combine` para las llamadas de IA.
+   - Los servicios `OpenAIService` y `GeminiService` ahora son 100% nativos de Swift Concurrency (`async/await`), lo que reduce el uso de CPU y simplifica el flujo de errores.
 
-3. **Resaltado de variables estabilizado**
-   - Se quitó el resaltado de línea completa porque generaba ruido y repintados innecesarios.
-   - El resaltado de `{{variables}}`, listas y cadenas vinculadas se aplica por cambios de contenido.
-   - El matching de brackets ahora se actualiza aparte, para reducir el tintineo visual.
+3. **Buscador masivo en Hilo Secundario (Background Threading)**
+   - El motor de búsqueda avanzado (Fuzzy, scoring, boosts) se movió de la UI a un hilo de fondo (`Task.detached`).
+   - Se implementó un sistema de **cancelación proactiva**: si el usuario escribe rápido, las tareas de búsqueda anteriores se cancelan para no saturar la CPU.
+   - Esto elimina por completo los "tirones" (beachballs) al navegar o filtrar miles de prompts.
 
-4. **UX del modal/editor de prompts**
-   - El editor vuelve a cerrarse normalmente al hacer clic fuera de la app.
-   - Se mantiene la protección de borrador/autosave, así que no depende de “bloquear” el popover.
+4. **Optimización Inteligente de Imágenes (Smart Downsampling)**
+   - **Pegado Instantáneo (Cmd+V)**: Ya no se bloquea la interfaz al pegar capturas Retina. El sistema ahora lee bytes directos del `NSPasteboard` y delega la compresión al fondo.
+   - **Downsampling**: Redimensión automática a un máximo de **1200px** y compresión JPEG al 82% (calidad pro, peso mínimo < 300KB).
+   - **Formatos**: Soporte universal (HEIC, WebP, PNG, RAW) con conversión inteligente según si hay transparencia o no.
 
-5. **Layout del header del editor**
-   - El icono del prompt se redujo y se compactó el spacing.
-   - Título y descripción quedaron más alineados y más fáciles de atacar con el mouse.
-
-6. **Preview y rendimiento escalable**
-   - La lista/grid ya no intenta cargar imágenes medianas: usa primero thumbnails ligeras.
-   - El preview con `Space` ahora pre-calienta texto enriquecido y la primera imagen en resolución media.
-   - El fullscreen carga una versión más grande aparte, sin castigar el scroll de la biblioteca.
-   - Se añadieron guardas para rutas de imagen faltantes y una reparación automática de referencias rotas.
-
-7. **Ruido de consola reducido**
-   - Se quitaron prints internos del portapapeles que ensuciaban la consola.
-   - Se evitó que `ImageIO` intentara abrir rutas inexistentes de showcase.
-
-8. **Proyecto/Xcode saneado**
-   - Se migró el target a `generated Info.plist` para quitar el warning de `Copy Bundle Resources`.
-
-9. **Infra ya existente preservada**
-   - Negative Prompt y Alternatives siguen funcionando dentro del mismo sistema.
-   - El soporte previo de imágenes en disco, ZIP backup/import, prewarm y throttling no se tocó en esta pasada.
-
-10. **Transición Grid↔List restaurada (UX)**
-   - Se revirtió el experimento de “sidebar con delay/cancelable” en el cambio de vista.
-   - El toggle volvió a ser directo con animación tipo spring (más natural y sin glitches visuales).
-
-11. **Snippets demo localizables por idioma de la app**
-   - Los snippets de ejemplo ahora se inicializan usando el `language` interno de Promtier (no el idioma del sistema).
-
-12. **Highlight más barato cuando no aplica**
-   - Se añadió un fast-path para no limpiar/recalcular decoraciones cuando el texto no contiene variables/cadenas/listas.
-
-13. **Editor escalable (rango visible + pegado más rápido)**
-   - El resaltado completo se aplica solo al rango visible (+buffer) y usa un umbral para evitar decoraciones costosas en documentos gigantes.
-   - La serialización a Markdown ahora usa debounce para que pegar texto grande no bloquee la UI.
+5. **Correcciones Estructurales**
+   - Se repararon los errores de llaves `{}` en `NewPromptView.swift` tras la refactorización masiva.
+   - Se restauró la estabilidad de `SecondaryEditorCard` y el envío de prompts a la IA.
 
 ## 📁 Archivos más relevantes tocados
 
-- `Promtier/Views/HighlightedEditor.swift`
-- `Promtier/Services/MarkdownRTFConverter.swift`
-- `Promtier/Views/EditorToolbar.swift`
-- `Promtier/Views/PromtierEditorCommand.swift`
-- `Promtier/Views/NewPromptView.swift`
-- `Promtier/Views/ZenEditorView.swift`
-- `Promtier/Services/MenuBarManager.swift`
-- `Promtier/Views/SearchViewSimple.swift`
-- `Promtier/Views/PromptPreviewView.swift`
-- `Promtier/Views/PromptGridCard.swift`
-- `Promtier/Views/DownsampledImageURLView.swift`
-- `Promtier/Services/PromptPreviewTextCache.swift`
-- `Promtier/Services/ImageDecodeCache.swift`
-- `Promtier/Services/ClipboardService.swift`
-- `Promtier/Services/PreferencesManager.swift`
-- `Promtier.xcodeproj/project.pbxproj`
+- `Promtier/Services/PreferencesManager.swift` (Enlace a Keychain)
+- `Promtier/Services/PromptService.swift` (Buscador asíncrono)
+- `Promtier/Services/OpenAIService.swift` (Migración a async/await)
+- `Promtier/Services/GeminiService.swift` (Migración a async/await)
+- `Promtier/Views/NewPromptView.swift` (Optimización de Cmd+V y correcciones)
+- `Promtier/Services/ImageOptimizer.swift` (Lógicas de downsampling)
 
-## 🧩 Decisiones técnicas importantes
+## 🧩 Especificaciones del Motor de Imágenes
 
-- **Formato de edición:** visual/enriquecido.
-- **Formato de persistencia:** Markdown canónico.
-- **Motivo:** da mejor UX en edición sin romper compatibilidad con copia/export/import ni con prompts existentes.
+- **Input**: PNG, JPEG, TIFF, BMP, HEIC, WebP, RAW.
+- **Output**: PNG (si hay alpha) / JPEG .jpg (si es opaco).
+- **Límites**: 1200px lado largo, 82% calidad, Thumbnails de 480px.
+- **Background**: Procesamiento 100% fuera del Main Thread.
 
-- **Cierre al perder foco:** ahora el popover vuelve a ser transitorio en edición normal.
-- **Motivo:** era más molesto dejarlo fijo que proteger el borrador por fuerza.
+## ⚠️ Próximo paso recomendado (Fase 4)
 
-- **Resaltado:** se separó el highlight completo del bracket matching.
-- **Motivo:** bajar repintados y quitar el flicker de las llaves.
-
-- **Carga de imágenes:** `thumb en lista → media en preview → grande en fullscreen`.
-- **Motivo:** evitar beachball en bibliotecas grandes y mantener scroll fluido.
-
-## ⚠️ Cosas a vigilar si algo falla
-
-1. Si el editor deja de reflejar cambios:
-   - revisar `lastSerializedMarkdown` y `loadMarkdownIfNeeded` en `HighlightedEditor.swift`.
-
-2. Si el formato visual se ve bien pero se guarda raro:
-   - revisar `MarkdownRTFConverter.parseMarkdown(...)`
-   - revisar `MarkdownRTFConverter.generateMarkdown(...)`
-
-3. Si una toolbar actúa sobre el editor incorrecto:
-   - revisar `PromtierEditorCommand.swift`
-   - confirmar que cada editor esté recibiendo su `editorID` correcto.
-
-4. Si vuelve el flicker de variables:
-   - revisar `scheduleHighlighting(...)`
-   - revisar `applyFullDecorations(...)`
-   - revisar `applyBracketHighlight(...)`
-
-5. Si el editor vuelve a quedarse abierto al perder foco:
-   - revisar `MenuBarManager.updatePopoverBehavior()`
-   - revisar asignaciones a `MenuBarManager.shared.isModalActive`
-
-6. Si una imagen no aparece en preview pero sí existe en disco:
-   - revisar `PromptEntity.toPrompt()`
-   - revisar `PromptService.repairMissingShowcaseReferencesIfNeeded()`
-   - revisar `DownsampledImageURLView.loadIfNeeded()`
-
-7. Si vuelve el beachball al primer `Space`:
-   - revisar `SearchViewSimple.prewarmPreviewAssets(...)`
-   - revisar `PromptPreviewTextCache`
-   - revisar tamaños de decode (`360 / 1600 / 3200`)
-
-## 🔜 Buen siguiente paso
-
-Si se quiere seguir mejorando esta línea de trabajo, lo más valioso es:
-
-1. copiar/exportar como **Markdown / texto limpio / rich text**
-2. guardar thumbnails persistentes en Core Data
-3. añadir presets de formato por tipo de prompt (code, image, writing, marketing)
+**Desarticular el "God View" (`NewPromptView.swift`):**
+El archivo sigue teniendo >3,300 líneas. Aunque es estable y rápido, su mantenimiento es difícil. El siguiente paso lógico es extraer componentes como `SecondaryEditorCard` o la barra de herramientas a archivos independientes para facilitar futuras mejoras.
 
 ---
-*Actualizado para handoff por Codex CLI.*
+*Actualizado para consolidar la Fase de Rendimiento y Seguridad (28/03/2026).*
