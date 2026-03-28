@@ -21,6 +21,7 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringPaste: Bool = false
     @State private var isHoveringOpen: Bool = false
     @State private var isHoveringClose: Bool = false
+    @State private var isHoveringCollapse: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -34,101 +35,124 @@ struct FloatingZenEditorView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
-            
-            Divider().opacity(0.3)
-            
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // ── Title ─────────────────────────────────────────────────
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Escribe el título...", text: $manager.title, axis: .vertical)
-                            .font(.system(size: 20, weight: .bold))
-                            .textFieldStyle(.plain)
-                            .lineLimit(3)
-                            .focused($focusedField, equals: .title)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.primary.opacity(0.035))
-                            )
-                            .frame(maxWidth: .infinity)
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.top, 10) // Un poco más de aire arriba
-                    .padding(.bottom, 12) 
-                    
-                    // ── Description ───────────────────────────────────────────
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
-                            .font(.system(size: 13))
-                            .textFieldStyle(.plain)
-                            .lineLimit(2)
-                            .focused($focusedField, equals: .description)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.primary.opacity(0.03))
-                            )
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 12) // Reducido de 16
-                    
-                    Divider().padding(.horizontal, 22)
-                    
-                    // ── Content ───────────────────────────────────────────────
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("CONTENIDO")
-                                .font(.system(size: 9, weight: .black))
-                                .foregroundColor(.secondary.opacity(0.5))
-                                .tracking(1.5)
-                            Spacer()
+        ZStack(alignment: .center) {
+            // ── ESTADO COMPLETO ───────────────────────────────────────────
+            VStack(spacing: 0) {
+                headerBar
+                
+                Divider().opacity(0.3)
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // ── Title ──
+                        VStack(alignment: .leading, spacing: 4) {
+                            TextField("Escribe el título...", text: $manager.title, axis: .vertical)
+                                .font(.system(size: 20, weight: .bold))
+                                .textFieldStyle(.plain)
+                                .focused($focusedField, equals: .title)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 14)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.035)))
                         }
-                        .padding(.top, 20)
+                        .padding(.horizontal, 22)
+                        .padding(.top, 10)
+                        .padding(.bottom, 12)
                         
-                        ZStack(alignment: .topLeading) {
-                            if manager.content.isEmpty {
-                                Text("Pega o escribe el contenido del prompt aquí...")
-                                    .font(.system(size: 14 * preferences.fontSize.scale))
-                                    .foregroundColor(.secondary.opacity(0.4))
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 8)
-                                    .allowsHitTesting(false)
-                            }
-                            
-                            TextEditor(text: $manager.content)
-                                .font(.system(size: 14 * preferences.fontSize.scale))
-                                .lineSpacing(4)
-                                .focused($focusedField, equals: .content)
-                                .scrollContentBackground(.hidden)
+                        // ── Description ──
+                        VStack(alignment: .leading, spacing: 4) {
+                            TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
+                                .font(.system(size: 13))
+                                .textFieldStyle(.plain)
+                                .focused($focusedField, equals: .description)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.03)))
                         }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.primary.opacity(0.035))
-                        )
-                        .frame(height: 260)
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 12)
+                        
+                        Divider().padding(.horizontal, 22)
+                        
+                        // ── Content ──
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("CONTENIDO")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .tracking(1.5)
+                                Spacer()
+                            }
+                            .padding(.top, 20)
+                            
+                            ZStack(alignment: .topLeading) {
+                                if manager.content.isEmpty {
+                                    Text("Pega o escribe el contenido del prompt aquí...")
+                                        .font(.system(size: 14 * preferences.fontSize.scale))
+                                        .foregroundColor(.secondary.opacity(0.4))
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 8)
+                                        .allowsHitTesting(false)
+                                }
+                                
+                                TextEditor(text: $manager.content)
+                                    .font(.system(size: 14 * preferences.fontSize.scale))
+                                    .lineSpacing(4)
+                                    .focused($focusedField, equals: .content)
+                                    .scrollContentBackground(.hidden)
+                            }
+                            .padding(14)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.035)))
+                            .frame(height: 260)
+                        }
+                        .padding(.horizontal, 22)
+                        
+                        Spacer(minLength: 20)
+                        
+                        imageStrip
                     }
-                    .padding(.horizontal, 22)
-                    
-                    Spacer(minLength: 20)
-                    
-                    imageStrip
                 }
+                
+                Divider().opacity(0.3)
+                
+                footerBar
             }
+            .frame(width: 440, height: 500)
+            .opacity(manager.isCollapsed ? 0 : 1)
+            .scaleEffect(manager.isCollapsed ? 0.9 : 1.0)
+            .allowsHitTesting(!manager.isCollapsed)
             
-            Divider().opacity(0.3)
-            
-            footerBar
+            // ── ESTADO "CUADRADITO" ─────────────────────────────────────────
+            ZStack {
+                WindowDragView() // Para permitir arrastrarlo desde cualquier parte libre
+                
+                Button(action: {
+                    focusedField = nil
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        manager.toggleCollapse()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.05))
+                            .frame(width: 44, height: 44)
+                        
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(width: 60, height: 60)
+            .opacity(manager.isCollapsed ? 1 : 0)
+            .scaleEffect(manager.isCollapsed ? 1.0 : 0.5)
+            .allowsHitTesting(manager.isCollapsed)
         }
+        .frame(width: manager.isCollapsed ? 60 : 440, height: manager.isCollapsed ? 60 : 500)
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(16)
+        .cornerRadius(manager.isCollapsed ? 30 : 16) // Más redondeado si es cuadradito
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: manager.isCollapsed ? 30 : 16)
                 .stroke(Color.primary.opacity(0.1), lineWidth: 0.5)
         )
         .overlay {
@@ -176,6 +200,24 @@ struct FloatingZenEditorView: View {
             .buttonStyle(.plain)
             .help("Cerrar")
             .onHover { isHoveringClose = $0 }
+            
+            // Botón de Colapsar
+            Button(action: {
+                focusedField = nil
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    manager.toggleCollapse()
+                }
+            }) {
+                Image(systemName: manager.isCollapsed ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(isHoveringCollapse ? .primary : .secondary)
+                    .padding(6)
+                    .background(Circle().fill(isHoveringCollapse ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
+            }
+            .buttonStyle(.plain)
+            .help(manager.isCollapsed ? "Expandir" : "Colapsar")
+            .onHover { isHoveringCollapse = $0 }
+            .padding(.leading, 8)
             
             Spacer()
             

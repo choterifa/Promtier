@@ -24,6 +24,7 @@ class FloatingZenManager: NSObject, ObservableObject {
     @Published var isSaving: Bool = false
     @Published var isClassifying: Bool = false
     @Published var lastSaveSuccess: Bool = false
+    @Published var isCollapsed: Bool = false
     
     private var autoSaveTimer: Timer?
     private var originalPromptId: UUID?
@@ -77,6 +78,19 @@ class FloatingZenManager: NSObject, ObservableObject {
         self.initialImages = []
         
         if panel == nil { createPanel() }
+        
+        // Posicionar a la derecha y centrada verticalmente
+        if let screen = NSScreen.main {
+            let visibleFrame = screen.visibleFrame
+            let panelWidth: CGFloat = 440
+            let panelHeight: CGFloat = 500
+            
+            // Revertir a centrado horizontal y vertical
+            let x = visibleFrame.midX - (panelWidth / 2)
+            let y = visibleFrame.midY - (panelHeight / 2)
+            
+            panel?.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
+        }
         
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -199,21 +213,51 @@ class FloatingZenManager: NSObject, ObservableObject {
         forceAutoSave()
     }
     
+    func toggleCollapse() {
+        guard let panel = panel else { return }
+        isCollapsed.toggle()
+        
+        let targetWidth: CGFloat = isCollapsed ? 60 : 440
+        let targetHeight: CGFloat = isCollapsed ? 60 : 500
+        
+        var frame = panel.frame
+        let oldWidth = frame.size.width
+        let oldHeight = frame.size.height
+        
+        // Mantener la esquina superior derecha estable al encoger (anchor top-right)
+        let diffW = targetWidth - oldWidth
+        let diffH = targetHeight - oldHeight
+        
+        frame.size.width = targetWidth
+        frame.size.height = targetHeight
+        frame.origin.x -= diffW / 2 // Centrar horizontalmente respecto al punto anterior
+        frame.origin.y -= diffH / 2 // Centrar verticalmente respecto al punto anterior
+        
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.5
+            // Curva de resorte aproximada
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 1.5, 0.5, 1.0)
+            panel.animator().setFrame(frame, display: true)
+        }
+    }
+    
     private func createPanel() {
-        let newPanel = NSPanel(
+        class FloatingZenPanel: NSPanel {
+            override var canBecomeKey: Bool {
+                return true
+            }
+            override var canBecomeMain: Bool {
+                return true
+            }
+        }
+        
+        let newPanel = FloatingZenPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
-            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
+            styleMask: [.nonactivatingPanel, .borderless, .resizable], // Sin titled para evitar el margen de semáforos
             backing: .buffered,
             defer: false
         )
         
-        newPanel.titleVisibility = .hidden
-        newPanel.titlebarAppearsTransparent = true
-        
-        // Ocultar los botones de semáforo
-        newPanel.standardWindowButton(.closeButton)?.isHidden = true
-        newPanel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        newPanel.standardWindowButton(.zoomButton)?.isHidden = true
         newPanel.isFloatingPanel = true
         newPanel.level = .floating
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
