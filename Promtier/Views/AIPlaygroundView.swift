@@ -6,14 +6,12 @@
 //
 
 import SwiftUI
-import Combine
 
 struct AIPlaygroundView: View {
     let prompt: String
     
     @EnvironmentObject var preferences: PreferencesManager
     
-    @State private var cancellable: AnyCancellable?
     @State private var responseText: String = ""
     @State private var isGenerating: Bool = false
     @State private var error: String?
@@ -171,23 +169,25 @@ struct AIPlaygroundView: View {
         Apply the USER COMMAND to the CURRENT RESULT. Respond ONLY with the refined text.
         """
         
-        let publisher: AnyPublisher<String, Error>
-        
-        if useOpenAI {
-            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-        } else {
-            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-        }
-        
-        cancellable = publisher
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                isGenerating = false
-                if case .failure(let err) = completion {
-                    self.error = err.localizedDescription
+        Task {
+            do {
+                let response: String
+                if useOpenAI {
+                    response = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+                } else {
+                    response = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
                 }
-            }, receiveValue: { chunk in
-                responseText += chunk
-            })
+                
+                await MainActor.run {
+                    self.responseText = response
+                    self.isGenerating = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    self.isGenerating = false
+                }
+            }
+        }
     }
 }

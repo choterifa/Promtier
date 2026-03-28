@@ -199,35 +199,23 @@ class FloatingZenManager: NSObject, ObservableObject {
         let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
         let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
         
-        return await withCheckedContinuation { continuation in
-            var cancellable: AnyCancellable?
-            let publisher: AnyPublisher<String, Error>
-            
+        do {
+            var fullResponse: String
             if prefs.preferredAIService == .openai {
-                publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
+                fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
             } else {
-                publisher = GeminiService.shared.generate(prompt: systemPrompt, model: model)
+                fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
             }
             
-            var fullResponse = ""
-            cancellable = publisher
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    if case .failure = completion {
-                        continuation.resume(returning: nil)
-                    } else {
-                        var final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        // Remover comillas si la IA insiste en ponerlas
-                        if final.hasPrefix("\"") && final.hasSuffix("\"") {
-                            final.removeFirst()
-                            final.removeLast()
-                        }
-                        continuation.resume(returning: final)
-                    }
-                    cancellable?.cancel()
-                }, receiveValue: { value in
-                    fullResponse += value
-                })
+            var final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+            if final.hasPrefix("\"") && final.hasSuffix("\"") {
+                final.removeFirst()
+                final.removeLast()
+            }
+            return final
+        } catch {
+            print("❌ Magic Generate Field Error: \(error.localizedDescription)")
+            return nil
         }
     }
     
@@ -251,34 +239,22 @@ class FloatingZenManager: NSObject, ObservableObject {
         let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
         let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
         
-        return await withCheckedContinuation { continuation in
-            var cancellable: AnyCancellable?
-            let publisher: AnyPublisher<String, Error>
-            
+        do {
+            var fullResponse: String
             if prefs.preferredAIService == .openai {
-                publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
+                fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
             } else {
-                publisher = GeminiService.shared.generate(prompt: systemPrompt, model: model)
+                fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
             }
             
-            var fullResponse = ""
-            cancellable = publisher
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    if case .failure = completion {
-                        continuation.resume(returning: nil)
-                    } else {
-                        let final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if folders.contains(final) {
-                            continuation.resume(returning: final)
-                        } else {
-                            continuation.resume(returning: nil)
-                        }
-                    }
-                    cancellable?.cancel()
-                }, receiveValue: { value in
-                    fullResponse += value
-                })
+            let final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+            if folders.contains(final) {
+                return final
+            }
+            return nil
+        } catch {
+            print("❌ Magic Classify Error: \(error.localizedDescription)")
+            return nil
         }
     }
     

@@ -114,10 +114,10 @@ class OpenAIService: ObservableObject {
         return ids
     }
     
-    /// Genera una respuesta basada en un prompt (Streaming soportado)
-    func generate(prompt: String, model: String, apiKey: String) -> AnyPublisher<String, Error> {
+    /// Genera una respuesta basada en un prompt de forma asíncrona
+    func generate(prompt: String, model: String, apiKey: String) async throws -> String {
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+            throw URLError(.badURL)
         }
         
         var request = URLRequest(url: url)
@@ -131,140 +131,50 @@ class OpenAIService: ObservableObject {
                 ["role": "system", "content": "You are a helpful assistant that enhances and fixes AI prompts. Respond only with the improved prompt text."],
                 ["role": "user", "content": prompt]
             ],
-            "stream": true
+            "stream": false
         ]
         
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
-        let subject = PassthroughSubject<String, Error>()
-        
-        // Handling OpenAI (Server-Sent Events)
         print("🚀 OpenAI Request: model=\(model)")
-        let session = URLSession(configuration: .default)
-        let task = session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ OpenAI Network Error: \(error.localizedDescription)")
-                subject.send(completion: .failure(error))
-                return
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            print("📡 OpenAI Error Status Code: \(httpResponse.statusCode)")
+            let rawBody = String(data: data, encoding: .utf8) ?? ""
+            if !rawBody.isEmpty { print("⚠️ OpenAI Error Body: \(rawBody)") }
+            
+            var serverMessage = rawBody
+            let decoded = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data)
+            if let err = decoded?.error {
+                serverMessage = err.message ?? serverMessage
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📡 OpenAI Status Code: \(httpResponse.statusCode)")
-                if httpResponse.statusCode != 200 {
-                    let rawBody = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
-                    if !rawBody.isEmpty {
-                        print("⚠️ OpenAI Error Body: \(rawBody)")
-                    }
-
-                    var serverMessage = rawBody
-                    var serverCode: String?
-                    var serverType: String?
-                    if let data {
-                        var decoded: OpenAIErrorEnvelope?
-                        if Thread.isMainThread {
-                            MainActor.assumeIsolated {
-                                decoded = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data)
-                            }
-                        } else {
-                            DispatchQueue.main.sync {
-                                MainActor.assumeIsolated {
-                                    decoded = try? JSONDecoder().decode(OpenAIErrorEnvelope.self, from: data)
-                                }
-                            }
-                        }
-
-                        if let openAIError = decoded?.error {
-                            serverMessage = openAIError.message ?? serverMessage
-                            serverCode = openAIError.code
-                            serverType = openAIError.type
-                        }
-                    }
-
-                    let kind: OpenAIAPIErrorKind
-                    switch httpResponse.statusCode {
-                    case 400: kind = .badRequest
-                    case 401: kind = .invalidAPIKey
-                    case 404: kind = .modelNotFound
-                    case 429: kind = .rateLimited
-                    case 500, 502, 503, 504: kind = .serverBusy
-                    default: kind = .unknown
-                    }
-
-                    let message = serverMessage.isEmpty ? "OpenAI HTTP \(httpResponse.statusCode)" : serverMessage
-                    subject.send(completion: .failure(OpenAIAPIError(
-                        kind: kind,
-                        statusCode: httpResponse.statusCode,
-                        message: message,
-                        code: serverCode,
-                        type: serverType
-                    )))
-                    return
-                }
+            let kind: OpenAIAPIErrorKind
+            switch httpResponse.statusCode {
+            case 400: kind = .badRequest
+            case 401: kind = .invalidAPIKey
+            case 404: kind = .modelNotFound
+            case 429: kind = .rateLimited
+            case 500, 502, 503, 504: kind = .serverBusy
+            default: kind = .unknown
             }
             
-            guard let data = data, let responseString = String(data: data, encoding: .utf8) else {
-                print("❓ OpenAI: No data received")
-                subject.send(completion: .finished)
-                return
-            }
-            
-            // OpenAI returns "data: {...}" per chunk
-            let lines = responseString.components(separatedBy: "\n")
-            var hasFoundContent = false
-            for line in lines {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard trimmed.hasPrefix("data: "), trimmed != "data: [DONE]" else { continue }
-                
-                let jsonString = String(trimmed.dropFirst(6))
-                guard let jsonData = jsonString.data(using: .utf8) else { continue }
-
-                if Thread.isMainThread {
-                    MainActor.assumeIsolated {
-                        if let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
-                            if let content = chunk.choices.first?.delta?.content {
-                                subject.send(content)
-                                hasFoundContent = true
-                            } else if let content = chunk.choices.first?.message?.content {
-                                // Non-streaming fallback
-                                subject.send(content)
-                                hasFoundContent = true
-                            }
-                        }
-                    }
-                } else {
-                    DispatchQueue.main.sync {
-                        MainActor.assumeIsolated {
-                            if let chunk = try? JSONDecoder().decode(OpenAIResponse.self, from: jsonData) {
-                                if let content = chunk.choices.first?.delta?.content {
-                                    subject.send(content)
-                                    hasFoundContent = true
-                                } else if let content = chunk.choices.first?.message?.content {
-                                    // Non-streaming fallback
-                                    subject.send(content)
-                                    hasFoundContent = true
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if !hasFoundContent && (response as? HTTPURLResponse)?.statusCode == 200 {
-                print("⚠️ OpenAI: No content chunks found in 200 OK response")
-                subject.send(completion: .failure(OpenAIAPIError(
-                    kind: .emptyResponse,
-                    statusCode: 200,
-                    message: "Empty response from OpenAI",
-                    code: nil,
-                    type: nil
-                )))
-                return
-            }
-            
-            subject.send(completion: .finished)
+            throw OpenAIAPIError(
+                kind: kind,
+                statusCode: httpResponse.statusCode,
+                message: serverMessage.isEmpty ? "OpenAI HTTP \(httpResponse.statusCode)" : serverMessage,
+                code: decoded?.error?.code,
+                type: decoded?.error?.type
+            )
         }
         
-        task.resume()
-        return subject.eraseToAnyPublisher()
+        let contentResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        if let content = contentResponse.choices.first?.message?.content, !content.isEmpty {
+            return content
+        } else {
+            throw URLError(.cannotParseResponse)
+        }
     }
 }

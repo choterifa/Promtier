@@ -288,7 +288,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var geminiAPIKey: String {
         didSet {
-            userDefaults.set(geminiAPIKey, forKey: "geminiAPIKey")
+            _ = KeychainManager.shared.save(key: "geminiAPIKey", data: geminiAPIKey)
         }
     }
     
@@ -336,7 +336,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var openAIApiKey: String {
         didSet {
-            userDefaults.set(openAIApiKey, forKey: "openAIApiKey")
+            _ = KeychainManager.shared.save(key: "openAIApiKey", data: openAIApiKey)
         }
     }
     
@@ -508,13 +508,29 @@ class PreferencesManager: ObservableObject {
         
         // Gemini
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
-        self.geminiAPIKey = userDefaults.string(forKey: "geminiAPIKey") ?? ""
+        if let keychainGemini = KeychainManager.shared.read(key: "geminiAPIKey"), !keychainGemini.isEmpty {
+            self.geminiAPIKey = keychainGemini
+        } else if let udGemini = userDefaults.string(forKey: "geminiAPIKey"), !udGemini.isEmpty {
+            self.geminiAPIKey = udGemini
+            _ = KeychainManager.shared.save(key: "geminiAPIKey", data: udGemini)
+            userDefaults.removeObject(forKey: "geminiAPIKey")
+        } else {
+            self.geminiAPIKey = ""
+        }
         self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.0-flash"
         
         // OpenAI
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
-        self.openAIApiKey = userDefaults.string(forKey: "openAIApiKey") ?? ""
+        if let keychainOpenAI = KeychainManager.shared.read(key: "openAIApiKey"), !keychainOpenAI.isEmpty {
+            self.openAIApiKey = keychainOpenAI
+        } else if let udOpenAI = userDefaults.string(forKey: "openAIApiKey"), !udOpenAI.isEmpty {
+            self.openAIApiKey = udOpenAI
+            _ = KeychainManager.shared.save(key: "openAIApiKey", data: udOpenAI)
+            userDefaults.removeObject(forKey: "openAIApiKey")
+        } else {
+            self.openAIApiKey = ""
+        }
         self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
         
         // Carpetas pineadas
@@ -641,10 +657,12 @@ class PreferencesManager: ObservableObject {
         self.isHaloEffectEnabled = true
         self.geminiEnabled = false
         self.geminiAPIKey = ""
+        _ = KeychainManager.shared.delete(key: "geminiAPIKey")
         self.geminiDefaultModel = "gemini-2.0-flash"
         self.preferredAIService = .openai
         self.openAIEnabled = true
         self.openAIApiKey = ""
+        _ = KeychainManager.shared.delete(key: "openAIApiKey")
         self.openAIDefaultModel = "gpt-4o"
         
         applyAppearance()
@@ -784,5 +802,60 @@ class PreferencesManager: ObservableObject {
         }
         
         return result + keyStr
+    }
+}
+
+// MARK: - Helper de Seguridad
+
+class KeychainManager {
+    static let shared = KeychainManager()
+    
+    private init() {}
+    
+    func save(key: String, data: String) -> OSStatus {
+        guard let dataFromString = data.data(using: .utf8, allowLossyConversion: false) else {
+            return errSecParam
+        }
+        
+        // Primero intentamos borrar por si ya existe
+        let _ = delete(key: key)
+        
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrAccount as String : key,
+            kSecValueData as String   : dataFromString,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+        ]
+        
+        return SecItemAdd(query as CFDictionary, nil)
+    }
+    
+    func read(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrAccount as String : key,
+            kSecReturnData as String  : kCFBooleanTrue!,
+            kSecMatchLimit as String  : kSecMatchLimitOne
+        ]
+        
+        var dataTypeRef: AnyObject?
+        let status: OSStatus = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        
+        if status == errSecSuccess {
+            if let retrievedData = dataTypeRef as? Data,
+               let result = String(data: retrievedData, encoding: .utf8) {
+                return result
+            }
+        }
+        return nil
+    }
+    
+    func delete(key: String) -> OSStatus {
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrAccount as String : key
+        ]
+        
+        return SecItemDelete(query as CFDictionary)
     }
 }

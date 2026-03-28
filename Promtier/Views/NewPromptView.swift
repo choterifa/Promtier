@@ -1952,31 +1952,20 @@ struct NewPromptView: View {
         DO NOT include any other text, labels, or explanations. Just the three parts separated by |.
         """
         
-        let publisher: AnyPublisher<String, Error>
-        switch preferences.preferredAIService {
-        case .gemini:
-            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-        case .openai:
-            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-        }
-        
-        var fullResponse = ""
-        publisher
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                isAutocompleting = false
-                withAnimation { branchMessage = nil }
-                if case .failure(let error) = completion {
-                    print("❌ Autocomplete Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        branchMessage = userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
-                    }
+        Task {
+            do {
+                let fullResponse: String
+                if preferences.preferredAIService == .openai {
+                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
                 } else {
+                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
+                }
+                
+                await MainActor.run {
+                    self.isAutocompleting = false
+                    withAnimation { self.branchMessage = nil }
                     HapticService.shared.playSuccess()
+                    
                     if !fullResponse.isEmpty {
                         let parts = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
                         if parts.count >= 3 {
@@ -1998,10 +1987,21 @@ struct NewPromptView: View {
                         }
                     }
                 }
-            }, receiveValue: { chunk in
-                fullResponse += chunk
-            })
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.isAutocompleting = false
+                    withAnimation { self.branchMessage = nil }
+                    print("❌ Autocomplete Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                    withAnimation {
+                        self.branchMessage = self.userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
+                    }
+                }
+            }
+        }
     }
 
     private func autoCategorizePrompt() {
@@ -2026,29 +2026,17 @@ struct NewPromptView: View {
         Respond ONLY with this format, nothing else.
         """
         
-        let publisher: AnyPublisher<String, Error>
-        switch preferences.preferredAIService {
-        case .gemini:
-            publisher = GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-        case .openai:
-            publisher = OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-        }
-        
-        var fullResponse = ""
-        publisher
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                isCategorizing = false
-                if case .failure(let error) = completion {
-                    print("❌ Categorization Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        branchMessage = userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
-                    }
+        Task {
+            do {
+                let fullResponse: String
+                if preferences.preferredAIService == .openai {
+                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
                 } else {
+                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
+                }
+                
+                await MainActor.run {
+                    self.isCategorizing = false
                     HapticService.shared.playSuccess()
                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                     let parts = result.components(separatedBy: "|")
@@ -2059,10 +2047,20 @@ struct NewPromptView: View {
                         }
                     }
                 }
-            }, receiveValue: { chunk in
-                fullResponse += chunk
-            })
-            .store(in: &cancellables)
+            } catch {
+                await MainActor.run {
+                    self.isCategorizing = false
+                    print("❌ Categorization Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                    withAnimation {
+                        self.branchMessage = self.userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
+                    }
+                }
+            }
+        }
     }
 
     private func userFacingAIErrorToast(for error: Error) -> String {
@@ -2577,45 +2575,41 @@ struct EditorCard: View {
             let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
             let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
 
-            var fullResponse = ""
-            let publisher: AnyPublisher<String, Error>
-
-            switch preferences.preferredAIService {
-            case .gemini:
-                publisher = GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
-            case .openai:
-                publisher = OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-            }
-
-            publisher
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    isAIGenerating = false
-                    switch completion {
-                    case .failure(let error):
-                        print("❌ AI Generation Error: \(error.localizedDescription)")
-                        HapticService.shared.playError()
-                        withAnimation {
-                            branchMessage = userFacingAIErrorToast(for: error)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                            withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
-                        }
-                    case .finished:
+            Task {
+                do {
+                    let fullResponse: String
+                    if preferences.preferredAIService == .openai {
+                        fullResponse = try await OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+                    } else {
+                        fullResponse = try await GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
+                    }
+                    
+                    await MainActor.run {
+                        self.isAIGenerating = false
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
                             print("✅ AI Generation Success: \(fullResponse.count) characters")
                             let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                            aiResult = AIResult(result: resultString, range: rangeToProcess)
+                            self.aiResult = AIResult(result: resultString, range: rangeToProcess)
                         } else {
                             print("⚠️ AI Generation Finished with empty response")
                         }
                     }
-                }, receiveValue: { chunk in
-                    fullResponse += chunk
-                })
-                .store(in: &cancellables)
+                } catch {
+                    await MainActor.run {
+                        self.isAIGenerating = false
+                        print("❌ AI Generation Error: \(error.localizedDescription)")
+                        HapticService.shared.playError()
+                        withAnimation {
+                            self.branchMessage = self.userFacingAIErrorToast(for: error)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
+                        }
+                }
+            }
         }
+    }
 
     private func userFacingAIErrorToast(for error: Error) -> String {
         let nsError = error as NSError
@@ -3011,40 +3005,36 @@ struct SecondaryEditorCard<Actions: View>: View {
             let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
             let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
 
-            var fullResponse = ""
-            let publisher: AnyPublisher<String, Error>
-
-            switch preferences.preferredAIService {
-            case .gemini:
-                publisher = GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
-            case .openai:
-                publisher = OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-            }
-
-            publisher
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    isAIGenerating = false
-                    switch completion {
-                    case .failure(let error):
-                        HapticService.shared.playError()
-                        withAnimation {
-                            branchMessage = userFacingAIErrorToast(for: error)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                            withAnimation { if branchMessage?.hasPrefix("❌") == true { branchMessage = nil } }
-                        }
-                    case .finished:
+            Task {
+                do {
+                    let fullResponse: String
+                    if preferences.preferredAIService == .openai {
+                        fullResponse = try await OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+                    } else {
+                        fullResponse = try await GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
+                    }
+                    
+                    await MainActor.run {
+                        self.isAIGenerating = false
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
                             let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                            aiResult = AIResult(result: resultString, range: rangeToProcess)
+                            self.aiResult = AIResult(result: resultString, range: rangeToProcess)
                         }
                     }
-                }, receiveValue: { chunk in
-                    fullResponse += chunk
-                })
-                .store(in: &cancellables)
+                } catch {
+                    await MainActor.run {
+                        self.isAIGenerating = false
+                        HapticService.shared.playError()
+                        withAnimation {
+                            self.branchMessage = self.userFacingAIErrorToast(for: error)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
+                        }
+                    }
+                }
+            }
         }
 
         private func userFacingAIErrorToast(for error: Error) -> String {
@@ -3136,10 +3126,9 @@ struct SecondaryEditorCard<Actions: View>: View {
             HapticService.shared.playSuccess()
         }
     }
+}
 
 // MARK: - Componentes de Soporte de Galería
-
-    }
 
 struct ImageSlotView: View {
     let imageData: Data

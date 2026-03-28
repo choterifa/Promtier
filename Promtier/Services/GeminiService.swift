@@ -42,16 +42,15 @@ class GeminiService: ObservableObject {
     private init() {}
     
     /// Genera una respuesta basada en un prompt usando Google Gemini
-    func generate(prompt: String, model: String) -> AnyPublisher<String, Error> {
+    func generate(prompt: String, model: String) async throws -> String {
         let apiKey = PreferencesManager.shared.geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard !apiKey.isEmpty else {
-            return Fail(error: URLError(.userAuthenticationRequired)).eraseToAnyPublisher()
+            throw URLError(.userAuthenticationRequired)
         }
         
-        // Usamos generateContent en lugar de streamGenerateContent
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)") else {
-            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+            throw URLError(.badURL)
         }
         
         var request = URLRequest(url: url)
@@ -66,56 +65,18 @@ class GeminiService: ObservableObject {
         
         request.httpBody = try? JSONEncoder().encode(body)
         
-        let subject = PassthroughSubject<String, Error>()
+        let (data, response) = try await URLSession.shared.data(for: request)
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                subject.send(completion: .failure(error))
-                return
-            }
-            
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                let errorMessage = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Error HTTP \(httpResponse.statusCode)"
-                let nsError = NSError(domain: "GeminiAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
-                subject.send(completion: .failure(nsError))
-                return
-            }
-            
-            guard let data = data else {
-                subject.send(completion: .finished)
-                return
-            }
-            
-            do {
-                // En este target el default isolation es MainActor; decodificamos de forma explícita en MainActor.
-                var decodedResponse: GeminiResponse?
-                if Thread.isMainThread {
-                    MainActor.assumeIsolated {
-                        decodedResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data)
-                    }
-                } else {
-                    DispatchQueue.main.sync {
-                        MainActor.assumeIsolated {
-                            decodedResponse = try? JSONDecoder().decode(GeminiResponse.self, from: data)
-                        }
-                    }
-                }
-
-                guard let decodedResponse else {
-                    throw NSError(domain: "GeminiAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Respuesta inválida"])
-                }
-
-                if let text = decodedResponse.candidates?.first?.content?.parts?.first?.text {
-                    subject.send(text)
-                }
-                subject.send(completion: .finished)
-            } catch {
-                let nsError = NSError(domain: "GeminiAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Error parseando respuesta: \(error.localizedDescription)"])
-                subject.send(completion: .failure(nsError))
-            }
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            let errorMessage = String(data: data, encoding: .utf8) ?? "Error HTTP \(httpResponse.statusCode)"
+            throw NSError(domain: "GeminiAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
         }
         
-        task.resume()
-        return subject.eraseToAnyPublisher()
+        let decodedResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+        guard let text = decodedResponse.candidates?.first?.content?.parts?.first?.text else {
+            throw NSError(domain: "GeminiAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Respuesta inválida o vacía de Gemini"])
+        }
+        
+        return text
     }
 }
