@@ -54,6 +54,7 @@ class PromptService: ObservableObject {
     }
     
     private var cancellables = Set<AnyCancellable>()
+    private var filterTask: Task<Void, Never>?
     
     init() {
         // Observar cambios en búsqueda para filtrar automáticamente
@@ -926,78 +927,90 @@ class PromptService: ObservableObject {
     
     /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
     private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
-        var filtered = prompts
+        filterTask?.cancel()
         
-        // Determinar qué categoría usar (la del override o la actual)
-        let category: String?
+        let determinedCategory: String?
         if let override = categoryOverride, override == "USE_CURRENT" {
-            category = selectedCategory
+            determinedCategory = selectedCategory
         } else {
-            category = categoryOverride
+            determinedCategory = categoryOverride
         }
         
-        // Filtrar por categoría si hay una seleccionada
-        if let category = category {
-            switch category {
-            case "recent":
-                let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
-                let recentlyUsed = prompts.filter { 
-                    if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
-                    return false 
-                }
-                
-                let mostUsed = prompts.filter { $0.useCount > 0 }
-                    .sorted { $0.useCount > $1.useCount }
-                    .prefix(10)
-                
-                var combined = recentlyUsed
-                for p in mostUsed {
-                    if !combined.contains(where: { $0.id == p.id }) {
-                        combined.append(p)
+        let safePrompts = self.prompts
+        let safeActiveApp = self.activeAppBundleID
+        let safeSortMode = self.promptSortMode
+        
+        filterTask = Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+            var filtered = safePrompts
+            
+            if Task.isCancelled { return }
+            
+            // Filtrar por categoría si hay una seleccionada
+            if let category = determinedCategory {
+                switch category {
+                case "recent":
+                    let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
+                    let recentlyUsed = safePrompts.filter { 
+                        if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
+                        return false 
                     }
+                    
+                    let mostUsed = safePrompts.filter { $0.useCount > 0 }
+                        .sorted { $0.useCount > $1.useCount }
+                        .prefix(10)
+                    
+                    var combined = recentlyUsed
+                    for p in mostUsed {
+                        if !combined.contains(where: { $0.id == p.id }) {
+                            combined.append(p)
+                        }
+                    }
+                    
+                    combined.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
+                    filtered = Array(combined.prefix(7))
+                    
+                case "favorites":
+                    filtered = filtered.filter { $0.isFavorite }
+                    filtered.sort { $0.useCount > $1.useCount }
+                    
+                case "uncategorized":
+                    filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
+                default:
+                    filtered = filtered.filter { $0.folder == category }
+                }
+            }
+            
+            if Task.isCancelled { return }
+            
+            // --- Smart Boost based on Active Application ---
+            if let activeApp = safeActiveApp, !activeApp.isEmpty {
+                if query.isEmpty {
+                    let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                    let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+                    filtered = matched + others
+                }
+            }
+            
+            // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO
+            if !query.isEmpty {
+                // 0. SANITIZACIÓN Y NORMALIZACIÓN
+                let sanitized = query.replacingOccurrences(of: "[\\x00-\\x1F\\x7F]", with: "", options: .regularExpression)
+                let normalizedSpaces = sanitized.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                let originalQuery = normalizedSpaces.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                guard !originalQuery.isEmpty else { 
+                    if !Task.isCancelled {
+                        await MainActor.run { self.filteredPrompts = filtered }
+                    }
+                    return 
                 }
                 
-                combined.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
-                filtered = Array(combined.prefix(7))
+                // 1. EXTRAER FRASES EXACTAS (entre comillas)
+                var phrasalQueries: [String] = []
+                var remainingQuery = originalQuery
                 
-            case "favorites":
-                filtered = filtered.filter { $0.isFavorite }
-                filtered.sort { $0.useCount > $1.useCount }
-                
-            case "uncategorized":
-                filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
-            default:
-                filtered = filtered.filter { $0.folder == category }
-            }
-        }
-        
-        // --- Smart Boost based on Active Application ---
-        if let activeApp = activeAppBundleID, !activeApp.isEmpty {
-            if query.isEmpty {
-                let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-                filtered = matched + others
-            }
-        }
-        
-        // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO (Fuzzy + Phrasal + Weighted)
-        if !query.isEmpty {
-            // 0. SANITIZACIÓN Y NORMALIZACIÓN
-            // Limpiar caracteres de control y normalizar espacios múltiples (fuera de frases exactas)
-            let sanitized = query.replacingOccurrences(of: "[\\x00-\\x1F\\x7F]", with: "", options: .regularExpression)
-            let normalizedSpaces = sanitized.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            let originalQuery = normalizedSpaces.trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            guard !originalQuery.isEmpty else { 
-                filteredPrompts = filtered
-                return 
-            }
-            
-            // 1. EXTRAER FRASES EXACTAS (entre comillas)
-            var phrasalQueries: [String] = []
-            var remainingQuery = originalQuery
-            
-            let regex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
+                let regex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
             if let matches = regex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
                 for match in matches.reversed() { // Reversa para no corromper índices al remover
                     if let range = Range(match.range(at: 1), in: originalQuery) {
@@ -1080,42 +1093,46 @@ class PromptService: ObservableObject {
                         score += 20 // Acumulativo si es muy muy reciente
                     }
                     
-                    // BONUS POR APP ACTIVA
-                    if let activeApp = activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
-                        score += 500 // Impulso masivo para matches de app
-                    }
+                // BONUS POR APP ACTIVA
+                if let activeApp = safeActiveApp, prompt.targetAppBundleIDs.contains(activeApp) {
+                    score += 500 // Impulso masivo para matches de app
                 }
-                
-                return (prompt, score)
             }
             
-            filtered = scoredPrompts
-                .filter { $0.1 > 0 }
-                .sorted { $0.1 > $1.1 }
-                .map { $0.0 }
+            return (prompt, score)
         }
         
-        // CONFIGURABLE: Límite de resultados mostrados comentado para que se muestren todos en la categoría
-        // if filtered.count > 50 {
-        //    filtered = Array(filtered.prefix(50))
-        // }
+        if Task.isCancelled { return }
         
-        // --- Terminal Global Sort ---
-        if query.isEmpty {
-            switch promptSortMode {
-            case .name:
-                filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
-            case .newest:
-                // Priorizar los más recientemente modificados para que reflejen la actividad real
-                filtered.sort { $0.modifiedAt > $1.modifiedAt }
-            case .mostUsed:
-                filtered.sort { $0.useCount > $1.useCount }
-            }
-        }
-        
-        filteredPrompts = filtered
+        filtered = scoredPrompts
+            .filter { $0.1 > 0 }
+            .sorted { $0.1 > $1.1 }
+            .map { $0.0 }
     }
     
+    if Task.isCancelled { return }
+    
+    // --- Terminal Global Sort ---
+    if query.isEmpty {
+        switch safeSortMode {
+        case .name:
+            filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
+        case .newest:
+            // Priorizar los más recientemente modificados para que reflejen la actividad real
+            filtered.sort { $0.modifiedAt > $1.modifiedAt }
+        case .mostUsed:
+            filtered.sort { $0.useCount > $1.useCount }
+        }
+    }
+    
+    if !Task.isCancelled {
+        await MainActor.run {
+            self.filteredPrompts = filtered
+        }
+    }
+}
+}
+
     /// Obtiene prompts favoritos
     func getFavoritePrompts() -> [Prompt] {
         return prompts.filter { $0.isFavorite }
