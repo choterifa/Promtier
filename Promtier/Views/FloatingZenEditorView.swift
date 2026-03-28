@@ -60,7 +60,7 @@ struct FloatingZenEditorView: View {
                             TextField("Escribe el título...", text: $manager.title, axis: .vertical)
                                 .font(.system(size: 20, weight: .bold))
                                 .textFieldStyle(.plain)
-                                .frame(minHeight: 24, maxHeight: 80)
+                                .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 80, alignment: .leading)
                                 .focused($focusedField, equals: .title)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
@@ -75,7 +75,7 @@ struct FloatingZenEditorView: View {
                             TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
                                 .font(.system(size: 13))
                                 .textFieldStyle(.plain)
-                                .frame(minHeight: 18, maxHeight: 54)
+                                .frame(maxWidth: .infinity, minHeight: 18, maxHeight: 54, alignment: .leading)
                                 .focused($focusedField, equals: .description)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 10)
@@ -335,12 +335,14 @@ struct FloatingZenEditorView: View {
     private func imageThumb(data: Data, index: Int) -> some View {
         if let nsImg = NSImage(data: data) {
             ZStack(alignment: .topTrailing) {
-                Image(nsImage: nsImg)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 110, height: 80)
-                    .cornerRadius(12)
-                    .clipped()
+                Color.clear
+                    .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
+                    .overlay(
+                        Image(nsImage: nsImg)
+                            .resizable()
+                            .scaledToFill()
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
                 
                 Button(action: { manager.showcaseImages.remove(at: index) }) {
@@ -366,7 +368,7 @@ struct FloatingZenEditorView: View {
                     .font(.system(size: 9, weight: .bold))
             }
             .foregroundColor(isHovered ? .blue : .secondary.opacity(0.4))
-            .frame(width: 110, height: 80)
+            .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isHovered ? Color.blue.opacity(0.05) : Color.primary.opacity(0.03))
