@@ -456,7 +456,7 @@ struct HighlightedEditor: NSViewRepresentable {
             // Serializar a Markdown con debounce (mejor pegado y docs grandes)
             scheduleMarkdownSerialization(for: textView)
 
-            // Typing Pulse Effect: Thick border while typing, resets after 3.5s of inactivity
+            // Typing Pulse Effect: Thick border while typing, resets after 5s of inactivity
             if let isTypingBinding = self.parent.isTyping {
                 self.typingWorkItem?.cancel()
                 
@@ -478,7 +478,7 @@ struct HighlightedEditor: NSViewRepresentable {
                     }
                 }
                 self.typingWorkItem = workItem
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5, execute: workItem)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: workItem)
             }
 
             self.parent.plainText = textView.string
