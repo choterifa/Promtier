@@ -183,6 +183,13 @@ struct OmniSearchView: View {
                     Text("copy_and_close".localized(for: preferences.language))
                 }
                 
+                HStack(spacing: 4) {
+                    Image(systemName: "command")
+                    Text("C")
+                    Text("copy".localized(for: preferences.language))
+                        .opacity(0.8)
+                }
+                
                 Spacer()
             }
             .font(.system(size: 11, weight: .semibold))
@@ -194,9 +201,11 @@ struct OmniSearchView: View {
         .frame(width: 650, height: 450, alignment: .top)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .background(
-            RoundedRectangle(cornerRadius: 22)
-                .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
+            ZStack {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color(NSColor.windowBackgroundColor))
+                    .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
+            }
         )
         .onAppear {
             // Delay extra para asegurar que la ventana es KEY antes de enfocar el TextField
@@ -229,6 +238,11 @@ struct OmniSearchView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchSubmit"))) { _ in
+            if !filteredPrompts.isEmpty && selectedIndex < filteredPrompts.count {
+                copyAndClose(filteredPrompts[selectedIndex])
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchCopy"))) { _ in
             if !filteredPrompts.isEmpty && selectedIndex < filteredPrompts.count {
                 copyAndClose(filteredPrompts[selectedIndex])
             }
@@ -281,6 +295,42 @@ struct OmniSearchRow: View {
                         Text(prompt.title)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(isSelected ? .white : .primary)
+                            .lineLimit(1)
+                        
+                        // Indicadores rápidos (Badges)
+                        HStack(spacing: 5) {
+                            if prompt.hasTemplateVariables() {
+                                Image(systemName: "curlybraces")
+                                    .font(.system(size: 10, weight: .black))
+                                    .foregroundColor(isSelected ? .white.opacity(0.8) : .blue.opacity(0.8))
+                                    .help("Has variables")
+                            }
+                            
+                            if !(prompt.negativePrompt?.isEmpty ?? true) {
+                                Circle()
+                                    .fill(isSelected ? .white.opacity(0.9) : Color.red.opacity(0.7))
+                                    .frame(width: 5, height: 5)
+                                    .help("Has negative prompt")
+                            }
+                            
+                            if !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true) {
+                                Circle()
+                                    .fill(isSelected ? .white.opacity(0.7) : Color.green.opacity(0.6))
+                                    .frame(width: 5, height: 5)
+                                    .help("Has alternatives")
+                            }
+                        }
+                        
+                        // Badge de Categoría
+                        if let folder = prompt.folder, !folder.isEmpty {
+                            Text(folder)
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(isSelected ? .white : categoryColor)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(isSelected ? Color.white.opacity(0.2) : categoryColor.opacity(0.12))
+                                .clipShape(Capsule())
+                        }
                     }
                     
                     if let desc = prompt.promptDescription, !desc.isEmpty {

@@ -51,6 +51,9 @@ class OmniSearchManager: NSObject, ObservableObject {
             } else if keyCode == 53 { // Esc -> cerrar ventana
                 DispatchQueue.main.async { self.hide() }
                 return nil
+            } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 8 { // Cmd + C
+                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchCopy"), object: nil)
+                return nil
             }
             
             return event
