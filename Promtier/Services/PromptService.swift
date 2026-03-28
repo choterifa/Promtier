@@ -33,7 +33,7 @@ class PromptService: ObservableObject {
         case newest
     }
     
-    @Published var folderSortMode: FolderSortMode = .name {
+    @Published var folderSortMode: FolderSortMode = .newest {
         didSet {
             UserDefaults.standard.set(folderSortMode.rawValue, forKey: "folderSortMode_preference")
             loadFolders()
