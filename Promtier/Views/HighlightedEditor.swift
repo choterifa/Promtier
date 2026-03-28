@@ -537,25 +537,6 @@ struct HighlightedEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             scheduleHighlighting(for: textView, mode: .bracketOnly, debounce: false, delayOverride: nil)
             syncTypingAttributes(for: textView)
-
-            // Notion-style floating format menu
-            let range = textView.selectedRange()
-            if range.length > 0 {
-                if let layoutManager = textView.layoutManager, let textContainer = textView.textContainer {
-                    let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-                    var boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-                    boundingRect.origin.x += textView.textContainerOrigin.x
-                    boundingRect.origin.y += textView.textContainerOrigin.y
-                    FormatMenuPopover.shared.show(
-                        in: textView,
-                        at: boundingRect,
-                        editorID: parent.editorID,
-                        themeColor: parent.themeColor
-                    )
-                }
-            } else {
-                FormatMenuPopover.shared.hide()
-            }
         }
 
         func textDidBeginEditing(_ notification: Notification) {
