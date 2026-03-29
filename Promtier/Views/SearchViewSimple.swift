@@ -788,6 +788,22 @@ struct SearchViewSimple: View {
             )
         }
         Divider()
+        // Acciones rápidas de configuración
+        Button(action: {
+            selectedPrompt = prompt
+            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+        }) {
+            Label("Asignar Atajo", systemImage: "command.circle")
+        }
+        Button(action: {
+            selectedPrompt = prompt
+            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+        }) {
+            Label("Asignar App", systemImage: "app.badge")
+        }
+        Divider()
         Button(action: {
             if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
             exportPromptsToFile(prompt)
@@ -824,7 +840,9 @@ struct SearchViewSimple: View {
                 DispatchQueue.main.async {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         menuBarManager.activeViewState = .main
-                        selectedPrompt = nil
+                        // No limpiar selectedPrompt al volver a .main:
+                        // Si lo limpiamos, las flechas y Space dejan de funcionar
+                        // porque no hay selección activa en la lista.
                         menuBarManager.folderToEdit = nil
                         menuBarManager.isModalActive = false
                     }

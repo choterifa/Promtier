@@ -2,7 +2,7 @@
 //  IconPickerView.swift
 //  Promtier
 //
-//  VISTA: Selector de iconos (SFSymbols) para prompts
+//  VISTA: Selector de iconos (SFSymbols) para prompts — Categorizado
 //
 
 import SwiftUI
@@ -12,145 +12,178 @@ struct IconPickerView: View {
     let color: Color
     @EnvironmentObject var preferences: PreferencesManager
     
-    let icons = [
-        // Inteligencia Artificial y Pensamiento
-        "brain.fill", "sparkles", "bolt.fill", "lightbulb.fill", "brain",
-        "cpu.fill", "network", "wand.and.stars", "shield.fill", "atom",
-        "waveform.path.ecg", "square.stack.3d.up.fill", "bolt.square.fill", "sparkle",
-        "bolt.horizontal.fill", "bolt.circle",
-
-        // Escritura, Documentos y Creatividad
-        "doc.text.fill", "pencil.and.outline", "paragraphsign", "text.quote", "signature",
-        "book.closed.fill", "books.vertical.fill", "square.and.pencil", "doc.on.doc.fill",
-        "list.bullet.indent", "character.bubble.fill", "pencil.tip", "doc.append.fill",
-        "text.badge.plus", "quote.bubble.fill", "note.text", "doc.richtext.fill",
-        "text.badge.checkmark", "doc.text.magnifyingglass", "character.cursor.ibeam",
-
-        // Programación y Herramientas Técnicas
-        "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces.square.fill",
-        "command.circle.fill", "gearshape.fill", "wrench.fill",
-        "applescript", "macwindow", "puzzlepiece.fill", "ant.fill",
-        "memorychip.fill", "cpu", "command.square.fill", "shippingbox.fill",
-        "hammer.fill", "wrench.and.screwdriver.fill", "curlybraces",
-
-        // Marketing, Datos y Análisis
-        "chart.line.uptrend.xyaxis", "target", "briefcase.fill",
-        "magnifyingglass.circle.fill", "cube.transparent.fill", "dollarsign.circle.fill",
-        "chart.pie.fill", "line.3.horizontal.decrease.circle.fill", "bag.fill", "cart.fill",
-        "tag.fill", "bookmark.fill", "link", "timer", "stopwatch",
-        "chart.bar.fill", "percent", "banknote.fill", "creditcard.fill",
-
-        // Comunicación y Social
-        "bubble.left.and.bubble.right.fill", "paperplane.fill", "megaphone.fill", "person.fill",
-        "person.2.fill", "person.text.rectangle.fill", "envelope.fill", "hand.thumbsup.fill", "heart.fill",
-        "person.crop.circle.badge.checkmark", "at", "phone.circle.fill",
-        "message.fill", "hand.raised.fill",
-
-        // Multimedia, Diseño y Arte
-        "photo.on.rectangle.angled.fill", "camera.aperture", "paintbrush.pointed.fill",
-        "paintpalette.fill", "film.fill", "play.rectangle.on.rectangle.fill", "mic.badge.plus",
-        "headphones", "video.fill", "scissors", "eye.fill",
-        "circle.grid.cross", "camera.fill", "music.note",
-        "photo.fill", "play.circle.fill", "speaker.wave.2.fill",
-
-        // General y Utilidades
-        "star.fill", "flame.fill", "flag.fill", "bell.fill",
-        "lock.fill", "lock.open.fill", "key.fill", "calendar.badge.clock", "map.fill",
-        "gift.fill", "gamecontroller.fill", "trophy.fill", "medal.fill", "party.popper.fill",
-        "exclamationmark.triangle.fill", "questionmark.circle.fill", "checkmark.seal.fill",
-        "shield", "function", "globe.americas.fill", "leaf.fill",
-        "house.fill", "airplane.circle.fill", "car.fill", "graduationcap.fill",
-        
-        // 15 iconos más muy usados y compatibles
-        "globe", "location.fill", "folder", "archivebox", "trash", 
-        "square.and.arrow.up", "square.and.arrow.down", "paperclip", "calendar",
-        "sun.max.fill", "moon.fill", "cloud.fill", "drop.fill", 
-        "flashlight.on.fill", "camera",
-        
-        // 100 Iconos adicionales nativos
-        "folder.badge.plus", "doc.text", "note", "network.badge.shield.half.filled", 
-        "laptopcomputer", "desktopcomputer", "smartphone", "iphone", "ipad", "applewatch", 
-        "mic.fill", "photo.artframe", "paintbrush.fill", "ruler.fill", "wrench.and.screwdriver", 
-        "hammer", "gear", "gearshape.2.fill", "slider.horizontal.3", "slider.vertical.3", 
-        "switch.2", "magnifyingglass", "plus.magnifyingglass", "minus.magnifyingglass", 
-        "1.magnifyingglass", "sparkle.magnifyingglass", "mic.circle.fill", "waveform", 
-        "speaker.wave.3.fill", "speaker.slash.fill", "music.mic", "play.fill", "pause.fill", 
-        "stop.fill", "forward.fill", "backward.fill", "shuffle", "repeat", "arrow.rectanglepath", 
-        "arrow.triangle.2.circlepath", "arrow.clockwise", "arrow.counterclockwise", 
-        "arrow.up.circle.fill", "arrow.down.circle.fill", "arrow.left.circle.fill", 
-        "arrow.right.circle.fill", "chevron.up", "chevron.down", "chevron.left", 
-        "chevron.right", "chevron.left.2", "chevron.right.2", "star.circle.fill", 
-        "heart.circle.fill", "flag.circle.fill", "bell.circle.fill", "tag.circle.fill", 
-        "bookmark.circle.fill", "paperplane.circle.fill", "tray.circle.fill", "tray.full.fill", 
-        "archivebox.fill", "doc.on.clipboard.fill", "doc.append", "doc.text.below.ecg.fill", 
-        "chart.bar.doc.horizontal", "chart.pie", "chart.bar.xaxis", 
-        "chart.line.uptrend.xyaxis.circle.fill", "dollarsign.circle", "yensign.circle", 
-        "eurosign.circle", "sterlingsign.circle", "bitcoinsign.circle", "creditcard", 
-        "banknote", "wallet.pass.fill", "cart", "bag", "gift", "cube.box.fill", "shippingbox", 
-        "clock.fill", "alarm.fill", "stopwatch.fill", "timer.square", "calendar.badge.plus", 
-        "calendar.badge.minus", "cloud.sun.fill", "cloud.rain.fill", "cloud.snow.fill", 
-        "cloud.bolt.fill", "thermometer.sun.fill", "thermometer.snowflake", "flame", "drop"
+    // MARK: - Categorías de Iconos
+    
+    struct IconCategory: Identifiable {
+        let id = UUID()
+        let name: String
+        let systemImage: String
+        let icons: [String]
+    }
+    
+    static let categories: [IconCategory] = [
+        IconCategory(name: "IA & Pensamiento", systemImage: "brain", icons: [
+            "brain.fill", "brain", "sparkles", "sparkle", "bolt.fill", "lightbulb.fill",
+            "cpu.fill", "cpu", "network", "wand.and.stars", "atom",
+            "bolt.horizontal.fill", "bolt.circle", "bolt.square.fill",
+            "memorychip.fill"
+        ]),
+        IconCategory(name: "Programación", systemImage: "terminal.fill", icons: [
+            "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces.square.fill",
+            "curlybraces", "command.circle.fill", "command.square.fill",
+            "applescript", "macwindow", "ant.fill",
+            "hammer.fill", "hammer", "wrench.fill", "wrench.and.screwdriver.fill",
+            "wrench.and.screwdriver", "gearshape.fill", "gear",
+            "gearshape.2.fill", "puzzlepiece.fill", "shippingbox.fill", "shippingbox",
+            "laptopcomputer", "desktopcomputer"
+        ]),
+        IconCategory(name: "Escritura & Docs", systemImage: "doc.text.fill", icons: [
+            "doc.text.fill", "doc.text", "pencil.and.outline", "pencil.tip",
+            "paragraphsign", "text.quote", "signature",
+            "book.closed.fill", "books.vertical.fill", "square.and.pencil",
+            "doc.on.doc.fill", "doc.append.fill", "doc.append",
+            "list.bullet.indent", "character.bubble.fill",
+            "text.badge.plus", "quote.bubble.fill", "note.text", "note",
+            "doc.richtext.fill", "text.badge.checkmark",
+            "doc.text.magnifyingglass", "character.cursor.ibeam",
+            "doc.on.clipboard.fill"
+        ]),
+        IconCategory(name: "Negocios & Datos", systemImage: "chart.bar.fill", icons: [
+            "chart.line.uptrend.xyaxis", "chart.bar.fill", "chart.pie.fill", "chart.pie",
+            "chart.bar.xaxis", "target", "briefcase.fill",
+            "magnifyingglass.circle.fill", "magnifyingglass",
+            "dollarsign.circle.fill", "dollarsign.circle",
+            "bag.fill", "bag", "cart.fill", "cart",
+            "tag.fill", "bookmark.fill", "link", "timer", "stopwatch",
+            "percent", "banknote.fill", "banknote", "creditcard.fill", "creditcard",
+            "wallet.pass.fill"
+        ]),
+        IconCategory(name: "Comunicación", systemImage: "bubble.left.and.bubble.right.fill", icons: [
+            "bubble.left.and.bubble.right.fill", "paperplane.fill",
+            "megaphone.fill", "person.fill", "person.2.fill",
+            "person.text.rectangle.fill", "envelope.fill",
+            "hand.thumbsup.fill", "heart.fill", "heart.circle.fill",
+            "person.crop.circle.badge.checkmark", "at",
+            "phone.circle.fill", "message.fill", "hand.raised.fill"
+        ]),
+        IconCategory(name: "Multimedia & Arte", systemImage: "paintpalette.fill", icons: [
+            "photo.on.rectangle.angled.fill", "photo.fill", "photo.artframe",
+            "camera.aperture", "camera.fill", "camera",
+            "paintbrush.pointed.fill", "paintbrush.fill", "paintpalette.fill",
+            "film.fill", "play.rectangle.on.rectangle.fill",
+            "mic.badge.plus", "mic.fill", "mic.circle.fill",
+            "headphones", "video.fill", "scissors", "eye.fill",
+            "circle.grid.cross", "music.note", "music.mic",
+            "play.circle.fill", "play.fill", "speaker.wave.2.fill"
+        ]),
+        IconCategory(name: "General & Utilidad", systemImage: "star.fill", icons: [
+            "star.fill", "star.circle.fill", "flame.fill", "flame",
+            "flag.fill", "flag.circle.fill", "bell.fill", "bell.circle.fill",
+            "lock.fill", "lock.open.fill", "key.fill",
+            "calendar.badge.clock", "calendar", "calendar.badge.plus",
+            "map.fill", "location.fill", "gift.fill", "gift",
+            "gamecontroller.fill", "trophy.fill", "medal.fill", "party.popper.fill",
+            "exclamationmark.triangle.fill", "questionmark.circle.fill",
+            "checkmark.seal.fill", "shield.fill", "shield",
+            "function", "globe.americas.fill", "globe", "leaf.fill",
+            "house.fill", "airplane.circle.fill", "car.fill", "graduationcap.fill",
+            "sun.max.fill", "moon.fill", "cloud.fill", "drop.fill",
+            "flashlight.on.fill", "waveform.path.ecg",
+            "folder", "folder.badge.plus", "archivebox", "archivebox.fill",
+            "trash", "paperclip", "clock.fill", "alarm.fill",
+            "square.and.arrow.up", "square.and.arrow.down",
+            "cube.transparent.fill", "square.stack.3d.up.fill",
+            "slider.horizontal.3", "slider.vertical.3",
+            "ruler.fill", "stopwatch.fill"
+        ])
     ]
+    
+    /// Lista plana de TODOS los iconos disponibles (para validar la selección IA)
+    static var allIconNames: [String] {
+        categories.flatMap { $0.icons }
+    }
     
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
             HStack {
                 Text("choose_icon".localized(for: preferences.language))
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                // El botón de aceptar que pidió el usuario
                 Button("done".localized(for: preferences.language)) {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .keyboardShortcut(.defaultAction) // Soporta la tecla ENTER
+                .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 4)
             
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 38))], spacing: 12) {
-                    // Opción por defecto (Icono de carpeta/categoría)
-                    Button(action: { 
-                        withAnimation(.spring()) { selectedIcon = nil }
-                    }) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(selectedIcon == nil ? color.opacity(0.15) : Color.primary.opacity(0.04))
-                                .frame(width: 38, height: 38)
+            // Opción por defecto (Carpeta)
+            Button(action: {
+                withAnimation(.spring()) { selectedIcon = nil }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(selectedIcon == nil ? color : .secondary)
+                    Text("Usar icono de categoría")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(selectedIcon == nil ? color : .secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(selectedIcon == nil ? color.opacity(0.12) : Color.primary.opacity(0.03)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(selectedIcon == nil ? color.opacity(0.3) : Color.clear, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            
+            // Categorías con iconos
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Self.categories) { category in
+                        VStack(alignment: .leading, spacing: 6) {
+                            // Título de categoría
+                            HStack(spacing: 4) {
+                                Image(systemName: category.systemImage)
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(category.name.uppercased())
+                                    .font(.system(size: 9, weight: .heavy))
+                                    .foregroundColor(.secondary)
+                                    .tracking(1)
+                            }
+                            .padding(.leading, 2)
                             
-                            Image(systemName: "folder.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(selectedIcon == nil ? color : .secondary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help("use_category_icon_help".localized(for: preferences.language))
-                    
-                    ForEach(icons, id: \.self) { icon in
-                        Button(action: { 
-                            withAnimation(.spring()) { selectedIcon = icon }
-                        }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(selectedIcon == icon ? color.opacity(0.15) : Color.primary.opacity(0.04))
-                                    .frame(width: 38, height: 38)
-                                
-                                Image(systemName: icon)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(selectedIcon == icon ? color : .primary.opacity(0.7))
+                            // Grid de iconos
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 34))], spacing: 6) {
+                                ForEach(category.icons, id: \.self) { icon in
+                                    Button(action: {
+                                        withAnimation(.spring()) { selectedIcon = icon }
+                                    }) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(selectedIcon == icon ? color.opacity(0.15) : Color.primary.opacity(0.04))
+                                                .frame(width: 34, height: 34)
+                                            
+                                            Image(systemName: icon)
+                                                .font(.system(size: 14))
+                                                .foregroundColor(selectedIcon == icon ? color : .primary.opacity(0.7))
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
-                        .buttonStyle(.plain)
                     }
                 }
-                .padding(4)
+                .padding(.horizontal, 2)
             }
-            .frame(height: 300)
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(NSColor.windowBackgroundColor))
@@ -160,7 +193,7 @@ struct IconPickerView: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         )
-        .frame(width: 300)
+        .frame(width: 320, height: 460)
     }
 }
 

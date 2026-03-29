@@ -130,9 +130,11 @@ class MenuBarManager: NSObject, ObservableObject {
         if let popover = popover, popover.isShown {
             closePopover()
         } else {
-            // Si estábamos en NewPrompt pero se cerró (clic fuera o ESC), reabrimos ahí.
-            // Solo forzamos .main si no había borradores y ya estábamos ahí.
-            if !DraftService.shared.hasDraft && activeViewState == .newPrompt && suggestedClipboardContent == nil {
+            // Siempre abrir desde la página principal, a menos que haya
+            // un borrador activo o se esté editando un prompt.
+            if DraftService.shared.hasDraft {
+                activeViewState = .newPrompt
+            } else if activeViewState != .main {
                 activeViewState = .main
             }
             

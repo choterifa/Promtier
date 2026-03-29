@@ -24,6 +24,7 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringCollapse: Bool = false
     @State private var isHoveringMagic: Bool = false
     @State private var pulseMagic: Bool = false
+    @State private var isCompressingImage: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -400,7 +401,7 @@ struct FloatingZenEditorView: View {
                         Image(systemName: "sparkles")
                             .font(.system(size: 14))
                             .symbolEffect(.variableColor, isActive: manager.isClassifying)
-                        Text(manager.isClassifying ? "Clasificando..." : "Magic Active")
+                        Text(isCompressingImage ? "Comprimiendo imágenes..." : (manager.isClassifying ? "Clasificando..." : "Magic Active"))
                             .font(.system(size: 10, weight: .bold))
                     } else {
                         Image(systemName: "sparkles.separator")
@@ -502,22 +503,39 @@ struct FloatingZenEditorView: View {
     private func pasteImageFromClipboard() {
         guard manager.showcaseImages.count < 3 else { return }
         let pb = NSPasteboard.general
-        if let image = NSImage(pasteboard: pb), let optimized = optimizeImage(image) {
-            manager.showcaseImages.append(optimized)
+        guard let image = NSImage(pasteboard: pb) else { return }
+        isCompressingImage = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let optimized = self.optimizeImage(image)
+            DispatchQueue.main.async {
+                self.isCompressingImage = false
+                if let optimized { manager.showcaseImages.append(optimized) }
+            }
         }
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard manager.showcaseImages.count < 3 else { return false }
-        for provider in providers.prefix(3 - manager.showcaseImages.count) {
+        isCompressingImage = true
+        let remaining = 3 - manager.showcaseImages.count
+        var pending = 0
+        for provider in providers.prefix(remaining) {
             if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                pending += 1
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data, let image = NSImage(data: data), let optimized = self.optimizeImage(image) {
-                        DispatchQueue.main.async { self.manager.showcaseImages.append(optimized) }
+                    let optimized: Data? = {
+                        guard let data, let image = NSImage(data: data) else { return nil }
+                        return self.optimizeImage(image)
+                    }()
+                    DispatchQueue.main.async {
+                        pending -= 1
+                        if let optimized { self.manager.showcaseImages.append(optimized) }
+                        if pending <= 0 { self.isCompressingImage = false }
                     }
                 }
             }
         }
+        if pending == 0 { isCompressingImage = false }
         return true
     }
     

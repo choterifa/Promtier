@@ -124,8 +124,10 @@ struct NewPromptView: View {
     @State private var isHoveringHistory = false
     @State private var isHoveringFavorite = false
     @State private var isHoveringZen = false
+    @State private var isHoveringPin = false
     @State private var isHoveringBranch = false
     @State private var isHoveringSave = false
+    @State private var isPinned = false
 
     private var zenBindingContent: Binding<String> {
         Binding(
@@ -1576,6 +1578,33 @@ struct NewPromptView: View {
                     .animation(.easeInOut(duration: 0.2), value: isHoveringZen)
                     .help("Floating Zen Mode")
 
+                    // Botón de fijar ventana (Pin)
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            isPinned.toggle()
+                            MenuBarManager.shared.isModalActive = isPinned
+                        }
+                        HapticService.shared.playLight()
+                    }) {
+                        Image(systemName: isPinned ? "pin.fill" : "pin")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(isPinned ? .white : themeColor)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle().fill(
+                                    isPinned
+                                        ? themeColor
+                                        : themeColor.opacity(isHoveringPin ? 0.25 : 0.1)
+                                )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { isHoveringPin = $0 }
+                    .animation(.easeInOut(duration: 0.2), value: isHoveringPin)
+                    .animation(.easeInOut(duration: 0.2), value: isPinned)
+                    .help(isPinned ? "Desfijar ventana (Cmd+L)" : "Fijar ventana (Cmd+L)")
+                    .keyboardShortcut("l", modifiers: .command)
+
                     if (originalPrompt ?? prompt) != nil {
                         Button(action: { branchPrompt() }) {
                             Image(systemName: "arrow.branch")
@@ -2037,6 +2066,11 @@ struct NewPromptView: View {
         2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
         3. CONTENT: Generate/Improve the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential.
         
+        CRITICAL LANGUAGE RULE:
+        - Detect the language of the user's input (title and content).
+        - Your ENTIRE response (title, description, content, and any variable names inside {{...}}) MUST be in the SAME language as the input.
+        - If the input is in Spanish, respond in Spanish. If in English, respond in English. Etc.
+        
         RESPONSE FORMAT:
         Respond ONLY with the following format, using the pipe symbol (|) as separator:
         GeneratedTitle|GeneratedDescription|GeneratedContent
@@ -2067,9 +2101,12 @@ struct NewPromptView: View {
                                 self.content = parts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespacesAndNewlines)
                             }
                             
-                            // 🪄 Auto-Categorizar automáticamente después de generar el contenido
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                self.autoCategorizePrompt()
+            // 🪄 Auto-Categorizar automáticamente después de generar el contenido
+                            // Solo si NO hay una categoría ya seleccionada por el usuario
+                            if self.selectedFolder == nil {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    self.autoCategorizePrompt()
+                                }
                             }
                         } else if !fullResponse.contains("|") {
                             // Fallback if AI didn't follow format strictly but gave content
@@ -2107,15 +2144,47 @@ struct NewPromptView: View {
             return
         }
         
+        // Si ya hay categoría seleccionada, solo buscar el icono
+        let skipCategory = (selectedFolder != nil)
+        
         isCategorizing = true
         HapticService.shared.playImpact()
         
         let folderNames = promptService.folders.map { $0.name }.joined(separator: ", ")
+        
+        // Construir lista de iconos válidos (solo un subconjunto representativo para no exceder tokens)
+        let validIcons = [
+            "brain.fill", "sparkles", "bolt.fill", "lightbulb.fill", "cpu.fill", "network", "wand.and.stars", "atom",
+            "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces", "command.circle.fill",
+            "gearshape.fill", "wrench.fill", "hammer.fill", "puzzlepiece.fill", "shippingbox.fill",
+            "doc.text.fill", "pencil.and.outline", "text.quote", "book.closed.fill", "square.and.pencil",
+            "note.text", "doc.richtext.fill", "list.bullet.indent", "character.bubble.fill",
+            "chart.line.uptrend.xyaxis", "chart.bar.fill", "target", "briefcase.fill", "dollarsign.circle.fill",
+            "tag.fill", "bookmark.fill", "link",
+            "bubble.left.and.bubble.right.fill", "paperplane.fill", "megaphone.fill", "person.fill",
+            "envelope.fill", "heart.fill", "message.fill",
+            "photo.fill", "camera.fill", "paintpalette.fill", "film.fill", "mic.fill", "headphones",
+            "video.fill", "scissors", "eye.fill", "music.note", "play.circle.fill",
+            "star.fill", "flame.fill", "flag.fill", "bell.fill", "lock.fill", "key.fill",
+            "calendar", "map.fill", "gift.fill", "gamecontroller.fill", "trophy.fill",
+            "globe", "leaf.fill", "house.fill", "graduationcap.fill",
+            "sun.max.fill", "moon.fill", "cloud.fill"
+        ]
+        let iconListString = validIcons.joined(separator: ", ")
+        
+        let categoryInstruction = skipCategory
+            ? "The category is already set. Do NOT return a category. Respond ONLY with the icon name."
+            : "Select the best category from this list: [\(folderNames)]."
+        
+        let formatInstruction = skipCategory
+            ? "Respond ONLY with the SF Symbol name (e.g. terminal.fill). Nothing else."
+            : "Format your response EXACTLY as: CategoryName|SymbolName\nRespond ONLY with this format, nothing else."
+        
         let systemPrompt = """
-        Based on the title '\(title)' and content '\(content)', select the best category from this list: [\(folderNames)]. 
-        Also suggest the most appropriate SF Symbol name from a standard set (e.g., terminal.fill, pencil, brain, etc.).
-        Format your response EXACTLY as: CategoryName|SymbolName
-        Respond ONLY with this format, nothing else.
+        Based on the title '\(title)' and content '\(content)', \(categoryInstruction)
+        Also suggest the most appropriate SF Symbol icon from ONLY this exact list: [\(iconListString)].
+        You MUST choose from this list. Do NOT invent icon names.
+        \(formatInstruction)
         """
         
         Task {
@@ -2131,11 +2200,24 @@ struct NewPromptView: View {
                     self.isCategorizing = false
                     HapticService.shared.playSuccess()
                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let parts = result.components(separatedBy: "|")
-                    if parts.count == 2 {
-                        withAnimation(.spring()) {
-                            self.selectedFolder = parts[0]
-                            self.selectedIcon = parts[1]
+                    
+                    if skipCategory {
+                        // Solo icono
+                        let iconName = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if IconPickerView.allIconNames.contains(iconName) {
+                            withAnimation(.spring()) { self.selectedIcon = iconName }
+                        }
+                    } else {
+                        // Categoría|Icono
+                        let parts = result.components(separatedBy: "|")
+                        if parts.count == 2 {
+                            let iconName = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            withAnimation(.spring()) {
+                                self.selectedFolder = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                                if IconPickerView.allIconNames.contains(iconName) {
+                                    self.selectedIcon = iconName
+                                }
+                            }
                         }
                     }
                 }
