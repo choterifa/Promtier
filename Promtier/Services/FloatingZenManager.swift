@@ -63,20 +63,20 @@ class FloatingZenManager: NSObject, ObservableObject {
             .store(in: &cancellables)
     }
     
-    func show(title: String, promptDescription: String, content: String, promptId: UUID?, isEditing: Bool) {
+    func show(title: String, promptDescription: String, content: String, showcaseImages: [Data] = [], promptId: UUID?, isEditing: Bool) {
         self.title = title
         self.promptDescription = promptDescription
         self.content = content
         self.originalPromptId = promptId
         self.isEditingExisting = isEditing
-        self.showcaseImages = []
+        self.showcaseImages = showcaseImages
         self.lastSaveSuccess = false
         
         // Save initial state to detect changes later
         self.initialTitle = title
         self.initialDescription = promptDescription
         self.initialContent = content
-        self.initialImages = []
+        self.initialImages = showcaseImages
         
         if panel == nil { createPanel() }
         

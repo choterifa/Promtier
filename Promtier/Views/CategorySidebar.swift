@@ -324,7 +324,27 @@ struct CategorySidebar: View {
             count: count,
             isSelected: promptService.selectedCategory == folder.name,
             isPinned: true,
-            action: { promptService.selectedCategory = folder.name }
+            action: { promptService.selectedCategory = folder.name },
+            isEditable: true,
+            rawTitle: folder.name,
+            onRename: { newName in
+                var updated = folder
+                updated.name = newName
+                _ = promptService.updateFolder(updated)
+                if promptService.selectedCategory == folder.name {
+                    promptService.selectedCategory = newName
+                }
+                if preferences.isPinned(folder.name) {
+                    preferences.togglePin(folder.name)
+                    preferences.togglePin(newName)
+                }
+            },
+            onDoubleClickRow: {
+                menuBarManager.folderToEdit = folder
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            }
         )
         .transition(.move(edge: .leading).combined(with: .opacity))
         .contextMenu {
@@ -359,7 +379,23 @@ struct CategorySidebar: View {
             isSelected: promptService.selectedCategory == folder.name,
             isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
             isReorderTarget: dropTargetFolderId == folder.id && draggedFolder != nil,
-            action: { promptService.selectedCategory = folder.name }
+            action: { promptService.selectedCategory = folder.name },
+            isEditable: true,
+            rawTitle: folder.name,
+            onRename: { newName in
+                var updated = folder
+                updated.name = newName
+                _ = promptService.updateFolder(updated)
+                if promptService.selectedCategory == folder.name {
+                    promptService.selectedCategory = newName
+                }
+            },
+            onDoubleClickRow: {
+                menuBarManager.folderToEdit = folder
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            }
         )
         .transition(.move(edge: .leading).combined(with: .opacity))
         .onDrag {
@@ -590,8 +626,16 @@ struct SidebarItem: View {
     var dropAllowed: Bool = true
     var dropHandler: ((String) -> Void)? = nil
     
+    var isEditable: Bool = false
+    var rawTitle: String? = nil
+    var onRename: ((String) -> Void)? = nil
+    var onDoubleClickRow: (() -> Void)? = nil
+    
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
+    @State private var isEditingName = false
+    @State private var editingName = ""
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -611,10 +655,40 @@ struct SidebarItem: View {
                     .foregroundColor(isSelected ? .white : color.opacity(0.8))
                     .frame(width: 18 * preferences.fontSize.scale)
                 
-                Text(title)
+                if isEditingName {
+                    TextField("", text: $editingName, onCommit: {
+                        isEditingName = false
+                        if !editingName.trimmingCharacters(in: .whitespaces).isEmpty, editingName != rawTitle {
+                            onRename?(editingName)
+                        }
+                    })
+                    .textFieldStyle(.plain)
+                    .focused($isFocused)
                     .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
                     .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                    .lineLimit(1)
+                    .tint(.white)
+                    .colorScheme(isSelected ? .dark : .light)
+                    .onAppear {
+                        isFocused = true
+                    }
+                } else {
+                    Text(title)
+                        .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                        .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                        .lineLimit(1)
+                        .onTapGesture(count: 2) {
+                            if isEditable, let raw = rawTitle {
+                                editingName = raw
+                                isEditingName = true
+                            }
+                        }
+                        .onTapGesture(count: 1) {
+                            if !isEditingName {
+                                HapticService.shared.playLight()
+                                action()
+                            }
+                        }
+                }
                 
                 Spacer()
                 
@@ -665,9 +739,14 @@ struct SidebarItem: View {
                 )
         )
         .contentShape(Rectangle())
-        .onTapGesture {
-            HapticService.shared.playLight()
-            action()
+        .onTapGesture(count: 2) {
+            onDoubleClickRow?()
+        }
+        .onTapGesture(count: 1) {
+            if !isEditingName {
+                HapticService.shared.playLight()
+                action()
+            }
         }
         .onHover { hovering in
             isHovered = hovering

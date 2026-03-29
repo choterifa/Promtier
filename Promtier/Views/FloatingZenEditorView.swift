@@ -334,28 +334,7 @@ struct FloatingZenEditorView: View {
     
     @ViewBuilder
     private func imageThumb(data: Data, index: Int) -> some View {
-        if let nsImg = NSImage(data: data) {
-            ZStack(alignment: .topTrailing) {
-                Color.clear
-                    .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
-                    .overlay(
-                        Image(nsImage: nsImg)
-                            .resizable()
-                            .scaledToFill()
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                
-                Button(action: { manager.showcaseImages.remove(at: index) }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white)
-                        .shadow(radius: 2)
-                }
-                .buttonStyle(.plain)
-                .offset(x: 6, y: -6)
-            }
-        }
+        FloatingZenImageThumb(data: data, index: index, manager: manager)
     }
     
     @ViewBuilder
@@ -550,6 +529,62 @@ struct FloatingZenEditorView: View {
         newImage.unlockFocus()
         guard let tiffData = newImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.82])
+    }
+}
+
+struct FloatingZenImageThumb: View {
+    let data: Data
+    let index: Int
+    @ObservedObject var manager: FloatingZenManager
+    @State private var isFillMode = true
+    @State private var isHovering = false
+
+    var body: some View {
+        if let nsImg = NSImage(data: data) {
+            ZStack(alignment: .topTrailing) {
+                Color.clear
+                    .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
+                    .overlay(
+                        Image(nsImage: nsImg)
+                            .resizable()
+                            .aspectRatio(contentMode: isFillMode ? .fill : .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .overlay(alignment: .bottomTrailing) {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                isFillMode.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isFillMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(5)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(4)
+                        .opacity(isHovering ? 1.0 : 0.0)
+                    }
+                    .onHover { hovering in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isHovering = hovering
+                        }
+                    }
+                
+                Button(action: { manager.showcaseImages.remove(at: index) }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white)
+                        .shadow(radius: 2)
+                }
+                .buttonStyle(.plain)
+                .offset(x: 6, y: -6)
+            }
+        }
     }
 }
 

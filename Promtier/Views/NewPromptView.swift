@@ -1703,7 +1703,7 @@ struct NewPromptView: View {
                         saveCurrentDraft()
 
                         // Extract title and content to floating manager
-                        FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
+                        FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, showcaseImages: showcaseImages, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
                         // Close popover
                         MenuBarManager.shared.closePopover()
                     }) {
@@ -1856,7 +1856,8 @@ struct NewPromptView: View {
                             slotWidth: slotWidth,
                             slotHeight: slotHeight,
                             onSelect: selectImages,
-                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) }
+                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
+                            tintColor: Color(hex: promptService.folders.first(where: { $0.name == selectedFolder })?.displayColor ?? "#007AFF")
                         )
                     }
                 }
@@ -3640,13 +3641,14 @@ struct ImageSlotView: View {
 
     @State private var isTargeted = false
     @State private var isHovering = false
+    @State private var isFillMode = true
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             if let nsImage = NSImage(data: imageData) {
                 Image(nsImage: nsImage)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: isFillMode ? .fill : .fit)
                     .frame(width: slotWidth, height: slotHeight, alignment: .center)
                     .clipped()
                     .background(Color.primary.opacity(0.03))
@@ -3664,6 +3666,24 @@ struct ImageSlotView: View {
                     .scaleEffect(isTargeted ? 1.05 : (isHovering ? 1.03 : 1.0))
                     .animation(.spring(response: 0.3), value: isTargeted)
                     .animation(.spring(response: 0.3), value: isHovering)
+                    .overlay(alignment: .bottomTrailing) {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                isFillMode.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isFillMode ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(5)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(4)
+                        .opacity(isHovering ? 1.0 : 0.0)
+                        .animation(.easeInOut(duration: 0.2), value: isHovering)
+                    }
                     .onHover { hovering in
                         withAnimation(.spring(response: 0.3)) {
                             isHovering = hovering
@@ -3693,6 +3713,7 @@ struct PlaceholderSlotView: View {
     let slotHeight: CGFloat
     let onSelect: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
+    var tintColor: Color = .blue
     
     @State private var isTargeted = false
     @State private var isHovering = false
@@ -3703,24 +3724,45 @@ struct PlaceholderSlotView: View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
                 .font(.system(size: 24))
-                .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 0.8 : 0.4))
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
 
             Text("add_prompt_results".localized(for: preferences.language))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 0.8 : 0.4))
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
         }
         .animation(.easeInOut(duration: 0.15), value: isHovering)
         .frame(width: slotWidth, height: slotHeight)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isTargeted ? Color.blue.opacity(0.1) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
+                .fill(isTargeted ? tintColor.opacity(0.1) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
                 .animation(.easeInOut(duration: 0.15), value: isHovering)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         // El lineWidth fijo para hover evita que StrokeStyle anime incorrectamente el dashPhase
                         .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: isTargeted ? [] : [6, 4], dashPhase: dashPhase))
-                        .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 1.0 : 0.8))
+                        .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 1.0 : 0.8))
                         .animation(.easeInOut(duration: 0.15), value: isHovering)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            AngularGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0.0),
+                                    .init(color: tintColor.opacity(0.1), location: 0.2),
+                                    .init(color: tintColor.opacity(0.4), location: 0.6),
+                                    .init(color: tintColor.opacity(0.8), location: 0.85),
+                                    .init(color: .white, location: 0.95),
+                                    .init(color: .clear, location: 1.0)
+                                ],
+                                center: .center,
+                                angle: .degrees(Double(-dashPhase * 8))
+                            ),
+                            lineWidth: 2.5
+                        )
+                        .opacity((isHovering || isTargeted) ? 1.0 : 0)
+                        .blendMode(.plusLighter)
+                        .animation(.easeInOut(duration: 0.3), value: isHovering || isTargeted)
                 )
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)
