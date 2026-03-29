@@ -316,6 +316,7 @@ struct PromptCard: View {
         .padding(.leading, 18)
         .padding(.trailing, 10)
         .padding(.vertical, 14)
+        .frame(minHeight: 80)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)
