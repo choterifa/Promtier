@@ -70,6 +70,7 @@ class OmniSearchManager: NSObject, ObservableObject {
         if let frontApp = NSWorkspace.shared.frontmostApplication, 
            frontApp.bundleIdentifier != Bundle.main.bundleIdentifier {
             previousApp = frontApp
+            PromptService.shared.activeAppBundleID = frontApp.bundleIdentifier
         }
         
         // Centrar en pantalla (Centro real 0.5)

@@ -71,7 +71,6 @@ struct NewPromptView: View {
     enum MagicTarget: String, CaseIterable, Identifiable {
         case title = "Título"
         case description = "Descripción"
-        case category = "Categoría"
         case content = "Prompt"
         var id: String { self.rawValue }
     }
@@ -1175,58 +1174,98 @@ struct NewPromptView: View {
         .zIndex(201)
     }
 
-    private var magicOptionsOverlayLayer: some View {
-        ZStack {
-            Color.black.opacity(0.001)
-                .ignoresSafeArea()
-                .onTapGesture { withAnimation { showingMagicOptions = false } }
+                private var magicOptionsOverlayLayer: some View {
+                    ZStack {
+                        // Fondo oscuro semi-transparente que bloquea toques
+                        Color.black.opacity(showingMagicOptions ? 0.3 : 0.0)
+                            .ignoresSafeArea()
+                            .onTapGesture { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { showingMagicOptions = false } }
+                        
+                        if showingMagicOptions {
+                            VStack(alignment: .leading, spacing: 20) {
+                                HStack {
+                                    Image(systemName: "wand.and.stars")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(.blue)
+                                    Text("Modificar con IA")
+                                        .font(.system(size: 18, weight: .bold))
+                                    Spacer()
+                                    Button(action: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { showingMagicOptions = false } }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(.secondary.opacity(0.5))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("¿Qué deseas modificar?")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                    
+                                                            HStack(spacing: 8) {
+                                                                ForEach(MagicTarget.allCases) { target in
+                                                                    Button(action: { magicTarget = target }) {
+                                                                        Text(target.rawValue)
+                                                                            .font(.system(size: 13, weight: magicTarget == target ? .semibold : .regular))
+                                                                            .padding(.horizontal, 16)
+                                                                            .padding(.vertical, 6)
+                                                                            .frame(maxWidth: .infinity)
+                                                                            .background(
+                                                                                RoundedRectangle(cornerRadius: 8)
+                                                                                    .fill(magicTarget == target ? Color.blue : Color.primary.opacity(0.05))
+                                                                            )
+                                                                            .foregroundColor(magicTarget == target ? .white : .primary)
+                                                                            .overlay(
+                                                                                RoundedRectangle(cornerRadius: 8)
+                                                                                    .stroke(magicTarget == target ? Color.blue : Color.primary.opacity(0.1), lineWidth: 1)
+                                                                            )
+                                                                    }
+                                                                    .buttonStyle(.plain)
+                                                                }
+                                                            }                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Instrucciones")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                        
+                                    TextField("Ej: Haz el texto más amigable...", text: $magicCommand, axis: .vertical)
+                                        .textFieldStyle(.plain)
+                                        .padding(12)
+                                        .background(Color(NSColor.controlBackgroundColor))
+                                        .cornerRadius(8)
+                                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                                        .lineLimit(3...6)
+                                        .onSubmit { executeMagicWithCommand() }
+                                        .onAppear {
+                                            magicCommand = ""
+                                        }
+                                }
             
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Modificar con IA")
-                    .font(.system(size: 14, weight: .bold))
-                    
-                Picker("Objetivo", selection: $magicTarget) {
-                    ForEach(MagicTarget.allCases) { target in
-                        Text(target.rawValue).tag(target)
+                                HStack {
+                                    Spacer()
+                                    Button("Modificar") { executeMagicWithCommand() }
+                                        .buttonStyle(.borderedProminent)
+                                        .controlSize(.large)
+                                        .disabled(magicCommand.trimmingCharacters(in: .whitespaces).isEmpty)
+                                }
+                            }
+                            .padding(24)
+                            .frame(width: 450)
+                            .background(Color(NSColor.windowBackgroundColor))
+                            .cornerRadius(24)
+                            .shadow(color: Color.black.opacity(0.2), radius: 40, x: 0, y: 20)
+                            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.9).combined(with: .opacity),
+                                removal: .scale(scale: 0.95).combined(with: .opacity)
+                            ))
+                        }
                     }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                
-                TextField("Ej: Haz el texto más amigable...", text: $magicCommand)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { executeMagicWithCommand() }
-                    .onAppear {
-                        magicCommand = ""
-                    }
-                    
-                HStack {
-                    Button("Cancelar") { withAnimation { showingMagicOptions = false } }
-                        .buttonStyle(.plain)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Modificar") { executeMagicWithCommand() }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
-                        .disabled(magicCommand.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(NSColor.windowBackgroundColor))
-                    .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
-            )
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-            .frame(width: 400)
-            .scaleEffect(showingMagicOptions ? 1.0 : 0.98, anchor: .bottom)
-            .offset(y: showingMagicOptions ? 0 : 10)
-            .opacity(showingMagicOptions ? 1.0 : 0.0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .opacity(showingMagicOptions ? 1.0 : 0.0)
-        .allowsHitTesting(showingMagicOptions)
-        .animation(.easeOut(duration: 0.15), value: showingMagicOptions)
-        .zIndex(202)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(showingMagicOptions)
+                    .zIndex(202)
     }
 
     private func setupKeyboardMonitor() {
@@ -2159,7 +2198,9 @@ struct NewPromptView: View {
         
         if !trimmedTitle.isEmpty && !trimmedContent.isEmpty {
             // Si ya está lleno, preguntamos qué quiere hacer y qué modificar
-            showingMagicOptions = true
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                showingMagicOptions = true
+            }
             return
         }
         
@@ -2254,11 +2295,12 @@ struct NewPromptView: View {
         }
     }
 
-    private func executeMagicWithCommand() {
-        showingMagicOptions = false
-        
-        guard preferences.isPremiumActive else {
-            showingPremiumFor = "ai_magic"
+        private func executeMagicWithCommand() {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                showingMagicOptions = false
+            }
+    
+            guard preferences.isPremiumActive else {            showingPremiumFor = "ai_magic"
             return
         }
         
@@ -2285,10 +2327,6 @@ struct NewPromptView: View {
         case .description:
             targetContext = "Current Description: \(trimmedDescription.isEmpty ? "(None)" : trimmedDescription)"
             systemInstruction = "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
-        case .category:
-            let folderNames = promptService.folders.map { $0.name }.joined(separator: ", ")
-            targetContext = "Current Title: \(trimmedTitle)\nCurrent Content: \(trimmedContent)"
-            systemInstruction = "Change the category based on this instruction: '\(command)'. Select the BEST category from this list: [\(folderNames)]. Respond ONLY with the exact category name."
         case .content:
             targetContext = "Current Content: \(trimmedContent)"
             systemInstruction = "Modify ONLY the prompt content based on this instruction: '\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
@@ -2329,10 +2367,6 @@ struct NewPromptView: View {
                                 self.title = result
                             case .description:
                                 self.promptDescription = result
-                            case .category:
-                                if self.promptService.folders.contains(where: { $0.name == result }) || PredefinedCategory.fromString(result) != nil {
-                                    self.selectedFolder = result
-                                }
                             case .content:
                                 self.content = result
                             }

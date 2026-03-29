@@ -166,8 +166,10 @@ struct OmniSearchView: View {
                     .background(Color.black.opacity(0.001))
                     .frame(maxHeight: 380)
                     .onChange(of: selectedIndex) { _, newValue in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            proxy.scrollTo(newValue, anchor: .center)
+                        DispatchQueue.main.async {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                proxy.scrollTo(newValue, anchor: .center)
+                            }
                         }
                     }
                 }
@@ -237,18 +239,21 @@ struct OmniSearchView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
             guard let direction = notification.object as? String else { return }
-            let count = filteredPrompts.count
-            guard count > 0 else { return }
             
-            if direction == "down" {
-                if selectedIndex < count - 1 {
-                    selectedIndex += 1
-                    HapticService.shared.playLight()
-                }
-            } else if direction == "up" {
-                if selectedIndex > 0 {
-                    selectedIndex -= 1
-                    HapticService.shared.playLight()
+            DispatchQueue.main.async {
+                let count = filteredPrompts.count
+                guard count > 0 else { return }
+                
+                if direction == "down" {
+                    if selectedIndex < count - 1 {
+                        selectedIndex += 1
+                        HapticService.shared.playLight()
+                    }
+                } else if direction == "up" {
+                    if selectedIndex > 0 {
+                        selectedIndex -= 1
+                        HapticService.shared.playLight()
+                    }
                 }
             }
         }
