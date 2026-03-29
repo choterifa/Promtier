@@ -187,6 +187,15 @@ struct NewPromptView: View {
         let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         return useGemini || useOpenAI
     }
+    
+    // Builds the language instruction to inject into AI prompts
+    private var aiLanguageInstruction: String {
+        switch preferences.aiResponseLanguage {
+        case "es": return "IMPORTANT: Respond ENTIRELY in Spanish. Do not use any other language."
+        case "en": return "IMPORTANT: Respond ENTIRELY in English. Do not use any other language."
+        default:   return ""  // auto: let the model detect from input
+        }
+    }
 
     private var zenBindingSelection: Binding<NSRange?> {
         Binding(
@@ -2230,9 +2239,10 @@ struct NewPromptView: View {
         3. CONTENT: Generate/Improve the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential.
         
         CRITICAL LANGUAGE RULE:
-        - Detect the language of the user's input (title and content).
-        - Your ENTIRE response (title, description, content, and any variable names inside {{...}}) MUST be in the SAME language as the input.
-        - If the input is in Spanish, respond in Spanish. If in English, respond in English. Etc.
+        \(aiLanguageInstruction.isEmpty ?
+          "- Detect the language of the user's input (title and content).\n        - Your ENTIRE response (title, description, content, and any variable names inside {{...}}) MUST be in the SAME language as the input.\n        - If the input is in Spanish, respond in Spanish. If in English, respond in English. Etc." :
+          aiLanguageInstruction
+        )
         
         RESPONSE FORMAT:
         Respond ONLY with the following format, using the pipe symbol (|) as separator:
@@ -3455,12 +3465,6 @@ struct SecondaryEditorCard<Actions: View>: View {
                             .shadow(color: preferences.isHaloEffectEnabled ? themeColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
-            .overlay {
-                if isAIGenerating {
-                    AIGeneratingOverlay(accentColor: themeColor, compact: true)
-                        .transition(.opacity)
-                }
-            }
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)

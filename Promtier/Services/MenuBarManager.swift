@@ -27,6 +27,10 @@ class MenuBarManager: NSObject, ObservableObject {
     @Published var activeViewState: PopoverViewState = .main {
         didSet {
             updatePopoverBehavior()
+            // When returning to main, reset old suggestion so it can be re-triggered
+            if activeViewState == .main && oldValue != .main {
+                suggestedClipboardContent = nil
+            }
         }
     }
     @Published var folderToEdit: Folder? = nil

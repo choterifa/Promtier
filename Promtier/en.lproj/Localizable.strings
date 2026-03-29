@@ -501,3 +501,6 @@
 "save_as_draft" = "Save as Draft";
 "discard" = "Discard";
 "draft_prefix" = "Draft";
+
+"ai_response_language" = "AI Response Language";
+"ai_response_language_subtitle" = "Force the language of all AI-generated content";

@@ -243,6 +243,13 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    // "auto" = detect from input, "en" = force English, "es" = force Spanish
+    @Published var aiResponseLanguage: String {
+        didSet {
+            userDefaults.set(aiResponseLanguage, forKey: "aiResponseLanguage")
+        }
+    }
+    
     // MARK: - Datos y Privacidad
     
     @Published var showInDock: Bool {
@@ -441,6 +448,7 @@ class PreferencesManager: ObservableObject {
         self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
+        self.aiResponseLanguage = userDefaults.string(forKey: "aiResponseLanguage") ?? "auto"
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         
         // Sugerencias de portapapeles: Solo desde navegadores y apps de la lista por defecto

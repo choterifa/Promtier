@@ -519,3 +519,6 @@
 "save_as_draft" = "Guardar como borrador";
 "discard" = "Descartar";
 "draft_prefix" = "Borrador";
+
+"ai_response_language" = "Idioma respuesta IA";
+"ai_response_language_subtitle" = "Fuerza el idioma del contenido generado por IA";
