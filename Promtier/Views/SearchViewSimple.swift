@@ -388,7 +388,8 @@ struct SearchViewSimple: View {
                                                                 .frame(width: 2)
                                                                 .padding(.vertical, 20)
                                                                 .opacity(isSidebarResizerHovered ? 1.0 : 0.0)
-                                                                .animation(.easeInOut(duration: 0.2), value: isSidebarResizerHovered)
+                                                                // Retraso de 0.7s al mostrar para evitar parpadeos, pero aparición casi instantánea (0.1s) una vez activado
+                                                                .animation(isSidebarResizerHovered ? .easeInOut(duration: 0.1).delay(0.7) : .easeInOut(duration: 0.2), value: isSidebarResizerHovered)
                                                         }
                                                         .onHover { inside in
                                                             isSidebarResizerHovered = inside

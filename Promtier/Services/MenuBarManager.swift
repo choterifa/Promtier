@@ -577,20 +577,33 @@ class MenuBarManager: NSObject, ObservableObject {
 
     // MARK: - Event Monitoring
 
-    /// Gestiona el estado de hover de la sidebar con un retraso al salir de 1s
+    /// Gestiona el estado de hover de la sidebar con retrasos premium para evitar triggers accidentales
     func setSidebarHovered(_ hovered: Bool) {
+        sidebarHoverTask?.cancel()
+        
         if hovered {
-            sidebarHoverTask?.cancel()
             if !isSidebarHovered {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isSidebarHovered = true
-                }
+                // Retraso de 0.7s para mostrar: Evita aperturas si el usuario solo está cruzando el ratón (comportamiento premium)
+                sidebarHoverTask = Just(())
+                    .delay(for: .seconds(0.7), scheduler: RunLoop.main)
+                    .sink { [weak self] _ in
+                        guard let self = self else { return }
+                        // Animación más instantánea (0.15s) después de la espera
+                        withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
+                            self.isSidebarHovered = true
+                        }
+                    }
             }
         } else {
-            sidebarHoverTask?.cancel()
-            withAnimation(.easeInOut(duration: 0.25)) {
-                self.isSidebarHovered = false
-            }
+            // Retraso de 0.25s para ocultar: "Perdona" si el usuario saca el ratón sin querer por un instante
+            sidebarHoverTask = Just(())
+                .delay(for: .seconds(0.25), scheduler: RunLoop.main)
+                .sink { [weak self] _ in
+                    guard let self = self else { return }
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        self.isSidebarHovered = false
+                    }
+                }
         }
     }
 

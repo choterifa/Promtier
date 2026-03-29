@@ -2078,9 +2078,23 @@ struct NewPromptView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 branchMessage = "branch_created_success".localized(for: preferences.language)
             }
-            // Limpiar mensaje tras 3 segundos
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            
+            // Esperar a que se lea la notificación y luego simular el "salir" a la lista
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 withAnimation { branchMessage = nil }
+                
+                DraftService.shared.clearDraft()
+                
+                // Navegar a la carpeta principal para mostrar la nueva rama
+                promptService.searchQuery = ""
+                if let folder = selectedFolder {
+                    promptService.selectedCategory = folder
+                } else {
+                    promptService.selectedCategory = nil
+                }
+                
+                MenuBarManager.shared.isModalActive = false
+                onClose() // Simular salir para ir a la lista de prompts
             }
         }
     }
