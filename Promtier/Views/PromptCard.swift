@@ -305,31 +305,17 @@ struct PromptCard: View {
                         .cornerRadius(4)
                 }
                 
-                if let onCopy = onCopy {
-                    Button(action: {
-                        onCopy()
-                        HapticService.shared.playLight()
-                    }) {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.secondary.opacity(isHovered || isSelected ? 0.9 : 0.4))
-                            .frame(width: 22, height: 22)
-                            .background(Color.primary.opacity(isHovered || isSelected ? 0.05 : 0))
-                            .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
-                }
+
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.primary.opacity(0.2))
+                    .foregroundColor(.primary.opacity(0.15))
                     .opacity(isHovered || isSelected ? 1 : 0)
-                    .frame(width: 10)
             }
         }
-
-        .padding(.horizontal, 22)
-        .padding(.vertical, 15)
+        .padding(.leading, 18)
+        .padding(.trailing, 10)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)

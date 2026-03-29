@@ -13,15 +13,6 @@
             continueAfterRunningActions = "No"
             symbolName = "*0x18ce76138">
             <Locations>
-               <Location
-                  uuid = "93444582-45E0-4C5F-9B33-EF9A7D5549EB - 3329b638c66f74d6"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "+[NSApplication _crashOnException:]"
-                  moduleName = "AppKit"
-                  usesParentBreakpointCondition = "Yes">
-               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
