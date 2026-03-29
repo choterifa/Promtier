@@ -163,7 +163,7 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled = false
 
         // Optimizar para scrolling suave y performance
-        textView.textContainerInset = NSSize(width: 10, height: 14)
+        textView.textContainerInset = NSSize(width: 8, height: 8)
         textView.textContainer?.lineFragmentPadding = 6
 
         let paragraphStyle = NSMutableParagraphStyle()

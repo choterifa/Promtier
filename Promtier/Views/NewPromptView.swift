@@ -2506,8 +2506,8 @@ struct EditorCard: View {
                         }
                     }
                 )
-                .padding(.vertical, 12)
-                .padding(.leading, 12)
+                .padding(.vertical, 8)
+                .padding(.leading, 8)
                 .padding(.trailing, 5) // Espacio sutil de 5px
                 .frame(maxWidth: .infinity, minHeight: 200, maxHeight: .infinity)
 
@@ -2932,8 +2932,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                         isHaloEffectEnabled: preferences.isHaloEffectEnabled,
                         isTyping: $isTyping
                     )
-                    .padding(.vertical, 12)
-                    .padding(.leading, 12)
+                    .padding(.vertical, 8)
+                    .padding(.leading, 8)
                     .padding(.trailing, 5) // Espacio sutil de 5px
                     .frame(maxWidth: .infinity, minHeight: 180) // Aumentado para que sea más espacioso
 
@@ -2941,8 +2941,8 @@ struct SecondaryEditorCard<Actions: View>: View {
                         Text(placeholder)
                             .font(.system(size: 14 * preferences.fontSize.scale))
                             .foregroundColor(.secondary.opacity(0.7))
-                            .padding(12)
-                            .padding(.top, 4)
+                            .padding(.leading, 22)
+                            .padding(.top, 16)
                             .allowsHitTesting(false)
                     }
                 }
