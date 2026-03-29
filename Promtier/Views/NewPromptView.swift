@@ -3709,35 +3709,30 @@ struct PlaceholderSlotView: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 0.8 : 0.4))
         }
+        .animation(.easeInOut(duration: 0.15), value: isHovering)
         .frame(width: slotWidth, height: slotHeight)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isTargeted ? Color.blue.opacity(0.1) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
+                .animation(.easeInOut(duration: 0.15), value: isHovering)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(style: StrokeStyle(lineWidth: (isTargeted || isHovering) ? 2 : 1.5, dash: isTargeted ? [] : [6, 4], dashPhase: dashPhase))
+                        // El lineWidth fijo para hover evita que StrokeStyle anime incorrectamente el dashPhase
+                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: isTargeted ? [] : [6, 4], dashPhase: dashPhase))
                         .foregroundColor(isTargeted ? .blue : .secondary.opacity(isHovering ? 1.0 : 0.8))
+                        .animation(.easeInOut(duration: 0.15), value: isHovering)
                 )
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isTargeted)
-        .animation(.spring(response: 0.3), value: isHovering)
-        .onChange(of: isHovering || isTargeted) { _, active in
-            if active {
-                withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-                    dashPhase -= 20
-                }
-            } else {
-                // Forzamos el valor actual sin animación para detener el ciclo del repeatForever
-                withAnimation(nil) {
-                    dashPhase = dashPhase
-                }
+        .onReceive(Timer.publish(every: 0.04, on: .main, in: .common).autoconnect()) { _ in
+            if isHovering || isTargeted {
+                dashPhase -= 1
             }
         }
         .onHover { hovering in
-            withAnimation(.spring(response: 0.3)) {
-                isHovering = hovering
-            }
+            // Cambio de estado sin withAnimation global para evitar saltos
+            isHovering = hovering
         }
         .onTapGesture {
             onSelect()
