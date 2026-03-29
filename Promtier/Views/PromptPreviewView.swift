@@ -21,7 +21,7 @@ struct PromptPreviewView: View {
     @State private var isLoadingImages: Bool = false
     @State private var cachedAttributedContent: AttributedString? = nil
     @State private var cachedContentTask: Task<Void, Never>? = nil
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme) private var colorScheme 
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
@@ -434,6 +434,7 @@ struct PromptPreviewView: View {
         let action: () -> Void
         
         @State private var isHovered = false
+        @State private var alignment: Alignment = .center
         
         var body: some View {
             DownsampledImageURLView(
@@ -443,7 +444,7 @@ struct PromptPreviewView: View {
                 contentMode: .fill,
                 thumbnailData: thumbnailData
             )
-            .frame(width: 280, height: 180, alignment: .top)
+            .frame(width: 280, height: 180, alignment: alignment)
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
@@ -451,21 +452,73 @@ struct PromptPreviewView: View {
                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
             )
             .overlay(alignment: .bottomTrailing) {
-                ZStack {
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .frame(width: 32, height: 32)
-                        .shadow(color: .black.opacity(0.1), radius: 4)
-
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.primary.opacity(0.7))
+                HStack(spacing: 8) {
+                    // Controles de alineación vertical
+                    HStack(spacing: 4) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3)) {
+                                if alignment == .bottom { alignment = .center }
+                                else if alignment == .center { alignment = .top }
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .frame(width: 22, height: 22)
+                                    .shadow(color: .black.opacity(0.1), radius: 4)
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.primary.opacity(alignment == .top ? 0.3 : 0.7))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(alignment == .top)
+                        
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3)) {
+                                if alignment == .top { alignment = .center }
+                                else if alignment == .center { alignment = .bottom }
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .frame(width: 22, height: 22)
+                                    .shadow(color: .black.opacity(0.1), radius: 4)
+                                Image(systemName: "arrow.down")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.primary.opacity(alignment == .bottom ? 0.3 : 0.7))
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(alignment == .bottom)
+                    }
+                    
+                    // Lupa original
+                    Button(action: {
+                        action()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 26, height: 26)
+                                .shadow(color: .black.opacity(0.1), radius: 4)
+    
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.primary.opacity(0.7))
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(10)
                 .opacity(isHovered ? 1 : 0)
                 .scaleEffect(isHovered ? 1 : 0.8)
             }
             .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+            .onTapGesture(count: 2) {
+                action()
+            }
             .onTapGesture {
                 action()
             }

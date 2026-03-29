@@ -235,11 +235,11 @@ struct FullScreenImageView: View {
                         ZStack {
                             Circle()
                                 .stroke(Color.white.opacity(0.8), lineWidth: 2)
-                                .frame(width: 80, height: 80)
+                                .frame(width: 60, height: 60)
                                 .scaleEffect(hintPulse ? 1.2 : 0.8)
                             
                             Image(systemName: "hand.tap.fill")
-                                .font(.system(size: 40))
+                                .font(.system(size: 30))
                                 .foregroundColor(.white)
                                 .shadow(radius: 10)
                         }
@@ -248,19 +248,19 @@ struct FullScreenImageView: View {
                             ZStack {
                                 Circle()
                                     .fill(Color.white.opacity(0.8))
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 20, height: 20)
                                     .shadow(radius: 5)
-                                    .offset(x: hintPulse ? -40 : -10, y: hintPulse ? 40 : 10)
+                                    .offset(x: hintPulse ? -30 : -8, y: hintPulse ? 30 : 8)
                                 
                                 Circle()
                                     .fill(Color.white.opacity(0.8))
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 20, height: 20)
                                     .shadow(radius: 5)
-                                    .offset(x: hintPulse ? 40 : 10, y: hintPulse ? -40 : -10)
+                                    .offset(x: hintPulse ? 30 : 8, y: hintPulse ? -30 : -8)
                             }
                             
                             Image(systemName: "arrow.up.right.and.arrow.down.left")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                                 .opacity(hintPulse ? 1.0 : 0.5)
                         }
