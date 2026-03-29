@@ -2406,10 +2406,10 @@ struct EditorCard: View {
                                                 .font(.system(size: 10, weight: .bold))
                                         }
                                         Text("MAGIC")
-                                            .font(.system(size: 9, weight: .heavy))
+                                            .font(.system(size: 10.5, weight: .heavy))
                                     }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
                                     .background(
                                         Capsule()
                                             .fill(LinearGradient(

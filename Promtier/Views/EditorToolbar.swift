@@ -210,16 +210,16 @@ struct EditorToolbar: View {
                 .fill(isSpecial && active 
                     ? color.opacity(0.35) 
                     : (isSpecial ? color.opacity(0.22) : (active ? activeColor.opacity(0.25) : Color.primary.opacity(0.04))))
-                .frame(width: 28, height: 28)
+                .frame(width: 31, height: 31)
                 .shadow(color: isSpecial && active ? color.opacity(0.7) : .clear, radius: isSpecial && active ? 10 : 0)
 
             if let icon = icon {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 12.5, weight: .bold))
                     .foregroundColor(isSpecial && active ? color : (isSpecial ? color.opacity(0.85) : (active ? activeColor : themeColor)))
             } else if let text = text {
                 Text(text)
-                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .font(.system(size: 14.5, weight: .black, design: .monospaced))
                     .foregroundColor(themeColor)
             }
         }
