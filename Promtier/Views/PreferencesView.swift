@@ -839,35 +839,20 @@ struct AITab: View {
                                     .frame(width: 200)
 
                                 Menu {
-                                    Section("Gemini 3 & 3.1 (Preview)") {
-                                        Button("gemini-3.1-pro-preview") { preferences.geminiDefaultModel = "gemini-3.1-pro-preview" }
-                                        Button("gemini-3.1-flash-lite-preview") { preferences.geminiDefaultModel = "gemini-3.1-flash-lite-preview" }
-                                        Button("gemini-3-pro-preview") { preferences.geminiDefaultModel = "gemini-3-pro-preview" }
-                                        Button("gemini-3-flash-preview") { preferences.geminiDefaultModel = "gemini-3-flash-preview" }
-                                        Button("gemini-3-flash") { preferences.geminiDefaultModel = "gemini-3-flash" }
+                                    Section("Gemini 3") {
+                                        Button("gemini-3-pro") { preferences.geminiDefaultModel = "gemini-3-pro" }
+                                        Button("gemini-3-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-3-flash" }
+                                        Button("gemini-3-flash-lite") { preferences.geminiDefaultModel = "gemini-3-flash-lite" }
                                     }
-                                    Section("Gemini 2.5 (Stable)") {
+                                    Section("Gemini 2.5") {
                                         Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
                                         Button("gemini-2.5-flash") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
                                         Button("gemini-2.5-flash-lite") { preferences.geminiDefaultModel = "gemini-2.5-flash-lite" }
                                     }
                                     Section("Gemini 2.0") {
+                                        Button("gemini-2.0-pro-exp-02-05") { preferences.geminiDefaultModel = "gemini-2.0-pro-exp-02-05" }
                                         Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
                                         Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
-                                        Button("gemini-2.0-flash-001") { preferences.geminiDefaultModel = "gemini-2.0-flash-001" }
-                                        Button("gemini-2.0-flash-lite-001") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite-001" }
-                                    }
-                                    Section("Gemma 3 (Open Models)") {
-                                        Button("gemma-3-27b-it") { preferences.geminiDefaultModel = "gemma-3-27b-it" }
-                                        Button("gemma-3-12b-it") { preferences.geminiDefaultModel = "gemma-3-12b-it" }
-                                        Button("gemma-3-4b-it") { preferences.geminiDefaultModel = "gemma-3-4b-it" }
-                                        Button("gemma-3-1b-it") { preferences.geminiDefaultModel = "gemma-3-1b-it" }
-                                    }
-                                    Section("Legacy / Aliases") {
-                                        Button("gemini-pro-latest") { preferences.geminiDefaultModel = "gemini-pro-latest" }
-                                        Button("gemini-flash-latest") { preferences.geminiDefaultModel = "gemini-flash-latest" }
-                                        Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
-                                        Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
                                     }
                                 } label: {
                                     Image(systemName: "list.bullet.indent")

@@ -476,6 +476,7 @@
 "ai_thinking" = "AI is thinking...";
 "ai_crafting_message" = "Designing your prompt for perfection";
 "ai_action_enhance" = "Enhance Prompt";
+"ai_action_translate" = "Translate Prompt";
 "ai_action_fix" = "Fix Grammar & Spelling";
 "ai_action_concise" = "Make Concise";
 "ai_action_creative" = "Make Creative";
