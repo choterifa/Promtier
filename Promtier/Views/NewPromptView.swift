@@ -2579,9 +2579,9 @@ struct EditorCard: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
-            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isTyping)
+            .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
             .onHover { hovering in
                 isHovering = hovering
             }
@@ -3020,9 +3020,9 @@ struct SecondaryEditorCard<Actions: View>: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+            .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
-            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isTyping)
+            .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
             .onHover { hovering in
                 isHovering = hovering
             }

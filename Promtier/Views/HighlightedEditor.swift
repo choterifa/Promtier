@@ -195,7 +195,15 @@ struct HighlightedEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? PromtierTextView else { return }
-
+        
+        // Limpiar estado de typing si pierde el foco
+        if !isFocused && isTyping?.wrappedValue == true {
+            DispatchQueue.main.async {
+                self.isTyping?.wrappedValue = false
+                context.coordinator.typingWorkItem?.cancel()
+            }
+        }
+        
         // Update callback
         textView.onPaste = onPaste
 
@@ -364,7 +372,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	        private var pendingLargeEdit = false
 	        private var pendingLastReplacementCount = 0
 	        private var markdownSerializationToken = UUID()
-	        private var typingWorkItem: DispatchWorkItem?
+	        var typingWorkItem: DispatchWorkItem?
 
         init(_ parent: HighlightedEditor) {
             self.parent = parent
