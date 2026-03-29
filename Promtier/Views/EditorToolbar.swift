@@ -13,6 +13,7 @@ struct EditorToolbar: View {
     var isAIGenerating: Bool
     var onAIAction: (AIAction) -> Void
     var aiEnabled: Bool
+    var onStopAI: (() -> Void)? = nil
 
     // Snippets & Variables
     var onShowVariables: () -> Void
@@ -33,7 +34,8 @@ struct EditorToolbar: View {
          onShowVariables: @escaping () -> Void, onShowSnippets: @escaping () -> Void,
          onShowChains: @escaping () -> Void, onZenMode: @escaping () -> Void,
          onFloatingMode: (() -> Void)? = nil,
-         isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil) {
+         isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil,
+         onStopAI: (() -> Void)? = nil) {
         self.color = color
         self.editorID = editorID
         self.vertical = vertical
@@ -49,6 +51,7 @@ struct EditorToolbar: View {
         self.onFloatingMode = onFloatingMode
         self.isAutocompleting = isAutocompleting
         self.onMagicAutocomplete = onMagicAutocomplete
+        self.onStopAI = onStopAI
     }
 
     @State private var isMagicHovered: Bool = false
@@ -160,6 +163,14 @@ struct EditorToolbar: View {
             .menuStyle(.button)
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
+
+            if isAIGenerating, let onStopAI {
+                Button(action: onStopAI) {
+                    toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
+                }
+                .buttonStyle(.plain)
+                .help("Stop AI")
+            }
         }
 
         Button(action: onShowVariables) {

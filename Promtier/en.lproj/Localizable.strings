@@ -244,7 +244,7 @@
 "maybe_later" = "Maybe Later";
 
 /* Batch Operations */
-"selected_count" = "selected";
+"selected_count" = "Selected";
 "all_action" = "All";
 "select_all_help" = "Select all visible prompts";
 "move_action" = "Move";
@@ -401,7 +401,7 @@
 "exit_zen_mode" = "Exit Zen Mode";
 "zen_content_placeholder" = "Write your prompt here with total freedom...";
 "words_count" = "%d words";
-"words_count_short" = "words";
+"words_count_short" = "Words";
 "auto_save_active" = "Auto-save active";
 "apple_intelligence_header" = "APPLE INTELLIGENCE";
 
@@ -456,7 +456,8 @@
 "preferred_ai_provider" = "AI Provider";
 "gemini_service" = "Google Gemini";
 "gemini_subtitle" = "Use Google Gemini API";
-"gemini_model_subtitle" = "Gemini Model ID (e.g., gemini-2.0-flash)";
+"gemini_model_id" = "Gemini Model ID";
+"gemini_model_subtitle" = "Enter the Gemini model ID (e.g., gemini-2.0-flash)";
 "generate_test" = "Test Prompt";
 "ai_response" = "AI Response";
 "apply_ai_changes" = "Apply changes";
@@ -495,3 +496,8 @@
 "smart_recommendation_help" = "Smart Recommendation";
 "smart_recommendation_help_desc" = "Associate this prompt with specific apps. When using those apps, Promtier will prioritize it in the list for faster access.";
 "required_fields" = "Title and Prompt are required";
+"unsaved_changes_title" = "Unsaved Changes";
+"unsaved_changes_message" = "You have unsaved changes. Would you like to keep them as a draft or discard them?";
+"save_as_draft" = "Save as Draft";
+"discard" = "Discard";
+"draft_prefix" = "Draft";

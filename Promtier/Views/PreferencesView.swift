@@ -698,8 +698,10 @@ struct AITab: View {
                             
                             Button(action: {
                                 if let pasted = NSPasteboard.general.string(forType: .string) {
-                                    preferences.openAIApiKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    preferences.openAIApiKey = trimmed
                                     HapticService.shared.playLight()
+                                    Task { await handleOpenAIKeyChanged() }
                                 }
                             }) {
                                 Image(systemName: "doc.on.clipboard")
@@ -811,7 +813,8 @@ struct AITab: View {
                                 
                                 Button(action: {
                                     if let pasted = NSPasteboard.general.string(forType: .string) {
-                                        preferences.geminiAPIKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        preferences.geminiAPIKey = trimmed
                                         HapticService.shared.playLight()
                                     }
                                 }) {
@@ -827,7 +830,8 @@ struct AITab: View {
                             }
                         }
 
-                        SettingsRow("model_id", subtitle: "gemini_model_subtitle") {
+                        SettingsRow(LocalizedStringKey("gemini_model_id".localized(for: preferences.language)),
+                                    subtitle: LocalizedStringKey("gemini_model_subtitle".localized(for: preferences.language))) {
                             HStack(spacing: 8) {
                                 TextField("gemini-2.0-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
@@ -895,9 +899,27 @@ struct AITab: View {
         do {
             let models = try await OpenAIService.shared.listModelIDs(apiKey: preferences.openAIApiKey)
             openAIAvailableModels = models
+            // Si el modelo actual ya no es válido, escoger uno sugerido o de la cuenta
+            if !models.contains(preferences.openAIDefaultModel) {
+                if let fromAccount = models.first {
+                    preferences.openAIDefaultModel = fromAccount
+                } else if let suggested = OpenAIService.suggestedChatModels.first {
+                    preferences.openAIDefaultModel = suggested
+                }
+            }
         } catch {
             openAIModelsError = "OpenAI models: \(error.localizedDescription)"
         }
+    }
+
+    @MainActor
+    private func handleOpenAIKeyChanged() async {
+        guard !preferences.openAIApiKey.isEmpty else {
+            openAIAvailableModels = []
+            openAIModelsError = nil
+            return
+        }
+        await refreshOpenAIModels()
     }
 }
 

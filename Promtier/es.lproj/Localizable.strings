@@ -62,7 +62,8 @@
 "ai_error_network" = "Error de red. Revisa tu conexión.";
 "ai_error_empty_response" = "Respuesta vacía del servicio de IA.";
 "ai_error_unknown" = "Error de IA.";
-"gemini_model_subtitle" = "ID del modelo Gemini (ej. gemini-2.0-flash)";
+"gemini_model_id" = "ID del modelo Gemini";
+"gemini_model_subtitle" = "Escribe el ID del modelo Gemini (ej. gemini-2.0-flash)";
 "preview_priority" = "Prioridad en Preview";
 "preview_priority_subtitle" = "Orden de elementos en la vista rápida";
 "images_first" = "Imágenes primero";
@@ -265,7 +266,7 @@
 "maybe_later" = "Quizás más Tarde";
 
 /* Batch Operations */
-"selected_count" = "seleccionados";
+"selected_count" = "Seleccionados";
 "all_action" = "Todos";
 "select_all_help" = "Seleccionar todos los visibles";
 "move_action" = "Mover";
@@ -442,7 +443,7 @@
 "exit_zen_mode" = "Salir del Modo Zen";
 "zen_content_placeholder" = "Escribe tu prompt aquí con total libertad...";
 "words_count" = "%d palabras";
-"words_count_short" = "palabras";
+"words_count_short" = "Palabras";
 "auto_save_active" = "Auto-guardado activo";
 "apple_intelligence_header" = "APPLE INTELLIGENCE";
 
@@ -513,3 +514,8 @@
 "smart_recommendation_help" = "Recomendación Inteligente";
 "smart_recommendation_help_desc" = "Asocia este prompt con aplicaciones específicas. Al usar esas apps, Promtier lo priorizará en la lista para un acceso más rápido.";
 "required_fields" = "El Título y el Prompt son obligatorios";
+"unsaved_changes_title" = "Cambios sin guardar";
+"unsaved_changes_message" = "Tienes cambios sin guardar. ¿Deseas mantenerlos como borrador o descartarlos?";
+"save_as_draft" = "Guardar como borrador";
+"discard" = "Descartar";
+"draft_prefix" = "Borrador";

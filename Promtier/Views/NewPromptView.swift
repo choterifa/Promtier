@@ -61,6 +61,7 @@ struct NewPromptView: View {
     @State private var tags: [String] = []
     @State private var newTag: String = ""
     @State private var showingTagEditor: Bool = false
+    @State private var showingCloseAlert: Bool = false
 
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
@@ -111,6 +112,7 @@ struct NewPromptView: View {
     @State private var cancellables = Set<AnyCancellable>()
     @State private var isAutocompleting: Bool = false
     @State private var isCategorizing: Bool = false
+    @State private var aiTask: Task<Void, Never>? = nil
 
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
@@ -842,6 +844,52 @@ struct NewPromptView: View {
         )
     }
 
+    private var hasUnsavedChanges: Bool {
+        let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
+        if let existingPrompt = originalPrompt ?? prompt {
+            return existingPrompt.title != title ||
+                   existingPrompt.content != content ||
+                   existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
+                   existingPrompt.folder != selectedFolder ||
+                   existingPrompt.isFavorite != isFavorite ||
+                   existingPrompt.icon != selectedIcon ||
+                   existingPrompt.showcaseImages != showcaseImages ||
+                   existingPrompt.negativePrompt != newNegativePrompt ||
+                   existingPrompt.alternatives != alternatives ||
+                   existingPrompt.tags != tags ||
+                   existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
+                   existingPrompt.customShortcut != customShortcut
+        } else {
+            return !title.isEmpty || !content.isEmpty || !promptDescription.isEmpty ||
+                   !negativePrompt.isEmpty || !alternatives.isEmpty || !showcaseImages.isEmpty ||
+                   !tags.isEmpty || !targetAppBundleIDs.isEmpty || customShortcut != nil ||
+                   isFavorite || selectedFolder != nil || selectedIcon != nil
+        }
+    }
+
+    private func saveAsDraft() {
+        // Solo cuando creamos un prompt nuevo: "draft" significa guardar como uncategorized ("Sin categoría").
+        // En modo edición, no queremos moverlo de su carpeta.
+        if originalPrompt == nil {
+            if title.isEmpty {
+                let prefix = "draft_prefix".localized(for: preferences.language)
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: preferences.language.rawValue)
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .short
+                title = "\(prefix) - \(formatter.string(from: Date()))"
+            }
+            selectedFolder = nil
+        }
+        savePrompt(closeAfter: true, isAutoSave: false)
+    }
+
+    private func discardChanges() {
+        DraftService.shared.clearDraft()
+        MenuBarManager.shared.isModalActive = false
+        onClose()
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let targetWidth = geometry.size.width * 0.9
@@ -923,6 +971,13 @@ struct NewPromptView: View {
                             }
                         )
                     }
+                }
+                .alert("unsaved_changes_title".localized(for: preferences.language), isPresented: $showingCloseAlert) {
+                    Button("save_as_draft".localized(for: preferences.language), action: saveAsDraft)
+                    Button("discard".localized(for: preferences.language), role: .destructive, action: discardChanges)
+                    Button("cancel".localized(for: preferences.language), role: .cancel) { }
+                } message: {
+                    Text("unsaved_changes_message".localized(for: preferences.language))
                 }
         .onAppear {
             setupOnAppear()
@@ -1212,9 +1267,11 @@ struct NewPromptView: View {
 
                     // Si no estamos editando nada y presionan ESC, cerramos la ventana
                     DispatchQueue.main.async {
-                        DraftService.shared.clearDraft()
-                        MenuBarManager.shared.isModalActive = false
-                        self.onClose()
+                        if self.hasUnsavedChanges {
+                            self.showingCloseAlert = true
+                        } else {
+                            self.discardChanges()
+                        }
                     }
                     return nil
                 }
@@ -1427,9 +1484,11 @@ struct NewPromptView: View {
             // Botones laterales (Cancel y Acciones)
             HStack(alignment: .center) {
                 Button(action: {
-                    DraftService.shared.clearDraft()
-                    MenuBarManager.shared.isModalActive = false
-                    onClose()
+                    if hasUnsavedChanges {
+                        showingCloseAlert = true
+                    } else {
+                        discardChanges()
+                    }
                 }) {
                     Text("cancel".localized(for: preferences.language))
                         .font(.system(size: 13, weight: .medium))
@@ -2140,7 +2199,11 @@ struct NewPromptView: View {
         if detail.isEmpty {
             return "❌ \(base)"
         }
-        return "❌ \(base)\n\(detail)"
+        // Mensaje compacto: cabecera corta + primera línea del detalle (si existe)
+        if let firstLine = detail.split(separator: ".").first, !firstLine.isEmpty {
+            return "❌ \(base): \(firstLine.trimmingCharacters(in: .whitespaces))"
+        }
+        return "❌ \(base)"
     }
 
     private func compactErrorDetail(from error: Error) -> String {
@@ -2383,6 +2446,7 @@ struct EditorCard: View {
     @State private var magicRotationPhase: Double = 0
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
+    @State private var aiTask: Task<Void, Never>? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -2573,7 +2637,11 @@ struct EditorCard: View {
                     },
                     onFloatingMode: nil,
                     isAutocompleting: isAutocompleting,
-                    onMagicAutocomplete: editorID == "main" ? nil : { onMagicAutocomplete?() }
+                    onMagicAutocomplete: editorID == "main" ? nil : { onMagicAutocomplete?() },
+                    onStopAI: {
+                        aiTask?.cancel()
+                        isAIGenerating = false
+                    }
                 )
                 .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
                     PromptPickerPopover(excludePromptId: prompt?.id) { selected in
@@ -2630,6 +2698,9 @@ struct EditorCard: View {
             isAIGenerating = true
             HapticService.shared.playImpact()
 
+            // Cancelar cualquier generación previa antes de iniciar una nueva
+            aiTask?.cancel()
+
             // Determinar qué fragmento procesar (selección o todo)
             let sourceText = plainTextContent.isEmpty ? content : plainTextContent
             let textToProcess: String
@@ -2652,7 +2723,7 @@ struct EditorCard: View {
             let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
             let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
 
-            Task {
+            aiTask = Task {
                 do {
                     let fullResponse: String
                     if preferences.preferredAIService == .openai {
