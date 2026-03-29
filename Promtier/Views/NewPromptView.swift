@@ -875,17 +875,27 @@ struct NewPromptView: View {
     }
 
     private var hasUnsavedChanges: Bool {
-        let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
         if let existingPrompt = originalPrompt ?? prompt {
+            var existingAlts = existingPrompt.alternatives
+            if existingAlts.isEmpty, let legacy = existingPrompt.alternativePrompt, !legacy.isEmpty {
+                existingAlts = [legacy]
+            }
+            
+            let existingDesc = (existingPrompt.promptDescription ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let currentDesc = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            let existingNeg = (existingPrompt.negativePrompt ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let currentNeg = negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            
             return existingPrompt.title != title ||
                    existingPrompt.content != content ||
-                   existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
+                   existingDesc != currentDesc ||
                    existingPrompt.folder != selectedFolder ||
                    existingPrompt.isFavorite != isFavorite ||
                    existingPrompt.icon != selectedIcon ||
                    existingPrompt.showcaseImages != showcaseImages ||
-                   existingPrompt.negativePrompt != newNegativePrompt ||
-                   existingPrompt.alternatives != alternatives ||
+                   existingNeg != currentNeg ||
+                   existingAlts != alternatives ||
                    existingPrompt.tags != tags ||
                    existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
                    existingPrompt.customShortcut != customShortcut
@@ -1014,7 +1024,9 @@ struct NewPromptView: View {
                     )
                 }
                 .alert("unsaved_changes_title".localized(for: preferences.language), isPresented: $showingCloseAlert) {
-                    Button("save_as_draft".localized(for: preferences.language), action: saveAsDraft)
+                    if originalPrompt == nil && prompt == nil {
+                        Button("save_as_draft".localized(for: preferences.language), action: saveAsDraft)
+                    }
                     Button("discard".localized(for: preferences.language), role: .destructive, action: discardChanges)
                     Button("cancel".localized(for: preferences.language), role: .cancel) { }
                 } message: {
