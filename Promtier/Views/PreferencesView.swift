@@ -691,9 +691,27 @@ struct AITab: View {
 
                 VStack(spacing: 1) {
                     SettingsRow(LocalizedStringKey("api_key".localized(for: preferences.language))) {
-                        SecureField("sk-...", text: $preferences.openAIApiKey)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 250)
+                        HStack(spacing: 8) {
+                            SecureField("sk-...", text: $preferences.openAIApiKey)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 220)
+                            
+                            Button(action: {
+                                if let pasted = NSPasteboard.general.string(forType: .string) {
+                                    preferences.openAIApiKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    HapticService.shared.playLight()
+                                }
+                            }) {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.blue)
+                                    .padding(4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            .buttonStyle(.plain)
+                            .help("paste".localized(for: preferences.language))
+                        }
                     }
 
                     Divider().padding(.leading, 20)
@@ -786,9 +804,27 @@ struct AITab: View {
                 if preferences.geminiEnabled {
                     VStack(spacing: 12) {
                         SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
-                            SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 250)
+                            HStack(spacing: 8) {
+                                SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                                
+                                Button(action: {
+                                    if let pasted = NSPasteboard.general.string(forType: .string) {
+                                        preferences.geminiAPIKey = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        HapticService.shared.playLight()
+                                    }
+                                }) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.blue)
+                                        .padding(4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
+                                .buttonStyle(.plain)
+                                .help("paste".localized(for: preferences.language))
+                            }
                         }
 
                         SettingsRow("model_id", subtitle: "gemini_model_subtitle") {
