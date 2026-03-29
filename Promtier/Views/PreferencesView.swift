@@ -886,21 +886,6 @@ struct AITab: View {
                     .padding(.leading, 20)
                 }
             }
-
-            SettingsSection(title: "AI Response Language", icon: "globe") {
-                SettingsRow(
-                    LocalizedStringKey("ai_response_language".localized(for: preferences.language)),
-                    subtitle: LocalizedStringKey("ai_response_language_subtitle".localized(for: preferences.language))
-                ) {
-                    Picker("", selection: $preferences.aiResponseLanguage) {
-                        Text("Auto (detect)").tag("auto")
-                        Text("English").tag("en")
-                        Text("Español").tag("es")
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-                }
-            }
         }
     }
 

@@ -2239,10 +2239,9 @@ struct NewPromptView: View {
         3. CONTENT: Generate/Improve the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential.
         
         CRITICAL LANGUAGE RULE:
-        \(aiLanguageInstruction.isEmpty ?
-          "- Detect the language of the user's input (title and content).\n        - Your ENTIRE response (title, description, content, and any variable names inside {{...}}) MUST be in the SAME language as the input.\n        - If the input is in Spanish, respond in Spanish. If in English, respond in English. Etc." :
-          aiLanguageInstruction
-        )
+        - Detect the PRIMARY language of the user's input (title and content).
+        - You MUST respond ENTIRELY in that SAME language. Every word of your response — title, description, content, variable names — must be in the input's language.
+        - If input is Spanish → respond in Spanish. If English → respond in English. Never mix languages.
         
         RESPONSE FORMAT:
         Respond ONLY with the following format, using the pipe symbol (|) as separator:
@@ -3486,6 +3485,9 @@ struct SecondaryEditorCard<Actions: View>: View {
 
             isAIGenerating = true
             HapticService.shared.playImpact()
+            withAnimation {
+                branchMessage = "ai_thinking".localized(for: preferences.language)
+            }
 
             // Determinar qué fragmento procesar
             let sourceText = plainTextContent.isEmpty ? text : plainTextContent
@@ -3520,6 +3522,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     
                     await MainActor.run {
                         self.isAIGenerating = false
+                        withAnimation { self.branchMessage = nil }
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
                             let resultString = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
