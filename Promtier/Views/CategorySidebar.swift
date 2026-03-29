@@ -64,10 +64,10 @@ struct CategorySidebar: View {
                         .rotationEffect(.degrees(isSystemSectionExpanded ? 90 : 0))
                     
                     Text("explore".localized(for: preferences.language))
-                        .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
+                        .font(.system(size: (preferences.language == .spanish ? 10 : 11) * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isHeaderHovered ? .primary : .secondary)
                         .textCase(.uppercase)
-                        .tracking(1.2 * preferences.fontSize.scale)
+                        .tracking((preferences.language == .spanish ? 0.8 : 1.2) * preferences.fontSize.scale)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
