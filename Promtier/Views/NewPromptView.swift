@@ -116,6 +116,14 @@ struct NewPromptView: View {
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
     @State private var autoSaveWorkItem: DispatchWorkItem? = nil
+    
+    // Estados de Hover para la cabecera
+    @State private var isHoveringCancel = false
+    @State private var isHoveringHistory = false
+    @State private var isHoveringFavorite = false
+    @State private var isHoveringZen = false
+    @State private var isHoveringBranch = false
+    @State private var isHoveringSave = false
 
     private var zenBindingContent: Binding<String> {
         Binding(
@@ -1430,10 +1438,12 @@ struct NewPromptView: View {
                         .padding(.vertical, 6)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.primary.opacity(0.05))
+                                .fill(isHoveringCancel ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.05))
                         )
                 }
                 .buttonStyle(.plain)
+                .onHover { isHoveringCancel = $0 }
+                .animation(.easeInOut(duration: 0.2), value: isHoveringCancel)
 
                 Spacer()
 
@@ -1451,10 +1461,12 @@ struct NewPromptView: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(themeColor)
                                 .frame(width: 32, height: 32)
-                                .background(themeColor.opacity(0.1))
+                                .background(themeColor.opacity(isHoveringHistory ? 0.25 : 0.1))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        .onHover { isHoveringHistory = $0 }
+                        .animation(.easeInOut(duration: 0.2), value: isHoveringHistory)
                         .help("Ver historial")
                         .transition(.opacity)
                     }
@@ -1469,9 +1481,11 @@ struct NewPromptView: View {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(themeColor)
                             .frame(width: 32, height: 32)
-                            .background(Circle().fill(themeColor.opacity(isFavorite ? 0.2 : 0.1)))
+                            .background(Circle().fill(themeColor.opacity(isFavorite ? (isHoveringFavorite ? 0.35 : 0.25) : (isHoveringFavorite ? 0.25 : 0.1))))
                     }
                     .buttonStyle(.plain)
+                    .onHover { isHoveringFavorite = $0 }
+                    .animation(.easeInOut(duration: 0.2), value: isHoveringFavorite)
                     .help("favorite".localized(for: preferences.language))
 
                     Button(action: {
@@ -1487,9 +1501,11 @@ struct NewPromptView: View {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(themeColor)
                             .frame(width: 32, height: 32)
-                            .background(Circle().fill(themeColor.opacity(0.1)))
+                            .background(Circle().fill(themeColor.opacity(isHoveringZen ? 0.25 : 0.1)))
                     }
                     .buttonStyle(.plain)
+                    .onHover { isHoveringZen = $0 }
+                    .animation(.easeInOut(duration: 0.2), value: isHoveringZen)
                     .help("Floating Zen Mode")
 
                     if (originalPrompt ?? prompt) != nil {
@@ -1498,9 +1514,11 @@ struct NewPromptView: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(themeColor)
                                 .frame(width: 32, height: 32)
-                                .background(Circle().fill(themeColor.opacity(0.1)))
+                                .background(Circle().fill(themeColor.opacity(isHoveringBranch ? 0.25 : 0.1)))
                         }
                         .buttonStyle(.plain)
+                        .onHover { isHoveringBranch = $0 }
+                        .animation(.easeInOut(duration: 0.2), value: isHoveringBranch)
                         .help("create_branch".localized(for: preferences.language))
                     }
 
@@ -1524,11 +1542,14 @@ struct NewPromptView: View {
                             .padding(.vertical, 6)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : (preferences.isHaloEffectEnabled ? currentCategoryColor : .blue))
-                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : (preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.2) : .clear), radius: 4, y: 2)
+                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : (isHoveringSave ? currentCategoryColor.opacity(0.85) : (preferences.isHaloEffectEnabled ? currentCategoryColor : .blue)))
+                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : (preferences.isHaloEffectEnabled ? (isHoveringSave ? currentCategoryColor.opacity(0.4) : currentCategoryColor.opacity(0.2)) : .clear), radius: isHoveringSave ? 8 : 4, y: isHoveringSave ? 4 : 2)
                             )
+                            .scaleEffect(isHoveringSave ? 1.02 : 1.0)
                     }
                     .buttonStyle(.plain)
+                    .onHover { isHoveringSave = $0 }
+                    .animation(.easeInOut(duration: 0.2), value: isHoveringSave)
                     .disabled(title.isEmpty || content.isEmpty)
                     .keyboardShortcut("s", modifiers: [.command])
                 }
