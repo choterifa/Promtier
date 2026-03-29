@@ -53,6 +53,7 @@ struct PromptCard: View {
     @EnvironmentObject var batchService: BatchOperationsService
     
     @State private var isTargetedForDrop = false
+    @State private var isGlowAnimating = false
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -114,6 +115,11 @@ struct PromptCard: View {
     
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
+    private var isRecommended: Bool {
+        guard let activeApp = promptService.activeAppBundleID else { return false }
+        return prompt.targetAppBundleIDs.contains(activeApp)
     }
     
     private var currentCategoryColor: Color {
@@ -200,18 +206,20 @@ struct PromptCard: View {
                             .clipShape(Capsule())
                     }
                     
-                    if let activeApp = promptService.activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
+                    if isRecommended {
                         HStack(spacing: 3) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 8, weight: .bold))
+                                .symbolEffect(.pulse, isActive: isGlowAnimating)
                             Text("recommended".localized(for: preferences.language))
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .foregroundColor(.purple)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.purple.opacity(0.1))
+                        .background(Color.purple.opacity(isGlowAnimating ? 0.2 : 0.1))
                         .clipShape(Capsule())
+                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isGlowAnimating)
                     }
                 }
                 
@@ -322,17 +330,24 @@ struct PromptCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected || isHovered ? themeColor.opacity(0.08) : Color.clear)
-                        .blur(radius: preferences.isHaloEffectEnabled ? (isHovered ? 12 : 6) : 0)
+                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || isHovered ? themeColor.opacity(0.08) : Color.clear))
+                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && isHovered ? 12 : 0))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(cardBorderColor, lineWidth: isSelected ? 1.5 : 1)
+                        .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(isHovered ? 0.05 : 0.0), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
         .contentShape(Rectangle())
+        .onAppear {
+            if isRecommended {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    isGlowAnimating = true
+                }
+            }
+        }
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
             if batchService.isSelectionModeActive {

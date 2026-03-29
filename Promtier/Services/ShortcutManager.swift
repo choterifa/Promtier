@@ -51,6 +51,8 @@ class ShortcutManager: ObservableObject {
     private var omniHotKeyRef: EventHotKeyRef?
     private var fastAddHotKeyRef: EventHotKeyRef?
     private var categoryHotKeyRef: EventHotKeyRef?
+    private var newPromptHotKeyRef: EventHotKeyRef?
+    private var aiDraftHotKeyRef: EventHotKeyRef?
     private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
@@ -75,10 +77,14 @@ class ShortcutManager: ObservableObject {
         if let ref = omniHotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = fastAddHotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = categoryHotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = newPromptHotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = aiDraftHotKeyRef { UnregisterEventHotKey(ref) }
         hotKeyRef = nil
         omniHotKeyRef = nil
         fastAddHotKeyRef = nil
         categoryHotKeyRef = nil
+        newPromptHotKeyRef = nil
+        aiDraftHotKeyRef = nil
         
         let prefs = PreferencesManager.shared
         guard prefs.globalShortcutEnabled else { return }
@@ -137,6 +143,34 @@ class ShortcutManager: ObservableObject {
             
             let catHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 102)
             _ = RegisterEventHotKey(catKeyCode, catCarbonMods, catHotKeyID, GetApplicationEventTarget(), 0, &categoryHotKeyRef)
+        }
+        
+        // 5. HotKey New Prompt: global configurable (Cmd+Shift+A default)
+        if prefs.newPromptHotkeyCode != -1 {
+            let npKeyCode = UInt32(prefs.newPromptHotkeyCode)
+            var npCarbonMods: UInt32 = 0
+            let npFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.newPromptHotkeyModifiers))
+            if npFlags.contains(.command) { npCarbonMods |= UInt32(cmdKey) }
+            if npFlags.contains(.shift) { npCarbonMods |= UInt32(shiftKey) }
+            if npFlags.contains(.option) { npCarbonMods |= UInt32(optionKey) }
+            if npFlags.contains(.control) { npCarbonMods |= UInt32(controlKey) }
+            
+            let npHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 103)
+            _ = RegisterEventHotKey(npKeyCode, npCarbonMods, npHotKeyID, GetApplicationEventTarget(), 0, &newPromptHotKeyRef)
+        }
+        
+        // 6. HotKey AI Draft: global configurable (Cmd+Shift+I default)
+        if prefs.aiDraftHotkeyCode != -1 {
+            let aidKeyCode = UInt32(prefs.aiDraftHotkeyCode)
+            var aidCarbonMods: UInt32 = 0
+            let aidFlags = NSEvent.ModifierFlags(rawValue: UInt(prefs.aiDraftHotkeyModifiers))
+            if aidFlags.contains(.command) { aidCarbonMods |= UInt32(cmdKey) }
+            if aidFlags.contains(.shift) { aidCarbonMods |= UInt32(shiftKey) }
+            if aidFlags.contains(.option) { aidCarbonMods |= UInt32(optionKey) }
+            if aidFlags.contains(.control) { aidCarbonMods |= UInt32(controlKey) }
+            
+            let aidHotKeyID = EventHotKeyID(signature: OSType(1347571781), id: 104)
+            _ = RegisterEventHotKey(aidKeyCode, aidCarbonMods, aidHotKeyID, GetApplicationEventTarget(), 0, &aiDraftHotKeyRef)
         }
         
         // Instalar el manejador de eventos una sola vez globalmente
@@ -224,6 +258,10 @@ class ShortcutManager: ObservableObject {
         } else if id == 102 {
             MenuBarManager.shared.folderToEdit = nil
             MenuBarManager.shared.showWithState(.folderManager)
+        } else if id == 103 {
+            MenuBarManager.shared.showWithState(.newPrompt)
+        } else if id == 104 {
+            FloatingAIDraftManager.shared.show()
         } else if let promptId = promptHotkeyMap[id] {
             // Notificar a PromptService para copiar
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)

@@ -747,6 +747,15 @@ struct NewPromptView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                             branchMessage = nil
                             DraftService.shared.clearDraft()
+                            
+                            // Navegar a la carpeta/lista principal
+                            promptService.searchQuery = ""
+                            if let folder = selectedFolder {
+                                promptService.selectedCategory = folder
+                            } else {
+                                promptService.selectedCategory = nil
+                            }
+                            
                             MenuBarManager.shared.isModalActive = false
                             onClose() // Salir a la lista
                         }
@@ -3374,7 +3383,7 @@ struct PlaceholderSlotView: View {
         .scaleEffect(isTargeted ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isTargeted)
         .animation(.spring(response: 0.3), value: isHovering)
-        .onChange(of: isHovering || isTargeted) { active in
+        .onChange(of: isHovering || isTargeted) { _, active in
             if active {
                 withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
                     dashPhase -= 20

@@ -25,6 +25,7 @@ struct PromptGridCard: View {
     
     @State private var isTargetedForDrop = false
     @State private var fallbackShowcasePath: String? = nil
+    @State private var isGlowAnimating = false
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -45,6 +46,11 @@ struct PromptGridCard: View {
     
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+    
+    private var isRecommended: Bool {
+        guard let activeApp = promptService.activeAppBundleID else { return false }
+        return prompt.targetAppBundleIDs.contains(activeApp)
     }
     
     private var currentCategoryColor: Color {
@@ -101,6 +107,20 @@ struct PromptGridCard: View {
                         .padding(.vertical, 3)
                         .background(color.opacity(0.15))
                         .clipShape(Capsule())
+                }
+                
+                if isRecommended {
+                    HStack(spacing: 3) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 8, weight: .bold))
+                            .symbolEffect(.pulse, isActive: isGlowAnimating)
+                    }
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.purple.opacity(isGlowAnimating ? 0.2 : 0.1))
+                    .clipShape(Capsule())
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isGlowAnimating)
                 }
             }
             .padding(.horizontal, 20)
@@ -217,17 +237,24 @@ struct PromptGridCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected || isHovered ? themeColor.opacity(0.06) : Color.clear)
-                        .blur(radius: preferences.isHaloEffectEnabled ? (isHovered ? 12 : 6) : 0)
+                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || isHovered ? themeColor.opacity(0.06) : Color.clear))
+                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && isHovered ? 12 : 0))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(cardBorderColor, lineWidth: isSelected ? 1.5 : 1)
+                        .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
                 )
         )
-        .shadow(color: .black.opacity(isHovered ? 0.06 : 0.02), radius: 8, y: 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(isHovered ? 0.06 : 0.02), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .contentShape(Rectangle())
+        .onAppear {
+            if isRecommended {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    isGlowAnimating = true
+                }
+            }
+        }
         .onTapGesture {
             if batchService.isSelectionModeActive {
                 batchService.toggleSelection(for: prompt.id)

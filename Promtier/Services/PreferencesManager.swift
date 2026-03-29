@@ -207,6 +207,34 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var newPromptHotkeyCode: Int {
+        didSet {
+            userDefaults.set(newPromptHotkeyCode, forKey: "newPromptHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var newPromptHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(newPromptHotkeyModifiers, forKey: "newPromptHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var aiDraftHotkeyCode: Int {
+        didSet {
+            userDefaults.set(aiDraftHotkeyCode, forKey: "aiDraftHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var aiDraftHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(aiDraftHotkeyModifiers, forKey: "aiDraftHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
     // MARK: - Idioma
     
     @Published var language: AppLanguage {
@@ -403,6 +431,14 @@ class PreferencesManager: ObservableObject {
         // Atajo Nueva Categoría por defecto: ⌘⌥N (KeyCode 45, Command + Option)
         self.categoryHotkeyCode = userDefaults.object(forKey: "categoryHotkeyCode") as? Int ?? 45
         self.categoryHotkeyModifiers = userDefaults.object(forKey: "categoryHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+        
+        // Atajo Nuevo Prompt por defecto: ⌘⇧A (KeyCode 0, Command + Shift)
+        self.newPromptHotkeyCode = userDefaults.object(forKey: "newPromptHotkeyCode") as? Int ?? 0 // 'A'
+        self.newPromptHotkeyModifiers = userDefaults.object(forKey: "newPromptHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
+        // Atajo AI Draft por defecto: ⌘⇧I (KeyCode 34, Command + Shift)
+        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 34 // 'I'
+        self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.autoPaste = userDefaults.bool(forKey: "autoPaste")
@@ -634,7 +670,12 @@ class PreferencesManager: ObservableObject {
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.omniHotkeyCode = 49
-        self.omniHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.categoryHotkeyCode = 45
+        self.categoryHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+        self.newPromptHotkeyCode = 0
+        self.newPromptHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.aiDraftHotkeyCode = 34
+        self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .english
         self.autoPaste = false
         self.clipboardSuggestions = true

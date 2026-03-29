@@ -508,6 +508,27 @@ struct SearchViewSimple: View {
                                 }
                                 .help("new_prompt".localized(for: preferences.language) + " (N)")
                                 
+                                // Botón de AI Draft (Abre panel tipo Fast Add para borradores rápidos AI)
+                                Button(action: {
+                                    FloatingAIDraftManager.shared.show()
+                                    HapticService.shared.playLight()
+                                }) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.purple)
+                                        .frame(width: 34, height: 34)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.purple.opacity(0.12))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .help("AI Quick Draft (Cmd+Shift+I)")
+                                
                                 // Botón de Selección en Lote
                                 Button(action: {
                                     withAnimation(.spring(response: 0.3)) {
@@ -739,6 +760,12 @@ struct SearchViewSimple: View {
             Button("Copy Pack") { copyPrompt(prompt, as: .pack) }
         } label: {
             Label("Copy As…", systemImage: "doc.on.clipboard")
+        }
+        Button(action: {
+            FloatingAIDraftManager.shared.show(content: prompt.content)
+            if preferences.soundEnabled { SoundService.shared.playMagicSound() }
+        }) {
+            Label("AI Draft / Refine", systemImage: "sparkles")
         }
         Button(action: {
             selectedPrompt = prompt

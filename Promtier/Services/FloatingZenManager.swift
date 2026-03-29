@@ -156,23 +156,28 @@ class FloatingZenManager: NSObject, ObservableObject {
         let hasAI = (!prefs.openAIApiKey.isEmpty && prefs.openAIEnabled) || (!prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled)
         guard hasAI else { return }
         
+        let currentTitle = self.title
+        let currentContent = self.content
+        let currentDescription = self.promptDescription
+        let currentFolder = self.selectedFolder
+        let folders = PromptService.shared.folders.map { $0.name }
+        
         Task {
             await MainActor.run { self.isClassifying = true }
             
             async let catTask: String? = {
-                if self.selectedFolder != nil { return nil }
-                let folders = PromptService.shared.folders.map { $0.name }
-                return await classifyCurrentPrompt(title: self.title, content: self.content, folders: folders)
+                if currentFolder != nil { return nil }
+                return await self.classifyCurrentPrompt(title: currentTitle, content: currentContent, folders: folders)
             }()
             
             async let titleTask: String? = {
-                if !self.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
-                return await generateMagicField(type: "short title (maximum 50 characters)", content: self.content)
+                if !currentTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+                return await self.generateMagicField(type: "short title (maximum 50 characters)", content: currentContent)
             }()
             
             async let descTask: String? = {
-                if !self.promptDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
-                return await generateMagicField(type: "short description (maximum 100 characters)", content: self.content)
+                if !currentDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+                return await self.generateMagicField(type: "short description (maximum 100 characters)", content: currentContent)
             }()
             
             let (newCat, newTitle, newDesc) = await (catTask, titleTask, descTask)

@@ -1125,9 +1125,23 @@ class PromptService: ObservableObject {
         }
     }
     
+    // --- RECOMMENDED ALWAYS ON TOP ---
+    // Un prompt es "Recomendado" solo si su array de aplicaciones asignadas
+    // INCLUYE la aplicación activa actual en pantalla.
+    let recommended: [Prompt]
+    let others: [Prompt]
+    if let activeApp = safeActiveApp {
+        recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+        others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+    } else {
+        recommended = []
+        others = filtered
+    }
+    let finalFiltered = recommended + others
+    
     if !Task.isCancelled {
         await MainActor.run {
-            self.filteredPrompts = filtered
+            self.filteredPrompts = finalFiltered
         }
     }
 }

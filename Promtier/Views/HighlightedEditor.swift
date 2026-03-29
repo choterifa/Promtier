@@ -95,7 +95,18 @@ class PromtierTextView: NSTextView {
     }
 
     override func paste(_ sender: Any?) {
-        super.paste(sender)
+        guard let pasteboard = NSPasteboard.general.string(forType: .string) else {
+            super.paste(sender)
+            onPaste?()
+            return
+        }
+        
+        // Forzar plain text paste para evitar problemas de formato y asegurar que el Undo Manager
+        // registre correctamente la edición incluso si el editor está vacío.
+        self.undoManager?.beginUndoGrouping()
+        self.insertText(pasteboard, replacementRange: self.selectedRange())
+        self.undoManager?.endUndoGrouping()
+        
         onPaste?()
     }
 }
@@ -332,8 +343,9 @@ struct HighlightedEditor: NSViewRepresentable {
 
         // triggerAIRequest is now handled by the parent view for Ollama integration
 
-        // Actualizar fuente si cambió
-        if textView.font?.pointSize != fontSize {
+        // Actualizar fuente si cambió (comprobando solo contra la última asignada para evitar loops infinitos)
+        if context.coordinator.lastFontSize != fontSize {
+            context.coordinator.lastFontSize = fontSize
             textView.font = .systemFont(ofSize: fontSize)
             context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text, force: true)
         }
@@ -362,6 +374,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	        var parent: HighlightedEditor
 	        var observerTokens: [NSObjectProtocol] = []
 	        var lastSerializedMarkdown: String = ""
+	        var lastFontSize: CGFloat?
 	        private var isApplyingExternalUpdate = false
 	        private var highlightWorkItem: DispatchWorkItem?
 	        private var markdownSerializeWorkItem: DispatchWorkItem?
