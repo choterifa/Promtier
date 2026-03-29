@@ -3749,14 +3749,14 @@ struct PlaceholderSlotView: View {
                             AngularGradient(
                                 stops: [
                                     .init(color: .clear, location: 0.0),
-                                    .init(color: tintColor.opacity(0.1), location: 0.2),
+                                    .init(color: tintColor.opacity(0.1), location: 0.3),
                                     .init(color: tintColor.opacity(0.4), location: 0.6),
-                                    .init(color: tintColor.opacity(0.8), location: 0.85),
-                                    .init(color: .white, location: 0.95),
+                                    .init(color: tintColor.opacity(0.7), location: 0.8),
+                                    .init(color: tintColor.opacity(0.9), location: 0.95),
                                     .init(color: .clear, location: 1.0)
                                 ],
                                 center: .center,
-                                angle: .degrees(Double(-dashPhase * 8))
+                                angle: .degrees(Double(-dashPhase * 24))
                             ),
                             lineWidth: 2.5
                         )
@@ -3769,7 +3769,7 @@ struct PlaceholderSlotView: View {
         .animation(.spring(response: 0.3), value: isTargeted)
         .onReceive(Timer.publish(every: 0.04, on: .main, in: .common).autoconnect()) { _ in
             if isHovering || isTargeted {
-                dashPhase -= 1
+                dashPhase -= 0.1
             }
         }
         .onHover { hovering in
