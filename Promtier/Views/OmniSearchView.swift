@@ -19,11 +19,21 @@ struct OmniSearchView: View {
     
     private var filteredPrompts: [Prompt] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let activeApp = PromptService.shared.activeAppBundleID
+        
         if trimmedQuery.isEmpty {
-            // Mostrar últimos usados o favoritos si no hay búsqueda
+            // Mostrar últimos creados y dar prioridad a los recomendados
             return Array(promptService.prompts
-                .sorted(by: { ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) })
-                .prefix(8))
+                .sorted(by: { p1, p2 in
+                    let p1IsRecommended = activeApp != nil && p1.targetAppBundleIDs.contains(activeApp!)
+                    let p2IsRecommended = activeApp != nil && p2.targetAppBundleIDs.contains(activeApp!)
+                    
+                    if p1IsRecommended && !p2IsRecommended { return true }
+                    if !p1IsRecommended && p2IsRecommended { return false }
+                    
+                    return p1.createdAt > p2.createdAt
+                })
+                .prefix(12))
         } else {
             let searchTerms = trimmedQuery.lowercased().components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             
@@ -53,9 +63,14 @@ struct OmniSearchView: View {
                 
                 guard score > 0 else { return nil }
                 
-                // Bonus por reciencia
-                if let lastUsed = prompt.lastUsedAt, lastUsed > Date().addingTimeInterval(-86400 * 7) {
-                    score += 5 // Bonus pequeño para no pisar el orden por título
+                // Dar prioridad enorme a los recomendados si coinciden con la búsqueda
+                if let active = activeApp, prompt.targetAppBundleIDs.contains(active) {
+                    score += 1000
+                }
+                
+                // Bonus por reciencia de creación
+                if prompt.createdAt > Date().addingTimeInterval(-86400 * 7) {
+                    score += 5 // Bonus pequeño
                 }
                 
                 return (prompt, score)

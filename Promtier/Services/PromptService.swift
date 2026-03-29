@@ -540,31 +540,47 @@ class PromptService: ObservableObject {
         return []
     }
     
-    /// Carga todas las carpetas desde Core Data aplicando el orden guardado
-    func loadFolders() {
-        let request = FolderEntity.fetchAll(in: dataController.viewContext)
-        
-        do {
-            let entities = try dataController.viewContext.fetch(request)
-            var loadedFolders = entities.map { $0.toFolder() }
-            
-            switch folderSortMode {
-            case .name:
-                loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
-            case .newest:
-                loadedFolders.sort { $0.createdAt > $1.createdAt }
-            }
-            
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    self.folders = loadedFolders
-                }
-            }
-        } catch {
-            print("Error cargando carpetas: \(error)")
-        }
-    }
+        /// Carga todas las carpetas desde Core Data aplicando el orden guardado
+        func loadFolders() {
+            let request = FolderEntity.fetchAll(in: dataController.viewContext)
     
+            do {
+                let entities = try dataController.viewContext.fetch(request)
+                var loadedFolders = entities.map { $0.toFolder() }
+    
+                if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder"), !savedOrder.isEmpty {
+                    var orderedFolders: [Folder] = []
+                    
+                    // Nuevas carpetas (no están en el orden guardado) van primero (arriba/al lado de uncategorized)
+                    let newFolders = loadedFolders.filter { !savedOrder.contains($0.id.uuidString) }
+                    orderedFolders.append(contentsOf: newFolders.sorted { $0.createdAt > $1.createdAt })
+                    
+                    // Luego las que ya tienen un orden guardado
+                    for id in savedOrder {
+                        if let folder = loadedFolders.first(where: { $0.id.uuidString == id }) {
+                            orderedFolders.append(folder)
+                        }
+                    }
+                    
+                    loadedFolders = orderedFolders
+                } else {
+                    switch folderSortMode {
+                    case .name:
+                        loadedFolders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
+                    case .newest:
+                        loadedFolders.sort { $0.createdAt > $1.createdAt }
+                    }
+                }
+    
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        self.folders = loadedFolders
+                    }
+                }
+            } catch {
+                print("Error cargando carpetas: \(error)")
+            }
+        }    
     /// Persiste un nuevo orden de carpetas
     func reorderFolders(_ folders: [Folder]) {
         let order = folders.map { $0.id.uuidString }

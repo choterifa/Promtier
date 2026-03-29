@@ -401,7 +401,7 @@ struct FloatingZenEditorView: View {
                         Image(systemName: "sparkles")
                             .font(.system(size: 14))
                             .symbolEffect(.variableColor, isActive: manager.isClassifying)
-                        Text(isCompressingImage ? "Comprimiendo imágenes..." : (manager.isClassifying ? "Clasificando..." : "Magic Active"))
+                        Text(isCompressingImage ? "Comprimiendo imágenes..." : (manager.isClassifying ? "Clasificando..." : "Autocategorize"))
                             .font(.system(size: 10, weight: .bold))
                     } else {
                         Image(systemName: "sparkles.separator")

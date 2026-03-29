@@ -62,6 +62,21 @@ struct NewPromptView: View {
     @State private var newTag: String = ""
     @State private var showingTagEditor: Bool = false
     @State private var showingCloseAlert: Bool = false
+    
+    // Magic Options State
+    @State private var showingMagicOptions: Bool = false
+    @State private var magicCommand: String = ""
+    @State private var magicTarget: MagicTarget = .content
+
+    enum MagicTarget: String, CaseIterable, Identifiable {
+        case title = "Título"
+        case description = "Descripción"
+        case category = "Categoría"
+        case content = "Prompt"
+        var id: String { self.rawValue }
+    }
+    
+    @State private var showingAlternativeGenerator: Bool = false
 
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
@@ -420,8 +435,12 @@ struct NewPromptView: View {
 
                             if alternatives.count < 10 {
                                 Button(action: {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        alternatives.append("")
+                                    if preferences.isPremiumActive && isAIAvailable {
+                                        showingAlternativeGenerator = true
+                                    } else {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            alternatives.append("")
+                                        }
                                     }
                                 }) {
                                     HStack(spacing: 8) {
@@ -983,6 +1002,17 @@ struct NewPromptView: View {
                         )
                     }
                 }
+                .sheet(isPresented: $showingAlternativeGenerator) {
+                    AlternativeGeneratorView(
+                        originalPrompt: content,
+                        onGenerate: { newAlternative in
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                alternatives.append(newAlternative)
+                            }
+                            HapticService.shared.playSuccess()
+                        }
+                    )
+                }
                 .alert("unsaved_changes_title".localized(for: preferences.language), isPresented: $showingCloseAlert) {
                     Button("save_as_draft".localized(for: preferences.language), action: saveAsDraft)
                     Button("discard".localized(for: preferences.language), role: .destructive, action: discardChanges)
@@ -1076,6 +1106,7 @@ struct NewPromptView: View {
                     .allowsHitTesting(false)
                     .zIndex(300)
             }
+            magicOptionsOverlayLayer
 
             if let msg = branchMessage {
                 VStack {
@@ -1130,6 +1161,60 @@ struct NewPromptView: View {
         .allowsHitTesting(showVariables)
         .animation(.easeOut(duration: 0.15), value: showVariables)
         .zIndex(201)
+    }
+
+    private var magicOptionsOverlayLayer: some View {
+        ZStack {
+            Color.black.opacity(0.001)
+                .ignoresSafeArea()
+                .onTapGesture { withAnimation { showingMagicOptions = false } }
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Modificar con IA")
+                    .font(.system(size: 14, weight: .bold))
+                    
+                Picker("Objetivo", selection: $magicTarget) {
+                    ForEach(MagicTarget.allCases) { target in
+                        Text(target.rawValue).tag(target)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                
+                TextField("Ej: Haz el texto más amigable...", text: $magicCommand)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { executeMagicWithCommand() }
+                    .onAppear {
+                        magicCommand = ""
+                    }
+                    
+                HStack {
+                    Button("Cancelar") { withAnimation { showingMagicOptions = false } }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Modificar") { executeMagicWithCommand() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.regular)
+                        .disabled(magicCommand.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(NSColor.windowBackgroundColor))
+                    .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
+            )
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+            .frame(width: 400)
+            .scaleEffect(showingMagicOptions ? 1.0 : 0.98, anchor: .bottom)
+            .offset(y: showingMagicOptions ? 0 : 10)
+            .opacity(showingMagicOptions ? 1.0 : 0.0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .opacity(showingMagicOptions ? 1.0 : 0.0)
+        .allowsHitTesting(showingMagicOptions)
+        .animation(.easeOut(duration: 0.15), value: showingMagicOptions)
+        .zIndex(202)
     }
 
     private func setupKeyboardMonitor() {
@@ -1251,6 +1336,10 @@ struct NewPromptView: View {
 
             // ESC (KeyCode 53) -> Cerrar o salir de overlays
             if event.keyCode == 53 {
+                if self.showingMagicOptions {
+                    DispatchQueue.main.async { withAnimation { self.showingMagicOptions = false } }
+                    return nil
+                }
                 if self.showSnippets {
                     DispatchQueue.main.async { self.dismissSnippetsOverlay() }
                     return nil
@@ -2042,6 +2131,12 @@ struct NewPromptView: View {
             return
         }
         
+        if !trimmedTitle.isEmpty && !trimmedContent.isEmpty {
+            // Si ya está lleno, preguntamos qué quiere hacer y qué modificar
+            showingMagicOptions = true
+            return
+        }
+        
         isAutocompleting = true
         HapticService.shared.playImpact()
         
@@ -2121,6 +2216,108 @@ struct NewPromptView: View {
                     self.isAutocompleting = false
                     withAnimation { self.branchMessage = nil }
                     print("❌ Autocomplete Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                    withAnimation {
+                        self.branchMessage = self.userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
+                    }
+                }
+            }
+        }
+    }
+
+    private func executeMagicWithCommand() {
+        showingMagicOptions = false
+        
+        guard preferences.isPremiumActive else {
+            showingPremiumFor = "ai_magic"
+            return
+        }
+        
+        isAutocompleting = true
+        HapticService.shared.playImpact()
+        
+        withAnimation {
+            branchMessage = "ai_thinking".localized(for: preferences.language)
+        }
+        
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDescription = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let command = magicCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        var targetContext = ""
+        var systemInstruction = ""
+        
+        switch magicTarget {
+        case .title:
+            targetContext = "Current Title: \(trimmedTitle)"
+            systemInstruction = "Modify ONLY the title based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new title."
+        case .description:
+            targetContext = "Current Description: \(trimmedDescription.isEmpty ? "(None)" : trimmedDescription)"
+            systemInstruction = "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
+        case .category:
+            let folderNames = promptService.folders.map { $0.name }.joined(separator: ", ")
+            targetContext = "Current Title: \(trimmedTitle)\nCurrent Content: \(trimmedContent)"
+            systemInstruction = "Change the category based on this instruction: '\(command)'. Select the BEST category from this list: [\(folderNames)]. Respond ONLY with the exact category name."
+        case .content:
+            targetContext = "Current Content: \(trimmedContent)"
+            systemInstruction = "Modify ONLY the prompt content based on this instruction: '\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
+        }
+        
+        let systemPrompt = """
+        You are an expert prompt engineer. Your goal is to modify a specific part of an AI prompt.
+        
+        \(targetContext)
+        
+        INSTRUCTION:
+        \(systemInstruction)
+        
+        CRITICAL RULE:
+        - Respond ONLY with the final requested text.
+        - Do NOT add quotes, labels, or conversational filler like "Here is the modified text".
+        """
+        
+        Task {
+            do {
+                let fullResponse: String
+                if preferences.preferredAIService == .openai {
+                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
+                } else {
+                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
+                }
+                
+                await MainActor.run {
+                    self.isAutocompleting = false
+                    withAnimation { self.branchMessage = nil }
+                    HapticService.shared.playSuccess()
+                    
+                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !result.isEmpty {
+                        withAnimation(.spring()) {
+                            switch magicTarget {
+                            case .title:
+                                self.title = result
+                            case .description:
+                                self.promptDescription = result
+                            case .category:
+                                if self.promptService.folders.contains(where: { $0.name == result }) || PredefinedCategory.fromString(result) != nil {
+                                    self.selectedFolder = result
+                                }
+                            case .content:
+                                self.content = result
+                            }
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isAutocompleting = false
+                    withAnimation { self.branchMessage = nil }
+                    print("❌ Magic Command Error: \(error.localizedDescription)")
                     HapticService.shared.playError()
                     withAnimation {
                         self.branchMessage = self.userFacingAIErrorToast(for: error)
@@ -2717,8 +2914,14 @@ struct EditorCard: View {
                             showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                         }
                     },
-                    onShowChains: {
-                        showingPromptChainPicker.toggle()
+                    showingPromptChainPicker: $showingPromptChainPicker,
+                    chainPopoverContent: {
+                        AnyView(
+                            PromptPickerPopover(excludePromptId: prompt?.id) { selected in
+                                insertionRequest = "[[@Prompt:\(selected.title)]]"
+                                showingPromptChainPicker = false
+                            }
+                        )
                     },
                     onZenMode: {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -2734,12 +2937,6 @@ struct EditorCard: View {
                         isAIGenerating = false
                     }
                 )
-                .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
-                    PromptPickerPopover(excludePromptId: prompt?.id) { selected in
-                        insertionRequest = "[[@Prompt:\(selected.title)]]"
-                        showingPromptChainPicker = false
-                    }
-                }
                 .padding(.vertical, 8)
                 .padding(.trailing, 4) // Ajustado para dar más espacio al texto
             }
@@ -3160,8 +3357,14 @@ struct SecondaryEditorCard<Actions: View>: View {
                             showingPremiumFor = "reusable_snippets".localized(for: preferences.language)
                         }
                     },
-                    onShowChains: {
-                        showingPromptChainPicker.toggle()
+                    showingPromptChainPicker: $showingPromptChainPicker,
+                    chainPopoverContent: {
+                        AnyView(
+                            PromptPickerPopover(excludePromptId: prompt?.id) { selected in
+                                insertionRequest = "[[@Prompt:\(selected.title)]]"
+                                showingPromptChainPicker = false
+                            }
+                        )
                     },
                     onZenMode: {
                         onZenMode?()
@@ -3178,12 +3381,6 @@ struct SecondaryEditorCard<Actions: View>: View {
                         }
                         : nil
                 )
-                .popover(isPresented: $showingPromptChainPicker, arrowEdge: .trailing) {
-                    PromptPickerPopover(excludePromptId: prompt?.id) { selected in
-                        insertionRequest = "[[@Prompt:\(selected.title)]]"
-                        showingPromptChainPicker = false
-                    }
-                }
                 .scaleEffect(0.9)
                 .padding(.vertical, 8)
                 .padding(.trailing, 4) // Ajustado para ahorrar espacio lateral

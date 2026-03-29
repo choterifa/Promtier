@@ -28,10 +28,16 @@ struct CategoryPillPicker: View {
     // Lista ordenada de todos los IDs para navegación secuencial
     private var allIds: [String] {
         var ids = ["uncategorized"]
-        ids.append(contentsOf: PredefinedCategory.allCases.map { $0.rawValue })
-        ids.append(contentsOf: promptService.folders
+        
+        // Primero las carpetas personalizadas (nuevas primero)
+        let customFolderIds = promptService.folders
             .filter { !PredefinedCategory.allCases.map { $0.displayName }.contains($0.name) }
-            .map { $0.id.uuidString })
+            .map { $0.id.uuidString }
+        ids.append(contentsOf: customFolderIds)
+        
+        // Luego las predefinidas
+        ids.append(contentsOf: PredefinedCategory.allCases.map { $0.rawValue })
+        
         return ids
     }
     
@@ -83,43 +89,41 @@ struct CategoryPillPicker: View {
                         .frame(width: 1, height: 24)
                         .padding(.horizontal, 4)
 
-                    // Opción: Sin categoría / General
-                    pillView(
-                        title: "uncategorized".localized(for: preferences.language),
-                        icon: "tag.slash.fill",
-                        color: .gray,
-                        isSelected: selectedCategory == nil,
-                        id: "uncategorized"
-                    ) {
-                        selectCategory(nil, id: "uncategorized")
-                    }
+                                        // Opción: Sin categoría / General
+                                        pillView(
+                                            title: "uncategorized".localized(for: preferences.language),
+                                            icon: "tag.slash.fill",
+                                            color: .gray,
+                                            isSelected: selectedCategory == nil,
+                                            id: "uncategorized"
+                                        ) {
+                                            selectCategory(nil, id: "uncategorized")
+                                        }
                     
-                    // Categorías Predefinidas
-                    ForEach(PredefinedCategory.allCases, id: \.self) { cat in
-                        pillView(
-                            title: cat.displayName,
-                            icon: cat.icon,
-                            color: cat.color,
-                            isSelected: selectedCategory == cat.displayName,
-                            id: cat.rawValue
-                        ) {
-                            selectCategory(cat.displayName, id: cat.rawValue)
-                        }
-                    }
+                                                            // Carpetas Personalizadas del Usuario (Las más nuevas primero, justo después de sin categoría)
+                                                            ForEach(promptService.folders.filter { !PredefinedCategory.allCases.map { $0.displayName }.contains($0.name) }, id: \.id) { folder in                                            pillView(
+                                                title: folder.name,
+                                                icon: folder.icon ?? "folder.fill",
+                                                color: Color(hex: folder.displayColor),
+                                                isSelected: selectedCategory == folder.name,
+                                                id: folder.id.uuidString
+                                            ) {
+                                                selectCategory(folder.name, id: folder.id.uuidString)
+                                            }
+                                        }
                     
-                    // Carpetas Personalizadas del Usuario
-                    ForEach(promptService.folders.filter { !PredefinedCategory.allCases.map { $0.displayName }.contains($0.name) }, id: \.id) { folder in
-                        pillView(
-                            title: folder.name,
-                            icon: folder.icon ?? "folder.fill",
-                            color: Color(hex: folder.displayColor),
-                            isSelected: selectedCategory == folder.name,
-                            id: folder.id.uuidString
-                        ) {
-                            selectCategory(folder.name, id: folder.id.uuidString)
-                        }
-                    }
-                    
+                                        // Categorías Predefinidas
+                                        ForEach(PredefinedCategory.allCases, id: \.self) { cat in
+                                            pillView(
+                                                title: cat.displayName,
+                                                icon: cat.icon,
+                                                color: cat.color,
+                                                isSelected: selectedCategory == cat.displayName,
+                                                id: cat.rawValue
+                                            ) {
+                                                selectCategory(cat.displayName, id: cat.rawValue)
+                                            }
+                                        }                    
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 20) // Aumentado para evitar corte de sombras

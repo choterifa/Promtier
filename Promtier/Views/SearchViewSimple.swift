@@ -43,6 +43,7 @@ struct SearchViewSimple: View {
     @State private var isBatchHovered = false
     @State private var isSettingsHovered = false
     @State private var isViewToggleHovered = false
+    @State private var isSidebarResizerHovered = false
     
     // Ghost Tips logic
     private var selectedPromptCategoryColor: Color {
@@ -376,17 +377,27 @@ struct SearchViewSimple: View {
                         .transition(.move(edge: .leading).combined(with: .opacity))
                         .overlay(alignment: .trailing) {
                             // Hit area invisible para redimensionar (15px al borde)
-                            Rectangle()
-                                .fill(Color.white.opacity(0.001))
-                                .frame(width: 15)
-                                .onHover { inside in
-                                    if inside { NSCursor.resizeLeftRight.push() }
-                                    else { NSCursor.pop() }
-                                    
-                                    // Sincronizar hover con la sidebar para el botón de categorías (con retraso al salir)
-                                    menuBarManager.setSidebarHovered(inside)
-                                }
-                                .gesture(
+                                                        ZStack(alignment: .trailing) {
+                                                            Rectangle()
+                                                                .fill(Color.white.opacity(0.001))
+                                                                .frame(width: 15)
+                                                            
+                                                            // Línea azul sutil para marcar la zona de mover elementos (redimensionar)
+                                                            Rectangle()
+                                                                .fill(Color.blue.opacity(0.5))
+                                                                .frame(width: 2)
+                                                                .padding(.vertical, 20)
+                                                                .opacity(isSidebarResizerHovered ? 1.0 : 0.0)
+                                                                .animation(.easeInOut(duration: 0.2), value: isSidebarResizerHovered)
+                                                        }
+                                                        .onHover { inside in
+                                                            isSidebarResizerHovered = inside
+                                                            if inside { NSCursor.resizeLeftRight.push() }
+                                                            else { NSCursor.pop() }
+                                                            
+                                                            // Sincronizar hover con la sidebar para el botón de categorías (con retraso al salir)
+                                                            menuBarManager.setSidebarHovered(inside)
+                                                        }                                .gesture(
                                     DragGesture(minimumDistance: 0, coordinateSpace: .named("sidebarContainer"))
                                         .onChanged { value in
                                             // Usamos la posición absoluta del mouse en el contenedor nombrado

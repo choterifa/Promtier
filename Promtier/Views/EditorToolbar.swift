@@ -18,7 +18,8 @@ struct EditorToolbar: View {
     // Snippets & Variables
     var onShowVariables: () -> Void
     var onShowSnippets: () -> Void
-    var onShowChains: () -> Void
+    @Binding var showingPromptChainPicker: Bool
+    var chainPopoverContent: (() -> AnyView)?
 
     // Zen Mode & Other
     var onZenMode: () -> Void
@@ -32,7 +33,7 @@ struct EditorToolbar: View {
          content: Binding<String>, selectedRange: Binding<NSRange?>,
          isAIGenerating: Bool, onAIAction: @escaping (AIAction) -> Void, aiEnabled: Bool,
          onShowVariables: @escaping () -> Void, onShowSnippets: @escaping () -> Void,
-         onShowChains: @escaping () -> Void, onZenMode: @escaping () -> Void,
+         showingPromptChainPicker: Binding<Bool>, chainPopoverContent: (() -> AnyView)? = nil, onZenMode: @escaping () -> Void,
          onFloatingMode: (() -> Void)? = nil,
          isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil,
          onStopAI: (() -> Void)? = nil) {
@@ -46,7 +47,8 @@ struct EditorToolbar: View {
         self.aiEnabled = aiEnabled
         self.onShowVariables = onShowVariables
         self.onShowSnippets = onShowSnippets
-        self.onShowChains = onShowChains
+        self._showingPromptChainPicker = showingPromptChainPicker
+        self.chainPopoverContent = chainPopoverContent
         self.onZenMode = onZenMode
         self.onFloatingMode = onFloatingMode
         self.isAutocompleting = isAutocompleting
@@ -185,11 +187,16 @@ struct EditorToolbar: View {
         .buttonStyle(.plain)
         .help("Insert Snippet")
 
-        Button(action: onShowChains) {
+        Button(action: { showingPromptChainPicker.toggle() }) {
             toolbarButton(icon: "link.badge.plus")
         }
         .buttonStyle(.plain)
         .help("Chain Another Prompt")
+        .popover(isPresented: $showingPromptChainPicker, arrowEdge: .leading) {
+            if let content = chainPopoverContent {
+                content()
+            }
+        }
 
         if let onFloating = onFloatingMode {
             Button(action: onFloating) {
@@ -216,11 +223,42 @@ struct EditorToolbar: View {
 
     @ViewBuilder
     private func toolbarButton(icon: String? = nil, text: String? = nil, isSpecial: Bool = false, active: Bool = false) -> some View {
+        ToolbarButtonView(
+            color: color,
+            themeColor: themeColor,
+            activeColor: activeColor,
+            magicRotationPhase: magicRotationPhase,
+            icon: icon,
+            text: text,
+            isSpecial: isSpecial,
+            active: active
+        )
+    }
+
+    private func send(_ action: PromtierEditorCommandAction) {
+        PromtierEditorCommandCenter.post(action, to: editorID)
+        HapticService.shared.playLight()
+    }
+}
+
+struct ToolbarButtonView: View {
+    let color: Color
+    let themeColor: Color
+    let activeColor: Color
+    let magicRotationPhase: Double
+    let icon: String?
+    let text: String?
+    let isSpecial: Bool
+    let active: Bool
+    
+    @State private var isHovered = false
+    
+    var body: some View {
         ZStack {
             Circle()
                 .fill(isSpecial && active 
                     ? color.opacity(0.35) 
-                    : (isSpecial ? color.opacity(0.22) : (active ? activeColor.opacity(0.25) : Color.primary.opacity(0.04))))
+                    : (isSpecial ? color.opacity(isHovered ? 0.3 : 0.22) : (active ? activeColor.opacity(0.25) : Color.primary.opacity(isHovered ? 0.08 : 0.04))))
                 .frame(width: 31, height: 31)
                 .shadow(color: isSpecial && active ? color.opacity(0.7) : .clear, radius: isSpecial && active ? 10 : 0)
 
@@ -249,12 +287,11 @@ struct EditorToolbar: View {
                 }
             }
         )
-        .scaleEffect(active ? 1.1 : 1.0)
+        .scaleEffect(active ? 1.1 : (isHovered ? 1.05 : 1.0))
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: active)
-    }
-
-    private func send(_ action: PromtierEditorCommandAction) {
-        PromtierEditorCommandCenter.post(action, to: editorID)
-        HapticService.shared.playLight()
+        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isHovered)
+        .onHover { hover in
+            isHovered = hover
+        }
     }
 }

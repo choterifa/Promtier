@@ -646,8 +646,22 @@ struct SidebarItem: View {
                 .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
                 .shadow(color: preferences.isHaloEffectEnabled && isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.blue, lineWidth: isDropTarget ? 2 : 0)
+                    Group {
+                        if isDropTarget {
+                            Rectangle()
+                                .fill(Color.blue)
+                                .frame(width: 3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .clipShape(
+                                    .rect(
+                                        topLeadingRadius: 10,
+                                        bottomLeadingRadius: 10,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: 0
+                                    )
+                                )
+                        }
+                    }
                 )
         )
         .contentShape(Rectangle())

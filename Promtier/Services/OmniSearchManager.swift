@@ -15,6 +15,29 @@ class OmniSearchPanel: NSPanel {
     
     // Spotlight-like windows often override this
     override var acceptsFirstResponder: Bool { true }
+    
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let keyCode = event.keyCode
+        
+        if keyCode == 125 { // Down
+            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
+            return true
+        } else if keyCode == 126 { // Up
+            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
+            return true
+        } else if keyCode == 36 || keyCode == 76 { // Enter / Return
+            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchSubmit"), object: nil)
+            return true
+        } else if keyCode == 53 { // Esc -> cerrar ventana
+            DispatchQueue.main.async { OmniSearchManager.shared.hide() }
+            return true
+        } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 8 { // Cmd + C
+            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchCopy"), object: nil)
+            return true
+        }
+        
+        return super.performKeyEquivalent(with: event)
+    }
 }
 
 class OmniSearchManager: NSObject, ObservableObject {
@@ -22,42 +45,12 @@ class OmniSearchManager: NSObject, ObservableObject {
     
     private var panel: OmniSearchPanel?
     private var cancellables = Set<AnyCancellable>()
-    private var eventMonitor: Any?
     private var previousApp: NSRunningApplication?
     
     @Published var isVisible: Bool = false
     
     private override init() {
         super.init()
-        setupGlobalMonitor()
-    }
-    
-    private func setupGlobalMonitor() {
-        // Monitor local para capturar flechas y escape globalmente cuando el panel esté activo
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self, self.isVisible else { return event }
-            
-            let keyCode = event.keyCode
-            
-            if keyCode == 125 { // Down
-                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
-                return nil
-            } else if keyCode == 126 { // Up
-                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
-                return nil
-            } else if keyCode == 36 || keyCode == 76 { // Enter / Return
-                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchSubmit"), object: nil)
-                return nil
-            } else if keyCode == 53 { // Esc -> cerrar ventana
-                DispatchQueue.main.async { self.hide() }
-                return nil
-            } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 8 { // Cmd + C
-                NotificationCenter.default.post(name: NSNotification.Name("OmniSearchCopy"), object: nil)
-                return nil
-            }
-            
-            return event
-        }
     }
     
     func toggle() {
