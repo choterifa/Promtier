@@ -561,7 +561,7 @@ class PreferencesManager: ObservableObject {
         } else {
             self.geminiAPIKey = ""
         }
-        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.0-flash"
+        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
         
         // OpenAI
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
@@ -707,7 +707,7 @@ class PreferencesManager: ObservableObject {
         self.geminiEnabled = false
         self.geminiAPIKey = ""
         _ = KeychainManager.shared.delete(key: "geminiAPIKey")
-        self.geminiDefaultModel = "gemini-2.0-flash"
+        self.geminiDefaultModel = "gemini-2.5-flash"
         self.preferredAIService = .openai
         self.openAIEnabled = true
         self.openAIApiKey = ""

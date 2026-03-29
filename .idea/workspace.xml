@@ -6,30 +6,35 @@
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/FloatingAIDraftView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/FloatingAIDraftView.swift" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/en.lproj/Localizable.strings" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/en.lproj/Localizable.strings" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/es.lproj/Localizable.strings" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/es.lproj/Localizable.strings" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/PreferencesView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/PreferencesView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="130" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "choterifa"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;choterifa&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/choterifa/Promtier.git",
-    "accountId": "c8310113-0728-4ddc-8f32-310f58833606"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/choterifa/Promtier.git&quot;,
+    &quot;accountId&quot;: &quot;c8310113-0728-4ddc-8f32-310f58833606&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -83,6 +88,7 @@
       <workItem from="1774646753775" duration="5006000" />
       <workItem from="1774687845015" duration="2740000" />
       <workItem from="1774790279964" duration="2672000" />
+      <workItem from="1774827254082" duration="646000" />
     </task>
     <servers />
   </component>

@@ -833,26 +833,24 @@ struct AITab: View {
                         SettingsRow(LocalizedStringKey("gemini_model_id".localized(for: preferences.language)),
                                     subtitle: LocalizedStringKey("gemini_model_subtitle".localized(for: preferences.language))) {
                             HStack(spacing: 8) {
-                                TextField("gemini-2.0-flash", text: $preferences.geminiDefaultModel)
+                                TextField("gemini-2.5-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
                                     .frame(width: 200)
 
                                 Menu {
-                                    Section("Gemini 3") {
-                                        Button("gemini-3-pro") { preferences.geminiDefaultModel = "gemini-3-pro" }
-                                        Button("gemini-3-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-3-flash" }
-                                        Button("gemini-3-flash-lite") { preferences.geminiDefaultModel = "gemini-3-flash-lite" }
-                                    }
                                     Section("Gemini 2.5") {
                                         Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
-                                        Button("gemini-2.5-flash") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
-                                        Button("gemini-2.5-flash-lite") { preferences.geminiDefaultModel = "gemini-2.5-flash-lite" }
+                                        Button("gemini-2.5-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
                                     }
                                     Section("Gemini 2.0") {
                                         Button("gemini-2.0-pro-exp-02-05") { preferences.geminiDefaultModel = "gemini-2.0-pro-exp-02-05" }
                                         Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
                                         Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
+                                    }
+                                    Section("Gemini 1.5") {
+                                        Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
+                                        Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
                                     }
                                 } label: {
                                     Image(systemName: "list.bullet.indent")

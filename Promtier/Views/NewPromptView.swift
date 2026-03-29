@@ -3020,12 +3020,6 @@ struct EditorCard: View {
                     )
             )
             .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
-            .overlay {
-                if isAIGenerating {
-                    AIGeneratingOverlay(accentColor: themeColor)
-                        .transition(.opacity)
-                }
-            }
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
@@ -3050,15 +3044,17 @@ struct EditorCard: View {
     private func performAIAction(_ action: AIAction) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-            
+
             guard useGemini || useOpenAI else { return }
 
             isAIGenerating = true
             HapticService.shared.playImpact()
+            withAnimation {
+                branchMessage = "ai_thinking".localized(for: preferences.language)
+            }
 
             // Cancelar cualquier generación previa antes de iniciar una nueva
             aiTask?.cancel()
-
             // Determinar qué fragmento procesar (selección o todo)
             let sourceText = plainTextContent.isEmpty ? content : plainTextContent
             let textToProcess: String
@@ -3092,6 +3088,7 @@ struct EditorCard: View {
                     
                     await MainActor.run {
                         self.isAIGenerating = false
+                        withAnimation { self.branchMessage = nil }
                         HapticService.shared.playSuccess()
                         if !fullResponse.isEmpty {
                             print("✅ AI Generation Success: \(fullResponse.count) characters")

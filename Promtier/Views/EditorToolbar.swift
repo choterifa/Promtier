@@ -145,12 +145,15 @@ struct EditorToolbar: View {
         }
 
         if aiEnabled {
+            Button(action: { onAIAction(.translate) }) {
+                toolbarButton(icon: "globe", isSpecial: true, active: false)
+            }
+            .buttonStyle(.plain)
+            .help("ai_action_translate".localized(for: preferences.language))
+
             Menu {
                 Button(action: { onAIAction(.enhance) }) {
                     Label("ai_action_enhance".localized(for: preferences.language), systemImage: "pencil.and.outline")
-                }
-                Button(action: { onAIAction(.translate) }) {
-                    Label("ai_action_translate".localized(for: preferences.language), systemImage: "globe")
                 }
                 Button(action: { onAIAction(.fix) }) {
                     Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")

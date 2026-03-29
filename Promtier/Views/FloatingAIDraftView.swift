@@ -195,6 +195,7 @@ struct FloatingAIDraftView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     let actions: [(String, String, String)] = [
+                        ("Traductor", "globe", "Traduce este prompt perfectamente al inglés si está en español, o al español si está en inglés, usando terminología adecuada de IA."),
                         ("Mejorar", "sparkles", "Mejora la redacción y claridad de este prompt, manteniendo su intención original pero haciéndolo más efectivo para IAs."),
                         ("A Inglés", "character.book.closed", "Traduce este prompt perfectamente al inglés, usando terminología adecuada de IA."),
                         ("A Español", "textformat", "Traduce este prompt perfectamente al español, manteniendo un tono claro y profesional."),
