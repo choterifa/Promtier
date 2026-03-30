@@ -959,6 +959,16 @@ struct ShortcutsTab: View {
                             defaultKeyCode: 45,
                             defaultModifiers: Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
                         )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "AI Quick Draft (Borrador)",
+                            hotkeyCode: $preferences.aiDraftHotkeyCode,
+                            hotkeyModifiers: $preferences.aiDraftHotkeyModifiers,
+                            defaultKeyCode: 2,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
                     }
                     .padding(20)
                 }

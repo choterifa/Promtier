@@ -159,7 +159,7 @@ class ShortcutManager: ObservableObject {
             _ = RegisterEventHotKey(npKeyCode, npCarbonMods, npHotKeyID, GetApplicationEventTarget(), 0, &newPromptHotKeyRef)
         }
         
-        // 6. HotKey AI Draft: global configurable (Cmd+Shift+I default)
+        // 6. HotKey AI Draft: global configurable (Cmd+Shift+D default)
         if prefs.aiDraftHotkeyCode != -1 {
             let aidKeyCode = UInt32(prefs.aiDraftHotkeyCode)
             var aidCarbonMods: UInt32 = 0

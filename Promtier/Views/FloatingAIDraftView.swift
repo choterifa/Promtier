@@ -25,142 +25,173 @@ struct FloatingAIDraftView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header y Actions
             headerBar
             
-            Divider().opacity(0.3)
+            Divider().opacity(0.12)
             
-            // Layout Principal (Entrada arriba, Salida abajo)
-            VStack(spacing: 0) {
-                // Entrada: TextEditor libre del borrador
-                ZStack(alignment: .topLeading) {
-                    if manager.content.isEmpty {
-                        Text("Pega o escribe tu borrador de prompt aquí...")
-                            .foregroundColor(.secondary.opacity(0.4))
-                            .font(.system(size: 14))
-                            .padding(.horizontal, 5).padding(.vertical, 8)
-                            .allowsHitTesting(false)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    // ── Content Area ──────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("CONTENIDO")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .tracking(1.5)
+                            Spacer()
+                        }
+                        .padding(.top, 16)
+                        
+                        ZStack(alignment: .topLeading) {
+                            if manager.content.isEmpty {
+                                Text("Pega o escribe tu borrador de prompt aquí...")
+                                    .foregroundColor(.secondary.opacity(0.4))
+                                    .font(.system(size: 14 * preferences.fontSize.scale))
+                                    .padding(.horizontal, 5).padding(.vertical, 1)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $manager.content)
+                                .font(.system(size: 14 * preferences.fontSize.scale))
+                                .lineSpacing(4)
+                                .scrollContentBackground(.hidden)
+                                .focused($isDraftFocused)
+                        }
+                        .padding(14)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.045)))
+                        .frame(height: responseText.isEmpty && !isGenerating ? 320 : 160)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: responseText.isEmpty)
                     }
-                    TextEditor(text: $manager.content)
-                        .font(.system(size: 14))
-                        .scrollContentBackground(.hidden)
-                        .focused($isDraftFocused)
-                }
-                .padding(12)
-                .frame(maxHeight: responseText.isEmpty && !isGenerating ? .infinity : 180)
-                
-                if !responseText.isEmpty || isGenerating || error != nil {
-                    Divider().opacity(0.3)
+                    .padding(.horizontal, 22)
                     
-                    // Salida IA
-                    ScrollView {
+                    if !responseText.isEmpty || isGenerating || error != nil {
+                        // AI Result Area integrated like a section
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("RESULTADO IA")
-                                    .font(.system(size: 9, weight: .black))
-                                    .foregroundColor(.purple)
-                                    .tracking(1.5)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 9, weight: .bold))
+                                    Text("RESULTADO IA")
+                                        .font(.system(size: 9, weight: .black))
+                                        .tracking(1.2)
+                                }
+                                .foregroundColor(.purple)
+                                
                                 Spacer()
                                 
                                 if !isGenerating {
                                     Button(action: {
-                                        manager.content = responseText
-                                        responseText = ""
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            manager.content = responseText
+                                            responseText = ""
+                                        }
                                         HapticService.shared.playLight()
                                     }) {
-                                        Label("Reemplazar Original", systemImage: "arrow.up.doc")
-                                            .font(.system(size: 10, weight: .bold))
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.up.doc.fill")
+                                            Text("Reemplazar")
+                                        }
+                                        .font(.system(size: 10, weight: .bold))
                                     }
                                     .buttonStyle(.plain)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.blue.opacity(0.8))
+                                    .padding(.horizontal, 8).padding(.vertical, 4)
+                                    .background(Capsule().fill(Color.blue.opacity(0.08)))
                                 }
                             }
+                            .padding(.top, 12)
                             
-                            if isGenerating {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .padding(.vertical, 10)
-                            } else if let error = error {
-                                Text(error)
-                                    .foregroundColor(.red)
-                                    .font(.system(size: 13, design: .monospaced))
-                            } else {
-                                Text(responseText)
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .textSelection(.enabled)
+                            VStack(alignment: .leading, spacing: 10) {
+                                if isGenerating {
+                                    HStack(spacing: 12) {
+                                        ProgressView().controlSize(.small)
+                                        Text("IA pensando...")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.vertical, 14)
+                                } else if let error = error {
+                                    Text(error)
+                                        .foregroundColor(.red)
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .padding(12)
+                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.red.opacity(0.08)))
+                                } else {
+                                    Text(responseText)
+                                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                                        .lineSpacing(4)
+                                        .textSelection(.enabled)
+                                        .padding(14)
+                                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.03)))
+                                }
                             }
                         }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 20)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .background(Color.primary.opacity(0.03))
-                    .frame(maxHeight: .infinity)
                 }
             }
             
-            Divider().opacity(0.3)
+            Divider().opacity(0.12)
             
-            // Footer (Opciones Chidas y Custom Command)
+            // Footer with Close/Save style
             footerBar
         }
-        .frame(width: 500, height: 500)
+        .frame(width: 440, height: 500)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
+                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
+                Color(NSColor.windowBackgroundColor).opacity(0.6)
                 
                 if preferences.isHaloEffectEnabled {
                     LinearGradient(
-                        gradient: Gradient(colors: [Color.purple.opacity(0.08), Color.blue.opacity(0.03)]),
+                        gradient: Gradient(colors: [Color.purple.opacity(0.06), Color(NSColor.windowBackgroundColor).opacity(0)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                } else {
-                    Color(NSColor.windowBackgroundColor).opacity(0.6)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
                 
                 WindowDragView()
             }
         )
-        .cornerRadius(20)
+        .cornerRadius(18)
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.primary.opacity(0.15), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.2), radius: 24, y: 12)
+        .shadow(color: .black.opacity(0.2), radius: 25, y: 12)
         .onAppear {
             isDraftFocused = true
         }
     }
     
     private var headerBar: some View {
-        HStack {
+        HStack(spacing: 0) {
+            // Botón de Cerrar
             Button(action: { manager.hide() }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.secondary)
-                    .padding(6)
+                    .padding(8)
                     .background(Circle().fill(Color.primary.opacity(0.06)))
             }
             .buttonStyle(.plain)
             
             Spacer()
             
-            HStack(spacing: 4) {
+            // Título centrado pill
+            HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.purple)
                 Text("AI Quick Draft")
-                    .font(.system(size: 11, weight: .black))
-                    .tracking(0.5)
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.2)
             }
-            .foregroundColor(.primary)
-            .padding(.horizontal, 16).padding(.vertical, 8)
-            .background(Capsule().fill(Color.primary.opacity(0.04))
-                .overlay(Capsule().stroke(Color.purple.opacity(0.15), lineWidth: 1))
-            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(Color.primary.opacity(0.05)))
+            .offset(x: 20)
             
             Spacer()
             
@@ -173,25 +204,31 @@ struct FloatingAIDraftView: View {
                 HapticService.shared.playSuccess()
                 manager.hide()
             }) {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(systemName: "doc.on.doc.fill")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 10))
                     Text("Copiar & Salir")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(Capsule().fill(Color.blue))
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(manager.content.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
+                        .shadow(color: manager.content.isEmpty ? .clear : Color.blue.opacity(0.3), radius: 8, y: 4)
+                )
             }
             .buttonStyle(.plain)
+            .disabled(manager.content.isEmpty)
         }
+        .frame(height: 60)
         .padding(.horizontal, 16)
-        .frame(height: 50)
+        .background(WindowDragView())
     }
     
     private var footerBar: some View {
         VStack(spacing: 0) {
-            // Hot actions ("Opciones Chidas")
+            // Acciones rápidas (Horizontal Scroll)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     let actions: [(String, String, String)] = [
@@ -205,43 +242,70 @@ struct FloatingAIDraftView: View {
                     
                     ForEach(actions, id: \.0) { action in
                         Button(action: { runAI(instruction: action.2) }) {
-                            HStack(spacing: 4) {
+                            HStack(spacing: 6) {
                                 Image(systemName: action.1).font(.system(size: 10))
-                                Text(action.0).font(.system(size: 11, weight: .medium))
+                                Text(action.0).font(.system(size: 10, weight: .bold))
                             }
                             .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.06)))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.05), lineWidth: 1))
+                            .background(
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.06))
+                                    .overlay(Capsule().stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                            )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PlainButtonStyle())
                         .disabled(!isAIAvailable || isGenerating || manager.content.isEmpty)
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 12)
             }
             
-            Divider().opacity(0.2)
+            Divider().opacity(0.1)
             
-            // Custom Instruction
+            // Custom Input
             HStack {
-                TextField("Escribe una instrucción para la IA (ej. hazlo más amable)...", text: $customCommand)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12))
-                    .onSubmit {
-                        if !customCommand.isEmpty { runAI(instruction: customCommand) }
+                HStack {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                    
+                    TextField("Escribe una instrucción para la IA...", text: $customCommand)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+                        .onSubmit {
+                            if !customCommand.isEmpty { runAI(instruction: customCommand) }
+                        }
+                    
+                    if !customCommand.isEmpty {
+                        Button(action: { customCommand = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
                     }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 10)
+                .background(Capsule().fill(Color.primary.opacity(0.04)).overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1)))
                 
                 Button(action: { runAI(instruction: customCommand) }) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundColor((isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) ? .blue : .secondary.opacity(0.3))
+                    ZStack {
+                        Circle()
+                            .fill((isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) ? Color.blue : Color.secondary.opacity(0.2))
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white)
+                            .offset(x: 1, y: -1)
+                    }
                 }
                 .buttonStyle(.plain)
                 .disabled(!isAIAvailable || isGenerating || customCommand.isEmpty || manager.content.isEmpty)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.primary.opacity(0.02))
+            .padding(.vertical, 14)
+            .background(Color.primary.opacity(0.01))
         }
     }
     
@@ -252,6 +316,7 @@ struct FloatingAIDraftView: View {
         responseText = ""
         isGenerating = true
         error = nil
+        customCommand = ""
         HapticService.shared.playImpact()
         
         let systemPrompt = """

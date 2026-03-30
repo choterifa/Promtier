@@ -427,6 +427,10 @@ class PreferencesManager: ObservableObject {
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
+        // Atajo AI Draft por defecto: ⌘⇧D (KeyCode 2, Command + Shift)
+        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 2
+        self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        
         // Atajo Omni-Search por defecto: ⌘⇧Space (KeyCode 49, Command + Shift)
         self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
         self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
@@ -617,8 +621,7 @@ class PreferencesManager: ObservableObject {
             if launchAtLogin {
                 if service.status != .enabled {
                     try service.register()
-                    print("✅ Inicio automático activado")
-                }
+               }
             } else {
                 if service.status == .enabled {
                     try service.unregister()
@@ -682,7 +685,7 @@ class PreferencesManager: ObservableObject {
         self.categoryHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
         self.newPromptHotkeyCode = 0
         self.newPromptHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.aiDraftHotkeyCode = 34
+        self.aiDraftHotkeyCode = 2
         self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .english
         self.autoPaste = false

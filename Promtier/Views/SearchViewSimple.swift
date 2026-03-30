@@ -73,6 +73,7 @@ struct SearchViewSimple: View {
             
             // Atajos Personalizables (Globales)
             GhostTip(title: "gt_fast_add_title".localized(for: preferences.language), icon: "bolt.fill", shortcut: preferences.shortcutDisplayString(keyCode: preferences.fastAddHotkeyCode, modifiers: preferences.fastAddHotkeyModifiers)),
+            GhostTip(title: "AI Quick Draft", icon: "sparkles", shortcut: preferences.shortcutDisplayString(keyCode: preferences.aiDraftHotkeyCode, modifiers: preferences.aiDraftHotkeyModifiers)),
             GhostTip(title: "gt_create_category_title".localized(for: preferences.language), icon: "folder.badge.plus", shortcut: preferences.shortcutDisplayString(keyCode: preferences.categoryHotkeyCode, modifiers: preferences.categoryHotkeyModifiers)),
             
             GhostTip(title: "settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),
@@ -520,26 +521,6 @@ struct SearchViewSimple: View {
                                 }
                                 .help("new_prompt".localized(for: preferences.language) + " (N)")
                                 
-                                // Botón de AI Draft (Abre panel tipo Fast Add para borradores rápidos AI)
-                                Button(action: {
-                                    FloatingAIDraftManager.shared.show()
-                                    HapticService.shared.playLight()
-                                }) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.purple)
-                                        .frame(width: 34, height: 34)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.purple.opacity(0.12))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .help("AI Quick Draft (Cmd+Shift+I)")
                                 
                                 // Botón de Selección en Lote
                                 Button(action: {

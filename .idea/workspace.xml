@@ -6,11 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Services/PreferencesManager.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/FloatingAIDraftView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/FloatingAIDraftView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/PreferencesView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/PreferencesView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,7 +13,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="130" />
+    <option name="cachedIndexableFilesCount" value="133" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -88,7 +83,8 @@
       <workItem from="1774646753775" duration="5006000" />
       <workItem from="1774687845015" duration="2740000" />
       <workItem from="1774790279964" duration="2672000" />
-      <workItem from="1774827254082" duration="646000" />
+      <workItem from="1774827254082" duration="5307000" />
+      <workItem from="1774834222154" duration="98000" />
     </task>
     <servers />
   </component>
