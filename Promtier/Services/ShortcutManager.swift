@@ -261,7 +261,32 @@ class ShortcutManager: ObservableObject {
         } else if id == 103 {
             MenuBarManager.shared.showWithState(.newPrompt)
         } else if id == 104 {
-            FloatingAIDraftManager.shared.show()
+            // Grab selection automatically for "Magic" experience
+            let pasteboard = NSPasteboard.general
+            let oldChangeCount = pasteboard.changeCount
+            
+            // CoreGraphics event simulation for Cmd+C
+            let source = CGEventSource(stateID: .hidSystemState)
+            let kVK_Command: CGKeyCode = 55
+            let kVK_ANSI_C: CGKeyCode = 8
+            
+            let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
+            let cDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: true)
+            cDown?.flags = .maskCommand
+            let cUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: false)
+            cUp?.flags = .maskCommand
+            let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
+            
+            cmdDown?.post(tap: .cghidEventTap)
+            cDown?.post(tap: .cghidEventTap)
+            cUp?.post(tap: .cghidEventTap)
+            cmdUp?.post(tap: .cghidEventTap)
+            
+            // Wait for pasteboard update
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
+                FloatingAIDraftManager.shared.show(content: selection ?? "", autoImprove: selection != nil)
+            }
         } else if let promptId = promptHotkeyMap[id] {
             // Notificar a PromptService para copiar
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)

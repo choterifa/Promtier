@@ -16,13 +16,15 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     
     @Published var content: String = ""
     @Published var isVisible: Bool = false
+    @Published var shouldAutoImprove: Bool = false
     
     private override init() {
         super.init()
     }
     
-    func show(content: String = "") {
+    func show(content: String = "", autoImprove: Bool = false) {
         self.content = content
+        self.shouldAutoImprove = autoImprove
         
         if panel == nil { createPanel() }
         

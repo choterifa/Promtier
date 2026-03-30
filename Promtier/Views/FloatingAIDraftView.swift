@@ -162,6 +162,23 @@ struct FloatingAIDraftView: View {
         .shadow(color: .black.opacity(0.2), radius: 25, y: 12)
         .onAppear {
             isDraftFocused = true
+            checkAutoImprove()
+        }
+        .onChange(of: manager.isVisible) { visible in
+            if visible {
+                isDraftFocused = true
+                checkAutoImprove()
+            }
+        }
+    }
+    
+    private func checkAutoImprove() {
+        if manager.shouldAutoImprove && !manager.content.isEmpty {
+            // Un pequeño delay para que la transición de la ventana termine y se sienta natural
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                runAI(instruction: "Mejora la redacción y claridad de este prompt, manteniendo su intención original pero haciéndolo más efectivo para IAs.")
+                manager.shouldAutoImprove = false
+            }
         }
     }
     
