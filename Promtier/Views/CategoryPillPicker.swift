@@ -23,6 +23,10 @@ struct CategoryPillPicker: View {
     @State private var selectedNewColor: Color = .blue
     @State private var isPlusHovered = false
     
+    // Estado para eliminación de categoría
+    @State private var folderToDelete: Folder? = nil
+    @State private var showingDeleteAlert = false
+    
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
     // Lista ordenada de todos los IDs para navegación secuencial
@@ -61,6 +65,14 @@ struct CategoryPillPicker: View {
             }
             
             scrollViewContent
+        }
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
+            Button("delete".localized(for: preferences.language), role: .destructive) {
+                deleteCategory(folder)
+            }
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+        } message: { folder in
+            Text("delete_category_generic_msg".localized(for: preferences.language))
         }
     }
     
@@ -101,16 +113,25 @@ struct CategoryPillPicker: View {
                                         }
                     
                                                             // Carpetas Personalizadas del Usuario (Las más nuevas primero, justo después de sin categoría)
-                                                            ForEach(promptService.folders.filter { !PredefinedCategory.allCases.map { $0.displayName }.contains($0.name) }, id: \.id) { folder in                                            pillView(
-                                                title: folder.name,
-                                                icon: folder.icon ?? "folder.fill",
-                                                color: Color(hex: folder.displayColor),
-                                                isSelected: selectedCategory == folder.name,
-                                                id: folder.id.uuidString
-                                            ) {
-                                                selectCategory(folder.name, id: folder.id.uuidString)
+                                                            ForEach(promptService.folders.filter { !PredefinedCategory.allCases.map { $0.displayName }.contains($0.name) }, id: \.id) { folder in
+                                                pillView(
+                                                    title: folder.name,
+                                                    icon: folder.icon ?? "folder.fill",
+                                                    color: Color(hex: folder.displayColor),
+                                                    isSelected: selectedCategory == folder.name,
+                                                    id: folder.id.uuidString
+                                                ) {
+                                                    selectCategory(folder.name, id: folder.id.uuidString)
+                                                }
+                                                .contextMenu {
+                                                    Button(role: .destructive) {
+                                                        folderToDelete = folder
+                                                        showingDeleteAlert = true
+                                                    } label: {
+                                                        Label("delete".localized(for: preferences.language), systemImage: "trash")
+                                                    }
+                                                }
                                             }
-                                        }
                     
                                         // Categorías Predefinidas
                                         ForEach(PredefinedCategory.allCases, id: \.self) { cat in
@@ -310,6 +331,20 @@ struct CategoryPillPicker: View {
                 if let newId = promptService.folders.first(where: { $0.name == selectedCategory })?.id.uuidString {
                     scrollTo(newId)
                 }
+            }
+        }
+    }
+    
+    private func deleteCategory(_ folder: Folder) {
+        let nameToDelete = folder.name
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            if promptService.deleteFolder(folder) {
+                // Si la categoría eliminada era la seleccionada, volver a General
+                if selectedCategory == nameToDelete {
+                    selectedCategory = nil
+                    scrollTo("uncategorized")
+                }
+                HapticService.shared.playSuccess()
             }
         }
     }

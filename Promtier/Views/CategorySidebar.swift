@@ -140,8 +140,8 @@ struct CategorySidebar: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.top, 32)
-            .padding(.bottom, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
             
             if isSystemSectionExpanded {
                 VStack(spacing: 4) {
