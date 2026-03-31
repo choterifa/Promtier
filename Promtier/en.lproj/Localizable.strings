@@ -204,6 +204,9 @@
 "hide_categories" = "Hide Categories";
 "hide_sidebar_help" = "Hide Sidebar (⌘B)";
 "show_sidebar_help" = "Show Sidebar (⌘B)";
+"gallery_toggle" = "Gallery / List";
+"auto_hide_sidebar_gallery" = "Auto-hide Sidebar";
+"auto_hide_sidebar_gallery_subtitle" = "Automatically collapse the sidebar when entering Gallery mode";
 "cancel_selection_help" = "Cancel Selection";
 "batch_selection_help" = "Batch Selection";
 "new_category" = "New Category";

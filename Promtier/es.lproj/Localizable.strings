@@ -225,6 +225,9 @@
 "hide_categories" = "Ocultar Categorías";
 "hide_sidebar_help" = "Ocultar Sidebar (⌘B)";
 "show_sidebar_help" = "Mostrar Sidebar (⌘B)";
+"gallery_toggle" = "Galería / Lista";
+"auto_hide_sidebar_gallery" = "Auto-ocultar Sidebar";
+"auto_hide_sidebar_gallery_subtitle" = "Colapsa el panel lateral al entrar en modo Galería para ganar espacio";
 "cancel_selection_help" = "Cancelar Selección";
 "batch_selection_help" = "Selección en Lote";
 "new_category" = "Nueva Categoría";

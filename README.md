@@ -79,7 +79,8 @@ Política de activación para aplicaciones de menu bar.
 3. **Copiar prompt**: Click en cualquier prompt o usa su atajo personalizado
 4. **Crear/editar**: Botón `+`, menú contextual o `Cmd + N`
 5. **Vista previa**: `Espacio` sobre un prompt seleccionado
-6. **Ajustes**: `Cmd + ,`
+6. **Alternar Galería**: `Cmd + G`
+7. **Ajustes**: `Cmd + ,`
 
 ## 📝 Notas
 

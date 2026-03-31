@@ -59,6 +59,12 @@ class PreferencesManager: ObservableObject {
         }
     }
 
+    @Published var autoHideSidebarInGallery: Bool {
+        didSet {
+            userDefaults.set(autoHideSidebarInGallery, forKey: "autoHideSidebarInGallery")
+        }
+    }
+
     @Published var sidebarWidth: CGFloat {
         didSet {
             userDefaults.set(sidebarWidth, forKey: "sidebarWidth")
@@ -409,6 +415,8 @@ class PreferencesManager: ObservableObject {
         self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
         // Vista de grid (tarjetas) por defecto en false
         self.isGridView = userDefaults.bool(forKey: "isGridView")
+        // Ocultar sidebar en galería por defecto en true (comportamiento original solicitado)
+        self.autoHideSidebarInGallery = userDefaults.object(forKey: "autoHideSidebarInGallery") == nil ? true : userDefaults.bool(forKey: "autoHideSidebarInGallery")
         let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")
         self.sidebarWidth = savedSidebarWidth > 0 ? min(350, max(200, CGFloat(savedSidebarWidth))) : 220
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
@@ -674,6 +682,7 @@ class PreferencesManager: ObservableObject {
         self.launchAtLogin = false
         self.showSidebar = true
         self.isGridView = false
+        self.autoHideSidebarInGallery = true
         self.closeOnCopy = true
         self.soundEnabled = true
         self.hapticFeedbackEnabled = true

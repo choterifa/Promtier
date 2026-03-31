@@ -70,6 +70,7 @@ struct SearchViewSimple: View {
             GhostTip(title: "gt_edit_from_preview".localized(for: preferences.language), icon: "pencil.and.outline", shortcut: "E"),
             GhostTip(title: "toggle_sidebar".localized(for: preferences.language), icon: "sidebar.left", shortcut: "Cmd + B"),
             GhostTip(title: "new_prompt".localized(for: preferences.language), icon: "plus", shortcut: "Cmd + N"),
+            GhostTip(title: "gallery_toggle".localized(for: preferences.language), icon: "square.grid.2x2", shortcut: "Cmd + G"),
             
             // Atajos Personalizables (Globales)
             GhostTip(title: "gt_fast_add_title".localized(for: preferences.language), icon: "bolt.fill", shortcut: preferences.shortcutDisplayString(keyCode: preferences.fastAddHotkeyCode, modifiers: preferences.fastAddHotkeyModifiers)),
@@ -428,7 +429,9 @@ struct SearchViewSimple: View {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                         preferences.isGridView.toggle()
-                                        preferences.showSidebar = !preferences.isGridView
+                                        if preferences.autoHideSidebarInGallery {
+                                            preferences.showSidebar = !preferences.isGridView
+                                        }
                                     }
                                 }) {
                                     Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
@@ -859,6 +862,18 @@ struct SearchViewSimple: View {
         }
         if modifiers == .command && keyCode == 11 {
             DispatchQueue.main.async { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { preferences.showSidebar.toggle() } }
+            return nil
+        }
+        // Cmd + G: Alternar modo Galería
+        if modifiers == .command && keyCode == 5 {
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    preferences.isGridView.toggle()
+                    if preferences.autoHideSidebarInGallery {
+                        preferences.showSidebar = !preferences.isGridView
+                    }
+                }
+            }
             return nil
         }
         if keyCode == 49 { // Space

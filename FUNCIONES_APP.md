@@ -53,7 +53,7 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
     - **Edición**: `Cmd+S` para guardar, `Cmd+B` para sidebar, `Cmd+,` para Ajustes.
     - **Formato**: `Cmd+B` negrita, `Cmd+I` cursiva, `Cmd+Shift+L` lista.
     - **Enfoque**: `⌥N` para Negative, `⌥A` para Alternative, `⌥V` para Variables.
-    - **Navegación**: `↑ / ↓` para mover selección, `Cmd+B` para Sidebar.
+    - **Navegación**: `↑ / ↓` para mover selección, `Cmd + B` para Sidebar, `Cmd + G` para Galería/Lista.
 - **Undo Safe**: Limpieza de historial de deshecho en ediciones automáticas para evitar crashes.
 - **Cierre Natural del Editor**:
     - El editor vuelve a cerrarse normalmente al hacer clic fuera de la app.

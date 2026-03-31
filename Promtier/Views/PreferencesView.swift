@@ -412,6 +412,13 @@ struct AppearanceTab: View {
                             .toggleStyle(.switch)
                     }
                 }
+
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("auto_hide_sidebar_gallery", subtitle: "auto_hide_sidebar_gallery_subtitle") {
+                    Toggle("", isOn: $preferences.autoHideSidebarInGallery)
+                        .toggleStyle(.switch)
+                }
             }
             
             SettingsSection(title: "window", icon: "macwindow.badge.plus") {
@@ -991,6 +998,8 @@ struct ShortcutsTab: View {
                 ShortcutRow(label: "toggle_sidebar",    shortcut: "⌘B")
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "new_prompt",               shortcut: "⌘N")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "gallery_toggle",           shortcut: "⌘G")
             }
             
             // Editor de prompt

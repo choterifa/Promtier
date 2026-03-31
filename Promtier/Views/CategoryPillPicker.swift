@@ -72,7 +72,12 @@ struct CategoryPillPicker: View {
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
         } message: { folder in
-            Text("delete_category_generic_msg".localized(for: preferences.language))
+            let count = promptService.prompts.filter { $0.folder == folder.name }.count
+            if count > 0 {
+                Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
+            } else {
+                Text("delete_category_generic_msg".localized(for: preferences.language))
+            }
         }
     }
     
