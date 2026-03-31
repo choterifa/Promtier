@@ -62,6 +62,7 @@ struct NewPromptView: View {
     @State private var newTag: String = ""
     @State private var showingTagEditor: Bool = false
     @State private var showingCloseAlert: Bool = false
+    @State private var selectedImageIndex: Int = 0 // Track which image is selected for spacebar preview
     
     // Magic Options State
     @State private var showingMagicOptions: Bool = false
@@ -1328,6 +1329,45 @@ struct NewPromptView: View {
                 }
             }
 
+            // Image Gallery Navigation (Left/Right) when no focus
+            if !self.showcaseImages.isEmpty && (NSApp.keyWindow?.firstResponder is NSTextView == false && NSApp.keyWindow?.firstResponder is NSTextField == false) {
+                if event.keyCode == 123 { // Left Arrow
+                    DispatchQueue.main.async {
+                        self.selectedImageIndex = max(0, self.selectedImageIndex - 1)
+                    }
+                    return nil
+                }
+                if event.keyCode == 124 { // Right Arrow
+                    DispatchQueue.main.async {
+                        self.selectedImageIndex = min(self.showcaseImages.count - 1, self.selectedImageIndex + 1)
+                    }
+                    return nil
+                }
+            }
+
+            // Spacebar -> Toggle Preview of selected image
+            if event.keyCode == 49 { // Space
+                // Check if any text field has focus
+                let hasFocus = NSApp.keyWindow?.firstResponder is NSTextView || NSApp.keyWindow?.firstResponder is NSTextField
+                
+                if !hasFocus || self.showingFullScreenImage != nil {
+                    DispatchQueue.main.async {
+                        if self.showingFullScreenImage != nil {
+                            withAnimation(.spring(response: 0.3)) {
+                                self.showingFullScreenImage = nil
+                            }
+                        } else if !self.showcaseImages.isEmpty {
+                            let idx = min(self.selectedImageIndex, self.showcaseImages.count - 1)
+                            withAnimation(.spring(response: 0.35)) {
+                                self.showingFullScreenImage = self.showcaseImages[idx]
+                            }
+                            if self.preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                        }
+                    }
+                    return nil
+                }
+            }
+
             // Cmd + S -> Save
             if modifiers.contains(.command) && event.keyCode == 1 { // 'S' is key code 1
                 DispatchQueue.main.async {
@@ -1690,22 +1730,6 @@ struct NewPromptView: View {
                         .transition(.opacity)
                     }
 
-                    Button(action: {
-                        withAnimation(.spring()) {
-                            isFavorite.toggle()
-                        }
-                        HapticService.shared.playAlignment()
-                    }) {
-                        Image(systemName: isFavorite ? "star.fill" : "star")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(themeColor)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(themeColor.opacity(isFavorite ? (isHoveringFavorite ? 0.35 : 0.25) : (isHoveringFavorite ? 0.25 : 0.1))))
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringFavorite = $0 }
-                    .animation(.easeInOut(duration: 0.2), value: isHoveringFavorite)
-                    .help("favorite".localized(for: preferences.language))
 
                     Button(action: {
                         // Force save current draft state
@@ -1852,8 +1876,17 @@ struct NewPromptView: View {
                             imageData: showcaseImages[index],
                             slotWidth: slotWidth,
                             slotHeight: slotHeight,
-                            onRemove: { showcaseImages.remove(at: index) },
-                            onPreview: { showingFullScreenImage = showcaseImages[index] },
+                            isSelected: selectedImageIndex == index,
+                            onRemove: { 
+                                showcaseImages.remove(at: index)
+                                if selectedImageIndex >= showcaseImages.count {
+                                    selectedImageIndex = max(0, showcaseImages.count - 1)
+                                }
+                            },
+                            onPreview: { 
+                                selectedImageIndex = index
+                                showingFullScreenImage = showcaseImages[index] 
+                            },
                             onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
                             onDragStart: { self.draggedImageIndex = index }
                         )
@@ -1964,8 +1997,10 @@ struct NewPromptView: View {
         if showcaseImages.count < 3 {
             if let targetIndex = index, targetIndex < showcaseImages.count {
                 showcaseImages.insert(data, at: targetIndex)
+                selectedImageIndex = targetIndex
             } else {
                 showcaseImages.append(data)
+                selectedImageIndex = showcaseImages.count - 1
             }
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
@@ -3639,6 +3674,7 @@ struct ImageSlotView: View {
     let imageData: Data
     let slotWidth: CGFloat
     let slotHeight: CGFloat
+    let isSelected: Bool
     let onRemove: () -> Void
     let onPreview: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
@@ -3660,7 +3696,7 @@ struct ImageSlotView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isTargeted ? Color.blue : Color.primary.opacity(0.05), lineWidth: isTargeted ? 2 : 1)
+                            .stroke(isTargeted || isSelected ? Color.blue : Color.primary.opacity(0.05), lineWidth: (isTargeted || isSelected) ? 2.5 : 1)
                     )
                     .onTapGesture(perform: onPreview)
                     .onDrag {
