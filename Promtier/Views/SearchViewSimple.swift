@@ -700,6 +700,19 @@ struct SearchViewSimple: View {
             }
         )
         .contextMenu { promptContextMenu(for: prompt) }
+        .popover(
+            isPresented: Binding(
+                get: { showingPreview && selectedPrompt?.id == prompt.id },
+                set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
+            ),
+            arrowEdge: .top
+        ) {
+            PromptPreviewView(
+                prompt: prompt,
+                isFullScreenImageOpen: $isFullScreenImageOpen,
+                onUse: { usePrompt(prompt) }
+            )
+        }
     }
 
     @ViewBuilder
@@ -923,8 +936,10 @@ struct SearchViewSimple: View {
             isNavigatingWithKeys = true
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    if currentIndex > 0 {
-                        selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                    // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
+                    let step = preferences.isGridView ? 2 : 1
+                    if currentIndex >= step {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex - step]
                         if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                         HapticService.shared.playLight()
                     }
@@ -940,8 +955,10 @@ struct SearchViewSimple: View {
             isNavigatingWithKeys = true
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    if currentIndex < promptService.filteredPrompts.count - 1 {
-                        selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                    // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
+                    let step = preferences.isGridView ? 2 : 1
+                    if currentIndex <= promptService.filteredPrompts.count - (step + 1) {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex + step]
                         if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                         HapticService.shared.playLight()
                     }
@@ -951,6 +968,40 @@ struct SearchViewSimple: View {
                 }
             }
             return nil
+        }
+        if keyCode == 123 { // Left
+            guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
+            isNavigatingWithKeys = true
+            DispatchQueue.main.async {
+                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                    if currentIndex > 0 {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex - 1]
+                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+                        HapticService.shared.playLight()
+                    }
+                }
+            }
+            return nil
+        }
+        if keyCode == 124 { // Right
+            guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
+            isNavigatingWithKeys = true
+            DispatchQueue.main.async {
+                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                    if currentIndex < promptService.filteredPrompts.count - 1 {
+                        selectedPrompt = promptService.filteredPrompts[currentIndex + 1]
+                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+                        HapticService.shared.playLight()
+                    }
+                }
+            }
+            return nil
+        }
+        if keyCode == 36 || keyCode == 76 { // Enter / Numpad Enter
+            if let prompt = selectedPrompt {
+                DispatchQueue.main.async { usePrompt(prompt) }
+                return nil
+            }
         }
         return event
     }
