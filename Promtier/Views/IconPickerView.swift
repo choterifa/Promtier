@@ -129,7 +129,7 @@ struct IconPickerView: View {
                     Image(systemName: "folder.fill")
                         .font(.system(size: 14))
                         .foregroundColor(selectedIcon == nil ? color : .secondary)
-                    Text("Usar icono de categoría")
+                    Text("use_category_icon_help".localized(for: preferences.language))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(selectedIcon == nil ? color : .secondary)
                 }

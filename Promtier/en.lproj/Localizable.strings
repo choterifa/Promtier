@@ -14,7 +14,7 @@
 "add_favorite" = "Add to favorites";
 "remove_favorite" = "Remove from favorites";
 "choose_icon" = "Choose Icon";
-"use_category_icon_help" = "Use category icon";
+"use_category_icon_help" = "Use default";
 "delete" = "Move to trash";
 "close" = "Close";
 "done" = "Done";

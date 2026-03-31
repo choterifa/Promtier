@@ -14,7 +14,7 @@
 "add_favorite" = "Añadir a favoritos";
 "remove_favorite" = "Quitar de favoritos";
 "choose_icon" = "Elegir Icono";
-"use_category_icon_help" = "Usar icono de categoría";
+"use_category_icon_help" = "Usar default";
 "delete" = "Mover a la papelera";
 "close" = "Cerrar";
 "done" = "Hecho";
