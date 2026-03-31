@@ -14,12 +14,11 @@
             symbolName = "*0x18ce76138">
             <Locations>
                <Location
-                  uuid = "93444582-45E0-4C5F-9B33-EF9A7D5549EB - 150ea3985c5d53d3"
+                  uuid = "93444582-45E0-4C5F-9B33-EF9A7D5549EB - 9e379fc99bc16718"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
-                  symbolName = "nw_printf_write_data::hex_chars"
-                  moduleName = "Network"
+                  symbolName = "*0x18ce76138"
                   usesParentBreakpointCondition = "Yes">
                </Location>
             </Locations>

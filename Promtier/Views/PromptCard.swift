@@ -215,27 +215,26 @@ struct PromptCard: View {
                     
                     if isRecommended {
                         HStack(spacing: 3) {
-                            if let activeApp = promptService.activeAppBundleID,
-                               let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
-                                let icon = NSWorkspace.shared.icon(forFile: path)
-                                Image(nsImage: icon)
-                                    .resizable()
-                                    .frame(width: 11, height: 11)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .symbolEffect(.pulse, isActive: isGlowAnimating)
+                            if let activeApp = promptService.activeAppBundleID {
+                                if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
+                                    let icon = NSWorkspace.shared.icon(forFile: path)
+                                    Image(nsImage: icon)
+                                        .resizable()
+                                        .frame(width: 11, height: 11)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 8, weight: .bold))
+                                }
+                                
+                                Text(getAppName(activeApp))
+                                    .font(.system(size: 9, weight: .bold))
                             }
-                            
-                            Text(getAppName(activeApp))
-                                .font(.system(size: 9, weight: .bold))
                         }
                         .foregroundColor(.purple)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.purple.opacity(isGlowAnimating ? 0.2 : 0.1))
+                        .background(Color.purple.opacity(0.15))
                         .clipShape(Capsule())
-                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isGlowAnimating)
                     }
                 }
                 
@@ -356,7 +355,7 @@ struct PromptCard: View {
         .contentShape(Rectangle())
         .onAppear {
             if isRecommended {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
                     isGlowAnimating = true
                 }
             }
