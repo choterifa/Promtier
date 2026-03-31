@@ -164,17 +164,7 @@ struct FloatingAIDraftView: View {
         .frame(width: 740, height: 540)
         .background(
             ZStack {
-                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                Color(NSColor.windowBackgroundColor).opacity(0.6)
-                
-                if preferences.isHaloEffectEnabled {
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.purple.opacity(0.06), Color(NSColor.windowBackgroundColor).opacity(0)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
-                
+                Color(NSColor.windowBackgroundColor)
                 WindowDragView()
             }
         )
@@ -309,30 +299,14 @@ struct FloatingAIDraftView: View {
             Spacer()
             
             // Botón de Copiar y Cerrar
-            Button(action: {
+            CopiarSalirButton(isEnabled: !manager.content.isEmpty) {
                 let textToCopy = responseText.isEmpty ? manager.content : responseText
                 guard !textToCopy.isEmpty else { return }
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(textToCopy, forType: .string)
                 HapticService.shared.playSuccess()
                 manager.hide()
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "doc.on.doc.fill")
-                        .font(.system(size: 10))
-                    Text("Copiar & Salir")
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(manager.content.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
-                        .shadow(color: manager.content.isEmpty ? .clear : Color.blue.opacity(0.3), radius: 8, y: 4)
-                )
             }
-            .buttonStyle(.plain)
-            .disabled(manager.content.isEmpty)
         }
         .frame(height: 60)
         .padding(.horizontal, 16)
@@ -354,19 +328,9 @@ struct FloatingAIDraftView: View {
                     ]
                     
                     ForEach(actions, id: \.0) { action in
-                        Button(action: { runAI(instruction: action.2) }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: action.1).font(.system(size: 10))
-                                Text(action.0).font(.system(size: 10, weight: .bold))
-                            }
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.primary.opacity(0.06))
-                                    .overlay(Capsule().stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                            )
+                        QuickDraftActionButton(title: action.0, icon: action.1) {
+                            runAI(instruction: action.2)
                         }
-                        .buttonStyle(PlainButtonStyle())
                         .disabled(!isAIAvailable || isGenerating || manager.content.isEmpty)
                     }
                 }
@@ -401,20 +365,9 @@ struct FloatingAIDraftView: View {
                 .padding(.horizontal, 12).padding(.vertical, 10)
                 .background(Capsule().fill(Color.primary.opacity(0.04)).overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1)))
                 
-                Button(action: { runAI(instruction: customCommand) }) {
-                    ZStack {
-                        Circle()
-                            .fill((isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) ? Color.blue : Color.secondary.opacity(0.2))
-                            .frame(width: 32, height: 32)
-                        
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(.white)
-                            .offset(x: 1, y: -1)
-                    }
+                SendDraftButton(isEnabled: isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) {
+                    runAI(instruction: customCommand)
                 }
-                .buttonStyle(.plain)
-                .disabled(!isAIAvailable || isGenerating || customCommand.isEmpty || manager.content.isEmpty)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -468,6 +421,101 @@ struct FloatingAIDraftView: View {
                     self.error = error.localizedDescription
                     self.isGenerating = false
                 }
+            }
+        }
+    }
+}
+
+struct CopiarSalirButton: View {
+    let isEnabled: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "doc.on.doc.fill")
+                    .font(.system(size: 10))
+                Text("Copiar & Salir")
+                    .font(.system(size: 11, weight: .bold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isEnabled ? (isHovered ? Color.blue.opacity(0.85) : Color.blue) : Color.gray.opacity(0.3))
+                    .shadow(color: isEnabled && isHovered ? Color.blue.opacity(0.4) : (isEnabled ? Color.blue.opacity(0.2) : .clear), radius: isHovered ? 12 : 8, y: 4)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+struct SendDraftButton: View {
+    let isEnabled: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(isEnabled ? (isHovered ? Color.blue.opacity(0.9) : Color.blue) : Color.secondary.opacity(0.2))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+                    .offset(x: 1, y: -1)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
+struct QuickDraftActionButton: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    @Environment(\.isEnabled) private var isEnabled
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 10))
+                Text(title).font(.system(size: 10, weight: .bold))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isEnabled ? (isHovered ? Color.blue.opacity(0.12) : Color.primary.opacity(0.06)) : Color.primary.opacity(0.03))
+                    .overlay(
+                        Capsule()
+                            .stroke(isEnabled ? (isHovered ? Color.blue.opacity(0.4) : Color.primary.opacity(0.1)) : Color.primary.opacity(0.05), lineWidth: 1)
+                    )
+            )
+            .foregroundColor(isEnabled ? (isHovered ? .blue : .primary) : .secondary.opacity(0.5))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
             }
         }
     }

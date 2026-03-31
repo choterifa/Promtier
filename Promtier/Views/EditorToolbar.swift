@@ -146,7 +146,7 @@ struct EditorToolbar: View {
 
         if aiEnabled {
             Button(action: { onAIAction(.translate) }) {
-                toolbarButton(icon: "globe", isSpecial: true, active: false)
+                toolbarButton(icon: "globe")
             }
             .buttonStyle(.plain)
             .help("ai_action_translate".localized(for: preferences.language))
@@ -166,7 +166,7 @@ struct EditorToolbar: View {
                     Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
                 }
             } label: {
-                toolbarButton(icon: "pencil.and.outline", isSpecial: false, active: isAIGenerating)
+                toolbarButton(icon: "pencil.and.outline", active: isAIGenerating)
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -220,11 +220,11 @@ struct EditorToolbar: View {
     }
 
     private var themeColor: Color {
-        preferences.isHaloEffectEnabled ? color : .blue
+        color
     }
 
     private var activeColor: Color {
-        preferences.isHaloEffectEnabled ? .purple : .blue
+        color
     }
 
     @ViewBuilder
