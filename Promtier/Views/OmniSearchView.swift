@@ -88,8 +88,8 @@ struct OmniSearchView: View {
             // Barra de Búsqueda Premium con distinción visual
             HStack(spacing: 15) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.blue)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.secondary.opacity(0.8))
                 
                 TextField("gt_search_prompts".localized(for: preferences.language), text: $query)
                     .textFieldStyle(.plain)
@@ -401,10 +401,10 @@ struct OmniSearchRow: View {
                 ZStack {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(categoryColor.opacity(0.08))
+                            .fill(categoryColor.opacity(0.06))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18)
-                                    .stroke(categoryColor.opacity(0.4), lineWidth: 1.5)
+                                    .stroke(categoryColor.opacity(0.25), lineWidth: 1.2)
                             )
                     } else if isHovered {
                         RoundedRectangle(cornerRadius: 18)

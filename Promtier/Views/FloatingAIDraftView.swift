@@ -277,33 +277,35 @@ struct FloatingAIDraftView: View {
     }
     
     private var headerBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             // Botón de Cerrar
             Button(action: { manager.hide() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundColor(.secondary)
                     .padding(8)
                     .background(Circle().fill(Color.primary.opacity(0.06)))
             }
             .buttonStyle(.plain)
             
-            Spacer()
-            
-            // Título centrado pill
+            // Título estilo Breadcrumb incorporado
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.purple)
                 Text("AI Quick Draft")
                     .font(.system(size: 10, weight: .heavy))
                     .tracking(1.2)
+                    .foregroundColor(.primary.opacity(0.8))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            .background(Capsule().fill(Color.primary.opacity(0.05)))
-            .offset(x: 20)
-            
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(Color.primary.opacity(0.04))
+                    .overlay(Capsule().stroke(Color.primary.opacity(0.06), lineWidth: 1))
+            )
+
             Spacer()
             
             // Botón de Copiar y Cerrar
