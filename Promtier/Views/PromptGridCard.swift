@@ -26,6 +26,7 @@ struct PromptGridCard: View {
     @State private var isTargetedForDrop = false
     @State private var fallbackShowcasePath: String? = nil
     @State private var isGlowAnimating = false
+    @State private var isAspectFit = false
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -138,33 +139,57 @@ struct PromptGridCard: View {
             }
             
             // Image Preview (if any)
-            if let thumbnailData = previewThumbnailData {
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 180)
-                    .overlay(
-                        DownsampledImageView(
-                            imageData: thumbnailData,
-                            cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
-                            maxPixelSize: 360,
-                            contentMode: .fill
+            if hasPreviewImage {
+                ZStack(alignment: .bottomTrailing) {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.03))
+                        .frame(height: 180)
+                        .overlay(
+                            Group {
+                                if let thumbnailData = previewThumbnailData {
+                                    DownsampledImageView(
+                                        imageData: thumbnailData,
+                                        cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
+                                        maxPixelSize: 360,
+                                        contentMode: isAspectFit ? .fit : .fill
+                                    )
+                                } else if let firstPath = previewRelativePath {
+                                    let url = ImageStore.shared.url(forRelativePath: firstPath)
+                                    DownsampledImageURLView(
+                                        imageURL: url,
+                                        cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
+                                        maxPixelSize: 360,
+                                        contentMode: isAspectFit ? .fit : .fill
+                                    )
+                                }
+                            }
                         )
-                    )
-                    .clipped()
-            } else if let firstPath = previewRelativePath {
-                let url = ImageStore.shared.url(forRelativePath: firstPath)
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 180)
-                    .overlay(
-                        DownsampledImageURLView(
-                            imageURL: url,
-                            cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
-                            maxPixelSize: 360,
-                            contentMode: .fill
-                        )
-                    )
-                    .clipped()
+                        .clipped()
+                    
+                    // Fit/Fill Control
+                    if isHovered {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                isAspectFit.toggle()
+                            }
+                            HapticService.shared.playLight()
+                        }) {
+                            Image(systemName: isAspectFit ? "arrow.up.left.and.arrow.down.right" : "arrow.down.forward.and.arrow.up.backward")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(5)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.1), radius: 2)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.85).combined(with: .opacity).animation(.spring(response: 0.3)),
+                            removal: .opacity.animation(.easeOut(duration: 0.2))
+                        ))
+                    }
+                }
             }
             
             // Content Snippet

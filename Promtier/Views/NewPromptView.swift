@@ -3704,7 +3704,7 @@ struct ImageSlotView: View {
                         return NSItemProvider(item: imageData as NSData, typeIdentifier: UTType.image.identifier)
                     }
                     .shadow(color: Color.black.opacity(isHovering ? 0.2 : 0.1), radius: isHovering ? 8 : 4, y: isHovering ? 4 : 2)
-                    .scaleEffect(isTargeted ? 1.05 : (isHovering ? 1.03 : 1.0))
+                    .scaleEffect(isTargeted ? 1.05 : (isHovering ? 1.015 : 1.0))
                     .animation(.spring(response: 0.3), value: isTargeted)
                     .animation(.spring(response: 0.3), value: isHovering)
                     .overlay(alignment: .bottomTrailing) {
