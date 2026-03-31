@@ -114,9 +114,17 @@ struct PromptGridCard: View {
                 
                 if isRecommended {
                     HStack(spacing: 3) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 8, weight: .bold))
-                            .symbolEffect(.pulse, isActive: isGlowAnimating)
+                        if let activeApp = promptService.activeAppBundleID,
+                           let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
+                            let icon = NSWorkspace.shared.icon(forFile: path)
+                            Image(nsImage: icon)
+                                .resizable()
+                                .frame(width: 11, height: 11)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 8, weight: .bold))
+                                .symbolEffect(.pulse, isActive: isGlowAnimating)
+                        }
                     }
                     .foregroundColor(.purple)
                     .padding(.horizontal, 6)

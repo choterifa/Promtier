@@ -136,6 +136,13 @@ struct PromptCard: View {
         return PredefinedCategory.fromString(folderName)?.color ?? .blue
     }
     
+    private func getAppName(_ bundleID: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return url.deletingPathExtension().lastPathComponent
+        }
+        return bundleID
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
             // Checkbox para selección en lote
@@ -208,10 +215,19 @@ struct PromptCard: View {
                     
                     if isRecommended {
                         HStack(spacing: 3) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 8, weight: .bold))
-                                .symbolEffect(.pulse, isActive: isGlowAnimating)
-                            Text("recommended".localized(for: preferences.language))
+                            if let activeApp = promptService.activeAppBundleID,
+                               let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
+                                let icon = NSWorkspace.shared.icon(forFile: path)
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .frame(width: 11, height: 11)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .symbolEffect(.pulse, isActive: isGlowAnimating)
+                            }
+                            
+                            Text(getAppName(activeApp))
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .foregroundColor(.purple)
