@@ -463,6 +463,7 @@
 "smart_recommendation" = "Recomendación Inteligente";
 "no_apps_assigned" = "Aún no hay aplicaciones asignadas a este prompt.";
 "assign_app" = "Asignar a Aplicación...";
+"current_app" = "App actual";
 "recommended" = "Recomendado";
 "select_app_title" = "Selecciona una Aplicación";
 "context_awareness" = "Conciencia Contextual";

@@ -421,6 +421,7 @@
 "smart_recommendation" = "Smart Recommendation";
 "no_apps_assigned" = "No applications assigned to this prompt yet.";
 "assign_app" = "Assign to Application...";
+"current_app" = "Current App";
 "recommended" = "Recommended";
 "select_app_title" = "Select an Application";
 "context_awareness" = "Contextual Awareness";
