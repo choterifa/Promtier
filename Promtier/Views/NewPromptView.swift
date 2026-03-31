@@ -133,6 +133,8 @@ struct NewPromptView: View {
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
     @State private var autoSaveWorkItem: DispatchWorkItem? = nil
+    /// Guard que impide que un auto-guardado pendiente se ejecute después de descartar
+    @State private var isDiscarding: Bool = false
     
     // Estados de Hover para la cabecera
     @State private var isHoveringCancel = false
@@ -934,6 +936,11 @@ struct NewPromptView: View {
     }
 
     private func discardChanges() {
+        // Cancelar inmediatamente cualquier auto-guardado pendiente para que no
+        // se ejecute después de que el usuario haya elegido Descartar.
+        isDiscarding = true
+        autoSaveWorkItem?.cancel()
+        autoSaveWorkItem = nil
         DraftService.shared.clearDraft()
         MenuBarManager.shared.isModalActive = false
         onClose()
@@ -1050,6 +1057,9 @@ struct NewPromptView: View {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
             }
+            // Cancelar auto-guardado pendiente al salir de la vista
+            autoSaveWorkItem?.cancel()
+            autoSaveWorkItem = nil
             MenuBarManager.shared.isModalActive = false
         }
         .onChange(of: draftState) { _, _ in
@@ -1064,8 +1074,14 @@ struct NewPromptView: View {
     }
 
     private func debounceAutoSave() {
+        // Si el usuario ya descartó los cambios, no programar ningún guardado
+        guard !isDiscarding else { return }
+        
         autoSaveWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
+        let workItem = DispatchWorkItem { [self] in
+            // Doble verificación: asegurarse de que no se haya descartado
+            // durante el tiempo de espera del debounce (2 s)
+            guard !isDiscarding else { return }
             // Solo auto-guardar si estamos editando un prompt existente
             // Y no guardar si el prompt está vacío
             if originalPrompt != nil && !title.trimmingCharacters(in: .whitespaces).isEmpty && !content.trimmingCharacters(in: .whitespaces).isEmpty {
