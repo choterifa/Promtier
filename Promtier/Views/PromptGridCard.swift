@@ -29,6 +29,7 @@ struct PromptGridCard: View {
     @State private var isAspectFit = false
     @State private var currentImageIndex = 0
     @State private var carouselScrollAccumulator: CGFloat = 0
+    @State private var carouselDirection: Int = 1 // 1 = forward (right), -1 = backward (left)
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -203,8 +204,11 @@ struct PromptGridCard: View {
                                         )
                                     }
                                 }
-                                .id(currentImageIndex) // Fuerza reconstrucción al cambiar de imagen
-                                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                                .id(currentImageIndex)
+                                .transition(.asymmetric(
+                                    insertion: .offset(x: carouselDirection > 0 ? 60 : -60).combined(with: .opacity),
+                                    removal: .offset(x: carouselDirection > 0 ? -60 : 60).combined(with: .opacity)
+                                ))
                             )
                             .clipped()
                             // Captura scroll horizontal del trackpad para cambiar imagen
@@ -442,17 +446,23 @@ struct PromptGridCard: View {
     
     private func handleCarouselScroll(deltaX: CGFloat, imageCount: Int) {
         carouselScrollAccumulator += deltaX
-        let threshold: CGFloat = 30
+        let threshold: CGFloat = 28
         if carouselScrollAccumulator > threshold {
             carouselScrollAccumulator = 0
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                currentImageIndex = max(0, currentImageIndex - 1)
+            let newIndex = max(0, currentImageIndex - 1)
+            guard newIndex != currentImageIndex else { return }
+            carouselDirection = -1
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                currentImageIndex = newIndex
             }
             HapticService.shared.playLight()
         } else if carouselScrollAccumulator < -threshold {
             carouselScrollAccumulator = 0
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                currentImageIndex = min(imageCount - 1, currentImageIndex + 1)
+            let newIndex = min(imageCount - 1, currentImageIndex + 1)
+            guard newIndex != currentImageIndex else { return }
+            carouselDirection = 1
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                currentImageIndex = newIndex
             }
             HapticService.shared.playLight()
         }
@@ -487,10 +497,16 @@ final class HorizontalScrollCaptureNSView: NSView {
     }
     
     override func scrollWheel(with event: NSEvent) {
-        if event.phase != [] || event.momentumPhase != [] {
+        let dx = abs(event.scrollingDeltaX)
+        let dy = abs(event.scrollingDeltaY)
+        
+        // Solo capturar si el gesto es predominantemente horizontal (dx > 2*dy)
+        // En todos los demás casos se pasa al nextResponder (el ScrollView de la galería)
+        let isHorizontalDominant = dx > dy * 2 && (event.phase != [] || event.momentumPhase != [])
+        if isHorizontalDominant {
             onScroll?(event.scrollingDeltaX)
         } else {
-            super.scrollWheel(with: event)
+            nextResponder?.scrollWheel(with: event)
         }
     }
 }
