@@ -31,8 +31,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         // Posicionar y en el centro
         if let screen = NSScreen.main {
             let visibleFrame = screen.visibleFrame
-            let panelWidth: CGFloat = 500
-            let panelHeight: CGFloat = 500
+            let panelWidth: CGFloat = 740
+            let panelHeight: CGFloat = 540
             let x = visibleFrame.midX - (panelWidth / 2)
             let y = visibleFrame.midY - (panelHeight / 2)
             panel?.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
@@ -56,7 +56,7 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         }
         
         let newPanel = FloatingAIPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 740, height: 540),
             styleMask: [.nonactivatingPanel, .borderless, .resizable],
             backing: .buffered,
             defer: false

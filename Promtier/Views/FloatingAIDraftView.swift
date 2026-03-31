@@ -30,115 +30,138 @@ struct FloatingAIDraftView: View {
             
             Divider().opacity(0.12)
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // ── Content Area ──────────────────────────────────────────
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("CONTENIDO")
-                                .font(.system(size: 9, weight: .black))
-                                .foregroundColor(.secondary.opacity(0.5))
-                                .tracking(1.5)
-                            Spacer()
-                        }
-                        .padding(.top, 16)
-                        
-                        ZStack(alignment: .topLeading) {
-                            if manager.content.isEmpty {
-                                Text("Pega o escribe tu borrador de prompt aquí...")
-                                    .foregroundColor(.secondary.opacity(0.4))
-                                    .font(.system(size: 14 * preferences.fontSize.scale))
-                                    .padding(.horizontal, 5).padding(.vertical, 1)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $manager.content)
-                                .font(.system(size: 14 * preferences.fontSize.scale))
-                                .lineSpacing(4)
-                                .scrollContentBackground(.hidden)
-                                .focused($isDraftFocused)
-                        }
-                        .padding(14)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.045)))
-                        .frame(height: responseText.isEmpty && !isGenerating ? 320 : 160)
-                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: responseText.isEmpty)
+            HStack(spacing: 0) {
+                // ── COLUMNA IZQUIERDA: INPUT ─────────────────────────────────
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("PROMPT ORIGINAL")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .tracking(1.5)
+                        Spacer()
                     }
-                    .padding(.horizontal, 22)
+                    .padding(.top, 20)
+                    .padding(.horizontal, 24)
                     
-                    if !responseText.isEmpty || isGenerating || error != nil {
-                        // AI Result Area integrated like a section
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 9, weight: .bold))
-                                    Text("RESULTADO IA")
-                                        .font(.system(size: 9, weight: .black))
-                                        .tracking(1.2)
-                                }
-                                .foregroundColor(.purple)
-                                
-                                Spacer()
-                                
-                                if !isGenerating {
-                                    Button(action: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                            manager.content = responseText
-                                            responseText = ""
-                                        }
-                                        HapticService.shared.playLight()
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.up.doc.fill")
-                                            Text("Reemplazar")
-                                        }
-                                        .font(.system(size: 10, weight: .bold))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.blue.opacity(0.8))
-                                    .padding(.horizontal, 8).padding(.vertical, 4)
-                                    .background(Capsule().fill(Color.blue.opacity(0.08)))
-                                }
+                    ZStack(alignment: .topLeading) {
+                        if manager.content.isEmpty {
+                            Text("Pega o escribe tu borrador aquí...")
+                                .foregroundColor(.secondary.opacity(0.4))
+                                .font(.system(size: 14 * preferences.fontSize.scale))
+                                .padding(.horizontal, 5).padding(.vertical, 1)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $manager.content)
+                            .font(.system(size: 14 * preferences.fontSize.scale))
+                            .lineSpacing(5)
+                            .scrollContentBackground(.hidden)
+                            .focused($isDraftFocused)
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
+                }
+                .frame(maxWidth: (responseText.isEmpty && !isGenerating && error == nil) ? .infinity : 370)
+                
+                // ── DIVISOR SUTIL ───────────────────────────────────────────
+                if !responseText.isEmpty || isGenerating || error != nil {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(width: 1)
+                        .padding(.vertical, 40)
+                        .transition(.opacity)
+                }
+                
+                // ── COLUMNA DERECHA: RESULTADO IA ──────────────────────────────
+                if !responseText.isEmpty || isGenerating || error != nil {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 9, weight: .bold))
+                                Text("RESULTADO IA")
+                                    .font(.system(size: 9, weight: .black))
+                                    .tracking(1.2)
                             }
-                            .padding(.top, 12)
+                            .foregroundColor(.purple)
                             
-                            VStack(alignment: .leading, spacing: 10) {
+                            Spacer()
+                            
+                            if !isGenerating {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        manager.content = responseText
+                                        responseText = ""
+                                    }
+                                    HapticService.shared.playLight()
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "arrow.left.arrow.right.circle.fill")
+                                        Text("Reemplazar")
+                                    }
+                                    .font(.system(size: 10, weight: .bold))
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(Capsule().fill(Color.blue.opacity(0.1)))
+                            }
+                        }
+                        .padding(.top, 20)
+                        .padding(.horizontal, 24)
+                        
+                        ScrollView(showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: 14) {
                                 if isGenerating {
                                     HStack(spacing: 12) {
                                         ProgressView().controlSize(.small)
-                                        Text("IA pensando...")
-                                            .font(.system(size: 12, weight: .medium))
+                                        Text("IA trabajando...")
+                                            .font(.system(size: 13, weight: .medium))
                                             .foregroundColor(.secondary)
                                     }
-                                    .padding(.vertical, 14)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.vertical, 40)
                                 } else if let error = error {
                                     Text(error)
                                         .foregroundColor(.red)
                                         .font(.system(size: 13, design: .monospaced))
-                                        .padding(12)
-                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.red.opacity(0.08)))
+                                        .padding(16)
+                                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.red.opacity(0.08)))
                                 } else {
                                     Text(responseText)
                                         .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                                        .lineSpacing(4)
+                                        .lineSpacing(5)
                                         .textSelection(.enabled)
-                                        .padding(14)
-                                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.03)))
+                                        .padding(18)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .fill(Color.purple.opacity(0.03))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 18)
+                                                        .stroke(Color.purple.opacity(0.08), lineWidth: 1)
+                                                )
+                                        )
                                 }
                             }
+                            .padding(.top, 12)
+                            .padding(.bottom, 24)
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.bottom, 20)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.horizontal, 24)
                     }
+                    .frame(width: 370)
+                    .background(Color.purple.opacity(0.015))
+                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
                 }
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: responseText.isEmpty)
             
             Divider().opacity(0.12)
             
-            // Footer with Close/Save style
             footerBar
         }
-        .frame(width: 440, height: 500)
+        .frame(width: 740, height: 540)
         .background(
             ZStack {
                 VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)

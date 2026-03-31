@@ -302,19 +302,19 @@ struct OmniSearchRow: View {
                 // Icono del Prompt con color dinámico
                 ZStack {
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isSelected ? Color.white.opacity(0.25) : categoryColor.opacity(0.12))
+                        .fill(categoryColor.opacity(0.12))
                         .frame(width: 46, height: 46)
                     
                     Image(systemName: prompt.icon ?? "doc.text.fill")
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(isSelected ? .white : categoryColor)
+                        .foregroundColor(categoryColor)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Text(prompt.title)
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(isSelected ? .white : .primary)
+                            .foregroundColor(.primary)
                             .lineLimit(1)
                         
                         // Indicadores rápidos (Badges)
@@ -322,20 +322,20 @@ struct OmniSearchRow: View {
                             if prompt.hasTemplateVariables() {
                                 Image(systemName: "curlybraces")
                                     .font(.system(size: 10, weight: .black))
-                                    .foregroundColor(isSelected ? .white.opacity(0.8) : .blue.opacity(0.8))
+                                    .foregroundColor(.blue.opacity(0.8))
                                     .help("Has variables")
                             }
                             
                             if !(prompt.negativePrompt?.isEmpty ?? true) {
                                 Circle()
-                                    .fill(isSelected ? .white.opacity(0.9) : Color.red.opacity(0.7))
+                                    .fill(Color.red.opacity(0.7))
                                     .frame(width: 5, height: 5)
                                     .help("Has negative prompt")
                             }
                             
                             if !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true) {
                                 Circle()
-                                    .fill(isSelected ? .white.opacity(0.7) : Color.green.opacity(0.6))
+                                    .fill(Color.green.opacity(0.6))
                                     .frame(width: 5, height: 5)
                                     .help("Has alternatives")
                             }
@@ -345,10 +345,10 @@ struct OmniSearchRow: View {
                         if let folder = prompt.folder, !folder.isEmpty {
                             Text(folder)
                                 .font(.system(size: 9, weight: .black))
-                                .foregroundColor(isSelected ? .white : categoryColor)
+                                .foregroundColor(categoryColor)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(isSelected ? Color.white.opacity(0.2) : categoryColor.opacity(0.12))
+                                .background(categoryColor.opacity(0.12))
                                 .clipShape(Capsule())
                         }
                         
@@ -360,10 +360,10 @@ struct OmniSearchRow: View {
                                 Text("recommended".localized(for: preferences.language))
                                     .font(.system(size: 11, weight: .black))
                             }
-                            .foregroundColor(isSelected ? .white : .purple)
+                            .foregroundColor(.purple)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(isSelected ? Color.white.opacity(0.2) : Color.purple.opacity(0.12))
+                            .background(Color.purple.opacity(0.12))
                             .clipShape(Capsule())
                         }
                     }
@@ -371,12 +371,12 @@ struct OmniSearchRow: View {
                     if let desc = prompt.promptDescription, !desc.isEmpty {
                         Text(desc)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(isSelected ? .white.opacity(0.85) : .secondary)
+                            .foregroundColor(.secondary)
                             .lineLimit(1)
                     } else {
                         Text(prompt.content)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(isSelected ? .white.opacity(0.75) : .secondary.opacity(0.7))
+                            .foregroundColor(.secondary.opacity(0.7))
                             .lineLimit(1)
                     }
                 }
@@ -401,7 +401,11 @@ struct OmniSearchRow: View {
                 ZStack {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(Color.blue)
+                            .fill(categoryColor.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(categoryColor.opacity(0.4), lineWidth: 1.5)
+                            )
                     } else if isHovered {
                         RoundedRectangle(cornerRadius: 18)
                             .fill(Color.primary.opacity(0.04))
