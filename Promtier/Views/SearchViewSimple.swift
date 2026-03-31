@@ -929,12 +929,18 @@ struct SearchViewSimple: View {
             }
         }
         if modifiers == .command && keyCode == 8 {
+            // Si hay texto seleccionado en el buscador, dejar que el sistema lo copie.
+            // Si NO hay selección de texto, copiar el prompt seleccionado en la lista.
+            if isSearchFocused && isTextSelectedInSearchField() {
+                return event
+            }
             if let prompt = selectedPrompt {
                 DispatchQueue.main.async { usePrompt(prompt) }
                 return nil
             }
         }
         if modifiers == .command && keyCode == 51 { // Cmd + Backspace
+            if isSearchFocused { return event }
             if let prompt = selectedPrompt {
                 DispatchQueue.main.async { deletePrompt(prompt) }
                 return nil
@@ -1289,6 +1295,14 @@ struct SearchViewSimple: View {
                 if !Task.isCancelled { self.scheduleNextGhostTip() }
             }
         }
+    }
+    private func isTextSelectedInSearchField() -> Bool {
+        guard let window = NSApp.keyWindow,
+              let fieldEditor = window.firstResponder as? NSTextView,
+              fieldEditor.selectedRange().length > 0 else {
+            return false
+        }
+        return true
     }
 }
 
