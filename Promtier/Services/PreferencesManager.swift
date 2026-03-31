@@ -17,6 +17,13 @@ enum AIService: String, Codable, CaseIterable {
     case openai = "openai"
 }
 
+struct DraftPreset: Codable, Identifiable, Equatable {
+    var id = UUID()
+    let title: String
+    let instruction: String
+    let icon: String
+}
+
 // SERVICIO: Gestión centralizada de preferencias con UserDefaults
 class PreferencesManager: ObservableObject {
     static let shared = PreferencesManager()
@@ -86,6 +93,12 @@ class PreferencesManager: ObservableObject {
     @Published var clipboardSuggestions: Bool {
         didSet {
             userDefaults.set(clipboardSuggestions, forKey: "clipboardSuggestions")
+        }
+    }
+
+    @Published var autoCopyDraft: Bool {
+        didSet {
+            userDefaults.set(autoCopyDraft, forKey: "autoCopyDraft")
         }
     }
 
@@ -244,6 +257,14 @@ class PreferencesManager: ObservableObject {
         didSet {
             userDefaults.set(aiDraftHotkeyModifiers, forKey: "aiDraftHotkeyModifiers")
             ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var draftPresets: [DraftPreset] {
+        didSet {
+            if let data = try? JSONEncoder().encode(draftPresets) {
+                userDefaults.set(data, forKey: "draftPresets")
+            }
         }
     }
     
@@ -417,208 +438,109 @@ class PreferencesManager: ObservableObject {
             pinnedFolderNames.insert(folderName, at: 0)
         }
     }
-    
-    private init() {
-        // Inicializar valores desde UserDefaults o defaults
+     private init() {
+        // 1. Inicializar todas las propiedades SIN usar self si es posible,
+        // o simplemente inicializar cada una antes de cualquier llamada a método.
+        
+        // 1. Initial property assignments (MUST NOT read other properties via self yet)
         self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "light") ?? .light
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
-        // Sidebar visible por defecto
         self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
-        // Vista de grid (tarjetas) por defecto en false
         self.isGridView = userDefaults.bool(forKey: "isGridView")
-        // Ocultar sidebar en galería por defecto en true (comportamiento original solicitado)
         self.autoHideSidebarInGallery = userDefaults.object(forKey: "autoHideSidebarInGallery") == nil ? true : userDefaults.bool(forKey: "autoHideSidebarInGallery")
         let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")
         self.sidebarWidth = savedSidebarWidth > 0 ? min(350, max(200, CGFloat(savedSidebarWidth))) : 220
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
+        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
+        self.clipboardSuggestions = userDefaults.object(forKey: "clipboardSuggestions") == nil ? true : userDefaults.bool(forKey: "clipboardSuggestions")
+        self.autoCopyDraft = userDefaults.object(forKey: "autoCopyDraft") == nil ? true : userDefaults.bool(forKey: "autoCopyDraft")
+        self.enableTrackpadCarousel = userDefaults.object(forKey: "enableTrackpadCarousel") == nil ? true : userDefaults.bool(forKey: "enableTrackpadCarousel")
+        self.onlySuggestFromBrowsers = true
+        self.customAllowedAppBundleIDs = Set(userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] ?? [])
+        
+        let savedWidth = userDefaults.object(forKey: "windowWidth") as? Double
+        self.windowWidth = (savedWidth != nil && savedWidth! > 0) ? min(900, max(500, CGFloat(savedWidth!))) : 800
+        let savedHeight = userDefaults.object(forKey: "windowHeight") as? Double
+        self.windowHeight = (savedHeight != nil && savedHeight! > 0) ? min(750, max(450, CGFloat(savedHeight!))) : 570
+        
+        // Non-persistent state defaults
+        self.isResizingVisible = false
+        self.previewWidth = 800  // Initial defaults
+        self.previewHeight = 570
+        
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
-        
-        // Háptica por defecto en true
-        if userDefaults.object(forKey: "hapticFeedbackEnabled") != nil {
-            self.hapticFeedbackEnabled = userDefaults.bool(forKey: "hapticFeedbackEnabled")
-        } else {
-            self.hapticFeedbackEnabled = true
-        }
-        
+        self.hapticFeedbackEnabled = userDefaults.object(forKey: "hapticFeedbackEnabled") == nil ? true : userDefaults.bool(forKey: "hapticFeedbackEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
-        
-        // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        
-        // Atajo AI Draft por defecto: ⌘⇧D (KeyCode 2, Command + Shift)
-        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 2
-        self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        
-        // Atajo Omni-Search por defecto: ⌘⇧Space (KeyCode 49, Command + Shift)
         self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
         self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        
-        // Atajo Fast-Add por defecto: ⌘⇧F (KeyCode 3, Command + Shift)
         self.fastAddHotkeyCode = userDefaults.object(forKey: "fastAddHotkeyCode") as? Int ?? 3
         self.fastAddHotkeyModifiers = userDefaults.object(forKey: "fastAddHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        
-        // Atajo Nueva Categoría por defecto: ⌘⌥N (KeyCode 45, Command + Option)
         self.categoryHotkeyCode = userDefaults.object(forKey: "categoryHotkeyCode") as? Int ?? 45
         self.categoryHotkeyModifiers = userDefaults.object(forKey: "categoryHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
-        
-        // Atajo Nuevo Prompt por defecto: ⌘⇧A (KeyCode 0, Command + Shift)
-        self.newPromptHotkeyCode = userDefaults.object(forKey: "newPromptHotkeyCode") as? Int ?? 0 // 'A'
+        self.newPromptHotkeyCode = userDefaults.object(forKey: "newPromptHotkeyCode") as? Int ?? 0
         self.newPromptHotkeyModifiers = userDefaults.object(forKey: "newPromptHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        
-        // Atajo AI Draft por defecto: ⌘⇧I (KeyCode 34, Command + Shift)
-        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 34 // 'I'
+        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 34
         self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.aiResponseLanguage = userDefaults.string(forKey: "aiResponseLanguage") ?? "auto"
-        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
-        
-        // Sugerencias de portapapeles: Solo desde navegadores y apps de la lista por defecto
-        if userDefaults.object(forKey: "clipboardSuggestions") != nil {
-            self.clipboardSuggestions = userDefaults.bool(forKey: "clipboardSuggestions")
-        } else {
-            self.clipboardSuggestions = true
-        }
-
-        // Siempre forzamos el filtrado por defecto como se solicitó
-        self.onlySuggestFromBrowsers = true
-
-        // Carrusel por trackpad activo por defecto
-        if userDefaults.object(forKey: "enableTrackpadCarousel") != nil {
-            self.enableTrackpadCarousel = userDefaults.bool(forKey: "enableTrackpadCarousel")
-        } else {
-            self.enableTrackpadCarousel = true
-        }
-        
-        // Custom apps
-        if let savedCustomApps = userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] {
-            self.customAllowedAppBundleIDs = Set(savedCustomApps)
-        } else {
-            self.customAllowedAppBundleIDs = []
-        }
-        
-        // Dimensiones de ventana (Defaults: 800x570, Max: 900x750, Min: 500x450)
-        let savedWidth = userDefaults.object(forKey: "windowWidth") as? Double
-        self.windowWidth = (savedWidth != nil && savedWidth! > 0) ? min(900, max(500, CGFloat(savedWidth!))) : 800
-        
-        let savedHeight = userDefaults.object(forKey: "windowHeight") as? Double
-        self.windowHeight = (savedHeight != nil && savedHeight! > 0) ? min(750, max(450, CGFloat(savedHeight!))) : 570
-        
-        // Nuevas propiedades
         self.showInDock = userDefaults.bool(forKey: "showInDock")
-        self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
+        self.showCopyNotifications = userDefaults.object(forKey: "showCopyNotifications") == nil ? true : userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
         self.hasSeenOnboarding = userDefaults.bool(forKey: "hasSeenOnboarding")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
-        
-        // Efectos visuales por defecto en true
-        if userDefaults.object(forKey: "visualEffectsEnabled") != nil {
-            self.visualEffectsEnabled = userDefaults.bool(forKey: "visualEffectsEnabled")
-        } else {
-            self.visualEffectsEnabled = true
-        }
-        
-        // Imágenes primero por defecto
+        self.visualEffectsEnabled = userDefaults.object(forKey: "visualEffectsEnabled") == nil ? true : userDefaults.bool(forKey: "visualEffectsEnabled")
         self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
-        
         self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
-        if userDefaults.object(forKey: "ghostTipsEnabled") != nil {
-            self.ghostTipsEnabled = userDefaults.bool(forKey: "ghostTipsEnabled")
-        } else {
-            self.ghostTipsEnabled = true
-        }
-
-        // Sugerencias de gestos por defecto en true
-        if userDefaults.object(forKey: "gestureHintsEnabled") != nil {
-            self.gestureHintsEnabled = userDefaults.bool(forKey: "gestureHintsEnabled")
-        } else {
-            self.gestureHintsEnabled = true
-        }
-        
-        // Desactivar animaciones por defecto en false (animadas por defecto)
+        self.ghostTipsEnabled = userDefaults.object(forKey: "ghostTipsEnabled") == nil ? true : userDefaults.bool(forKey: "ghostTipsEnabled")
+        self.gestureHintsEnabled = userDefaults.object(forKey: "gestureHintsEnabled") == nil ? true : userDefaults.bool(forKey: "gestureHintsEnabled")
         self.disableImageAnimations = userDefaults.bool(forKey: "disableImageAnimations")
+        self.showAdvancedFields = userDefaults.object(forKey: "showAdvancedFields") == nil ? true : userDefaults.bool(forKey: "showAdvancedFields")
+        self.isHaloEffectEnabled = userDefaults.object(forKey: "isHaloEffectEnabled") == nil ? true : userDefaults.bool(forKey: "isHaloEffectEnabled")
+        self.geminiAPIKey = KeychainManager.shared.read(key: "geminiAPIKey") ?? ""
+        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
+        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
+        self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
+        self.openAIApiKey = KeychainManager.shared.read(key: "openAIApiKey") ?? ""
+        self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
+        self.pinnedFolderNames = userDefaults.stringArray(forKey: "pinnedFolderNames") ?? []
+        self.snippets = [] // Assigned below
         
-        if userDefaults.object(forKey: "showAdvancedFields") != nil {
-            self.showAdvancedFields = userDefaults.bool(forKey: "showAdvancedFields")
+        if let data = userDefaults.data(forKey: "draftPresets"),
+           let decoded = try? JSONDecoder().decode([DraftPreset].self, from: data) {
+            self.draftPresets = decoded
         } else {
-            self.showAdvancedFields = true
+            self.draftPresets = [
+                DraftPreset(title: "Sarcástico", instruction: "Hacerlo sarcástico e ingenioso", icon: "face.smiling"),
+                DraftPreset(title: "Email Pro", instruction: "Reescribir como un email profesional", icon: "envelope.fill"),
+                DraftPreset(title: "Markdown", instruction: "Convertir a formato Markdown limpio", icon: "text.justify")
+            ]
         }
         
-        // Efectos de halo por defecto en true
-        if userDefaults.object(forKey: "isHaloEffectEnabled") != nil {
-            self.isHaloEffectEnabled = userDefaults.bool(forKey: "isHaloEffectEnabled")
-        } else {
-            self.isHaloEffectEnabled = true
-        }
+        // 2. NOW ALL properties are initialized. We can use self.
         
-        // Usar un idioma "seed" local para evitar acceder a `self.language` antes de terminar init
-        let seedLanguage = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
-
+        // Derived state
+        self.previewWidth = self.windowWidth
+        self.previewHeight = self.windowHeight
+        
+        let seedLang = self.language
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
             self.snippets = decoded
         } else {
-            // Snippets de ejemplo
             self.snippets = [
-                Snippet(
-                    title: "snippet_signature_title".localized(for: seedLanguage),
-                    content: "snippet_signature_content".localized(for: seedLanguage),
-                    shortcut: "snippet_signature_shortcut".localized(for: seedLanguage)
-                ),
-                Snippet(
-                    title: "snippet_bug_title".localized(for: seedLanguage),
-                    content: "snippet_bug_content".localized(for: seedLanguage),
-                    shortcut: "snippet_bug_shortcut".localized(for: seedLanguage)
-                ),
-                Snippet(
-                    title: "snippet_review_title".localized(for: seedLanguage),
-                    content: "snippet_review_content".localized(for: seedLanguage),
-                    shortcut: "snippet_review_shortcut".localized(for: seedLanguage)
-                )
+                Snippet(title: "snippet_signature_title".localized(for: seedLang), content: "snippet_signature_content".localized(for: seedLang), shortcut: "snippet_signature_shortcut".localized(for: seedLang)),
+                Snippet(title: "snippet_bug_title".localized(for: seedLang), content: "snippet_bug_content".localized(for: seedLang), shortcut: "snippet_bug_shortcut".localized(for: seedLang)),
+                Snippet(title: "snippet_review_title".localized(for: seedLang), content: "snippet_review_content".localized(for: seedLang), shortcut: "snippet_review_shortcut".localized(for: seedLang))
             ]
         }
         
-        // Gemini
-        self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
-        if let keychainGemini = KeychainManager.shared.read(key: "geminiAPIKey"), !keychainGemini.isEmpty {
-            self.geminiAPIKey = keychainGemini
-        } else if let udGemini = userDefaults.string(forKey: "geminiAPIKey"), !udGemini.isEmpty {
-            self.geminiAPIKey = udGemini
-            _ = KeychainManager.shared.save(key: "geminiAPIKey", data: udGemini)
-            userDefaults.removeObject(forKey: "geminiAPIKey")
-        } else {
-            self.geminiAPIKey = ""
-        }
-        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
-        
-        // OpenAI
-        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
-        self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
-        if let keychainOpenAI = KeychainManager.shared.read(key: "openAIApiKey"), !keychainOpenAI.isEmpty {
-            self.openAIApiKey = keychainOpenAI
-        } else if let udOpenAI = userDefaults.string(forKey: "openAIApiKey"), !udOpenAI.isEmpty {
-            self.openAIApiKey = udOpenAI
-            _ = KeychainManager.shared.save(key: "openAIApiKey", data: udOpenAI)
-            userDefaults.removeObject(forKey: "openAIApiKey")
-        } else {
-            self.openAIApiKey = ""
-        }
-        self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
-        
-        // Carpetas pineadas
-        self.pinnedFolderNames = userDefaults.stringArray(forKey: "pinnedFolderNames") ?? []
-        
-        // Sincronizar dimensiones para el HUD
-        self.previewWidth = self.windowWidth
-        self.previewHeight = self.windowHeight
-
         normalizeAISettings()
-        
-        // Aplicar configuración inicial
         applyAppearance()
         applyDockPolicy()
         applyLaunchAtLogin()
@@ -723,6 +645,7 @@ class PreferencesManager: ObservableObject {
         self.windowWidth = 800
         self.windowHeight = 570
         self.enableTrackpadCarousel = true
+        self.autoCopyDraft = true
         
         // Nuevas propiedades por defecto
         self.showInDock = false

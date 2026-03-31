@@ -18,6 +18,32 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     @Published var isVisible: Bool = false
     @Published var shouldAutoImprove: Bool = false
     
+    // Historial de la sesión (solo para la instancia actual, no se persiste)
+    struct AIDraftHistoryItem: Identifiable, Equatable {
+        let id = UUID()
+        let input: String
+        let output: String
+        let timestamp = Date()
+    }
+    
+    @Published var history: [AIDraftHistoryItem] = []
+    
+    func addToHistory(input: String, output: String) {
+        // Evitar duplicados consecutivos exactos
+        if let last = history.last, last.input == input && last.output == output {
+            return
+        }
+        
+        let newItem = AIDraftHistoryItem(input: input, output: output)
+        DispatchQueue.main.async {
+            self.history.append(newItem)
+            // Límite de 15 items para no saturar
+            if self.history.count > 15 {
+                self.history.removeFirst()
+            }
+        }
+    }
+    
     private override init() {
         super.init()
     }
