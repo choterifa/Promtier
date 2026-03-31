@@ -537,6 +537,12 @@ struct PromptPreviewView: View {
         }
         
         override func scrollWheel(with event: NSEvent) {
+            // Solo procesar si el usuario tiene activada la preferencia
+            guard PreferencesManager.shared.enableTrackpadCarousel else {
+                nextResponder?.scrollWheel(with: event)
+                return
+            }
+            
             guard event.phase != [] || event.momentumPhase != [] else {
                 super.scrollWheel(with: event)
                 return

@@ -88,6 +88,12 @@ class PreferencesManager: ObservableObject {
             userDefaults.set(clipboardSuggestions, forKey: "clipboardSuggestions")
         }
     }
+
+    @Published var enableTrackpadCarousel: Bool {
+        didSet {
+            userDefaults.set(enableTrackpadCarousel, forKey: "enableTrackpadCarousel")
+        }
+    }
     
     @Published var onlySuggestFromBrowsers: Bool {
         didSet {
@@ -478,6 +484,13 @@ class PreferencesManager: ObservableObject {
 
         // Siempre forzamos el filtrado por defecto como se solicitó
         self.onlySuggestFromBrowsers = true
+
+        // Carrusel por trackpad activo por defecto
+        if userDefaults.object(forKey: "enableTrackpadCarousel") != nil {
+            self.enableTrackpadCarousel = userDefaults.bool(forKey: "enableTrackpadCarousel")
+        } else {
+            self.enableTrackpadCarousel = true
+        }
         
         // Custom apps
         if let savedCustomApps = userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] {
@@ -709,6 +722,7 @@ class PreferencesManager: ObservableObject {
         self.onlySuggestFromBrowsers = true
         self.windowWidth = 800
         self.windowHeight = 570
+        self.enableTrackpadCarousel = true
         
         // Nuevas propiedades por defecto
         self.showInDock = false

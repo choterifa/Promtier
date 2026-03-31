@@ -10,8 +10,7 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject var manager: FloatingOnboardingManager
     @EnvironmentObject var preferences: PreferencesManager
-    @State private var currentStep: Int = 0
-    private let totalSteps = 9
+    private let totalSteps = 10
     
     var body: some View {
         ZStack {
@@ -35,45 +34,46 @@ struct OnboardingView: View {
                             .foregroundColor(.secondary.opacity(0.6))
                     }
                     .buttonStyle(.plain)
-                    .opacity(currentStep < totalSteps - 1 ? 1 : 0)
+                    .opacity(manager.currentStep < totalSteps - 1 ? 1 : 0)
                 }
                 .padding(.horizontal, 40)
                 .padding(.top, 35)
                 
                 // Contenido de los Pasos con transiciones suaves
                 ZStack {
-                    switch currentStep {
+                    switch manager.currentStep {
                     case 0: welcomeStep
                     case 1: omniSearchStep
                     case 2: aiDraftStep
                     case 3: magicStep
                     case 4: spaceStep
                     case 5: galleryStep
-                    case 6: versionsStep
-                    case 7: snippetsStep
-                    case 8: readyStep
+                    case 6: dragDropStep
+                    case 7: versionsStep
+                    case 8: snippetsStep
+                    case 9: readyStep
                     default: EmptyView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
-                .id(currentStep) // Forzar animación al cambiar paso
+                .id(manager.currentStep) // Forzar animación al cambiar paso
 
                 // Controles de Navegación
                 HStack(spacing: 20) {
                     HStack(spacing: 8) {
                         ForEach(0..<totalSteps, id: \.self) { index in
                             Capsule()
-                                .fill(currentStep == index ? Color.blue : Color.primary.opacity(0.1))
-                                .frame(width: currentStep == index ? 24 : 8, height: 8)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentStep)
+                                .fill(manager.currentStep == index ? Color.blue : Color.primary.opacity(0.1))
+                                .frame(width: manager.currentStep == index ? 24 : 8, height: 8)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: manager.currentStep)
                         }
                     }
                     
                     Spacer()
                     
-                    if currentStep > 0 {
-                        Button(action: { withAnimation { currentStep -= 1 } }) {
+                    if manager.currentStep > 0 {
+                        Button(action: { withAnimation { manager.currentStep -= 1 } }) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.secondary)
@@ -84,16 +84,16 @@ struct OnboardingView: View {
                     }
                     
                     Button(action: { 
-                        if currentStep < totalSteps - 1 {
-                            withAnimation { currentStep += 1 }
+                        if manager.currentStep < totalSteps - 1 {
+                            withAnimation { manager.currentStep += 1 }
                         } else {
                             manager.hide()
                         }
                     }) {
                         HStack(spacing: 8) {
-                            Text(currentStep == totalSteps - 1 ? "Comenzar" : "Siguiente")
+                            Text(manager.currentStep == totalSteps - 1 ? "Comenzar" : "Siguiente")
                                 .font(.system(size: 14, weight: .bold))
-                            Image(systemName: currentStep == totalSteps - 1 ? "checkmark.circle.fill" : "arrow.right")
+                            Image(systemName: manager.currentStep == totalSteps - 1 ? "checkmark.circle.fill" : "arrow.right")
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
@@ -400,6 +400,89 @@ struct OnboardingView: View {
     }
     
     @State private var isShowingGalleryAnim = false
+    @State private var isShowingDragAnim = false
+
+    private var dragDropStep: some View {
+        VStack(spacing: 35) {
+            VStack(spacing: 15) {
+                Text("Arrastra y Suelta").font(.system(size: 32, weight: .bold))
+                Text("Importa imágenes o exporta prompts con un solo movimiento.").font(.system(size: 16)).foregroundColor(.secondary)
+            }
+            
+            ZStack {
+                // Zona de soltado
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [8]))
+                    .frame(width: 400, height: 220)
+                    .background(RoundedRectangle(cornerRadius: 20).fill(Color.blue.opacity(0.01)))
+                
+                // Icono central
+                VStack(spacing: 15) {
+                    Image(systemName: "square.and.arrow.down.on.square.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.blue.opacity(0.4))
+                    Text("Suelta imágenes o prompts")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.5))
+                }
+                
+                // Elemento animado único (se hace una sola vez)
+                if isShowingDragAnim {
+                    OnboardingDragItem()
+                }
+            }
+            .frame(height: 250)
+            
+            Text("Lleva tus prompts a otras apps o añade referencias visuales al instante.")
+                .font(.system(size: 14)).foregroundColor(.blue)
+        }
+        .onAppear { 
+            isShowingDragAnim = true 
+        }
+        .onDisappear { 
+            isShowingDragAnim = false
+        }
+    }
+    
+    // Sub-vista para un item arrastrable
+    private struct OnboardingDragItem: View {
+        @State private var anim: Bool = false
+        
+        var body: some View {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.windowBackgroundColor))
+                .frame(width: 140, height: 90)
+                .shadow(color: .black.opacity(0.12), radius: 15, y: 10)
+                .overlay(
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6).fill(Color.blue.opacity(0.1))
+                            Image(systemName: "photo").foregroundColor(.blue).font(.system(size: 14))
+                        }
+                        .frame(width: 40, height: 40)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.1)).frame(width: 50, height: 4)
+                            RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.05)).frame(width: 30, height: 4)
+                        }
+                    }
+                    .padding(12)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                )
+                .offset(x: anim ? 0 : -180, y: anim ? 0 : -80)
+                .rotationEffect(.degrees(anim ? 0 : -10))
+                .scaleEffect(anim ? 0.9 : 1.1)
+                .opacity(anim ? 0 : 1)
+                .onAppear {
+                    // Animación de una sola ejecución (sin repeatForever)
+                    withAnimation(.easeInOut(duration: 2.2).delay(0.5)) {
+                        anim = true
+                    }
+                }
+        }
+    }
 
     private var versionsStep: some View {
         VStack(spacing: 35) {

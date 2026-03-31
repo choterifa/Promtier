@@ -485,8 +485,15 @@ struct BehaviorTab: View {
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "interaction", icon: "hand.tap.fill") {
-                SettingsRow("sounds", subtitle: "sounds_subtitle") {
+                SettingsRow("sounds", subtitle: "sounds_subtitle", icon: "speaker.wave.2.fill", iconColor: .blue) {
                     Toggle("", isOn: $preferences.soundEnabled)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+
+                SettingsRow("trackpad_carousel", subtitle: "trackpad_carousel_subtitle", icon: "hand.draw.fill", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.enableTrackpadCarousel)
                         .toggleStyle(.switch)
                 }
                 

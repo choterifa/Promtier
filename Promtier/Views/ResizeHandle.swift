@@ -49,7 +49,6 @@ struct ResizeHandle: View {
                                     width: preferences.windowWidth,
                                     height: preferences.windowHeight
                                 )
-                                NSCursor.crosshair.push()
                                 HapticService.shared.playLight()
                             }
 
@@ -75,7 +74,9 @@ struct ResizeHandle: View {
                         .onEnded { _ in
                             isDragging = false
                             dragStartSize = .zero
-                            NSCursor.pop()
+                            if !isHovered {
+                                NSCursor.pop()
+                            }
                             preferences.isResizingVisible = false
                             preferences.saveWindowDimensions()
                             HapticService.shared.playAlignment()

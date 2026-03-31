@@ -13,6 +13,7 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
     static let shared = FloatingOnboardingManager()
     
     @Published var isVisible: Bool = false
+    @Published var currentStep: Int = 0
     private var panel: NSPanel?
     
     private override init() {
@@ -20,6 +21,9 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
     }
     
     func show() {
+        // Forzar reset al inicio
+        currentStep = 0
+        
         if panel == nil {
             createPanel()
         }

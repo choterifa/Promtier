@@ -77,6 +77,8 @@
 "global_shortcut_copy" = "Custom Global Shortcut";
 "close_on_copy" = "Close on Copy";
 "close_on_copy_subtitle" = "Close the window automatically after copying";
+"trackpad_carousel" = "Scroll Images with Trackpad";
+"trackpad_carousel_subtitle" = "Allow moving or switching preview images by swiping on the trackpad.";
 "auto_paste" = "Instant Paste";
 "auto_paste_subtitle" = "Automatically paste the prompt in the active app";
 "clipboard_suggestions" = "Clipboard Suggestions";
