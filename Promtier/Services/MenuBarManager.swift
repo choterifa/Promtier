@@ -370,6 +370,7 @@ class MenuBarManager: NSObject, ObservableObject {
         
         menu.addItem(NSMenuItem.separator())
         addMenuItem("\("settings".localized(for: lang))...", selector: #selector(showPreferences), key: ",")
+        addMenuItem("\("welcome_guide".localized(for: lang))...", selector: #selector(showOnboarding))
         menu.addItem(NSMenuItem.separator())
         addMenuItem("about_promtier".localized(for: lang), selector: #selector(showAbout))
         menu.addItem(NSMenuItem.separator())
@@ -406,6 +407,11 @@ class MenuBarManager: NSObject, ObservableObject {
     @objc private func showPreferences() {
         // Abrir la vista de preferencias dentro del popover
         showWithState(.preferences)
+    }
+    
+    @objc private func showOnboarding() {
+        // Relanzar la guía de bienvenida
+        FloatingOnboardingManager.shared.show()
     }
     
     @objc private func showAbout() {

@@ -527,3 +527,4 @@
 
 "ai_response_language" = "Idioma respuesta IA";
 "ai_response_language_subtitle" = "Fuerza el idioma del contenido generado por IA";
+"welcome_guide" = "Guía de Bienvenida";

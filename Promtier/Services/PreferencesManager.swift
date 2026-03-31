@@ -289,6 +289,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var hasSeenOnboarding: Bool {
+        didSet {
+            userDefaults.set(hasSeenOnboarding, forKey: "hasSeenOnboarding")
+        }
+    }
+    
     @Published var isPremiumActive: Bool {
         didSet {
             userDefaults.set(isPremiumActive, forKey: "isPremiumActive")
@@ -493,6 +499,7 @@ class PreferencesManager: ObservableObject {
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
         self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
+        self.hasSeenOnboarding = userDefaults.bool(forKey: "hasSeenOnboarding")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
         
         // Efectos visuales por defecto en true
@@ -709,6 +716,7 @@ class PreferencesManager: ObservableObject {
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
         self.suppressAccessibilityWarning = false
+        self.hasSeenOnboarding = false
         self.isPremiumActive = false
         self.ghostTipsEnabled = true
         self.gestureHintsEnabled = true
