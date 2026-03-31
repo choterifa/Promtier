@@ -139,26 +139,32 @@ struct PromptGridCard: View {
             
             // Image Preview (if any)
             if let thumbnailData = previewThumbnailData {
-                DownsampledImageView(
-                    imageData: thumbnailData,
-                    cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
-                    maxPixelSize: 360,
-                    contentMode: .fill
-                )
-                .frame(height: 180)
-                .frame(maxWidth: .infinity)
-                .clipped()
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 180)
+                    .overlay(
+                        DownsampledImageView(
+                            imageData: thumbnailData,
+                            cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
+                            maxPixelSize: 360,
+                            contentMode: .fill
+                        )
+                    )
+                    .clipped()
             } else if let firstPath = previewRelativePath {
                 let url = ImageStore.shared.url(forRelativePath: firstPath)
-                DownsampledImageURLView(
-                    imageURL: url,
-                    cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
-                    maxPixelSize: 360,
-                    contentMode: .fill
-                )
-                .frame(height: 180) // Made taller (protagonist)
-                .frame(maxWidth: .infinity)
-                .clipped()
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 180)
+                    .overlay(
+                        DownsampledImageURLView(
+                            imageURL: url,
+                            cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
+                            maxPixelSize: 360,
+                            contentMode: .fill
+                        )
+                    )
+                    .clipped()
             }
             
             // Content Snippet
@@ -232,6 +238,7 @@ struct PromptGridCard: View {
             .background(Color.primary.opacity(0.01))
             .overlay(Rectangle().frame(height: 1).foregroundColor(Color.primary.opacity(0.03)), alignment: .top)
         }
+        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)
@@ -247,6 +254,7 @@ struct PromptGridCard: View {
         )
         .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(isHovered ? 0.06 : 0.02), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipped()
         .contentShape(Rectangle())
         .onAppear {
             if isRecommended {
