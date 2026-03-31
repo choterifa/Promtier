@@ -6,9 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +88,7 @@
       <workItem from="1774834222154" duration="98000" />
       <workItem from="1774955886308" duration="193000" />
       <workItem from="1774979155081" duration="1174000" />
-      <workItem from="1774988237098" duration="571000" />
+      <workItem from="1774988237098" duration="1571000" />
     </task>
     <servers />
   </component>
