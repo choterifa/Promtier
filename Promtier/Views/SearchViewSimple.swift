@@ -38,6 +38,7 @@ struct SearchViewSimple: View {
     @State private var lastPrewarmedPreviewKey: String? = nil
     
     @State private var dragStartedSidebarWidth: CGFloat = 0
+    @State private var isSidebarDragging: Bool = false
     
     @State private var isPlusHovered = false
     @State private var isBatchHovered = false
@@ -384,36 +385,36 @@ struct SearchViewSimple: View {
                         .environmentObject(promptService)
                         .transition(.move(edge: .leading).combined(with: .opacity))
                         .overlay(alignment: .trailing) {
-                            // Hit area invisible para redimensionar (15px al borde)
-                                                        ZStack(alignment: .trailing) {
-                                                            Rectangle()
-                                                                .fill(Color.white.opacity(0.001))
-                                                                .frame(width: 15)
-                                                            
-                                                            // Línea azul sutil para marcar la zona de mover elementos (redimensionar)
-                                                            Rectangle()
-                                                                .fill(Color.blue.opacity(0.5))
-                                                                .frame(width: 2)
-                                                                .padding(.vertical, 20)
-                                                                .opacity(isSidebarResizerHovered ? 1.0 : 0.0)
-                                                                // Retraso de 0.7s al mostrar para evitar parpadeos, pero aparición casi instantánea (0.1s) una vez activado
-                                                                .animation(isSidebarResizerHovered ? .easeInOut(duration: 0.1).delay(0.7) : .easeInOut(duration: 0.2), value: isSidebarResizerHovered)
-                                                        }
-                                                        .onHover { inside in
-                                                            isSidebarResizerHovered = inside
-                                                            if inside { NSCursor.resizeLeftRight.push() }
-                                                            else { NSCursor.pop() }
-                                                            
-                                                            // Sincronizar hover con la sidebar para el botón de categorías (con retraso al salir)
-                                                            menuBarManager.setSidebarHovered(inside)
-                                                        }                                .gesture(
-                                    DragGesture(minimumDistance: 0, coordinateSpace: .named("sidebarContainer"))
+                            // Hit area profesional: exactamente en el borde, cursor inmediato
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: 6)
+                                .contentShape(Rectangle())
+                                .offset(x: 3) // sobresale 3px hacia el contenido para quedar centrado en la línea divisoria
+                                .onHover { inside in
+                                    isSidebarResizerHovered = inside
+                                    if inside {
+                                        NSCursor.resizeLeftRight.push()
+                                    } else if !isSidebarDragging {
+                                        NSCursor.pop()
+                                    }
+                                    menuBarManager.setSidebarHovered(inside)
+                                }
+                                .gesture(
+                                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
                                         .onChanged { value in
-                                            // Usamos la posición absoluta del mouse en el contenedor nombrado
-                                            let newWidth = value.location.x
-                                            if newWidth >= 200 && newWidth <= 350 {
-                                                preferences.sidebarWidth = newWidth
+                                            if !isSidebarDragging {
+                                                isSidebarDragging = true
+                                                dragStartedSidebarWidth = preferences.sidebarWidth
+                                                NSCursor.resizeLeftRight.push()
                                             }
+                                            let proposed = dragStartedSidebarWidth + value.translation.width
+                                            preferences.sidebarWidth = min(300, max(201, proposed))
+                                        }
+                                        .onEnded { _ in
+                                            isSidebarDragging = false
+                                            dragStartedSidebarWidth = 0
+                                            NSCursor.pop()
                                         }
                                 )
                         }
