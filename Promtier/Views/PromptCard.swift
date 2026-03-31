@@ -280,17 +280,14 @@ struct PromptCard: View {
                 }
                 
                 if prompt.parentID != nil {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.branch")
-                        Text("branch_label".localized(for: preferences.language))
-                    }
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.green.opacity(0.1))
-                    .clipShape(Capsule())
-                    .help("tooltip_branch".localized(for: preferences.language))
+                    Image(systemName: "arrow.branch")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.green.opacity(0.1))
+                        .clipShape(Capsule())
+                        .help("tooltip_branch".localized(for: preferences.language))
                 }
                 
                 if !prompt.versionHistory.isEmpty {
