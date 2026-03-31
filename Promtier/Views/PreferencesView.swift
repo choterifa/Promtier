@@ -27,9 +27,9 @@ struct PreferencesView: View {
     @State private var hoveredTab: Int? = nil
     
     private let tabs: [(title: LocalizedStringKey, icon: String)] = [
+        (title: "ai_tab", icon: "sparkles"),
         (title: "appearance_tab", icon: "paintbrush.fill"),
         (title: "general_tab", icon: "gearshape.fill"),
-        (title: "ai_tab", icon: "sparkles"),
         (title: "shortcuts_tab", icon: "keyboard.fill"),
         (title: "snippets_tab", icon: "text.quote"),
         (title: "data_tab", icon: "externaldrive.fill"),
@@ -177,9 +177,9 @@ struct PreferencesView: View {
     @ViewBuilder
     private var activeTabContent: some View {
         switch selectedTab {
-        case 0: AppearanceTab()
-        case 1: BehaviorTab()
-        case 2: AITab()
+        case 0: AITab()
+        case 1: AppearanceTab()
+        case 2: BehaviorTab()
         case 3: ShortcutsTab()
         case 4: SnippetsManagerTab()
         case 5: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)

@@ -2277,6 +2277,17 @@ struct NewPromptView: View {
         let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
         let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
         
+        let isContentProvided = !trimmedContent.isEmpty
+        let isTitleProvided = !trimmedTitle.isEmpty
+        
+        let titleInstruction = isTitleProvided
+            ? "The title is already provided. DO NOT modify it in any way. Return it EXACTLY as it is."
+            : "If the title is empty or generic, generate a catchy, short title (max 1 line)."
+
+        let contentInstruction = isContentProvided
+            ? "CRITICAL: The content is already provided. DO NOT modify it in any way. Return it EXACTLY as it is."
+            : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential."
+
         systemPrompt = """
         You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.
         
@@ -2285,9 +2296,9 @@ struct NewPromptView: View {
         - Content: \(currentContent)
         
         INSTRUCTIONS:
-        1. TITLE: If the title is empty or generic, generate a catchy, short title (max 1 line). If it's provided, fix only grammar/spelling while keeping the original meaning.
+        1. TITLE: \(titleInstruction)
         2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
-        3. CONTENT: Generate/Improve the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential.
+        3. CONTENT: \(contentInstruction)
         
         CRITICAL LANGUAGE RULE:
         - Detect the PRIMARY language of the user's input (title and content).
