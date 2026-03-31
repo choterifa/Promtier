@@ -275,10 +275,6 @@ struct PromptCard: View {
                     IndicatorBadge(icon: "photo.fill", count: prompt.showcaseImageCount, color: .cyan, help: "tooltip_images".localized(for: preferences.language))
                 }
 
-                if prompt.useCount > 0 {
-                    IndicatorBadge(icon: "doc.on.doc.fill", count: prompt.useCount, color: .secondary, help: "tooltip_use_count".localized(for: preferences.language))
-                }
-                
                 if prompt.parentID != nil {
                     Image(systemName: "arrow.branch")
                         .font(.system(size: 9, weight: .bold))
@@ -311,6 +307,10 @@ struct PromptCard: View {
                 }
                 
 
+                
+                if prompt.useCount > 0 {
+                    IndicatorBadge(icon: "doc.on.doc.fill", count: prompt.useCount, color: .secondary, help: "tooltip_use_count".localized(for: preferences.language))
+                }
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
