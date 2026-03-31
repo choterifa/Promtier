@@ -123,14 +123,15 @@ struct EditorToolbar: View {
         .help("Markdown Formatting")
         
         if aiEnabled && onMagicAutocomplete != nil {
-            Button(action: { onMagicAutocomplete?() }) {
+            Button(action: {
+                if isAutocompleting, let onStopAI = onStopAI {
+                    onStopAI()
+                } else {
+                    onMagicAutocomplete?()
+                }
+            }) {
                 if isAutocompleting {
-                    ZStack {
-                        Circle()
-                            .fill(Color.primary.opacity(0.04))
-                            .frame(width: 28, height: 28)
-                        ProgressView().controlSize(.small).scaleEffect(0.5)
-                    }
+                    toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
                 } else {
                     toolbarButton(icon: "wand.and.stars", isSpecial: true, active: isMagicHovered)
                 }
@@ -141,7 +142,7 @@ struct EditorToolbar: View {
                     isMagicHovered = hovering
                 }
             }
-            .help("AI Magic: Autocomplete or Improve (Cmd+J)")
+            .help(isAutocompleting ? "Stop AI" : "AI Magic: Autocomplete or Improve (Cmd+J)")
         }
 
         if aiEnabled {
@@ -151,33 +152,37 @@ struct EditorToolbar: View {
             .buttonStyle(.plain)
             .help("ai_action_translate".localized(for: preferences.language))
 
-            Menu {
-                Button(action: { onAIAction(.enhance) }) {
-                    Label("ai_action_enhance".localized(for: preferences.language), systemImage: "pencil.and.outline")
+            ZStack {
+                Menu {
+                    Button(action: { onAIAction(.enhance) }) {
+                        Label("ai_action_enhance".localized(for: preferences.language), systemImage: "pencil.and.outline")
+                    }
+                    Button(action: { onAIAction(.fix) }) {
+                        Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
+                    }
+                    Button(action: { onAIAction(.concise) }) {
+                        Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
+                    }
+                    Divider()
+                    Button(action: { onAIAction(.instruct) }) {
+                        Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
+                    }
+                } label: {
+                    toolbarButton(icon: "pencil.and.outline", active: false)
                 }
-                Button(action: { onAIAction(.fix) }) {
-                    Label("ai_action_fix".localized(for: preferences.language), systemImage: "checkmark.bubble")
-                }
-                Button(action: { onAIAction(.concise) }) {
-                    Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
-                }
-                Divider()
-                Button(action: { onAIAction(.instruct) }) {
-                    Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
-                }
-            } label: {
-                toolbarButton(icon: "pencil.and.outline", active: isAIGenerating)
-            }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-
-            if isAIGenerating, let onStopAI {
-                Button(action: onStopAI) {
-                    toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
-                }
+                .menuStyle(.button)
                 .buttonStyle(.plain)
-                .help("Stop AI")
+                .menuIndicator(.hidden)
+                .opacity(isAIGenerating && !isAutocompleting ? 0 : 1)
+                .disabled(isAIGenerating && !isAutocompleting)
+
+                if isAIGenerating, !isAutocompleting, let onStopAI = onStopAI {
+                    Button(action: onStopAI) {
+                        toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Stop AI")
+                }
             }
         }
 
@@ -248,6 +253,7 @@ struct EditorToolbar: View {
 }
 
 struct ToolbarButtonView: View {
+    @EnvironmentObject var preferences: PreferencesManager
     let color: Color
     let themeColor: Color
     let activeColor: Color
@@ -259,23 +265,27 @@ struct ToolbarButtonView: View {
     
     @State private var isHovered = false
     
+    private var resolvedColor: Color {
+        preferences.isHaloEffectEnabled ? color : Color.blue
+    }
+    
     var body: some View {
         ZStack {
             Circle()
                 .fill(isSpecial && active 
-                    ? color.opacity(0.35) 
-                    : (isSpecial ? color.opacity(isHovered ? 0.3 : 0.22) : (active ? activeColor.opacity(0.25) : Color.primary.opacity(isHovered ? 0.08 : 0.04))))
+                    ? resolvedColor.opacity(0.35) 
+                    : (isSpecial ? resolvedColor.opacity(isHovered ? 0.3 : 0.22) : (active ? resolvedColor.opacity(0.25) : Color.primary.opacity(isHovered ? 0.08 : 0.04))))
                 .frame(width: 31, height: 31)
-                .shadow(color: isSpecial && active ? color.opacity(0.7) : .clear, radius: isSpecial && active ? 10 : 0)
+                .shadow(color: (preferences.isHaloEffectEnabled && isSpecial && active) ? resolvedColor.opacity(0.7) : .clear, radius: isSpecial && active ? 10 : 0)
 
             if let icon = icon {
                 Image(systemName: icon)
                     .font(.system(size: 12.5, weight: .bold))
-                    .foregroundColor(isSpecial && active ? color : (isSpecial ? color.opacity(0.85) : (active ? activeColor : themeColor)))
+                    .foregroundColor(isSpecial && active ? resolvedColor : (isSpecial ? resolvedColor.opacity(0.85) : (active ? resolvedColor : resolvedColor)))
             } else if let text = text {
                 Text(text)
                     .font(.system(size: 14.5, weight: .black, design: .monospaced))
-                    .foregroundColor(themeColor)
+                    .foregroundColor(resolvedColor)
             }
         }
         .overlay(
@@ -283,11 +293,13 @@ struct ToolbarButtonView: View {
                 if isSpecial && active {
                     Circle()
                         .stroke(
-                            LinearGradient(
-                                colors: [color, color.opacity(0.7), color.opacity(0.4), color.opacity(0.8), color, color.opacity(0.7), color.opacity(0.4), color.opacity(0.8)],
+                            preferences.isHaloEffectEnabled 
+                            ? AnyShapeStyle(LinearGradient(
+                                colors: [resolvedColor, resolvedColor.opacity(0.7), resolvedColor.opacity(0.4), resolvedColor.opacity(0.8), resolvedColor, resolvedColor.opacity(0.7), resolvedColor.opacity(0.4), resolvedColor.opacity(0.8)],
                                 startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
                                 endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
-                            ),
+                            ))
+                            : AnyShapeStyle(resolvedColor.opacity(0.8)),
                             lineWidth: 1.2
                         )
                 }

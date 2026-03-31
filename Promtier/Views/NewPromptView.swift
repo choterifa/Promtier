@@ -499,7 +499,7 @@ struct NewPromptView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "keyboard.fill")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
+                            .foregroundColor(themeColor)
                         Text("shortcut".uppercased())
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
@@ -559,7 +559,7 @@ struct NewPromptView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(currentCategoryColor)
+                            .foregroundColor(themeColor)
                         Text("smart_recommendation".localized(for: preferences.language).uppercased())
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.secondary)
@@ -2811,7 +2811,7 @@ struct EditorCard: View {
     var onMagicCategorize: (() -> Void)? = nil
 
     private var themeColor: Color {
-        preferences.isHaloEffectEnabled ? currentCategoryColor : .blue
+        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
     }
 
     @EnvironmentObject var promptService: PromptService
@@ -2884,6 +2884,8 @@ struct EditorCard: View {
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
     @State private var aiTask: Task<Void, Never>? = nil
+    @State private var showingInstructionAlert = false
+    @State private var instructionInput = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -2892,12 +2894,12 @@ struct EditorCard: View {
                     Button(action: { showingIconPicker.toggle() }) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(currentCategoryColor.opacity(0.1))
+                                .fill(themeColor.opacity(0.1))
                                 .frame(width: 42, height: 42)
 
                             Image(systemName: selectedIcon ?? fallbackIconName)
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(currentCategoryColor)
+                                .foregroundColor(themeColor)
                         }
                     }
                     .buttonStyle(.plain)
@@ -2934,24 +2936,29 @@ struct EditorCard: View {
                                     .padding(.vertical, 5)
                                     .background(
                                         Capsule()
-                                            .fill(LinearGradient(
-                                                colors: [currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22), currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22)], 
-                                                startPoint: .leading, 
-                                                endPoint: .trailing
-                                            ))
+                                            .fill(preferences.isHaloEffectEnabled 
+                                                ? AnyShapeStyle(LinearGradient(
+                                                    colors: [currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22), currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22)], 
+                                                    startPoint: .leading, 
+                                                    endPoint: .trailing
+                                                ))
+                                                : AnyShapeStyle(themeColor.opacity(isMagicHovered ? 0.15 : 0.08)))
                                             .opacity(isMagicPulsing ? 0.5 : 1.0)
-                                            .shadow(color: currentCategoryColor.opacity(isMagicPulsing ? 0.7 : (isMagicHovered ? 0.6 : 0)), radius: isMagicPulsing ? 8 : (isMagicHovered ? 14 : 0))
+                                            .shadow(color: (preferences.isHaloEffectEnabled && isMagicPulsing) ? currentCategoryColor.opacity(0.7) : (preferences.isHaloEffectEnabled && isMagicHovered ? currentCategoryColor.opacity(0.6) : .clear), 
+                                                   radius: isMagicPulsing ? 8 : (isMagicHovered ? 14 : 0))
                                     )
-                                    .foregroundColor(isMagicHovered ? currentCategoryColor : currentCategoryColor.opacity(0.9))
+                                    .foregroundColor(isMagicHovered ? themeColor : themeColor.opacity(0.9))
                                     .overlay(
                                         Capsule()
                                             .stroke(
-                                                LinearGradient(
-                                                    colors: [currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8), currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8)],
-                                                    startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
-                                                    endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
-                                                ),
-                                                lineWidth: isMagicPulsing ? 1.5 : (isMagicHovered ? 1.2 : 0.8)
+                                                preferences.isHaloEffectEnabled 
+                                                    ? AnyShapeStyle(LinearGradient(
+                                                        colors: [currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8), currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8)],
+                                                        startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
+                                                        endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
+                                                    ))
+                                                    : AnyShapeStyle(themeColor.opacity(0.8)),
+                                                lineWidth: isMagicPulsing ? 1.4 : (isMagicHovered ? 1.2 : 0.8)
                                             )
                                             .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 1.0 : 0.5))
                                     )
@@ -3119,12 +3126,27 @@ struct EditorCard: View {
             .padding(.top, 8)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+        .alert("Execute Command", isPresented: $showingInstructionAlert) {
+            TextField("Instruction (e.g. Translate to French)", text: $instructionInput)
+            Button("Cancel", role: .cancel) { }
+            Button("Execute") {
+                performAIAction(.instruct, instruction: instructionInput)
+            }
+        } message: {
+            Text("Enter the instruction to apply to the selected text.")
+        }
     }
-    private func performAIAction(_ action: AIAction) {
+    private func performAIAction(_ action: AIAction, instruction: String? = nil) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
             let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
 
             guard useGemini || useOpenAI else { return }
+
+            if action == .instruct && instruction == nil {
+                instructionInput = ""
+                showingInstructionAlert = true
+                return
+            }
 
             isAIGenerating = true
             HapticService.shared.playImpact()
@@ -3153,8 +3175,8 @@ struct EditorCard: View {
                 return
             }
 
-            let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
-            let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
+            let contextInstruction = (action == .instruct) ? "\n\nPrompt Fragment:\n\(textToProcess)" : "\n\nPrompt Fragment:\n\(textToProcess)"
+            let fullPrompt = (action == .instruct) ? "Execute the following instruction/command: \(instruction ?? "")\nRespond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
 
             aiTask = Task {
                 do {
@@ -3406,6 +3428,9 @@ struct SecondaryEditorCard<Actions: View>: View {
     @State private var showingPromptChainPicker: Bool = false
     @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
+    @State private var aiTask: Task<Void, Never>? = nil
+    @State private var showingInstructionAlert = false
+    @State private var instructionInput = ""
 
     var body: some View {
         let iconColor: Color = (icon == "hand.raised.fill") ? Color.red.opacity(0.8) : themeColor
@@ -3553,43 +3578,58 @@ struct SecondaryEditorCard<Actions: View>: View {
                 }
             }
         }
+        .alert("Execute Command", isPresented: $showingInstructionAlert) {
+            TextField("Instruction (e.g. Translate to French)", text: $instructionInput)
+            Button("Cancel", role: .cancel) { }
+            Button("Execute") {
+                performAIAction(.instruct, instruction: instructionInput)
+            }
+        } message: {
+            Text("Enter the instruction to apply to the selected text.")
+        }
     }
-        private func performAIAction(_ action: AIAction) {
-            let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
-            let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-            
-            guard useGemini || useOpenAI else { return }
-
-            isAIGenerating = true
-            HapticService.shared.playImpact()
-            withAnimation {
-                branchMessage = "ai_thinking".localized(for: preferences.language)
-            }
-
-            // Determinar qué fragmento procesar
-            let sourceText = plainTextContent.isEmpty ? text : plainTextContent
-            let textToProcess: String
-            let rangeToProcess: NSRange
-            let fullNSString = sourceText as NSString
-
-            if let sel = selectedRange, sel.length > 0 {
-                textToProcess = fullNSString.substring(with: sel)
-                rangeToProcess = sel
-            } else {
-                textToProcess = sourceText
-                rangeToProcess = NSRange(location: 0, length: fullNSString.length)
-            }
-
-            guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                isAIGenerating = false
-                return
-            }
-
-            let contextInstruction = (action == .instruct) ? "" : "\n\nPrompt Fragment:\n\(textToProcess)"
-            let fullPrompt = (action == .instruct) ? "Execute the following instruction/command. Respond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
-
-            Task {
-                do {
+                private func performAIAction(_ action: AIAction, instruction: String? = nil) {
+                    let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+                    let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
+        
+                    guard useGemini || useOpenAI else { return }
+        
+                    if action == .instruct && instruction == nil {
+                        instructionInput = ""
+                        showingInstructionAlert = true
+                        return
+                    }
+        
+                    isAIGenerating = true
+                    HapticService.shared.playImpact()
+                    withAnimation {
+                        branchMessage = "ai_thinking".localized(for: preferences.language)
+                    }
+        
+                    aiTask?.cancel()
+                    // Determinar qué fragmento procesar
+                    let sourceText = plainTextContent.isEmpty ? text : plainTextContent
+                    let textToProcess: String
+                    let rangeToProcess: NSRange
+                    let fullNSString = sourceText as NSString
+        
+                    if let sel = selectedRange, sel.length > 0 {
+                        textToProcess = fullNSString.substring(with: sel)
+                        rangeToProcess = sel
+                    } else {
+                        textToProcess = sourceText
+                        rangeToProcess = NSRange(location: 0, length: fullNSString.length)
+                    }
+        
+                    guard !textToProcess.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        isAIGenerating = false
+                        return
+                    }
+        
+                    let contextInstruction = (action == .instruct) ? "\n\nPrompt Fragment:\n\(textToProcess)" : "\n\nPrompt Fragment:\n\(textToProcess)"
+                    let fullPrompt = (action == .instruct) ? "Execute the following instruction/command: \(instruction ?? "")\nRespond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
+        
+                    aiTask = Task {                do {
                     let fullResponse: String
                     if preferences.preferredAIService == .openai {
                         fullResponse = try await OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)

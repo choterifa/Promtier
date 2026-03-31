@@ -6,6 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="3c3fcac2-035d-4f8e-8657-d817e7277365" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/EditorToolbar.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/NewPromptView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/Promtier/Views/PromptPreviewView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="133" />
+    <option name="cachedIndexableFilesCount" value="135" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -85,6 +88,9 @@
       <workItem from="1774790279964" duration="2672000" />
       <workItem from="1774827254082" duration="5307000" />
       <workItem from="1774834222154" duration="98000" />
+      <workItem from="1774955886308" duration="193000" />
+      <workItem from="1774979155081" duration="1174000" />
+      <workItem from="1774988237098" duration="571000" />
     </task>
     <servers />
   </component>

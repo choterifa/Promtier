@@ -45,11 +45,9 @@ struct PromptPreviewView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Barra de color temática superior
-            if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
-                Rectangle()
-                    .fill(category.color.opacity(0.8))
-                    .frame(height: 3)
-            }
+            Rectangle()
+                .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.8))
+                .frame(height: 3)
             
             headerView
             
