@@ -383,6 +383,47 @@ struct PromptGridCard: View {
                 fallbackShowcasePath = await promptService.fetchShowcaseImagePaths(byId: prompt.id).first
             }
         }
+        .onDrag {
+            // No cerrar el popover inmediatamente para permitir categorización interna
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                if let window = NSApp.keyWindow, 
+                   window.className.contains("Popover"),
+                   !NSMouseInRect(NSEvent.mouseLocation, window.frame, false) {
+                    menuBarManager.closePopover()
+                }
+            }
+            
+            let provider = NSItemProvider()
+            let selectedIds = batchService.selectedPromptIds
+            let draggedIds: [UUID]
+            
+            if batchService.isSelectionModeActive,
+               selectedIds.contains(prompt.id),
+               selectedIds.count > 1 {
+                draggedIds = selectedIds.sorted { $0.uuidString < $1.uuidString }
+            } else {
+                draggedIds = [prompt.id]
+            }
+
+            // Payload para Drag & Drop coherente con PromptCard y Sidebar
+            struct PromtierDragPayload: Codable {
+                let kind: String
+                let ids: [String]
+            }
+            
+            let payload = PromtierDragPayload(kind: "promtier.prompt.ids", ids: draggedIds.map { $0.uuidString })
+            if let data = try? JSONEncoder().encode(payload) {
+                provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
+                    completion(data, nil)
+                    return nil
+                }
+            }
+            
+            // Para aplicaciones externas
+            provider.registerObject(prompt.content as NSString, visibility: .all)
+            
+            return provider
+        }
     }
     
     private var cardBackgroundColor: Color {

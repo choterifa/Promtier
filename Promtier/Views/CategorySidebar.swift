@@ -465,21 +465,28 @@ struct CategorySidebar: View {
     private func movePrompts(ids: [String], to folderName: String?) {
         let uuids = ids.compactMap(UUID.init(uuidString:))
         guard !uuids.isEmpty else { return }
+        
+        // Ejecutar sonido e haptic inmediatamente para feedback instantáneo
+        if preferences.soundEnabled { SoundService.shared.playMoveSound() }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        
         _ = promptService.movePrompts(withIds: uuids, toFolder: folderName)
         if batchService.isSelectionModeActive, ids.count > 1 {
             batchService.clearSelection()
         }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
     
     private func markAsFavorite(ids: [String]) {
         let uuids = ids.compactMap(UUID.init(uuidString:))
         guard !uuids.isEmpty else { return }
+        
+        if preferences.soundEnabled { SoundService.shared.playFavoriteSound() }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        
         _ = promptService.markPromptsFavorite(withIds: uuids)
         if batchService.isSelectionModeActive, ids.count > 1 {
             batchService.clearSelection()
         }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
 
     private func markAsFavorite(id: String) {
@@ -489,11 +496,14 @@ struct CategorySidebar: View {
     private func moveToTrash(ids: [String]) {
         let uuids = ids.compactMap(UUID.init(uuidString:))
         guard !uuids.isEmpty else { return }
+        
+        if preferences.soundEnabled { SoundService.shared.playDeleteSound() }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+        
         _ = promptService.deletePrompts(withIds: uuids)
         if batchService.isSelectionModeActive, ids.count > 1 {
             batchService.clearSelection()
         }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
     }
 
     private func decodeDraggedPromptIds(from provider: NSItemProvider, completion: @escaping ([String]) -> Void) -> Bool {

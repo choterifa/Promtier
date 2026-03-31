@@ -100,12 +100,14 @@ struct BatchToolbarView: View {
     private func moveSelected(to folderName: String?) {
         _ = promptService.movePrompts(withIds: Array(batchService.selectedPromptIds), toFolder: folderName)
         batchService.clearSelection()
+        if preferences.soundEnabled { SoundService.shared.playMoveSound() }
         HapticService.shared.playSuccess()
     }
     
     private func deleteSelected() {
         _ = promptService.deletePrompts(withIds: Array(batchService.selectedPromptIds))
         batchService.clearSelection()
+        if preferences.soundEnabled { SoundService.shared.playDeleteSound() }
         HapticService.shared.playSuccess()
     }
 }
