@@ -206,8 +206,8 @@ struct PromptGridCard: View {
                                 }
                                 .id(currentImageIndex)
                                 .transition(.asymmetric(
-                                    insertion: .offset(x: carouselDirection > 0 ? 60 : -60).combined(with: .opacity),
-                                    removal: .offset(x: carouselDirection > 0 ? -60 : 60).combined(with: .opacity)
+                                    insertion: .opacity.combined(with: .offset(x: 18)).animation(.easeOut(duration: 0.22)),
+                                    removal: .opacity.combined(with: .offset(x: -18)).animation(.easeIn(duration: 0.18))
                                 ))
                             )
                             .clipped()

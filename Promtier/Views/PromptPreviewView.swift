@@ -29,11 +29,31 @@ struct PromptPreviewView: View {
     
     var onUse: (() -> Void)?
 
-    private var previewThemeColor: PromptPreviewThemeColor {
-        if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
-            return PromptPreviewThemeColor(NSColor(category.color))
+    private var resolvedCategoryColor: Color {
+        if let folderName = prompt.folder {
+            if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
+                return Color(hex: customFolder.displayColor)
+            }
+            return PredefinedCategory.fromString(folderName)?.color ?? .blue
         }
-        return PromptPreviewThemeColor(.systemBlue)
+        return .blue
+    }
+    
+    private var resolvedCategoryIcon: String {
+        if let customIcon = prompt.icon {
+            return customIcon
+        }
+        if let folderName = prompt.folder {
+            if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
+                return customFolder.icon ?? "folder.fill"
+            }
+            return PredefinedCategory.fromString(folderName)?.icon ?? "doc.text.fill"
+        }
+        return "doc.text.fill"
+    }
+
+    private var previewThemeColor: PromptPreviewThemeColor {
+        return PromptPreviewThemeColor(NSColor(resolvedCategoryColor))
     }
     
     init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false), onUse: (() -> Void)? = nil) {
@@ -46,7 +66,7 @@ struct PromptPreviewView: View {
         VStack(spacing: 0) {
             // Barra de color temática superior
             Rectangle()
-                .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.8))
+                .fill(resolvedCategoryColor.opacity(0.8))
                 .frame(height: 3)
             
             headerView
@@ -113,31 +133,14 @@ struct PromptPreviewView: View {
     private var headerView: some View {
         HStack(spacing: 15) {
             // Icono de categoría o personalizado
-            if let iconName = prompt.icon {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill((prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue).opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: iconName)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(prompt.folder != nil ? PredefinedCategory.fromString(prompt.folder!)?.color ?? .blue : .blue)
-                }
-            } else if let folder = prompt.folder, let category = PredefinedCategory.fromString(folder) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(category.color.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: category.icon)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(category.color)
-                }
-            } else {
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue.opacity(0.8))
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(resolvedCategoryColor.opacity(0.15))
                     .frame(width: 36, height: 36)
+                
+                Image(systemName: resolvedCategoryIcon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(resolvedCategoryColor)
             }
             
             VStack(alignment: .leading, spacing: 2) {

@@ -406,7 +406,6 @@ struct SearchViewSimple: View {
                                             if !isSidebarDragging {
                                                 isSidebarDragging = true
                                                 dragStartedSidebarWidth = preferences.sidebarWidth
-                                                NSCursor.resizeLeftRight.push()
                                             }
                                             let proposed = dragStartedSidebarWidth + value.translation.width
                                             preferences.sidebarWidth = min(300, max(201, proposed))
@@ -414,7 +413,9 @@ struct SearchViewSimple: View {
                                         .onEnded { _ in
                                             isSidebarDragging = false
                                             dragStartedSidebarWidth = 0
-                                            NSCursor.pop()
+                                            if !isSidebarResizerHovered {
+                                                NSCursor.pop()
+                                            }
                                         }
                                 )
                         }
@@ -949,6 +950,7 @@ struct SearchViewSimple: View {
         if keyCode == 126 { // Up
             guard !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
+            isSearchFocused = false
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
@@ -968,6 +970,7 @@ struct SearchViewSimple: View {
         if keyCode == 125 { // Down
             guard !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
+            isSearchFocused = false
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
@@ -987,6 +990,7 @@ struct SearchViewSimple: View {
         if keyCode == 123 { // Left
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
+            isSearchFocused = false
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex > 0 {
@@ -1001,6 +1005,7 @@ struct SearchViewSimple: View {
         if keyCode == 124 { // Right
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
+            isSearchFocused = false
             DispatchQueue.main.async {
                 if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                     if currentIndex < promptService.filteredPrompts.count - 1 {

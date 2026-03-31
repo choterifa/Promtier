@@ -343,35 +343,19 @@ struct OnboardingView: View {
                 Text("Explora tus prompts visualmente para enfocarte en su resultado.").font(.system(size: 16)).foregroundColor(.secondary)
             }
             
-            ZStack {
+            ZStack(alignment: .top) {
                 RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.01))
                 
+                // Contenedor infinito: 3 copias para asegurar cobertura total arriba y abajo
                 VStack(spacing: 20) {
-                    ForEach(0..<3) { row in
-                        HStack(spacing: 20) {
-                            ForEach(0..<2) { col in
-                                VStack(alignment: .leading, spacing: 0) {
-                                    // Imagen del prompt (más alta)
-                                    RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)).frame(height: 140)
-                                        .overlay(Image(systemName: "photo").foregroundColor(.secondary.opacity(0.4)))
-                                    
-                                    // Detalles del prompt
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.08)).frame(width: 120, height: 8)
-                                        RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.04)).frame(width: 80, height: 6)
-                                    }
-                                    .padding(12)
-                                }
-                                .background(Color(NSColor.windowBackgroundColor))
-                                .cornerRadius(12)
-                                .shadow(color: .black.opacity(0.08), radius: 15, y: 8)
-                            }
-                        }
-                    }
+                    galleryCardSet
+                    galleryCardSet
+                    galleryCardSet
                 }
-                .padding(25)
-                .offset(y: isShowingGalleryAnim ? -60 : 60)
-                .animation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true), value: isShowingGalleryAnim)
+                // Empezamos en -412 para mostrar el set central, y animamos hacia 0 para bajar
+                // O de 0 a 412. El truco es que el punto inicial y final sean visualmente idénticos.
+                .offset(y: isShowingGalleryAnim ? 0 : -412)
+                .animation(.linear(duration: 20).repeatForever(autoreverses: false), value: isShowingGalleryAnim)
             }
             .frame(width: 500, height: 320)
             .clipped()
@@ -380,8 +364,39 @@ struct OnboardingView: View {
             Text("Cambia entre **Lista** y **Cuadrícula** en la barra superior.")
                 .font(.system(size: 14)).foregroundColor(.blue)
         }
-        .onAppear { isShowingGalleryAnim = true }
+        .onAppear { 
+            // Pequeño delay para asegurar que el estado inicial se registre y empiece la animación
+            DispatchQueue.main.async {
+                isShowingGalleryAnim = true 
+            }
+        }
         .onDisappear { isShowingGalleryAnim = false }
+    }
+    
+    private var galleryCardSet: some View {
+        VStack(spacing: 20) {
+            ForEach(0..<2) { row in
+                HStack(spacing: 20) {
+                    ForEach(0..<2) { col in
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Imagen del prompt
+                            RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)).frame(height: 140)
+                                .overlay(Image(systemName: "photo").foregroundColor(.secondary.opacity(0.4)))
+                            
+                            // Detalles del prompt
+                            VStack(alignment: .leading, spacing: 8) {
+                                RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.08)).frame(width: 120, height: 8)
+                                RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.04)).frame(width: 80, height: 6)
+                            }
+                            .padding(12)
+                        }
+                        .background(Color(NSColor.windowBackgroundColor))
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.08), radius: 15, y: 8)
+                    }
+                }
+            }
+        }
     }
     
     @State private var isShowingGalleryAnim = false

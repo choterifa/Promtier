@@ -7,9 +7,9 @@ final class ImageOptimizer: @unchecked Sendable {
     
     private init() {}
     
-    /// Optimiza una imagen: Redimensiona a max 1200px y comprime a JPEG con calidad 0.8
+    /// Optimiza una imagen: Redimensiona a max 720px y comprime a JPEG con calidad 0.8
     nonisolated func optimize(imageData: Data) -> Data? {
-        optimize(imageData: imageData, maxPixelSize: 1200, compressionQuality: 0.8)
+        optimize(imageData: imageData, maxPixelSize: 720, compressionQuality: 0.8)
     }
 
     /// Optimiza para guardado en disco, devolviendo también la extensión sugerida.
