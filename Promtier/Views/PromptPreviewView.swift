@@ -434,7 +434,7 @@ struct PromptPreviewView: View {
         let action: () -> Void
         
         @State private var isHovered = false
-        @State private var alignment: Alignment = .center
+        @State private var verticalOffset: CGFloat = 0
         
         var body: some View {
             DownsampledImageURLView(
@@ -444,7 +444,9 @@ struct PromptPreviewView: View {
                 contentMode: .fill,
                 thumbnailData: thumbnailData
             )
-            .frame(width: 280, height: 180, alignment: alignment)
+            .scaleEffect(1.15)
+            .offset(y: verticalOffset)
+            .frame(width: 280, height: 180)
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
@@ -452,70 +454,36 @@ struct PromptPreviewView: View {
                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
             )
             .overlay(alignment: .bottomTrailing) {
-                HStack(spacing: 8) {
-                    // Controles de alineación vertical
-                    HStack(spacing: 4) {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3)) {
-                                if alignment == .bottom { alignment = .center }
-                                else if alignment == .center { alignment = .top }
-                            }
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .frame(width: 22, height: 22)
-                                    .shadow(color: .black.opacity(0.1), radius: 4)
-                                Image(systemName: "arrow.up")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(.primary.opacity(alignment == .top ? 0.3 : 0.7))
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(alignment == .top)
-                        
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3)) {
-                                if alignment == .top { alignment = .center }
-                                else if alignment == .center { alignment = .bottom }
-                            }
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .frame(width: 22, height: 22)
-                                    .shadow(color: .black.opacity(0.1), radius: 4)
-                                Image(systemName: "arrow.down")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(.primary.opacity(alignment == .bottom ? 0.3 : 0.7))
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(alignment == .bottom)
+                // Solo lupa, reducida a 22px
+                Button(action: {
+                    action()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 22, height: 22)
+                            .shadow(color: .black.opacity(0.1), radius: 4)
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.primary.opacity(0.7))
                     }
-                    
-                    // Lupa original
-                    Button(action: {
-                        action()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 26, height: 26)
-                                .shadow(color: .black.opacity(0.1), radius: 4)
-    
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.primary.opacity(0.7))
-                        }
-                    }
-                    .buttonStyle(.plain)
                 }
+                .buttonStyle(.plain)
                 .padding(10)
                 .opacity(isHovered ? 1 : 0)
                 .scaleEffect(isHovered ? 1 : 0.8)
             }
             .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+            // Captura scroll del trackpad a nivel AppKit — overlay para recibir eventos
+            .overlay(
+                ScrollWheelCapture { delta in
+                    let newOffset = verticalOffset + delta * 0.6
+                    withAnimation(.interactiveSpring()) {
+                        verticalOffset = max(-80, min(80, newOffset))
+                    }
+                }
+                .frame(width: 280, height: 180)
+            )
             .onTapGesture(count: 2) {
                 action()
             }
@@ -536,6 +504,54 @@ struct PromptPreviewView: View {
             }
         }
     }
+    
+    // MARK: - ScrollWheelCapture (AppKit bridge para trackpad)
+    /// Captura eventos de scroll del trackpad directamente en AppKit,
+    /// evitando que el ScrollView padre los consuma primero.
+    private struct ScrollWheelCapture: NSViewRepresentable {
+        let onScroll: (CGFloat) -> Void
+        
+        func makeNSView(context: Context) -> ScrollCaptureNSView {
+            let view = ScrollCaptureNSView()
+            view.onScroll = onScroll
+            return view
+        }
+        
+        func updateNSView(_ nsView: ScrollCaptureNSView, context: Context) {
+            nsView.onScroll = onScroll
+        }
+    }
+    
+    final class ScrollCaptureNSView: NSView {
+        var onScroll: ((CGFloat) -> Void)?
+        
+        override var acceptsFirstResponder: Bool { false }
+        
+        // Reenviar clicks al responder chain para que SwiftUI los maneje
+        override func mouseDown(with event: NSEvent) {
+            nextResponder?.mouseDown(with: event)
+        }
+        override func mouseUp(with event: NSEvent) {
+            nextResponder?.mouseUp(with: event)
+        }
+        
+        override func scrollWheel(with event: NSEvent) {
+            guard event.phase != [] || event.momentumPhase != [] else {
+                super.scrollWheel(with: event)
+                return
+            }
+            let dx = abs(event.scrollingDeltaX)
+            let dy = abs(event.scrollingDeltaY)
+            // Solo procesar si el gesto es predominantemente vertical
+            // Si es más horizontal que vertical, dejar pasar al siguiente responder
+            if dy > dx {
+                onScroll?(event.scrollingDeltaY)
+            } else {
+                super.scrollWheel(with: event)
+            }
+        }
+    }
+
     
     // MARK: - Helpers
     

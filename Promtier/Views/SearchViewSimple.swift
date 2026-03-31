@@ -309,8 +309,10 @@ struct SearchViewSimple: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+            if localEventMonitor == nil {
+                localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    return handleLocalKeyEvent(event)
+                }
             }
             
             // Programar primer Ghost Tip si están activados (Triplicado)
@@ -318,11 +320,6 @@ struct SearchViewSimple: View {
                 scheduleNextGhostTip(initialDelay: 9.0)
             }
             
-            if localEventMonitor == nil {
-                localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    return handleLocalKeyEvent(event)
-                }
-            }
             delayedPrewarmTask?.cancel()
             if let firstPrompt = promptService.filteredPrompts.first {
                 delayedPrewarmTask = Task(priority: .utility) {
@@ -340,6 +337,15 @@ struct SearchViewSimple: View {
             }
             prewarmTask?.cancel()
             delayedPrewarmTask?.cancel()
+        }
+        // Quitar el foco del buscador CADA VEZ que el popover se abre
+        .onChange(of: menuBarManager.isPopoverShown) { _, isShown in
+            if isShown {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    isSearchFocused = false
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                }
+            }
         }
         .onChange(of: selectedPrompt?.id) { _, _ in
             guard let selectedPrompt else { return }
@@ -489,7 +495,7 @@ struct SearchViewSimple: View {
                                     .fill(Color.primary.opacity(0.04))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                                     )
                             )
                             
@@ -890,23 +896,25 @@ struct SearchViewSimple: View {
             return nil
         }
         if keyCode == 49 { // Space
-            let isSearchEmpty = promptService.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty
-            let shouldTriggerPreview = isNavigatingWithKeys || isSearchEmpty || !isSearchFocused
+            // Si el buscador tiene el foco, dejamos pasar el espacio para que el usuario pueda escribir
+            if isSearchFocused { return event }
             
-            if shouldTriggerPreview {
-                if showingPreview {
-                    DispatchQueue.main.async {
-                        showingPreview = false
-                        if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-                    }
-                    return nil
-                } else if selectedPrompt != nil {
-                    DispatchQueue.main.async {
-                        showingPreview = true
-                        if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-                    }
-                    return nil
+            // Si hay un preview abierto, lo cerramos
+            if showingPreview {
+                DispatchQueue.main.async {
+                    showingPreview = false
+                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
                 }
+                return nil
+            }
+            
+            // Si hay un prompt seleccionado, abrir preview
+            if selectedPrompt != nil {
+                DispatchQueue.main.async {
+                    showingPreview = true
+                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
+                }
+                return nil
             }
         }
         if keyCode == 14 { // 'e' key for edit

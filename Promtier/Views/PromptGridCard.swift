@@ -27,6 +27,8 @@ struct PromptGridCard: View {
     @State private var fallbackShowcasePath: String? = nil
     @State private var isGlowAnimating = false
     @State private var isAspectFit = false
+    @State private var currentImageIndex = 0
+    @State private var carouselScrollAccumulator: CGFloat = 0
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -138,56 +140,106 @@ struct PromptGridCard: View {
                     .padding(.bottom, 10)
             }
             
-            // Image Preview (if any)
+            // Image Preview (Carrusel con swipe de trackpad)
             if hasPreviewImage {
-                ZStack(alignment: .bottomTrailing) {
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.03))
-                        .frame(height: 180)
-                        .overlay(
-                            Group {
-                                if let thumbnailData = previewThumbnailData {
-                                    DownsampledImageView(
-                                        imageData: thumbnailData,
-                                        cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
-                                        maxPixelSize: 360,
-                                        contentMode: isAspectFit ? .fit : .fill
-                                    )
-                                } else if let firstPath = previewRelativePath {
-                                    let url = ImageStore.shared.url(forRelativePath: firstPath)
-                                    DownsampledImageURLView(
-                                        imageURL: url,
-                                        cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
-                                        maxPixelSize: 360,
-                                        contentMode: isAspectFit ? .fit : .fill
-                                    )
+                let allPaths = prompt.showcaseImagePaths
+                let allThumbs = prompt.showcaseThumbnails
+                let imageCount = max(allPaths.count, allThumbs.isEmpty ? (previewThumbnailData != nil ? 1 : 0) : allThumbs.count)
+                
+                ZStack(alignment: .bottom) {
+                    ZStack(alignment: .bottomTrailing) {
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.03))
+                            .frame(height: 180)
+                            .overlay(
+                                Group {
+                                    if currentImageIndex < allThumbs.count {
+                                        DownsampledImageView(
+                                            imageData: allThumbs[currentImageIndex],
+                                            cacheKey: "\(prompt.id.uuidString):grid:thumb:\(currentImageIndex)",
+                                            maxPixelSize: 360,
+                                            contentMode: isAspectFit ? .fit : .fill
+                                        )
+                                    } else if currentImageIndex < allPaths.count {
+                                        let path = allPaths[currentImageIndex]
+                                        let url = ImageStore.shared.url(forRelativePath: path)
+                                        DownsampledImageURLView(
+                                            imageURL: url,
+                                            cacheKey: "\(prompt.id.uuidString):grid:\(currentImageIndex):360:\(path)",
+                                            maxPixelSize: 360,
+                                            contentMode: isAspectFit ? .fit : .fill
+                                        )
+                                    } else if let thumbnailData = previewThumbnailData {
+                                        DownsampledImageView(
+                                            imageData: thumbnailData,
+                                            cacheKey: "\(prompt.id.uuidString):grid:thumb:0",
+                                            maxPixelSize: 360,
+                                            contentMode: isAspectFit ? .fit : .fill
+                                        )
+                                    } else if let firstPath = previewRelativePath {
+                                        let url = ImageStore.shared.url(forRelativePath: firstPath)
+                                        DownsampledImageURLView(
+                                            imageURL: url,
+                                            cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",
+                                            maxPixelSize: 360,
+                                            contentMode: isAspectFit ? .fit : .fill
+                                        )
+                                    }
                                 }
+                                .id(currentImageIndex) // Fuerza reconstrucción al cambiar de imagen
+                                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+                            )
+                            .clipped()
+                            // Captura scroll horizontal del trackpad para cambiar imagen
+                            .overlay(
+                                imageCount > 1 ?
+                                    AnyView(
+                                        HorizontalScrollWheelCapture { deltaX in
+                                            handleCarouselScroll(deltaX: deltaX, imageCount: imageCount)
+                                        }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    )
+                                : AnyView(EmptyView())
+                            )
+                        
+                        // Fit/Fill Control
+                        if isHovered {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                    isAspectFit.toggle()
+                                }
+                                HapticService.shared.playLight()
+                            }) {
+                                Image(systemName: isAspectFit ? "arrow.up.left.and.arrow.down.right" : "arrow.down.forward.and.arrow.up.backward")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(5)
+                                    .background(Color.black.opacity(0.5))
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.1), radius: 2)
                             }
-                        )
-                        .clipped()
-                    
-                    // Fit/Fill Control
-                    if isHovered {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                                isAspectFit.toggle()
-                            }
-                            HapticService.shared.playLight()
-                        }) {
-                            Image(systemName: isAspectFit ? "arrow.up.left.and.arrow.down.right" : "arrow.down.forward.and.arrow.up.backward")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(5)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.1), radius: 2)
+                            .buttonStyle(.plain)
+                            .padding(8)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.85).combined(with: .opacity).animation(.spring(response: 0.3)),
+                                removal: .opacity.animation(.easeOut(duration: 0.2))
+                            ))
                         }
-                        .buttonStyle(.plain)
-                        .padding(8)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.85).combined(with: .opacity).animation(.spring(response: 0.3)),
-                            removal: .opacity.animation(.easeOut(duration: 0.2))
-                        ))
+                    }
+                    
+                    // Indicadores de puntos (solo si hay más de 1 imagen)
+                    if imageCount > 1 {
+                        HStack(spacing: 4) {
+                            ForEach(0..<imageCount, id: \.self) { i in
+                                Circle()
+                                    .fill(i == currentImageIndex ? Color.white : Color.white.opacity(0.4))
+                                    .frame(width: 5, height: 5)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.black.opacity(0.4)))
+                        .padding(.bottom, 8)
                     }
                 }
             }
@@ -328,5 +380,59 @@ struct PromptGridCard: View {
         if isSelected { return themeColor.opacity(0.5) }
         else if isHovered { return themeColor.opacity(0.2) }
         else { return Color.primary.opacity(0.06) }
+    }
+    
+    private func handleCarouselScroll(deltaX: CGFloat, imageCount: Int) {
+        carouselScrollAccumulator += deltaX
+        let threshold: CGFloat = 30
+        if carouselScrollAccumulator > threshold {
+            carouselScrollAccumulator = 0
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                currentImageIndex = max(0, currentImageIndex - 1)
+            }
+            HapticService.shared.playLight()
+        } else if carouselScrollAccumulator < -threshold {
+            carouselScrollAccumulator = 0
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                currentImageIndex = min(imageCount - 1, currentImageIndex + 1)
+            }
+            HapticService.shared.playLight()
+        }
+    }
+}
+
+// MARK: - HorizontalScrollWheelCapture (trackpad swipe horizontal)
+private struct HorizontalScrollWheelCapture: NSViewRepresentable {
+    let onScroll: (CGFloat) -> Void
+    
+    func makeNSView(context: Context) -> HorizontalScrollCaptureNSView {
+        let view = HorizontalScrollCaptureNSView()
+        view.onScroll = onScroll
+        return view
+    }
+    
+    func updateNSView(_ nsView: HorizontalScrollCaptureNSView, context: Context) {
+        nsView.onScroll = onScroll
+    }
+}
+
+final class HorizontalScrollCaptureNSView: NSView {
+    var onScroll: ((CGFloat) -> Void)?
+    
+    override var acceptsFirstResponder: Bool { false }
+    
+    override func mouseDown(with event: NSEvent) {
+        nextResponder?.mouseDown(with: event)
+    }
+    override func mouseUp(with event: NSEvent) {
+        nextResponder?.mouseUp(with: event)
+    }
+    
+    override func scrollWheel(with event: NSEvent) {
+        if event.phase != [] || event.momentumPhase != [] {
+            onScroll?(event.scrollingDeltaX)
+        } else {
+            super.scrollWheel(with: event)
+        }
     }
 }
