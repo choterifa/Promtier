@@ -1414,6 +1414,23 @@ struct NewPromptView: View {
                 return nil // consume the event
             }
 
+            // Cmd + C -> Copy (Fallback to entire content if no selection)
+            if modifiers == .command && event.keyCode == 8 { // 'C' is keyCode 8
+                if isTextSelectedInEditor() {
+                    return event // Let the text field copy the selection
+                }
+                
+                // Si no hay selección, copiar el contenido del draft
+                if !content.isEmpty {
+                    DispatchQueue.main.async {
+                        ClipboardService.shared.copyToClipboard(content)
+                        if preferences.soundEnabled { SoundService.shared.playCopySound() }
+                        HapticService.shared.playLight()
+                    }
+                    return nil
+                }
+            }
+
             // Cmd + V -> Paste Image globally
             if modifiers == .command && event.keyCode == 9 { // 'V' is keyCode 9
                 let pb = NSPasteboard.general
@@ -4031,5 +4048,14 @@ extension NewPromptView {
         }
         .padding(16)
         .frame(width: 250)
+    }
+    
+    private func isTextSelectedInEditor() -> Bool {
+        guard let window = NSApp.keyWindow,
+              let fieldEditor = window.firstResponder as? NSTextView,
+              fieldEditor.selectedRange().length > 0 else {
+            return false
+        }
+        return true
     }
 }

@@ -17,6 +17,7 @@ struct FloatingAIDraftView: View {
     @State private var error: String?
     @State private var customCommand: String = ""
     @FocusState private var isDraftFocused: Bool
+    @State private var localMonitor: Any?
     
     private var isAIAvailable: Bool {
         (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
@@ -163,13 +164,83 @@ struct FloatingAIDraftView: View {
         .onAppear {
             isDraftFocused = true
             checkAutoImprove()
+            setupKeyboardMonitor()
         }
-        .onChange(of: manager.isVisible) { visible in
+        .onDisappear {
+            if let monitor = localMonitor {
+                NSEvent.removeMonitor(monitor)
+                localMonitor = nil
+            }
+        }
+        .onChange(of: manager.isVisible) { _, visible in
             if visible {
                 isDraftFocused = true
                 checkAutoImprove()
+                setupKeyboardMonitor()
             }
         }
+    }
+
+    private func setupKeyboardMonitor() {
+        if localMonitor != nil { return }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            
+            // ESC -> Close
+            if event.keyCode == 53 {
+                manager.hide()
+                return nil
+            }
+            
+            // Cmd + C -> Copy
+            if modifiers == .command && event.keyCode == 8 {
+                if isTextSelectedInDraft() {
+                    return event
+                }
+                let textToCopy = responseText.isEmpty ? manager.content : responseText
+                if !textToCopy.isEmpty {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(textToCopy, forType: .string)
+                    HapticService.shared.playSuccess()
+                    return nil
+                }
+            }
+            
+            // Cmd + Enter (36 es Return) -> Copiar y Salir
+            if modifiers == .command && (event.keyCode == 36 || event.keyCode == 76) {
+                let textToCopy = responseText.isEmpty ? manager.content : responseText
+                if !textToCopy.isEmpty {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(textToCopy, forType: .string)
+                    HapticService.shared.playSuccess()
+                    manager.hide()
+                    return nil
+                }
+            }
+            
+            // Cmd + V -> Paste (para asegurar que funcione en el panel)
+            if modifiers == .command && event.keyCode == 9 {
+                if let str = NSPasteboard.general.string(forType: .string) {
+                    // Si el foco no está en el editor, pegamos al final
+                    if !isDraftFocused {
+                        manager.content += str
+                        return nil
+                    }
+                }
+                return event
+            }
+            
+            return event
+        }
+    }
+    
+    private func isTextSelectedInDraft() -> Bool {
+        guard let window = NSApp.keyWindow,
+              let fieldEditor = window.firstResponder as? NSTextView,
+              fieldEditor.selectedRange().length > 0 else {
+            return false
+        }
+        return true
     }
     
     private func checkAutoImprove() {
