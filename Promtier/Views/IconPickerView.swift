@@ -10,7 +10,11 @@ import SwiftUI
 struct IconPickerView: View {
     @Binding var selectedIcon: String?
     let color: Color
+    var categoryName: String? = nil
+    
     @EnvironmentObject var preferences: PreferencesManager
+    @State private var isCategorizing = false
+    @State private var isHoveringMagic = false
     
     // MARK: - Categorías de Iconos
     
@@ -112,12 +116,31 @@ struct IconPickerView: View {
                 Text("choose_icon".localized(for: preferences.language))
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
+                
+                if let name = categoryName, !name.isEmpty,
+                   ((preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
+                    (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)) {
+                    Button(action: {
+                        magicIconSelection(for: name)
+                    }) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(isCategorizing ? .gray : (isHoveringMagic ? color : .blue))
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { isHoveringMagic = $0 }
+                    .disabled(isCategorizing)
+                    .help("Sugerir un icono mágico con IA")
+                    .padding(.trailing, 8)
+                }
+
                 Button("done".localized(for: preferences.language)) {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
                 .keyboardShortcut(.defaultAction)
+                .disabled(isCategorizing)
             }
             .padding(.horizontal, 4)
             
@@ -194,6 +217,32 @@ struct IconPickerView: View {
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         )
         .frame(width: 320, height: 460)
+    }
+
+    private func magicIconSelection(for name: String) {
+        isCategorizing = true
+        HapticService.shared.playImpact()
+        
+        let systemPrompt = AIServiceManager.generateCategoryIconPrompt(categoryName: name)
+        
+        Task {
+            do {
+                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
+                await MainActor.run {
+                    self.isCategorizing = false
+                    HapticService.shared.playSuccess()
+                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if IconPickerView.allIconNames.contains(result) {
+                        withAnimation(.spring()) { self.selectedIcon = result }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isCategorizing = false
+                    HapticService.shared.playImpact()
+                }
+            }
+        }
     }
 }
 

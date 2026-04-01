@@ -84,7 +84,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         if let screen = NSScreen.main {
             let visibleFrame = screen.visibleFrame
             let panelWidth: CGFloat = 440
-            let panelHeight: CGFloat = 500
+            let panelHeight: CGFloat = 580
             
             // Revert a centrado horizontal y vertical
             let x = visibleFrame.midX - (panelWidth / 2)
@@ -270,7 +270,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         isCollapsed.toggle()
         
         let targetWidth: CGFloat = isCollapsed ? 48 : 440
-        let targetHeight: CGFloat = isCollapsed ? 48 : 500
+        let targetHeight: CGFloat = isCollapsed ? 48 : 580
         
         var frame = panel.frame
         let oldWidth = frame.size.width
@@ -319,7 +319,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
         
         let newPanel = FloatingZenPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 580),
             styleMask: [.nonactivatingPanel, .borderless, .resizable],
             backing: .buffered,
             defer: false
@@ -351,56 +351,17 @@ class FloatingZenManager: NSObject, ObservableObject {
     }
     
     private func scheduleAutoSave() {
-        autoSaveTimer?.invalidate()
-        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
-            self?.forceAutoSave()
-        }
+        // Disabled
     }
     
     private func forceAutoSave() {
-        var currentPrompt: Prompt
-        if let existing = DraftService.shared.loadDraft() {
-            currentPrompt = Prompt(
-                title: title,
-                content: content,
-                promptDescription: promptDescription.isEmpty ? existing.prompt.promptDescription : promptDescription,
-                folder: existing.prompt.folder,
-                icon: existing.prompt.icon,
-                showcaseImages: showcaseImages.isEmpty ? existing.prompt.showcaseImages : showcaseImages,
-                tags: existing.prompt.tags,
-                targetAppBundleIDs: existing.prompt.targetAppBundleIDs,
-                negativePrompt: existing.prompt.negativePrompt,
-                alternativePrompt: existing.prompt.alternativePrompt,
-                alternatives: existing.prompt.alternatives,
-                customShortcut: existing.prompt.customShortcut
-            )
-            currentPrompt.id = originalPromptId ?? existing.prompt.id
-            currentPrompt.createdAt = existing.prompt.createdAt
-            currentPrompt.lastUsedAt = existing.prompt.lastUsedAt
-            currentPrompt.useCount = existing.prompt.useCount
-            currentPrompt.isFavorite = existing.prompt.isFavorite
-            currentPrompt.parentID = existing.prompt.parentID
-            currentPrompt.versionHistory = existing.prompt.versionHistory
-        } else {
-            currentPrompt = Prompt(
-                title: title,
-                content: content,
-                promptDescription: promptDescription.isEmpty ? nil : promptDescription,
-                showcaseImages: showcaseImages
-            )
-            if let originalId = originalPromptId {
-                currentPrompt.id = originalId
-            }
-        }
-        
-        DraftService.shared.saveDraft(prompt: currentPrompt, isEditing: isEditingExisting)
-        NotificationCenter.default.post(name: NSNotification.Name("FloatingZenDraftUpdated"), object: nil)
+        // Disabled
     }
 }
 
 extension FloatingZenManager: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         isVisible = false
-        forceAutoSave()
+        // forceAutoSave() disabled
     }
 }

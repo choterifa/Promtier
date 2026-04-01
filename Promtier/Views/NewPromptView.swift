@@ -1090,7 +1090,6 @@ struct NewPromptView: View {
         }
         .onChange(of: draftState) { _, _ in
             saveCurrentDraft()
-            debounceAutoSave()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FloatingZenDraftUpdated"))) { _ in
             DispatchQueue.main.async {

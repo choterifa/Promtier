@@ -562,7 +562,7 @@ struct EditorCard: View {
         
         Task {
             do {
-                let instruction = "Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores dominante, estilo artístico y configuración de iluminación. Empieza directamente con el prompt en inglés o español sin frases introductorias."
+                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
                 let systemPrompt = """
                 You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
                 
@@ -570,16 +570,28 @@ struct EditorCard: View {
                 \(instruction)
                 
                 # IMPORTANT:
-                Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
                 """
                 
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
                 
                 await MainActor.run {
                     self.isMagicImageProcessing = false
-                    self.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
-                        self.title = "Prompt de Imagen"
+                    
+                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let components = rawResponse.components(separatedBy: "PROMPT:")
+                    
+                    if components.count == 2 {
+                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
+                            self.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                        }
+                    } else {
+                        self.content = rawResponse
+                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
+                            self.title = "Prompt de Imagen"
+                        }
                     }
                 }
             } catch {

@@ -120,7 +120,6 @@ struct FloatingZenEditorView: View {
                             }
                             .scaleEffect(0.65)
                             .frame(width: 25, height: 25)
-                            .padding(.trailing, 20) // to align exactly with the TextField constraints
                         }
                         .padding(.top, 8)
                         
@@ -140,6 +139,7 @@ struct FloatingZenEditorView: View {
                                 .focused($focusedField, equals: .content)
                                 .scrollContentBackground(.hidden)
                                 .scrollIndicators(.hidden)
+                                .disableNativeDrop()
                                 .onAppear {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                         if let scrollView = findNSScrollView(view: NSApp.keyWindow?.contentView) {
@@ -155,7 +155,7 @@ struct FloatingZenEditorView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .fill(Color.primary.opacity((isGhostMode && !isMouseInside) ? 0.1 : 0.035))
                         )
-                        .frame(minHeight: 120, maxHeight: .infinity)
+                        .frame(minHeight: 200, maxHeight: .infinity)
                         .overlay(alignment: .bottomTrailing) {
                             Button(action: triggerScreenOCR) {
                                 Image(systemName: "text.viewfinder")
@@ -186,7 +186,7 @@ struct FloatingZenEditorView: View {
                 
                 footerBar
             }
-            .frame(minWidth: 440, maxWidth: .infinity, minHeight: 500, maxHeight: .infinity)
+            .frame(minWidth: 440, maxWidth: .infinity, minHeight: 580, maxHeight: .infinity)
             .opacity((manager.isCollapsed) ? 0 : 1)
             .scaleEffect(manager.isCollapsed ? 0.9 : 1.0)
             .opacity(isGhostMode && !isMouseInside ? 0.6 : 1.0) // Dimming solo el contenido, no todo el window frame
@@ -256,9 +256,6 @@ struct FloatingZenEditorView: View {
         }
         .onAppear {
             focusedField = .title
-        }
-        .onDrop(of: [UTType.image, UTType.fileURL], isTargeted: $isDraggingImage) { providers in
-            handleDrop(providers: providers)
         }
         .onChange(of: manager.content) { oldValue, newValue in
             // Scroll logic simplified
@@ -386,19 +383,6 @@ struct FloatingZenEditorView: View {
                 .onHover { isHoveringCollapse = $0 }
                 .padding(.leading, 8)
                 
-                // Botón Ghost Mode
-                Button(action: { isGhostMode.toggle() }) {
-                    Image(systemName: isGhostMode ? "eye.slash.fill" : "eye.fill")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor((isGhostMode || hoverEye) ? .accentColor : .secondary)
-                        .padding(6)
-                        .background(Circle().fill((isGhostMode || hoverEye) ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.06)))
-                }
-                .buttonStyle(.plain)
-                .help("Ghost Mode: Transparente al salir")
-                .onHover { hoverEye = $0 }
-                .padding(.leading, 4)
-                
                 Spacer()
                 
                 Button(action: {
@@ -483,6 +467,9 @@ struct FloatingZenEditorView: View {
         }
         .padding(.horizontal, 22)
         .padding(.bottom, 12)
+        .onDrop(of: [UTType.image, UTType.fileURL], isTargeted: $isDraggingImage) { providers in
+            handleDrop(providers: providers)
+        }
     }
     
     @ViewBuilder
@@ -543,16 +530,15 @@ struct FloatingZenEditorView: View {
                             .font(.system(size: 10, weight: .bold))
                     }
                 }
-                .foregroundColor(isMagicAvailable ? ((pulseMagic || isHoveringMagic) ? .white : .accentColor) : .secondary.opacity(0.4))
+                .foregroundColor(isMagicAvailable ? .accentColor : .secondary.opacity(0.4))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     isMagicAvailable ? 
-                        ((pulseMagic || isHoveringMagic) ? Color.accentColor.opacity(0.85) : Color.accentColor.opacity(0.1)) 
+                        ((pulseMagic || isHoveringMagic) ? Color.accentColor.opacity(0.2) : Color.accentColor.opacity(0.1)) 
                     : Color.primary.opacity(0.04)
                 )
                 .cornerRadius(8)
-                .shadow(color: (pulseMagic || isHoveringMagic) && isMagicAvailable ? Color.accentColor.opacity(0.2) : .clear, radius: 4)
                 .animation(.easeInOut(duration: 0.2), value: pulseMagic)
                 .animation(.easeInOut(duration: 0.2), value: isHoveringMagic)
             }
@@ -774,7 +760,7 @@ struct FloatingZenEditorView: View {
         
         Task {
             do {
-                let instruction = "Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores dominante, estilo artístico y configuración de iluminación. Empieza directamente con el prompt en inglés o español sin frases introductorias."
+                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
                 let systemPrompt = """
                 You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
                 
@@ -782,16 +768,28 @@ struct FloatingZenEditorView: View {
                 \(instruction)
                 
                 # IMPORTANT:
-                Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
                 """
                 
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
                 
                 await MainActor.run {
                     self.isMagicImageProcessing = false
-                    manager.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if manager.title.isEmpty || manager.title == "Generando prompt..." {
-                        manager.title = "Prompt de Imagen"
+                    
+                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let components = rawResponse.components(separatedBy: "PROMPT:")
+                    
+                    if components.count == 2 {
+                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        manager.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        if manager.title.isEmpty || manager.title == "Generando prompt..." || manager.title == "Prompt de Imagen" {
+                            manager.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                        }
+                    } else {
+                        manager.content = rawResponse
+                        if manager.title.isEmpty || manager.title == "Generando prompt..." {
+                            manager.title = "Prompt de Imagen"
+                        }
                     }
                 }
             } catch {

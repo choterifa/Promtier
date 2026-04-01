@@ -24,6 +24,7 @@ struct FloatingAIDraftView: View {
     
     // Preset Editor State
     @State private var showPresetEditor: Bool = false
+    @State private var isDraggingMagicImage = false
     @State private var newPresetTitle: String = ""
     @State private var newPresetInstruction: String = ""
     @State private var newPresetIcon: String = "sparkles"
@@ -73,6 +74,7 @@ struct FloatingAIDraftView: View {
                             .font(.system(size: 14 * preferences.fontSize.scale))
                             .lineSpacing(5)
                             .scrollContentBackground(.hidden)
+                            .disableNativeDrop() // Disable AppKit stealing the drag
                             .padding(12)
                             .focused($isDraftFocused)
                     }

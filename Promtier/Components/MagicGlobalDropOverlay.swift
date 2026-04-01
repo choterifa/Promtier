@@ -33,20 +33,10 @@ public struct MagicGlobalDropOverlay: ViewModifier {
                                     .scaledToFit()
                                     .frame(maxHeight: 180)
                                     .cornerRadius(12)
-                                    .shadow(radius: 10)
+                                    .shadow(color: .blue.opacity(0.6), radius: 20, x: 0, y: 0)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        // Magical scanner line
-                                        Rectangle()
-                                            .fill(
-                                                LinearGradient(gradient: Gradient(colors: [.clear, .blue.opacity(0.6), .clear]), startPoint: .top, endPoint: .bottom)
-                                            )
-                                            .frame(height: 20)
-                                            .offset(y: isPulsing ? 90 : -90)
-                                            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isPulsing)
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                                     )
                                 
                                 Text("Analizando imagen con IA...")

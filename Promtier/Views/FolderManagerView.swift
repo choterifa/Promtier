@@ -25,6 +25,8 @@ struct FolderManagerView: View {
     @State private var editingFolder: Folder?
     @State private var animateColors = false
     
+    @State private var isCreatingWithAI = false
+    
     // Reordenado
     @State private var draggedFolder: Folder? = nil
     @State private var dropTargetFolder: Folder? = nil
@@ -83,7 +85,7 @@ struct FolderManagerView: View {
             }
         }
         .sheet(isPresented: $showingIconPicker) {
-            IconPickerView(selectedIcon: $selectedIcon, color: selectedColor)
+            IconPickerView(selectedIcon: $selectedIcon, color: selectedColor, categoryName: newFolderName)
         }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
@@ -399,14 +401,44 @@ struct FolderManagerView: View {
             return
         }
         
+        let isAIAvailable = (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
+                            (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)
+                            
+        // Auto-Magic Icon para nueva categoria si dejó el icono por defecto
+        if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable && !isCreatingWithAI {
+            isCreatingWithAI = true
+            let prompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
+            Task {
+                var finalIcon = "folder.fill"
+                do {
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt)
+                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if IconPickerView.allIconNames.contains(result) {
+                        finalIcon = result
+                    }
+                } catch {
+                    // silent discard, it will create with default
+                }
+                let iconToUse = finalIcon
+                await MainActor.run {
+                    self.finishSavingFolder(sanitizedName: sanitizedName, iconParam: iconToUse)
+                    self.isCreatingWithAI = false
+                }
+            }
+        } else {
+            finishSavingFolder(sanitizedName: sanitizedName, iconParam: selectedIcon)
+        }
+    }
+    
+    private func finishSavingFolder(sanitizedName: String, iconParam: String?) {
         // 3. Proceder a guardar
         let hex = "#" + NSColor(selectedColor).hexString
         
         if let editing = editingFolder {
-            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: selectedIcon, createdAt: editing.createdAt, parentId: editing.parentId)
+            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: iconParam, createdAt: editing.createdAt, parentId: editing.parentId)
             _ = promptService.updateFolder(updated, oldName: editing.name)
         } else {
-            let new = Folder(name: sanitizedName, color: hex, icon: selectedIcon)
+            let new = Folder(name: sanitizedName, color: hex, icon: iconParam)
             _ = promptService.createFolder(new)
         }
         resetForm()
@@ -506,27 +538,32 @@ struct FolderManagerView: View {
                 saveFolder()
             } label: {
                 HStack {
-                    Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
-                    Image(systemName: "checkmark")
+                    if isCreatingWithAI {
+                        ProgressView().controlSize(.small)
+                        Text("Generando IA...")
+                    } else {
+                        Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
+                        Image(systemName: "checkmark")
+                    }
                 }
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
                 .background(
-                    newFolderName.isEmpty ? 
+                    (newFolderName.isEmpty || isCreatingWithAI) ? 
                         AnyShapeStyle(Color.gray.opacity(0.3)) : 
                         (preferences.isHaloEffectEnabled ? 
                             AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
                             AnyShapeStyle(Color.blue))
                 )
                 .cornerRadius(12)
-                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
-                .scaleEffect((isCreateHovered && !newFolderName.isEmpty) ? 1.015 : 1.0)
+                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty && !isCreatingWithAI) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
+                .scaleEffect((isCreateHovered && !newFolderName.isEmpty && !isCreatingWithAI) ? 1.015 : 1.0)
                 .keyboardShortcut(.return, modifiers: .command)
             }
             .buttonStyle(.plain)
-            .disabled(newFolderName.isEmpty)
+            .disabled(newFolderName.isEmpty || isCreatingWithAI)
             .onHover { h in withAnimation(.spring(response: 0.3)) { isCreateHovered = h } }
         }
         .padding(.top, 8)
