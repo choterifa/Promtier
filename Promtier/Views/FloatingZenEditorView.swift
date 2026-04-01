@@ -97,9 +97,7 @@ struct FloatingZenEditorView: View {
                     .padding(.top, 10)
                     .padding(.bottom, 12)
                     
-                    // Descripción oculta (se rellena con IA)
-                    
-                    // ── Content (Expanding) ──
+                    // ── Content ──
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("CONTENIDO")
@@ -127,7 +125,6 @@ struct FloatingZenEditorView: View {
                                 .scrollContentBackground(.hidden)
                                 .scrollIndicators(.hidden)
                                 .onAppear {
-                                    // Hack nativo para ocultar totalmente la "ranura" del scroll en macOS
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                         if let scrollView = findNSScrollView(view: NSApp.keyWindow?.contentView) {
                                             scrollView.hasVerticalScroller = false
@@ -156,13 +153,13 @@ struct FloatingZenEditorView: View {
                             }
                             .buttonStyle(.plain)
                             .onHover { hoverContentOCR = $0 }
-                            .padding(10) // Más margen como en la imagen
+                            .padding(10)
                             .help("Extraer texto de pantalla")
                             .animation(.easeInOut(duration: 0.2), value: hoverContentOCR)
                         }
                     }
                     .padding(.horizontal, 22)
-                    .layoutPriority(1) // Dar prioridad al contenido para que crezca
+                    .layoutPriority(1)
                     
                     Spacer(minLength: 16)
                     
@@ -173,7 +170,7 @@ struct FloatingZenEditorView: View {
                 
                 footerBar
             }
-            .frame(minWidth: 400, maxWidth: .infinity, minHeight: 450, maxHeight: .infinity)
+            .frame(minWidth: 440, maxWidth: .infinity, minHeight: 500, maxHeight: .infinity)
             .opacity((manager.isCollapsed) ? 0 : 1)
             .scaleEffect(manager.isCollapsed ? 0.9 : 1.0)
             .opacity(isGhostMode && !isMouseInside ? 0.6 : 1.0) // Dimming solo el contenido, no todo el window frame
@@ -210,9 +207,9 @@ struct FloatingZenEditorView: View {
             }
         }
         .frame(
-            minWidth: manager.isCollapsed ? 48 : 400,
+            minWidth: manager.isCollapsed ? 48 : 440,
             maxWidth: manager.isCollapsed ? 48 : .infinity,
-            minHeight: manager.isCollapsed ? 48 : 450,
+            minHeight: manager.isCollapsed ? 48 : 500,
             maxHeight: manager.isCollapsed ? 48 : .infinity
         )
         .animation(.easeInOut(duration: 0.3), value: isMouseInside)
@@ -429,7 +426,7 @@ struct FloatingZenEditorView: View {
             }
         }
         .padding(.horizontal, 22)
-        .padding(.bottom, 12) // Reducido de 16
+        .padding(.bottom, 12)
     }
     
     @ViewBuilder
