@@ -1188,17 +1188,31 @@ struct NewPromptView: View {
             if let msg = branchMessage {
                 VStack {
                     Spacer()
-                    Text(msg)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(
-                            Capsule()
-                                .fill(msg.hasPrefix("❌") ? Color.red : Color.purple)
-                                .shadow(radius: 10)
-                        )
-                        .padding(.bottom, 40)
+                    if msg == "ai_thinking".localized(for: preferences.language) {
+                        AnimatedThinkingText(baseText: msg.replacingOccurrences(of: "...", with: ""))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(Color.purple)
+                                    .shadow(radius: 10)
+                            )
+                            .padding(.bottom, 40)
+                    } else {
+                        Text(msg)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(msg.hasPrefix("❌") ? Color.red : Color.purple)
+                                    .shadow(radius: 10)
+                            )
+                            .padding(.bottom, 40)
+                    }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(400)
@@ -1291,22 +1305,30 @@ struct NewPromptView: View {
                                                                 }
                                                             }                                }
                                 
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Instrucciones")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                        
-                                    TextField("Ej: Haz el texto más amigable...", text: $magicCommand, axis: .vertical)
-                                        .textFieldStyle(.plain)
-                                        .padding(12)
-                                        .background(Color(NSColor.controlBackgroundColor))
-                                        .cornerRadius(8)
-                                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
-                                        .lineLimit(3...6)
-                                        .onSubmit { executeMagicWithCommand() }
-                                        .onAppear {
-                                            magicCommand = ""
-                                        }
+                                if magicTarget == .content {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Instrucciones")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(.secondary)
+                                            
+                                        TextField("Ej: Haz el texto más amigable...", text: $magicCommand, axis: .vertical)
+                                            .textFieldStyle(.plain)
+                                            .padding(12)
+                                            .background(Color(NSColor.controlBackgroundColor))
+                                            .cornerRadius(8)
+                                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                                            .lineLimit(3...6)
+                                            .onSubmit { executeMagicWithCommand() }
+                                            .onAppear {
+                                                magicCommand = ""
+                                            }
+                                    }
+                                } else {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Se generará automáticamente un nuevo texto para \(magicTarget.rawValue) basado en el contenido existente.")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
             
                                 HStack {
@@ -1314,7 +1336,7 @@ struct NewPromptView: View {
                                     Button("Modificar") { executeMagicWithCommand() }
                                         .buttonStyle(.borderedProminent)
                                         .controlSize(.large)
-                                        .disabled(magicCommand.trimmingCharacters(in: .whitespaces).isEmpty)
+                                        .disabled(magicTarget == .content && magicCommand.trimmingCharacters(in: .whitespaces).isEmpty)
                                 }
                             }
                             .padding(24)
@@ -2349,11 +2371,11 @@ struct NewPromptView: View {
         
         switch magicTarget {
         case .title:
-            targetContext = "Current Title: \(trimmedTitle)"
-            systemInstruction = "Modify ONLY the title based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new title."
+            targetContext = "Current Prompt Content: \(trimmedContent)"
+            systemInstruction = command.isEmpty ? "Generate a catchy, short title (max 1 line) for the prompt content. Maintain the language. Respond ONLY with the new title." : "Modify ONLY the title based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new title."
         case .description:
-            targetContext = "Current Description: \(trimmedDescription.isEmpty ? "(None)" : trimmedDescription)"
-            systemInstruction = "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
+            targetContext = "Current Prompt Content: \(trimmedContent)\nCurrent Title: \(trimmedTitle)"
+            systemInstruction = command.isEmpty ? "Generate a concise description (max 2 lines) for the prompt content. Maintain the language. Respond ONLY with the new description." : "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
         case .content:
             targetContext = "Current Content: \(trimmedContent)"
             systemInstruction = "Modify ONLY the prompt content based on this instruction: '\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
@@ -2863,5 +2885,21 @@ extension NewPromptView {
                 }
             }
         }
+    }
+}
+
+// MARK: - Animated Thinking Text
+struct AnimatedThinkingText: View {
+    let baseText: String
+    
+    @State private var dotCount = 0
+    let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        let dots = String(repeating: ".", count: dotCount)
+        Text("\(baseText)\(dots)")
+            .onReceive(timer) { _ in
+                dotCount = (dotCount + 1) % 4
+            }
     }
 }

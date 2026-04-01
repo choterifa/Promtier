@@ -169,10 +169,6 @@ struct EditorToolbar: View {
                     Button(action: { onAIAction(.concise) }) {
                         Label("ai_action_concise".localized(for: preferences.language), systemImage: "text.alignleft")
                     }
-                    Divider()
-                    Button(action: { onAIAction(.instruct) }) {
-                        Label("ai_action_instruct".localized(for: preferences.language), systemImage: "wand.and.stars.inverse")
-                    }
                 } label: {
                     toolbarButton(icon: "pencil.and.outline", active: false)
                 }
