@@ -672,9 +672,8 @@ class PromptService: ObservableObject {
     }
 
     private func applyShowcaseImages(_ images: [Data], to entity: PromptEntity, promptId: UUID, clearExisting: Bool) {
-        let existingPaths = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }
-        if clearExisting, !existingPaths.isEmpty {
-            ImageStore.shared.delete(relativePaths: existingPaths)
+        if clearExisting {
+            ImageStore.shared.deleteAllImages(for: promptId)
         }
 
         // Reset fields
