@@ -1068,7 +1068,7 @@ struct HighlightedEditor: NSViewRepresentable {
             markdownSerializeWorkItem?.cancel()
 
             let plainCount = textView.string.utf16.count
-            let delay: TimeInterval = pendingLargeEdit || plainCount > 12_000 ? 0.14 : 0.05
+            let delay: TimeInterval = pendingLargeEdit || plainCount > 12_000 ? 0.4 : 0.15
             let token = UUID()
             markdownSerializationToken = token
 

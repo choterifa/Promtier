@@ -238,7 +238,7 @@ struct SearchViewSimple: View {
                 .zIndex(500)
             }
         }
-        .frame(width: preferences.windowWidth, height: preferences.windowHeight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
         .preferredColorScheme(preferences.appearance == .dark ? .dark : (preferences.appearance == .light ? .light : nil))
         .onDrop(of: [UTType.fileURL, UTType.json, UTType.zip], isTargeted: $isDraggingFile) { providers in

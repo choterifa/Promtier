@@ -3,6 +3,7 @@
 ## 🛡️ Auditoría de Seguridad & Nueva API de OpenRouter (Fase Actual)
 
 Hoy se ejecutó una auditoría técnica profunda y se integraron varias mejoras de fondo:
+
 1. **Arquitectura y Seguridad (Keychain):** Se migró todo el almacenamiento de claves API (OpenAI, Gemini) e incorporamos **OpenRouter**, que ahora delegan su gestión al Keychain seguro del sistema (`KeychainHelper.swift`) utilizando el flag de Apple `kSecAttrAccessibleAfterFirstUnlock` para no abrumar al usuario con contraseñas innecesarias respetando su integridad.
 2. **Unificación de IA con `AIServiceManager`:** Toda la lógica redundante y sucia que permitía a funciones seguir generando comandos en background (incluso si configurabas los toggles del UI en Off) fue suprimida. Todas las funciones de la app (DraftView, TextEditor y AlternativeGenerator) se centralizaron en un manager que valida y rechaza ejecuciones prohibidas.
 3. **Refinamiento UI (Resolución Bug):** El panel de ajuste de ventana con fantasma oscuro y ancho/alto ya no estorba cuando usas el `ResizeHandle` de la esquina y su visibilidad se dejó exclusivamente para el modulo de `PreferencesView`.
@@ -58,4 +59,4 @@ A pesar del progreso, la vista `NewPromptView` interactúa con una gran maraña 
 Implementado cache de iconos y app names en PromptCard para evitar beachball. Continuar con MVVM para NewPromptView.
 Creado ViewModel base para NewPromptView con inicialización y guardado
 Iniciando refactorización MVVM en NewPromptView. Swift script/Ruby en progreso para aislar dependencias poco a poco y evitar romper la UI de \~2700 lineas.
-¡Listo! Eliminados todos los scripts .rb sobrantes y archvios test*.swift de basurita tecnológica. Hecho un commit limpio con la limpieza.
+¡Listo! Eliminados todos los scripts .rb sobrantes y archvios test\*.swift de basurita tecnológica. Hecho un commit limpio con la limpieza.

@@ -450,7 +450,6 @@ class MenuBarManager: NSObject, ObservableObject {
     private func setupDimensionObserver() {
         // Observar ancho/alto para la ventana real
         Publishers.CombineLatest(preferencesManager.$windowWidth, preferencesManager.$windowHeight)
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] width, height in
                 self?.updatePopoverSize(width: width, height: height)
             }
@@ -470,7 +469,6 @@ class MenuBarManager: NSObject, ObservableObject {
             
         // Observar dimensiones proyectadas para sincronizar la Ventana Fantasma
         Publishers.CombineLatest(preferencesManager.$previewWidth, preferencesManager.$previewHeight)
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] width, height in
                 self?.updateGhostWindowSize(width: width, height: height)
             }
