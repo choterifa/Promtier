@@ -2956,7 +2956,7 @@ struct EditorCard: View {
                                 }) {
                                     HStack(spacing: 4) {
                                         if isAutocompleting {
-                                            ProgressView().controlSize(.small).scaleEffect(0.6)
+                                            ProgressView().scaleEffect(0.6).frame(width: 12, height: 12)
                                         } else {
                                             Image(systemName: "wand.and.stars")
                                                 .font(.system(size: 10, weight: .bold))
