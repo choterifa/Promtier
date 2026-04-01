@@ -76,7 +76,6 @@ struct ResizeHandle: View {
                             if !isHovered {
                                 NSCursor.pop()
                             }
-                            preferences.saveWindowDimensions()
                             HapticService.shared.playAlignment()
                         }
                 )

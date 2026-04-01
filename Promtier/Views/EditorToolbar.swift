@@ -58,6 +58,7 @@ struct EditorToolbar: View {
 
     @State private var isMagicHovered: Bool = false
     @State private var magicRotationPhase: Double = 0
+    @AppStorage("translateToEnglish") private var translateToEnglish: Bool = false
     
     var body: some View {
         Group {
@@ -72,7 +73,7 @@ struct EditorToolbar: View {
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
                 magicRotationPhase = 360
             }
         }
@@ -131,7 +132,7 @@ struct EditorToolbar: View {
                 }
             }) {
                 if isAutocompleting {
-                    toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
+                    toolbarButton(icon: "xmark", isSpecial: true, active: true)
                 } else {
                     toolbarButton(icon: "wand.and.stars", isSpecial: true, active: isMagicHovered)
                 }
@@ -146,14 +147,19 @@ struct EditorToolbar: View {
         }
 
         if aiEnabled {
-            Button(action: { onAIAction(.translate) }) {
-                toolbarButton(icon: "globe")
-            }
-            .buttonStyle(.plain)
-            .help("ai_action_translate".localized(for: preferences.language))
 
-            ZStack {
+            // AI Menu Slot OR Stop Button
+            if isAIGenerating && !isAutocompleting, let onStopAI = onStopAI {
+                Button(action: onStopAI) {
+                    toolbarButton(icon: "xmark", isSpecial: true, active: true)
+                }
+                .buttonStyle(.plain)
+                .help("Stop AI")
+            } else {
                 Menu {
+                    Button(action: { onAIAction(.translate) }) {
+                        Label("ai_action_translate".localized(for: preferences.language), systemImage: "globe")
+                    }
                     Button(action: { onAIAction(.enhance) }) {
                         Label("ai_action_enhance".localized(for: preferences.language), systemImage: "pencil.and.outline")
                     }
@@ -173,16 +179,8 @@ struct EditorToolbar: View {
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
-                .opacity(isAIGenerating && !isAutocompleting ? 0 : 1)
-                .disabled(isAIGenerating && !isAutocompleting)
-
-                if isAIGenerating, !isAutocompleting, let onStopAI = onStopAI {
-                    Button(action: onStopAI) {
-                        toolbarButton(icon: "stop.fill", isSpecial: true, active: true)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Stop AI")
-                }
+                .opacity(isAIGenerating ? 0.3 : 1)
+                .disabled(isAIGenerating)
             }
         }
 
@@ -294,10 +292,11 @@ struct ToolbarButtonView: View {
                     Circle()
                         .stroke(
                             preferences.isHaloEffectEnabled 
-                            ? AnyShapeStyle(LinearGradient(
-                                colors: [resolvedColor, resolvedColor.opacity(0.7), resolvedColor.opacity(0.4), resolvedColor.opacity(0.8), resolvedColor, resolvedColor.opacity(0.7), resolvedColor.opacity(0.4), resolvedColor.opacity(0.8)],
-                                startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
-                                endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
+                            ? AnyShapeStyle(AngularGradient(
+                                colors: [resolvedColor, resolvedColor.opacity(0.1), resolvedColor],
+                                center: .center,
+                                startAngle: .degrees(magicRotationPhase),
+                                endAngle: .degrees(magicRotationPhase + 360)
                             ))
                             : AnyShapeStyle(resolvedColor.opacity(0.8)),
                             lineWidth: 1.2

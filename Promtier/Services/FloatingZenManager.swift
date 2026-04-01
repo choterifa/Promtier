@@ -192,7 +192,6 @@ class FloatingZenManager: NSObject, ObservableObject {
     }
     
     private func generateMagicField(type: String, content: String) async -> String? {
-        let prefs = PreferencesManager.shared
         let systemPrompt = """
         You are an assistant. Based on the following prompt content, generate a \(type) in the same language as the content.
         Respond ONLY with the generated text, without quotes, extra punctuation, or trailing periods.
@@ -219,7 +218,6 @@ class FloatingZenManager: NSObject, ObservableObject {
     private func classifyCurrentPrompt(title: String, content: String, folders: [String]) async -> String? {
         guard !folders.isEmpty else { return nil }
         
-        let prefs = PreferencesManager.shared
         let systemPrompt = """
         Your task is to classify an AI prompt into one of the following existing categories.
         Respond ONLY with the category name, exactly as it appears in the list.

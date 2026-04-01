@@ -20,13 +20,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     
     // PERSISTENCIA: Resultados y estados para que no se pierdan al cerrar
     @Published var responseText: String = ""
-    @Published var responseTextGemini: String = ""
-    @Published var responseTextOpenAI: String = ""
     @Published var isGenerating: Bool = false
-    @Published var isGeneratingGemini: Bool = false
-    @Published var isGeneratingOpenAI: Bool = false
     @Published var error: String?
-    @Published var isCompareMode: Bool = false
     @Published var isDiffActive: Bool = false
     
     // Historial de la sesión (solo para la instancia actual, no se persiste)
@@ -70,7 +65,7 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
             // Solo centrar la primera vez
             if let screen = NSScreen.main {
                 let visibleFrame = screen.visibleFrame
-                let panelWidth: CGFloat = isCompareMode ? 1115 : 740
+                let panelWidth: CGFloat = 740
                 let panelHeight: CGFloat = 570
                 let x = visibleFrame.midX - (panelWidth / 2)
                 let y = visibleFrame.midY - (panelHeight / 2)

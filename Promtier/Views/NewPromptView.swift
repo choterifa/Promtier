@@ -1950,13 +1950,14 @@ struct NewPromptView: View {
                     .frame(width: 500, height: 500)
                     .blur(radius: 90)
                     .offset(x: 220, y: -150)
-                    .animation(.easeInOut(duration: 1.2), value: selectedFolder)
+                    .animation(.easeInOut(duration: 0.4), value: selectedFolder)
 
                 Circle()
                     .fill(currentCategoryColor.opacity(0.12))
                     .frame(width: 400, height: 400)
                     .blur(radius: 100)
                     .offset(x: -250, y: 200)
+                    .animation(.easeInOut(duration: 0.4), value: selectedFolder)
             }
 
             // Brillo ambiental central que cambia con la categoría
@@ -1964,7 +1965,7 @@ struct NewPromptView: View {
                 .fill(currentCategoryColor.opacity(0.05))
                 .frame(width: 600, height: 600)
                 .blur(radius: 120)
-                .animation(.spring(response: 1.0, dampingFraction: 0.8), value: selectedFolder)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedFolder)
         }
     }
 
@@ -2211,7 +2212,7 @@ struct NewPromptView: View {
             : "If the title is empty or generic, generate a catchy, short title (max 1 line)."
 
         let contentInstruction = isContentProvided
-            ? "CRITICAL: The content is already provided. DO NOT modify it in any way. Return it EXACTLY as it is."
+            ? "If the content provided is a short instruction or idea (e.g. 'prompt for bananas'), EXPAND it into a full, high-quality detailed prompt. If it already looks like a complete prompt, improve its structure and clarity. Keep existing variables {{...}}."
             : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential."
 
         systemPrompt = """

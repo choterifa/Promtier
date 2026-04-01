@@ -26,7 +26,7 @@ enum AppInfoCache {
     
     static func getIcon(for bundleID: String) -> NSImage? {
         lock.lock()
-        var cached = iconCache[bundleID]
+        let cached = iconCache[bundleID]
         lock.unlock()
         
         if let cached = cached { return cached }
@@ -46,7 +46,7 @@ enum AppInfoCache {
     
     static func getName(for bundleID: String) -> String {
         lock.lock()
-        var cachedName = nameCache[bundleID]
+        let cachedName = nameCache[bundleID]
         lock.unlock()
         
         if let cached = cachedName { return cached }

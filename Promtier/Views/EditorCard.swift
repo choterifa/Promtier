@@ -184,10 +184,11 @@ struct EditorCard: View {
                                         Capsule()
                                             .stroke(
                                                 preferences.isHaloEffectEnabled 
-                                                    ? AnyShapeStyle(LinearGradient(
-                                                        colors: [currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8), currentCategoryColor, currentCategoryColor.opacity(0.7), currentCategoryColor.opacity(0.4), currentCategoryColor.opacity(0.8)],
-                                                        startPoint: UnitPoint(x: (magicRotationPhase / 360.0) - 1.0, y: 0),
-                                                        endPoint: UnitPoint(x: (magicRotationPhase / 360.0), y: 1)
+                                                    ? AnyShapeStyle(AngularGradient(
+                                                        colors: [currentCategoryColor, currentCategoryColor.opacity(0.1), currentCategoryColor],
+                                                        center: .center,
+                                                        startAngle: .degrees(magicRotationPhase),
+                                                        endAngle: .degrees(magicRotationPhase + 360)
                                                     ))
                                                     : AnyShapeStyle(themeColor.opacity(0.8)),
                                                 lineWidth: isMagicPulsing ? 1.4 : (isMagicHovered ? 1.2 : 0.8)
@@ -198,7 +199,7 @@ struct EditorCard: View {
                                 }
                                 .buttonStyle(.plain)
                                 .onAppear {
-                                    withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+                                    withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
                                         magicRotationPhase = 360
                                     }
                                 }
@@ -549,9 +550,14 @@ enum AIAction {
         case .fix: return "Fix grammar and spelling errors in the following prompt, keeping variables {{...}} exactly as they are. Respond ONLY with the corrected text."
         case .concise: return "Make the following prompt more concise and direct, keeping variables {{...}} exactly as they are. Respond ONLY with the concise text."
         case .translate:
-            let preferredLang = Locale.preferredLanguages.first ?? "en"
-            let langName = Locale(identifier: "en_US").localizedString(forIdentifier: preferredLang) ?? "the user's system language"
-            return "Translate the following text to \(langName). If it is already in \(langName), translate it to English. Keep variables {{...}} exactly as they are. Respond ONLY with the translated text."
+            let toEnglish = UserDefaults.standard.bool(forKey: "translateToEnglish")
+            if toEnglish {
+                return "Translate the following text strictly to English. Keep variables {{...}} exactly as they are. Respond ONLY with the translated text."
+            } else {
+                let preferredLang = Locale.preferredLanguages.first ?? "es"
+                let langName = Locale(identifier: "en_US").localizedString(forIdentifier: preferredLang) ?? "the user's system language"
+                return "Translate the following text strictly to \(langName). Keep variables {{...}} exactly as they are. Respond ONLY with the translated text."
+            }
         case .instruct: return ""
         }
     }

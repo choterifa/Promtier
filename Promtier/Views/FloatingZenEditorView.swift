@@ -37,6 +37,9 @@ struct FloatingZenEditorView: View {
     @State private var animatedPhase: CGFloat = 0
     @State private var hoverTitleOCR: Bool = false
     @State private var hoverContentOCR: Bool = false
+    @State private var hoverEye: Bool = false
+    @State private var hoverCloseBtn: Bool = false
+    @State private var hoverSaveBtn: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -375,12 +378,13 @@ struct FloatingZenEditorView: View {
                 Button(action: { isGhostMode.toggle() }) {
                     Image(systemName: isGhostMode ? "eye.slash.fill" : "eye.fill")
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(isGhostMode ? .blue : .secondary)
+                        .foregroundColor((isGhostMode || hoverEye) ? .accentColor : .secondary)
                         .padding(6)
-                        .background(Circle().fill(isGhostMode ? Color.blue.opacity(0.1) : Color.primary.opacity(0.06)))
+                        .background(Circle().fill((isGhostMode || hoverEye) ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.06)))
                 }
                 .buttonStyle(.plain)
                 .help("Ghost Mode: Transparente al salir")
+                .onHover { hoverEye = $0 }
                 .padding(.leading, 4)
                 
                 Spacer()
@@ -527,16 +531,16 @@ struct FloatingZenEditorView: View {
                             .font(.system(size: 10, weight: .bold))
                     }
                 }
-                .foregroundColor(isMagicAvailable ? ((pulseMagic || isHoveringMagic) ? .white : .purple) : .secondary.opacity(0.4))
+                .foregroundColor(isMagicAvailable ? ((pulseMagic || isHoveringMagic) ? .white : .accentColor) : .secondary.opacity(0.4))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     isMagicAvailable ? 
-                        ((pulseMagic || isHoveringMagic) ? Color.purple.opacity(0.85) : Color.purple.opacity(0.06)) 
+                        ((pulseMagic || isHoveringMagic) ? Color.accentColor.opacity(0.85) : Color.accentColor.opacity(0.1)) 
                     : Color.primary.opacity(0.04)
                 )
                 .cornerRadius(8)
-                .shadow(color: (pulseMagic || isHoveringMagic) && isMagicAvailable ? Color.purple.opacity(0.2) : .clear, radius: 4)
+                .shadow(color: (pulseMagic || isHoveringMagic) && isMagicAvailable ? Color.accentColor.opacity(0.2) : .clear, radius: 4)
                 .animation(.easeInOut(duration: 0.2), value: pulseMagic)
                 .animation(.easeInOut(duration: 0.2), value: isHoveringMagic)
             }
@@ -556,7 +560,8 @@ struct FloatingZenEditorView: View {
             }
             .font(.system(size: 13, weight: .medium))
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(hoverCloseBtn ? .accentColor : .secondary)
+            .onHover { hoverCloseBtn = $0 }
             .keyboardShortcut(.escape, modifiers: [])
             
             Button(action: { manager.saveAsNewPrompt() }) {
@@ -575,10 +580,11 @@ struct FloatingZenEditorView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule()
-                        .fill(canSave ? Color.blue : Color.gray.opacity(0.3))
+                        .fill(canSave ? (hoverSaveBtn ? Color.accentColor.opacity(0.8) : Color.accentColor) : Color.gray.opacity(0.3))
                 )
             }
             .buttonStyle(.plain)
+            .onHover { hoverSaveBtn = $0 }
             .disabled(!canSave || manager.isSaving || manager.isClassifying)
             .keyboardShortcut(.return, modifiers: [.command])
             .background(

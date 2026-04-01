@@ -133,15 +133,15 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    // Se retiran los userDefaults.set automáticos de windowWidth y windowHeight 
-    // para evitar saturación de I/O que congela el arrastre ("efecto de saltos" o gris).
-    @Published var windowWidth: CGFloat
-    @Published var windowHeight: CGFloat
-    
-    /// Guarda las dimensiones en UserDefaults (llamar al terminar de redimensionar)
-    func saveWindowDimensions() {
-        userDefaults.set(Double(windowWidth), forKey: "windowWidth")
-        userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+    @Published var windowWidth: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowWidth), forKey: "windowWidth")
+        }
+    }
+    @Published var windowHeight: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+        }
     }
     
     // MARK: - Estado de Redimensionado (No persistente)
@@ -703,7 +703,6 @@ class PreferencesManager: ObservableObject {
         self.onlySuggestFromBrowsers = true
         self.windowWidth = 800
         self.windowHeight = 570
-        self.saveWindowDimensions()
         self.enableTrackpadCarousel = true
         self.autoCopyDraft = true
         
@@ -809,7 +808,6 @@ class PreferencesManager: ObservableObject {
                 self.windowHeight = CGFloat(height)
             }
             
-            self.saveWindowDimensions()
             applyAppearance()
             return true
         }

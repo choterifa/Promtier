@@ -103,13 +103,13 @@ struct FloatingAIDraftView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 8) {
                         HStack(spacing: 6) {
-                            Image(systemName: manager.isCompareMode ? "bolt.horizontal.circle.fill" : "text.justify.left")
+                            Image(systemName: "text.justify.left")
                                 .font(.system(size: 9, weight: .bold))
-                            Text(manager.isCompareMode ? "GPT-4o (OPENAI)" : "RESULTADO IA")
+                            Text("RESULTADO IA")
                                 .font(.system(size: 9, weight: .black))
                                 .tracking(1.2)
                         }
-                        .foregroundColor(manager.isCompareMode ? .blue : .purple)
+                        .foregroundColor(.purple)
                         
                         if !manager.responseText.isEmpty && !manager.isGenerating {
                             HStack(spacing: 6) {
@@ -166,7 +166,7 @@ struct FloatingAIDraftView: View {
                     }
                     .frame(height: 28) // Fixed height for alignment
                     .padding(.top, 20)
-                    .padding(.leading, 16).padding(.trailing, manager.isCompareMode ? 16 : 24)
+                    .padding(.leading, 16).padding(.trailing, 24)
                     
                     ZStack(alignment: .topLeading) {
                         if manager.isGenerating {
@@ -217,7 +217,7 @@ struct FloatingAIDraftView: View {
                     }
                     .padding(14)
                     .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
-                    .padding(.leading, 16).padding(.trailing, manager.isCompareMode ? 16 : 24)
+                    .padding(.leading, 16).padding(.trailing, 24)
                     .padding(.top, 10)
                     
                     // Info Row (Output)
@@ -231,13 +231,6 @@ struct FloatingAIDraftView: View {
                         .foregroundColor(.secondary.opacity(0.5))
                         
                         Spacer()
-                        
-                        // Icono del modelo usado
-                        Text(preferences.preferredAIService == .openai ? "GPT-4o" : "Gemini Pro")
-                            .font(.system(size: 8, weight: .black))
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Capsule().fill(Color.primary.opacity(0.05)))
-                            .foregroundColor(.secondary.opacity(0.6))
                     }
                     .padding(.horizontal, 32)
                     .padding(.top, 8)
@@ -246,108 +239,14 @@ struct FloatingAIDraftView: View {
                 .frame(width: 370)
                 .background(Color.purple.opacity(0.015))
                 
-                if manager.isCompareMode {
-                    // ── TERCERA COLUMNA: GEMINI PRO ────────────────────────────
-                    Rectangle()
-                        .fill(Color.primary.opacity(0.08))
-                        .frame(width: 1)
-                        .padding(.vertical, 40)
-                    
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 8) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 9, weight: .bold))
-                                Text("GEMINI PRO")
-                                    .font(.system(size: 9, weight: .black))
-                                    .tracking(1.2)
-                            }
-                            .foregroundColor(.orange)
-                            
-                            Spacer()
-                            
-                            if !manager.responseTextGemini.isEmpty && !manager.isGeneratingGemini {
-                                Button(action: { 
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(manager.responseTextGemini, forType: .string)
-                                    HapticService.shared.playSuccess()
-                                }) {
-                                    Image(systemName: "doc.on.doc.fill")
-                                        .font(.system(size: 10))
-                                }
-                                .buttonStyle(PlainHoverButtonStyle(color: .orange, padding: (8, 6)))
-                                .help("Copiar resultado de Gemini")
-                            }
-                        }
-                        .frame(height: 28)
-                        .padding(.top, 20)
-                        .padding(.leading, 16).padding(.trailing, 24)
-                        
-                        ZStack(alignment: .topLeading) {
-                            if manager.isGeneratingGemini {
-                                VStack(spacing: 12) {
-                                    ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
-                                    Text("Gemini trabajando...")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            } else if !manager.responseTextGemini.isEmpty {
-                                ScrollView(showsIndicators: false) {
-                                    Text(manager.responseTextGemini)
-                                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                                        .lineSpacing(5)
-                                        .textSelection(.enabled)
-                                        .padding(12)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            } else {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "moon.stars.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.secondary.opacity(0.15))
-                                    Text("Resultado de Google")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(.secondary.opacity(0.25))
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                        }
-                        .padding(14)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
-                        .padding(.leading, 16).padding(.trailing, 24)
-                        .padding(.top, 10)
-                        
-                        // Info Row
-                        HStack {
-                            Text("\(manager.responseTextGemini.count) carácteres")
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.secondary.opacity(0.5))
-                            Spacer()
-                            Text("Fast & Creative")
-                                .font(.system(size: 8, weight: .black))
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Capsule().fill(Color.orange.opacity(0.1)))
-                                .foregroundColor(.orange.opacity(0.8))
-                        }
-                        .padding(.horizontal, 32)
-                        .padding(.top, 8)
-                        .padding(.bottom, 20)
-                    }
-                    .frame(width: 370)
-                    .background(Color.orange.opacity(0.015))
-                }
             }
             
             Divider().opacity(0.12)
             
             footerBar
         }
-        .frame(width: manager.isCompareMode ? 1115 : 740, height: 570)
-        .background(
-            VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
-                .overlay(Color.primary.opacity(0.02))
-        )
+        .frame(width: 740, height: 570)
+        .background(Color(NSColor.windowBackgroundColor))
         .overlay(notificationToast, alignment: .top)
         .cornerRadius(18)
         .overlay(
@@ -536,32 +435,6 @@ struct FloatingAIDraftView: View {
             Text("Quick Draft")
                 .foregroundColor(.primary.opacity(0.85))
                 .padding(.horizontal, 4)
-            
-            // Toggle Modelo Dual
-            Button(action: {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    manager.isCompareMode.toggle()
-                    if manager.isCompareMode {
-                        manager.responseText = ""
-                    } else {
-                        manager.responseTextGemini = ""
-                        manager.responseTextOpenAI = ""
-                    }
-                }
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: manager.isCompareMode ? "square.grid.2x2.fill" : "square.grid.2x2")
-                    Text("Comparar")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(manager.isCompareMode ? Color.blue.opacity(0.15) : Color.primary.opacity(0.04))
-                .foregroundColor(manager.isCompareMode ? .blue : .secondary)
-                .cornerRadius(8)
-            }
-            .buttonStyle(.plain)
-            .help("Compara GPT-4o vs Gemini Pro al mismo tiempo")
             
             Spacer()
             
@@ -813,13 +686,7 @@ struct FloatingAIDraftView: View {
         let content = manager.content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty, isAIAvailable else { return }
         
-        if manager.isCompareMode {
-            // MODO COMPARATIVA: Lanzar ambos modelos en paralelo
-            runDualAI(instruction: instruction, content: content)
-        } else {
-            // MODO SIMPLE: Tradicional
-            runSingleAI(instruction: instruction, content: content)
-        }
+        runSingleAI(instruction: instruction, content: content)
     }
     
     private func runSingleAI(instruction: String, content: String) {
@@ -834,7 +701,6 @@ struct FloatingAIDraftView: View {
         Task {
             do {
                 let response: String
-                let prefs = preferences
                 response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
@@ -856,53 +722,6 @@ struct FloatingAIDraftView: View {
         }
     }
     
-    private func runDualAI(instruction: String, content: String) {
-        manager.responseTextOpenAI = ""
-        manager.responseTextGemini = ""
-        manager.isGeneratingOpenAI = true
-        manager.isGeneratingGemini = true
-        manager.error = nil
-        customCommand = ""
-        HapticService.shared.playImpact()
-        
-        let systemPrompt = composeSystemPrompt(instruction: instruction, content: content)
-        
-        // Petición OpenAI
-        Task {
-            do {
-                let apiKey = preferences.openAIApiKey
-                let model = preferences.openAIDefaultModel
-                let response = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
-                await MainActor.run {
-                    manager.isGeneratingOpenAI = false
-                    typewriterAnimationDual(response, target: .openai)
-                }
-            } catch {
-                await MainActor.run {
-                    manager.isGeneratingOpenAI = false
-                    manager.responseTextOpenAI = "Error OpenAI: \(error.localizedDescription)"
-                }
-            }
-        }
-        
-        // Petición Gemini
-        Task {
-            do {
-                let model = preferences.geminiDefaultModel
-                let response = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
-                await MainActor.run {
-                    manager.isGeneratingGemini = false
-                    typewriterAnimationDual(response, target: .gemini)
-                }
-            } catch {
-                await MainActor.run {
-                    manager.isGeneratingGemini = false
-                    manager.responseTextGemini = "Error Gemini: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
     private func composeSystemPrompt(instruction: String, content: String) -> String {
         return """
         You are an elite Prompt Engineer assistant. Your task is to apply a specific transformation to an existing AI prompt.
@@ -916,25 +735,6 @@ struct FloatingAIDraftView: View {
         # IMPORTANT:
         Respond ONLY with the final transformed prompt. Do not add quotes around it. Do not include introductory text like "Here is the improved prompt:". Just the raw result.
         """
-    }
-    
-    nonisolated enum DualTarget: Sendable { case openai, gemini }
-    
-    private func typewriterAnimationDual(_ fullText: String, target: DualTarget) {
-        let words = fullText.split(separator: " ", omittingEmptySubsequences: false).map { String($0) }
-        var index = 0
-        
-        Timer.scheduledTimer(withTimeInterval: 0.015, repeats: true) { timer in
-            if index < words.count {
-                let word = words[index]
-                let suffix = (index == 0 ? "" : " ") + word
-                if target == .openai { manager.responseTextOpenAI += suffix }
-                else { manager.responseTextGemini += suffix }
-                index += 1
-            } else {
-                timer.invalidate()
-            }
-        }
     }
     
     private func typewriterAnimation(_ fullText: String) {

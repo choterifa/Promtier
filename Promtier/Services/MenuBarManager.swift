@@ -531,23 +531,9 @@ class MenuBarManager: NSObject, ObservableObject {
     
     private func updatePopoverSize(width: CGFloat, height: CGFloat) {
         let size = NSSize(width: width, height: height)
-        
-        // Bloquear animaciones implícitas de Cocoa para evitar que
-        // la ventana actúe errática (efecto resorte y bordes grises) al arrastrar el corner
-        let wasAnimating = popover?.animates ?? true
-        popover?.animates = false
-        
-        NSAnimationContext.beginGrouping()
-        NSAnimationContext.current.duration = 0.0
-        NSAnimationContext.current.allowsImplicitAnimation = false
-        
         popover?.contentSize = size
         popover?.contentViewController?.preferredContentSize = size
         popover?.contentViewController?.view.frame.size = size
-        
-        NSAnimationContext.endGrouping()
-        
-        popover?.animates = wasAnimating
     }
     
     /// Actualiza el comportamiento del popover basado en el estado
