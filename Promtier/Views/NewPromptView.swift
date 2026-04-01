@@ -82,7 +82,7 @@ struct NewPromptView: View {
         var id: String { self.rawValue }
     }
     
-    @State private var showingAlternativeGenerator: Bool = false
+    @State private var isGeneratingAlternativeDirect: Bool = false
 
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
@@ -451,43 +451,69 @@ struct NewPromptView: View {
                             }
 
                             if alternatives.count < 10 {
-                                Button(action: {
-                                    if preferences.isPremiumActive && isAIAvailable {
-                                        showingAlternativeGenerator = true
-                                    } else {
+                                HStack(spacing: 12) {
+                                    // BOTOON AÑADIR VACIO
+                                    Button(action: {
                                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                             alternatives.append("")
                                         }
-                                    }
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.system(size: 13, weight: .bold))
-                                        Text("add_alternative".localized(for: preferences.language))
-                                    }
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(themeColor)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        ZStack {
-                                            // Efecto de luz (brillo difuso)
-                                            if preferences.isHaloEffectEnabled {
-                                                currentCategoryColor.opacity(0.15)
-                                                    .blur(radius: 12)
-                                            }
-
-                                            // Fondo sólido estilizado
-                                            RoundedRectangle(cornerRadius: 14)
-                                                .fill(themeColor.opacity(0.15))
+                                    }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "plus.circle.fill")
+                                                .font(.system(size: 13, weight: .bold))
+                                            Text("add_alternative".localized(for: preferences.language))
                                         }
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
-                                    )
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(themeColor)
+                                        .padding(.horizontal, 24)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            ZStack {
+                                                if preferences.isHaloEffectEnabled {
+                                                    currentCategoryColor.opacity((preferences.isPremiumActive && isAIAvailable) ? 0.05 : 0.15)
+                                                        .blur(radius: 12)
+                                                }
+                                                RoundedRectangle(cornerRadius: 14)
+                                                    .fill(themeColor.opacity(0.15))
+                                            }
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    
+                                    // BOTON MAGICO (AUTOMATICO)
+                                    if preferences.isPremiumActive && isAIAvailable {
+                                        Button(action: generateAlternativeDirect) {
+                                            HStack(spacing: 8) {
+                                                if isGeneratingAlternativeDirect {
+                                                    ProgressView().controlSize(.small)
+                                                } else {
+                                                    Image(systemName: "wand.and.stars")
+                                                        .font(.system(size: 13, weight: .bold))
+                                                }
+                                                Text("Variante Mágica")
+                                            }
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 10)
+                                            .background(
+                                                ZStack {
+                                                    Color.blue
+                                                    if preferences.isHaloEffectEnabled {
+                                                        Color.blue.opacity(0.3).blur(radius: 8)
+                                                    }
+                                                }
+                                            )
+                                            .cornerRadius(14)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGeneratingAlternativeDirect)
+                                    }
                                 }
-                                .buttonStyle(.plain)
                                 .frame(maxWidth: .infinity, alignment: .center)
                             }
                         }
@@ -1053,17 +1079,6 @@ struct NewPromptView: View {
                             }
                         )
                     }
-                }
-                .sheet(isPresented: $showingAlternativeGenerator) {
-                    AlternativeGeneratorView(
-                        originalPrompt: content,
-                        onGenerate: { newAlternative in
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                alternatives.append(newAlternative)
-                            }
-                            HapticService.shared.playSuccess()
-                        }
-                    )
                 }
                 .alert("unsaved_changes_title".localized(for: preferences.language), isPresented: $showingCloseAlert) {
                     if originalPrompt == nil && prompt == nil {
@@ -2225,17 +2240,18 @@ struct NewPromptView: View {
         1. TITLE: \(titleInstruction)
         2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
         3. CONTENT: \(contentInstruction)
+        4. NEGATIVE PROMPT: Generate a list of practical things to AVOID for this prompt (e.g. "no formatting errors, no generic tone", etc).
         
         CRITICAL LANGUAGE RULE:
         - Detect the PRIMARY language of the user's input (title and content).
-        - You MUST respond ENTIRELY in that SAME language. Every word of your response — title, description, content, variable names — must be in the input's language.
+        - You MUST respond ENTIRELY in that SAME language. Every word of your response — title, description, content, negative prompt, variable names — must be in the input's language.
         - If input is Spanish → respond in Spanish. If English → respond in English. Never mix languages.
         
         RESPONSE FORMAT:
         Respond ONLY with the following format, using the pipe symbol (|) as separator:
-        GeneratedTitle|GeneratedDescription|GeneratedContent
+        GeneratedTitle|GeneratedDescription|GeneratedContent|GeneratedNegativePrompt
         
-        DO NOT include any other text, labels, or explanations. Just the three parts separated by |.
+        DO NOT include any other text, labels, or explanations. Just the FOUR parts separated by |.
         """
         
         Task {
@@ -2249,7 +2265,25 @@ struct NewPromptView: View {
                     
                     if !fullResponse.isEmpty {
                         let parts = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
-                        if parts.count >= 3 {
+                        if parts.count >= 4 {
+                            withAnimation(.spring()) {
+                                self.title = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                                self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                                self.content = parts[2].trimmingCharacters(in: .whitespacesAndNewlines)
+                                
+                                let nPrompt = parts[3].trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !nPrompt.isEmpty {
+                                    self.negativePrompt = nPrompt
+                                    self.showNegativeField = true
+                                }
+                            }
+                            
+                            if self.selectedFolder == nil {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    self.autoCategorizePrompt()
+                                }
+                            }
+                        } else if parts.count >= 3 {
                             withAnimation(.spring()) {
                                 self.title = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
                                 self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2340,23 +2374,85 @@ struct NewPromptView: View {
         
         Task {
             do {
-                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                
-                await MainActor.run {
-                    self.isAutocompleting = false
-                    withAnimation { self.branchMessage = nil }
-                    HapticService.shared.playSuccess()
+                if magicTarget == .content {
+                    let negativeSystemPrompt = """
+                    You are an expert prompt engineer. Your goal is to generate a DEFAULT NEGATIVE PROMPT based on the newly requested prompt logic.
                     
-                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !result.isEmpty {
-                        withAnimation(.spring()) {
-                            switch magicTarget {
-                            case .title:
-                                self.title = result
-                            case .description:
-                                self.promptDescription = result
-                            case .content:
+                    INSTRUCTION:
+                    Generate a list of things to AVOID (negative prompt) that complements this instruction: '\(command)'. 
+                    Maintain the EXACT SAME LANGUAGE as the prompt content.
+                    Keep it practical (e.g., "bad quality, blurry, deformed" if it's an image, or "no jargon, no generic greetings" if it's text).
+                    
+                    CRITICAL RULE:
+                    - Respond ONLY with the final negative prompt text.
+                    - Do NOT add quotes, labels, or conversational filler.
+                    """
+                    
+                    let alternativeSystemPrompt = """
+                    You are an expert prompt engineer. Your goal is to generate an ALTERNATIVE PROMPT variation.
+                    
+                    INSTRUCTION:
+                    Based on the instruction '\(command)' and context '\(targetContext)', generate ONE alternative version.
+                    Maintain the EXACT SAME LANGUAGE as the prompt content.
+                    Maintain ALL variables {{...}} exactly as they are.
+                    
+                    CRITICAL RULE:
+                    - Respond ONLY with the final alternative prompt text.
+                    - Do NOT add quotes, labels, or conversational filler.
+                    """
+                    
+                    async let mainResponseTask = AIServiceManager.shared.generate(prompt: systemPrompt)
+                    async let negativeResponseTask = AIServiceManager.shared.generate(prompt: negativeSystemPrompt)
+                    async let alternativeResponseTask = AIServiceManager.shared.generate(prompt: alternativeSystemPrompt)
+                    
+                    let fullResponse = try await mainResponseTask
+                    let negativeResponseRaw = try await negativeResponseTask
+                    let alternativeResponseRaw = try await alternativeResponseTask
+                    
+                    let negativeResponse = negativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let alternativeResponse = alternativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    await MainActor.run {
+                        self.isAutocompleting = false
+                        withAnimation { self.branchMessage = nil }
+                        HapticService.shared.playSuccess()
+                        
+                        let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !result.isEmpty {
+                            withAnimation(.spring()) {
                                 self.content = result
+                                if !negativeResponse.isEmpty {
+                                    self.negativePrompt = negativeResponse
+                                    self.showNegativeField = true
+                                }
+                                if !alternativeResponse.isEmpty {
+                                    if !self.alternatives.contains(alternativeResponse) {
+                                        self.alternatives.append(alternativeResponse)
+                                    }
+                                    self.showAlternativeField = true
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
+                    
+                    await MainActor.run {
+                        self.isAutocompleting = false
+                        withAnimation { self.branchMessage = nil }
+                        HapticService.shared.playSuccess()
+                        
+                        let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !result.isEmpty {
+                            withAnimation(.spring()) {
+                                switch magicTarget {
+                                case .title:
+                                    self.title = result
+                                case .description:
+                                    self.promptDescription = result
+                                case .content:
+                                    self.content = result
+                                }
                             }
                         }
                     }
@@ -2721,5 +2817,51 @@ extension NewPromptView {
             return false
         }
         return true
+    }
+    
+    private func generateAlternativeDirect() {
+        let cleanContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanContent.isEmpty else { return }
+        
+        isGeneratingAlternativeDirect = true
+        HapticService.shared.playImpact()
+        
+        let systemPrompt = """
+        Eres un ingeniero de prompts experto y creativo. Genera una versión ALTERNATIVA o variada del siguiente prompt. 
+        MANTÉN EL MISMO IDIOMA EXACTO DEL PROMPT ORIGINAL.
+        MANTEN TODAS Y CADA UNA de las variables entre llaves (ejemplo: {{ejemplo}}) exactamente intactas.
+        Tu respuesta debe ser EXCLUSIVAMENTE el texto de la alternativa, sin títulos, explicaciones, comillas ni comentarios extra. Dámelo plano.
+        
+        PROMPT ORIGINAL:
+        \(cleanContent)
+        """
+        
+        Task {
+            do {
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
+                let cleanedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                await MainActor.run {
+                    self.isGeneratingAlternativeDirect = false
+                    if !cleanedResponse.isEmpty {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            self.alternatives.append(cleanedResponse)
+                        }
+                        HapticService.shared.playSuccess()
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isGeneratingAlternativeDirect = false
+                    print("❌ Alternative Error: \(error.localizedDescription)")
+                    HapticService.shared.playError()
+                    withAnimation {
+                        self.branchMessage = self.userFacingAIErrorToast(for: error)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        withAnimation { self.branchMessage = nil }
+                    }
+                }
+            }
+        }
     }
 }

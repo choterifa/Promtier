@@ -61,6 +61,6 @@ struct DiffView: View {
                 .background(Color.green.opacity(0.03))
             }
         }
-        .frame(width: 800, height: 500)
+        .frame(width: max(400, PreferencesManager.shared.windowWidth * 0.90), height: min(600, PreferencesManager.shared.windowHeight * 0.85))
     }
 }
