@@ -23,6 +23,7 @@ struct FloatingZenEditorView: View {
     @State private var showDiscardAlert = false
     @State private var isDraggingImage = false
     @State private var isDraggingMagicImage = false
+    @State private var isMagicImageProcessing = false
     @State private var hoveredSlot: Int? = nil
     @State private var isHoveringPaste: Bool = false
     @State private var isHoveringOpen: Bool = false
@@ -281,6 +282,9 @@ struct FloatingZenEditorView: View {
             Button("Continuar editando", role: .cancel) { }
         } message: {
             Text("Si cierras ahora, se perderán todos los cambios que hayas hecho en este prompt.")
+        }
+        .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
+            extractMagicPrompt(from: data)
         }
     }
     
@@ -766,6 +770,7 @@ struct FloatingZenEditorView: View {
     private func extractMagicPrompt(from data: Data) {
         guard isMagicAvailable else { manager.title = "IA no configurada"; return }
         manager.content = ""
+        isMagicImageProcessing = true
         
         Task {
             do {
@@ -783,6 +788,7 @@ struct FloatingZenEditorView: View {
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
                 
                 await MainActor.run {
+                    self.isMagicImageProcessing = false
                     manager.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
                     if manager.title.isEmpty || manager.title == "Generando prompt..." {
                         manager.title = "Prompt de Imagen"
@@ -790,6 +796,7 @@ struct FloatingZenEditorView: View {
                 }
             } catch {
                 await MainActor.run {
+                    self.isMagicImageProcessing = false
                     manager.content = "Error generando prompt: \(error.localizedDescription)"
                 }
             }

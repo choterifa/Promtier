@@ -119,6 +119,7 @@ struct EditorCard: View {
     @State private var showingInstructionAlert = false
     @State private var instructionInput = ""
     @State private var isDraggingMagicImage = false
+    @State private var isMagicImageProcessing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -376,6 +377,9 @@ struct EditorCard: View {
         } message: {
             Text("Enter the instruction to apply to the selected text.")
         }
+        .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
+            extractMagicPrompt(from: data)
+        }
     }
     private func performAIAction(_ action: AIAction, instruction: String? = nil) {
             let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
@@ -554,6 +558,7 @@ struct EditorCard: View {
             return 
         }
         content = ""
+        isMagicImageProcessing = true
         
         Task {
             do {
@@ -571,6 +576,7 @@ struct EditorCard: View {
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
                 
                 await MainActor.run {
+                    self.isMagicImageProcessing = false
                     self.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
                     if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
                         self.title = "Prompt de Imagen"
@@ -578,6 +584,7 @@ struct EditorCard: View {
                 }
             } catch {
                 await MainActor.run {
+                    self.isMagicImageProcessing = false
                     self.content = "Error generando prompt: \(error.localizedDescription)"
                 }
             }

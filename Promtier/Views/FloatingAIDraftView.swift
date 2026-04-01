@@ -30,6 +30,7 @@ struct FloatingAIDraftView: View {
     
     // Drag & Drop State
     @State private var isDraggingImage: Bool = false
+    @State private var isMagicImageProcessing: Bool = false
     
     private var isAIAvailable: Bool {
         (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
@@ -280,6 +281,9 @@ struct FloatingAIDraftView: View {
                     localMonitor = nil
                 }
             }
+        }
+        .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
+            generatePromptFromImage(data: data)
         }
     }
 
@@ -705,6 +709,7 @@ struct FloatingAIDraftView: View {
     private func runSingleAI(instruction: String, content: String, imageData: Data? = nil) {
         manager.responseText = ""
         manager.isGenerating = true
+        if imageData != nil { isMagicImageProcessing = true }
         manager.error = nil
         customCommand = ""
         HapticService.shared.playImpact()
@@ -717,6 +722,7 @@ struct FloatingAIDraftView: View {
                 
                 await MainActor.run {
                     manager.isGenerating = false
+                    isMagicImageProcessing = false
                     typewriterAnimation(response)
                     manager.addToHistory(input: content, output: response)
                     if preferences.autoCopyDraft {
@@ -729,6 +735,7 @@ struct FloatingAIDraftView: View {
                 await MainActor.run {
                     manager.error = error.localizedDescription
                     manager.isGenerating = false
+                    isMagicImageProcessing = false
                 }
             }
         }
