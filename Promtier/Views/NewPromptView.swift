@@ -17,6 +17,7 @@ struct NewPromptView: View {
 
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var menuBarManager: MenuBarManager
 
     @State private var title = ""
     @State private var content = ""
@@ -1820,7 +1821,19 @@ struct NewPromptView: View {
                     .keyboardShortcut("l", modifiers: .command)
 
                     if (originalPrompt ?? prompt) != nil {
-                        Button(action: { branchPrompt() }) {
+                        Button(action: { 
+                            if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                branchPrompt() 
+                            } else {
+                                HapticService.shared.playError()
+                                withAnimation {
+                                    self.branchMessage = "required_fields".localized(for: self.preferences.language)
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                    withAnimation { if self.branchMessage == "required_fields".localized(for: self.preferences.language) { self.branchMessage = nil } }
+                                }
+                            }
+                        }) {
                             Image(systemName: "arrow.branch")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(themeColor)
@@ -2176,12 +2189,20 @@ struct NewPromptView: View {
         }
 
         if closeAfter {
+            let isNewPrompt = (originalPrompt ?? prompt) == nil
+            
             if preferences.isPremiumActive && preferences.visualEffectsEnabled && !isAutoSave {
                 showParticles = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    if isNewPrompt && !isAutoSave {
+                        menuBarManager.closePopover()
+                    }
                     onClose()
                 }
             } else {
+                if isNewPrompt && !isAutoSave {
+                    menuBarManager.closePopover()
+                }
                 onClose()
             }
         }
@@ -2189,6 +2210,8 @@ struct NewPromptView: View {
 
 
     private func branchPrompt() {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
         // Asegurarnos de tener los datos actuales (usamos las variables de estado)
         let branchTitle = "\("branch_label".localized(for: preferences.language)): \(title)"
         let newContent = content

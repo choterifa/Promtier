@@ -159,39 +159,27 @@ struct PromptCard: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
             
-            // Icono de categoría
-            if let iconName = prompt.icon {
-                let color = currentCategoryColor
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.12))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: iconName)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(color)
+            // Icono de categoría/Prompt
+            let resolvedIcon: String = {
+                if let customIcon = prompt.icon, !customIcon.isEmpty { return customIcon }
+                if let folder = prompt.folder {
+                    if let customFolder = promptService.folders.first(where: { $0.name == folder }) {
+                        return customFolder.icon ?? "folder.fill"
+                    }
+                    return PredefinedCategory.fromString(folder)?.icon ?? "folder.fill"
                 }
-            } else if prompt.folder != nil {
-                let color = currentCategoryColor
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.12))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(color)
-                }
-            } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.05))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
+                return "doc.text.fill"
+            }()
+            
+            let color = currentCategoryColor
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: resolvedIcon)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(color)
             }
             
             // Contenido de Texto

@@ -128,6 +128,7 @@ struct SearchViewSimple: View {
                 })
                 .environmentObject(promptService)
                 .environmentObject(preferences)
+                .environmentObject(menuBarManager)
                 .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
             case .preferences:
                 PreferencesView(onClose: {
