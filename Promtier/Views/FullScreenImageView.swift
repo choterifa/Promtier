@@ -122,6 +122,23 @@ struct FullScreenImageView: View {
             isEntering = false
             scrimOpacity = 0.0
         }
+        .onChange(of: source) { newSource in
+            Task {
+                let img: NSImage?
+                switch newSource {
+                case .data(let data):
+                    img = await ImageDecodeThrottler.downsample(data: data, maxPixelSize: 3200)
+                case .url(let url):
+                    img = await ImageDecodeThrottler.downsample(url: url, maxPixelSize: 3200)
+                }
+                
+                decodedImage = img
+                // Reset zoom state when switching images
+                scale = 1.0
+                offset = .zero
+                lastOffset = .zero
+            }
+        }
     }
 
     private var contentLayer: some View {

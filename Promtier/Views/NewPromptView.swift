@@ -1350,12 +1350,20 @@ struct NewPromptView: View {
                 if event.keyCode == 123 { // Left Arrow
                     DispatchQueue.main.async {
                         self.selectedImageIndex = max(0, self.selectedImageIndex - 1)
+                        // Sync with full screen preview if it's active
+                        if self.showingFullScreenImage != nil {
+                            self.showingFullScreenImage = self.showcaseImages[self.selectedImageIndex]
+                        }
                     }
                     return nil
                 }
                 if event.keyCode == 124 { // Right Arrow
                     DispatchQueue.main.async {
                         self.selectedImageIndex = min(self.showcaseImages.count - 1, self.selectedImageIndex + 1)
+                        // Sync with full screen preview if it's active
+                        if self.showingFullScreenImage != nil {
+                            self.showingFullScreenImage = self.showcaseImages[self.selectedImageIndex]
+                        }
                     }
                     return nil
                 }
