@@ -18,6 +18,17 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     @Published var isVisible: Bool = false
     @Published var shouldAutoImprove: Bool = false
     
+    // PERSISTENCIA: Resultados y estados para que no se pierdan al cerrar
+    @Published var responseText: String = ""
+    @Published var responseTextGemini: String = ""
+    @Published var responseTextOpenAI: String = ""
+    @Published var isGenerating: Bool = false
+    @Published var isGeneratingGemini: Bool = false
+    @Published var isGeneratingOpenAI: Bool = false
+    @Published var error: String?
+    @Published var isCompareMode: Bool = false
+    @Published var isDiffActive: Bool = false
+    
     // Historial de la sesión (solo para la instancia actual, no se persiste)
     struct AIDraftHistoryItem: Identifiable, Equatable {
         let id = UUID()
@@ -49,19 +60,22 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     }
     
     func show(content: String = "", autoImprove: Bool = false) {
-        self.content = content
+        if !content.isEmpty {
+            self.content = content
+        }
         self.shouldAutoImprove = autoImprove
         
-        if panel == nil { createPanel() }
-        
-        // Posicionar y en el centro
-        if let screen = NSScreen.main {
-            let visibleFrame = screen.visibleFrame
-            let panelWidth: CGFloat = 740
-            let panelHeight: CGFloat = 540
-            let x = visibleFrame.midX - (panelWidth / 2)
-            let y = visibleFrame.midY - (panelHeight / 2)
-            panel?.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
+        if panel == nil { 
+            createPanel() 
+            // Solo centrar la primera vez
+            if let screen = NSScreen.main {
+                let visibleFrame = screen.visibleFrame
+                let panelWidth: CGFloat = isCompareMode ? 1115 : 740
+                let panelHeight: CGFloat = 570
+                let x = visibleFrame.midX - (panelWidth / 2)
+                let y = visibleFrame.midY - (panelHeight / 2)
+                panel?.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
+            }
         }
         
         panel?.makeKeyAndOrderFront(nil)
@@ -98,6 +112,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         newPanel.contentView?.layer?.cornerRadius = 20
         newPanel.hasShadow = false // Shadow is managed by SwiftUI now
         newPanel.delegate = self
+        newPanel.isMovableByWindowBackground = true
+        newPanel.hidesOnDeactivate = true // Cierra al hacer click fuera
         newPanel.center()
         
         let view = FloatingAIDraftView()
