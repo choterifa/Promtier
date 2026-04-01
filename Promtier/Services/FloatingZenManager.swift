@@ -325,7 +325,8 @@ class FloatingZenManager: NSObject, ObservableObject {
             defer: false
         )
         
-        newPanel.minSize = NSSize(width: 400, height: 450)
+        // Dejamos el minSize pequeño para permitir el encongimiento "cuadradito" a 48x48 sin que reviente el AutoLayout
+        newPanel.minSize = NSSize(width: 48, height: 48)
         newPanel.maxSize = NSSize(width: 1200, height: 1000)
         
         newPanel.isFloatingPanel = true
