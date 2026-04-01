@@ -171,7 +171,7 @@ struct FloatingAIDraftView: View {
                     ZStack(alignment: .topLeading) {
                         if manager.isGenerating {
                             VStack(spacing: 12) {
-                                ProgressView().controlSize(.small)
+                                ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
                                 Text("IA trabajando...")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(.secondary)
@@ -286,7 +286,7 @@ struct FloatingAIDraftView: View {
                         ZStack(alignment: .topLeading) {
                             if manager.isGeneratingGemini {
                                 VStack(spacing: 12) {
-                                    ProgressView().controlSize(.small)
+                                    ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
                                     Text("Gemini trabajando...")
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundColor(.secondary)
@@ -925,7 +925,7 @@ struct FloatingAIDraftView: View {
         """
     }
     
-    enum DualTarget: Sendable { case openai, gemini }
+    nonisolated enum DualTarget: Sendable { case openai, gemini }
     
     private func typewriterAnimationDual(_ fullText: String, target: DualTarget) {
         let words = fullText.split(separator: " ", omittingEmptySubsequences: false).map { String($0) }

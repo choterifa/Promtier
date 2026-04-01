@@ -63,7 +63,7 @@ struct AlternativeGeneratorView: View {
                 Button(action: generateAlternative) {
                     HStack {
                         if isGenerating {
-                            ProgressView().controlSize(.small)
+                            ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
                         } else {
                             Image(systemName: "wand.and.stars")
                         }

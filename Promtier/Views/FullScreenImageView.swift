@@ -212,7 +212,6 @@ struct FullScreenImageView: View {
                 } else {
                     ProgressView()
                         .controlSize(.large)
-                        .fixedSize()
                         .tint(.white.opacity(0.85))
                 }
             }

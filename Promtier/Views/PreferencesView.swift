@@ -769,8 +769,7 @@ struct AITab: View {
                                 Task { await refreshOpenAIModels() }
                             }) {
                                 if isRefreshingOpenAIModels {
-                                    ProgressView()
-                                        .controlSize(.small)
+                                    ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
                                 } else {
                                     Image(systemName: "arrow.clockwise")
                                         .font(.system(size: 13, weight: .medium))

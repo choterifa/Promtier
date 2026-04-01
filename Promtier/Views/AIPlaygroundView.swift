@@ -39,7 +39,7 @@ struct AIPlaygroundView: View {
                         
                         Button(action: generateResponse) {
                             if isGenerating {
-                                ProgressView().controlSize(.small)
+                                ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
                             } else {
                                 Text("generate_test".localized(for: preferences.language))
                                     .font(.system(size: 12, weight: .semibold))
