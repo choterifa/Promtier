@@ -118,6 +118,7 @@ struct EditorCard: View {
     @State private var aiTask: Task<Void, Never>? = nil
     @State private var showingInstructionAlert = false
     @State private var instructionInput = ""
+    @State private var isDraggingMagicImage = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -150,6 +151,13 @@ struct EditorCard: View {
                             
                             // ✨ Botón Mágico: Autocompletar Título
                             if editorID == "main" {
+                                MagicImageDropZone(isDraggingImage: $isDraggingMagicImage) { data in
+                                    extractMagicPrompt(from: data)
+                                }
+                                .scaleEffect(0.65)
+                                .frame(width: 26, height: 26)
+                                .padding(.trailing, 2)
+                                
                                 Button(action: { 
                                     withAnimation { isMagicPulsing = false }
                                     onMagicAutocomplete?() 
@@ -536,6 +544,42 @@ struct EditorCard: View {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 withAnimation { branchMessage = nil }
+            }
+        }
+    }
+    
+    private func extractMagicPrompt(from data: Data) {
+        guard (!preferences.openAIApiKey.isEmpty && preferences.openAIEnabled) || (!preferences.geminiAPIKey.isEmpty && preferences.geminiEnabled) else { 
+            title = "IA no configurada"
+            return 
+        }
+        content = ""
+        
+        Task {
+            do {
+                let instruction = "Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores dominante, estilo artístico y configuración de iluminación. Empieza directamente con el prompt en inglés o español sin frases introductorias."
+                let systemPrompt = """
+                You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
+                
+                # INSTRUCTION FOR YOU:
+                \(instruction)
+                
+                # IMPORTANT:
+                Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+                """
+                
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
+                
+                await MainActor.run {
+                    self.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
+                        self.title = "Prompt de Imagen"
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.content = "Error generando prompt: \(error.localizedDescription)"
+                }
             }
         }
     }
