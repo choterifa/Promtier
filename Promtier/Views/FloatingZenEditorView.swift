@@ -8,6 +8,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import AppKit
+import Vision
 
 struct FloatingZenEditorView: View {
     @EnvironmentObject var manager: FloatingZenManager
@@ -25,6 +26,13 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringMagic: Bool = false
     @State private var pulseMagic: Bool = false
     @State private var isCompressingImage: Bool = false
+    @State private var isOCRing: Bool = false
+    @State private var isGhostMode: Bool = false
+    @State private var isMouseInside: Bool = true
+    @State private var screenOCRLoading: Bool = false
+    @State private var animatedPhase: CGFloat = 0
+    @State private var hoverTitleOCR: Bool = false
+    @State private var hoverContentOCR: Bool = false
     
     enum ZenField { case title, description, content }
     
@@ -54,84 +62,121 @@ struct FloatingZenEditorView: View {
                 
                 Divider().opacity(0.3)
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // ── Title ──
-                        VStack(alignment: .leading, spacing: 4) {
-                            TextField("Escribe el título...", text: $manager.title, axis: .vertical)
-                                .font(.system(size: 20, weight: .bold))
-                                .textFieldStyle(.plain)
-                                .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 80, alignment: .leading)
-                                .focused($focusedField, equals: .title)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 14)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.04)))
-                        }
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                        .padding(.bottom, 12)
-                        
-                        // ── Description ──
-                        VStack(alignment: .leading, spacing: 4) {
-                            TextField("Subtítulo o descripción corta...", text: $manager.promptDescription, axis: .vertical)
-                                .font(.system(size: 13))
-                                .textFieldStyle(.plain)
-                                .frame(maxWidth: .infinity, minHeight: 18, maxHeight: 54, alignment: .leading)
-                                .focused($focusedField, equals: .description)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.03)))
-                        }
-                        .padding(.horizontal, 22)
-                        .padding(.bottom, 12)
-                        
-                        
-                        // ── Content ──
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("CONTENIDO")
-                                    .font(.system(size: 9, weight: .black))
-                                    .foregroundColor(.secondary.opacity(0.5))
-                                    .tracking(1.5)
-                                Spacer()
-                            }
-                            .padding(.top, 8)
-                            
-                            ZStack(alignment: .topLeading) {
-                                if manager.content.isEmpty {
-                                    Text("Pega o escribe el contenido del prompt aquí...")
-                                        .font(.system(size: 14 * preferences.fontSize.scale))
-                                        .foregroundColor(.secondary.opacity(0.4))
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 1) // Alineado preciso con el TextEditor interno de macOS
-                                        .allowsHitTesting(false)
+                VStack(spacing: 0) {
+                    // ── Title ──
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Escribe el título...", text: $manager.title, axis: .vertical)
+                            .font(.system(size: 20, weight: .bold))
+                            .textFieldStyle(.plain)
+                            .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 80, alignment: .leading)
+                            .focused($focusedField, equals: .title)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.primary.opacity((isGhostMode && !isMouseInside) ? 0.12 : 0.04))
+                            )
+                            .overlay(alignment: .trailing) {
+                                Button(action: triggerScreenOCR) {
+                                    Image(systemName: "text.viewfinder")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(hoverTitleOCR ? .blue : .blue.opacity(0.8))
+                                        .padding(7)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 7)
+                                                .fill(hoverTitleOCR ? Color.blue.opacity(0.15) : Color.blue.opacity(0.1))
+                                        )
                                 }
-                                
-                                TextEditor(text: $manager.content)
-                                    .font(.system(size: 14 * preferences.fontSize.scale))
-                                    .lineSpacing(4)
-                                    .focused($focusedField, equals: .content)
-                                    .scrollContentBackground(.hidden)
+                                .buttonStyle(.plain)
+                                .onHover { hoverTitleOCR = $0 }
+                                .padding(.trailing, 10)
+                                .animation(.easeInOut(duration: 0.2), value: hoverTitleOCR)
                             }
-                            .padding(14)
-                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.primary.opacity(0.035)))
-                            .frame(height: 260)
-                        }
-                        .padding(.horizontal, 22)
-                        
-                        Spacer(minLength: 20)
-                        
-                        imageStrip
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
+                    
+                    // Descripción oculta (se rellena con IA)
+                    
+                    // ── Content (Expanding) ──
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("CONTENIDO")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(.secondary.opacity((isGhostMode && !isMouseInside) ? 0.85 : 0.5))
+                                .tracking(1.5)
+                            Spacer()
+                        }
+                        .padding(.top, 8)
+                        
+                        ZStack(alignment: .topLeading) {
+                            if manager.content.isEmpty {
+                                Text("Pega o escribe el contenido del prompt aquí...")
+                                    .font(.system(size: 14 * preferences.fontSize.scale))
+                                    .foregroundColor(.secondary.opacity((isGhostMode && !isMouseInside) ? 0.8 : 0.4))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1)
+                                    .allowsHitTesting(false)
+                            }
+                            
+                            TextEditor(text: $manager.content)
+                                .font(.system(size: 14 * preferences.fontSize.scale))
+                                .lineSpacing(4)
+                                .focused($focusedField, equals: .content)
+                                .scrollContentBackground(.hidden)
+                                .scrollIndicators(.hidden)
+                                .onAppear {
+                                    // Hack nativo para ocultar totalmente la "ranura" del scroll en macOS
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        if let scrollView = findNSScrollView(view: NSApp.keyWindow?.contentView) {
+                                            scrollView.hasVerticalScroller = false
+                                            scrollView.verticalScroller?.alphaValue = 0
+                                            scrollView.drawsBackground = false
+                                        }
+                                    }
+                                }
+                        }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.primary.opacity((isGhostMode && !isMouseInside) ? 0.1 : 0.035))
+                        )
+                        .frame(minHeight: 120, maxHeight: .infinity)
+                        .overlay(alignment: .bottomTrailing) {
+                            Button(action: triggerScreenOCR) {
+                                Image(systemName: "text.viewfinder")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(hoverContentOCR ? .blue : .blue.opacity(0.8))
+                                    .padding(8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(hoverContentOCR ? Color.blue.opacity(0.15) : Color.blue.opacity(0.1))
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .onHover { hoverContentOCR = $0 }
+                            .padding(10) // Más margen como en la imagen
+                            .help("Extraer texto de pantalla")
+                            .animation(.easeInOut(duration: 0.2), value: hoverContentOCR)
+                        }
+                    }
+                    .padding(.horizontal, 22)
+                    .layoutPriority(1) // Dar prioridad al contenido para que crezca
+                    
+                    Spacer(minLength: 16)
+                    
+                    imageStrip
                 }
                 
                 Divider().opacity(0.3)
                 
                 footerBar
             }
-            .frame(width: 440, height: 500)
-            .opacity(manager.isCollapsed ? 0 : 1)
+            .frame(minWidth: 400, maxWidth: .infinity, minHeight: 450, maxHeight: .infinity)
+            .opacity((manager.isCollapsed) ? 0 : 1)
             .scaleEffect(manager.isCollapsed ? 0.9 : 1.0)
+            .opacity(isGhostMode && !isMouseInside ? 0.6 : 1.0) // Dimming solo el contenido, no todo el window frame
             .allowsHitTesting(!manager.isCollapsed)
             
             // ── ESTADO "CUADRADITO" ─────────────────────────────────────────
@@ -158,18 +203,38 @@ struct FloatingZenEditorView: View {
             .opacity(manager.isCollapsed ? 1 : 0)
             .scaleEffect(manager.isCollapsed ? 1.0 : 0.5)
             .allowsHitTesting(manager.isCollapsed)
+            .onAppear {
+                withAnimation(.linear(duration: 4.0).repeatForever(autoreverses: false)) {
+                    animatedPhase = -40
+                }
+            }
         }
-        .frame(width: manager.isCollapsed ? 48 : 440, height: manager.isCollapsed ? 48 : 500)
+        .frame(
+            minWidth: manager.isCollapsed ? 48 : 400,
+            maxWidth: manager.isCollapsed ? 48 : .infinity,
+            minHeight: manager.isCollapsed ? 48 : 450,
+            maxHeight: manager.isCollapsed ? 48 : .infinity
+        )
+        .animation(.easeInOut(duration: 0.3), value: isMouseInside)
+        .onHover { isInside in
+            isMouseInside = isInside
+        }
         .background(
             ZStack {
-                Color(NSColor.windowBackgroundColor)
-                
-                if let catColor = categoryColor, !manager.isCollapsed {
-                    LinearGradient(
-                        gradient: Gradient(colors: [catColor.opacity(0.12), Color(NSColor.windowBackgroundColor)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                if isGhostMode && !isMouseInside {
+                    ZenGlassView(material: .hudWindow, blendingMode: .behindWindow)
+                        .overlay(Color(NSColor.windowBackgroundColor).opacity(0.2)) // Capa extra para legibilidad
+                        .opacity(0.9)
+                } else {
+                    Color(NSColor.windowBackgroundColor)
+                    
+                    if let catColor = categoryColor, !manager.isCollapsed {
+                        LinearGradient(
+                            gradient: Gradient(colors: [catColor.opacity(0.08), Color.clear]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
                 }
             }
         )
@@ -217,46 +282,8 @@ struct FloatingZenEditorView: View {
     // MARK: - Subviews
     
     private var headerBar: some View {
-        HStack(spacing: 0) {
-            // Botón de Cerrar (sustituye al semáforo)
-            Button(action: {
-                if manager.hasUnsavedChanges {
-                    showDiscardAlert = true
-                } else {
-                    manager.resetAndHide()
-                }
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(isHoveringClose ? .primary : .secondary)
-                    .padding(6)
-                    .background(Circle().fill(isHoveringClose ? Color.red.opacity(0.1) : Color.primary.opacity(0.06)))
-            }
-            .buttonStyle(.plain)
-            .help("Cerrar")
-            .onHover { isHoveringClose = $0 }
-            
-            // Botón de Colapsar
-            Button(action: {
-                focusedField = nil
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    manager.toggleCollapse()
-                }
-            }) {
-                Image(systemName: manager.isCollapsed ? "chevron.down" : "chevron.up")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(isHoveringCollapse ? .primary : .secondary)
-                    .padding(6)
-                    .background(Circle().fill(isHoveringCollapse ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
-            }
-            .buttonStyle(.plain)
-            .help(manager.isCollapsed ? "Expandir" : "Colapsar")
-            .onHover { isHoveringCollapse = $0 }
-            .padding(.leading, 8)
-            
-            Spacer()
-            
-            // Título centrado
+        ZStack {
+            // Capa del Título (Perfectamente centrada)
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 10, weight: .bold))
@@ -267,30 +294,105 @@ struct FloatingZenEditorView: View {
             .foregroundColor(.secondary)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(WindowDragView()) // El propio título permite arrastre
-            .offset(x: -8) // Ajuste perfecto al centro visual considerando botones
             .background(Capsule().fill(Color.primary.opacity(0.05)))
             
-            Spacer()
-            
-            // Botón de Abrir
-            Button(action: {
-                manager.hide()
-                MenuBarManager.shared.showPopover()
-            }) {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(isHoveringOpen ? .primary : .secondary)
-                    .padding(6)
-                    .background(Circle().fill(isHoveringOpen ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
+            // Capa de Botones
+            HStack(spacing: 0) {
+                // Botón de Cerrar (sustituye al semáforo)
+                Button(action: {
+                    if manager.hasUnsavedChanges {
+                        showDiscardAlert = true
+                    } else {
+                        manager.resetAndHide()
+                    }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(isHoveringClose ? .primary : .secondary)
+                        .padding(6)
+                        .background(Circle().fill(isHoveringClose ? Color.red.opacity(0.1) : Color.primary.opacity(0.06)))
+                }
+                .buttonStyle(.plain)
+                .help("Cerrar")
+                .onHover { isHoveringClose = $0 }
+                
+                // Botón de Colapsar
+                Button(action: {
+                    focusedField = nil
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        manager.toggleCollapse()
+                    }
+                }) {
+                    Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(isHoveringCollapse ? .primary : .secondary)
+                        .padding(6)
+                        .background(Circle().fill(isHoveringCollapse ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
+                }
+                .buttonStyle(.plain)
+                .help(manager.isCollapsed ? "Expandir" : "Colapsar")
+                .onHover { isHoveringCollapse = $0 }
+                .padding(.leading, 8)
+                
+                // Botón Ghost Mode
+                Button(action: { isGhostMode.toggle() }) {
+                    Image(systemName: isGhostMode ? "eye.slash.fill" : "eye.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(isGhostMode ? .blue : .secondary)
+                        .padding(6)
+                        .background(Circle().fill(isGhostMode ? Color.blue.opacity(0.1) : Color.primary.opacity(0.06)))
+                }
+                .buttonStyle(.plain)
+                .help("Ghost Mode: Transparente al salir")
+                .padding(.leading, 4)
+                
+                Spacer()
+                
+                Button(action: {
+                    manager.hide()
+                    MenuBarManager.shared.showPopover()
+                }) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(isHoveringOpen ? .primary : .secondary)
+                        .padding(6)
+                        .background(Circle().fill(isHoveringOpen ? Color.primary.opacity(0.1) : Color.primary.opacity(0.06)))
+                }
+                .buttonStyle(.plain)
+                .help("Abrir editor completo")
+                .onHover { isHoveringOpen = $0 }
             }
-            .buttonStyle(.plain)
-            .help("Abrir editor completo")
-            .onHover { isHoveringOpen = $0 }
         }
-        .frame(height: 50) // Más margen vertical como solicitado
+        .frame(height: 50)
         .padding(.horizontal, 16)
         .background(WindowDragView())
+    }
+    
+    @ViewBuilder
+    private func placeholderView(index: Int) -> some View {
+        Button(action: pasteImageFromClipboard) {
+            VStack(spacing: 8) {
+                Image(systemName: "photo.badge.plus")
+                    .font(.system(size: 20))
+                    .foregroundColor(.secondary.opacity(0.4))
+                Text("Añadir")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.4))
+            }
+            .frame(maxWidth: .infinity, maxHeight: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        style: StrokeStyle(lineWidth: 1.2, dash: [4, 4], dashPhase: animatedPhase)
+                    )
+                    .foregroundColor(.blue.opacity(0.3))
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private var imageStrip: some View {
@@ -298,7 +400,7 @@ struct FloatingZenEditorView: View {
             HStack {
                 Text("RESULTADOS VISUALES")
                     .font(.system(size: 9, weight: .black))
-                    .foregroundColor(.secondary.opacity(0.5))
+                    .foregroundColor(.secondary.opacity((isGhostMode && !isMouseInside) ? 0.85 : 0.5))
                     .tracking(1.5)
                 Spacer()
                 if manager.showcaseImages.count < 3 {
@@ -310,8 +412,6 @@ struct FloatingZenEditorView: View {
                             .padding(.vertical, 4)
                             .background(Color.blue.opacity(isHoveringPaste ? 0.12 : 0.05))
                             .cornerRadius(6)
-                            .scaleEffect(isHoveringPaste ? 1.05 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHoveringPaste)
                     }
                     .buttonStyle(.plain)
                     .onHover { isHoveringPaste = $0 }
@@ -334,7 +434,7 @@ struct FloatingZenEditorView: View {
     
     @ViewBuilder
     private func imageThumb(data: Data, index: Int) -> some View {
-        FloatingZenImageThumb(data: data, index: index, manager: manager)
+        FloatingZenImageThumb(data: data, index: index, manager: manager, mainEditor: self, animatedPhase: animatedPhase)
     }
     
     @ViewBuilder
@@ -354,12 +454,12 @@ struct FloatingZenEditorView: View {
                     .fill(isHovered ? Color.blue.opacity(0.05) : Color.primary.opacity(0.03))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                            .foregroundColor(isHovered ? .blue.opacity(0.3) : .secondary.opacity(0.2))
+                            .strokeBorder(
+                                style: StrokeStyle(lineWidth: 1.2, dash: [5, 5], dashPhase: isHovered ? animatedPhase : 0)
+                            )
+                            .foregroundColor(isHovered ? .blue.opacity(0.5) : .blue.opacity(0.15))
                     )
             )
-            .scaleEffect(isHovered ? 1.02 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovered)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -380,7 +480,7 @@ struct FloatingZenEditorView: View {
                         Image(systemName: "sparkles")
                             .font(.system(size: 14))
                             .symbolEffect(.variableColor, isActive: manager.isClassifying)
-                        Text(isCompressingImage ? "Comprimiendo imágenes..." : (manager.isClassifying ? "Clasificando..." : "Autocategorize"))
+                        Text(isCompressingImage ? "Comprimiendo..." : (manager.isClassifying ? "IA..." : "Autocompletar"))
                             .font(.system(size: 10, weight: .bold))
                     } else {
                         Image(systemName: "sparkles.separator")
@@ -406,7 +506,7 @@ struct FloatingZenEditorView: View {
             .buttonStyle(.plain)
             .onHover { isHoveringMagic = $0 }
             .animation(.easeInOut(duration: 0.2), value: isHoveringMagic)
-            .help(isMagicAvailable ? "Clasificar categoría automáticamente" : "No hay IA configurada")
+            .help(isMagicAvailable ? "Autocompletar lo faltante" : "No hay IA configurada")
             
             Spacer()
             
@@ -530,14 +630,97 @@ struct FloatingZenEditorView: View {
         guard let tiffData = newImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.82])
     }
+    
+    // MARK: - Screen OCR (TextSniper Style)
+    
+    private func triggerScreenOCR() {
+        screenOCRLoading = true
+        HapticService.shared.playImpact()
+        
+        // Ocultar ventana para no capturarse a sí misma
+        // No podemos usar orderOut porque el script de screencapture es interactivo y bloquea
+        // Así que usamos la opacidad para que sea "invisible"
+        self.manager.hide() // Mejor ocultar de verdad
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let tempPath = "/tmp/promtier_ocr_capture.png"
+            
+            // Limpiar si existía
+            try? FileManager.default.removeItem(atPath: tempPath)
+            
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            process.arguments = ["-i", "-x", tempPath] // -i (interactivo), -x (sin sonido)
+            
+            do {
+                try process.run()
+                process.waitUntilExit()
+                
+                // Mostrar ventana de nuevo
+                DispatchQueue.main.async {
+                    self.manager.bringToFront()
+                    
+                    if FileManager.default.fileExists(atPath: tempPath) {
+                        if let data = try? Data(contentsOf: URL(fileURLWithPath: tempPath)) {
+                            self.performOCR(imageData: data)
+                        }
+                        // Limpiar
+                        try? FileManager.default.removeItem(atPath: tempPath)
+                    }
+                    self.screenOCRLoading = false
+                }
+            } catch {
+                print("Error triggering screencapture: \(error)")
+                DispatchQueue.main.async {
+                    self.manager.bringToFront()
+                    self.screenOCRLoading = false
+                }
+            }
+        }
+    }
+
+    func performOCR(imageData: Data) {
+        let requestHandler = VNImageRequestHandler(data: imageData, options: [:])
+        let request = VNRecognizeTextRequest { request, error in
+            guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
+            let extractedText = observations.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+            
+            DispatchQueue.main.async {
+                if !extractedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    HapticService.shared.playSuccess()
+                    withAnimation(.spring()) {
+                        if manager.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            manager.content = extractedText
+                        } else {
+                            manager.content += "\n\n" + extractedText
+                        }
+                    }
+                } else {
+                    HapticService.shared.playError()
+                }
+            }
+        }
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try requestHandler.perform([request])
+            } catch {
+                print("Vision OCR Error: \(error)")
+            }
+        }
+    }
 }
 
 struct FloatingZenImageThumb: View {
     let data: Data
     let index: Int
     @ObservedObject var manager: FloatingZenManager
+    let mainEditor: FloatingZenEditorView
     @State private var isFillMode = true
     @State private var isHovering = false
+    let animatedPhase: CGFloat
 
     var body: some View {
         if let nsImg = NSImage(data: data) {
@@ -551,7 +734,10 @@ struct FloatingZenImageThumb: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    )
                     .overlay(alignment: .bottomTrailing) {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -583,10 +769,48 @@ struct FloatingZenImageThumb: View {
                 }
                 .buttonStyle(.plain)
                 .offset(x: 6, y: -6)
+
+                // Botón OCR
+                Button {
+                    mainEditor.performOCR(imageData: data)
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 22, height: 22)
+                        Image(systemName: "text.viewfinder")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .buttonStyle(.plain)
+                .offset(x: -4, y: 4)
+                .opacity(isHovering ? 1.0 : 0.0)
+                .help("Extraer texto (OCR)")
+                .alignmentGuide(.bottom) { _ in 0 }
             }
         }
     }
 }
+
+struct ZenGlassView: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
+
 
 // MARK: - Helper para arrastrar la ventana mediante clicks o tap
 struct WindowDragView: NSViewRepresentable {
@@ -639,5 +863,18 @@ class DraggableNSView: NSView {
             onTap?()
         }
     }
+}
+
+// MARK: - Native Helpers
+func findNSScrollView(view: NSView?) -> NSScrollView? {
+    if let scrollView = view as? NSScrollView {
+        return scrollView
+    }
+    for subview in view?.subviews ?? [] {
+        if let found = findNSScrollView(view: subview) {
+            return found
+        }
+    }
+    return nil
 }
 

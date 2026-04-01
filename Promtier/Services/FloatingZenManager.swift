@@ -83,8 +83,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         // Posicionar a la derecha y centrada verticalmente
         if let screen = NSScreen.main {
             let visibleFrame = screen.visibleFrame
-            let panelWidth: CGFloat = 440
-            let panelHeight: CGFloat = 500
+            let panelWidth: CGFloat = 850
+            let panelHeight: CGFloat = 520
             
             // Revertir a centrado horizontal y vertical
             let x = visibleFrame.midX - (panelWidth / 2)
@@ -287,8 +287,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         guard let panel = panel else { return }
         isCollapsed.toggle()
         
-        let targetWidth: CGFloat = isCollapsed ? 48 : 440
-        let targetHeight: CGFloat = isCollapsed ? 48 : 500
+        let targetWidth: CGFloat = isCollapsed ? 48 : 850
+        let targetHeight: CGFloat = isCollapsed ? 48 : 520
         
         var frame = panel.frame
         let oldWidth = frame.size.width
@@ -337,11 +337,14 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
         
         let newPanel = FloatingZenPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 500),
-            styleMask: [.nonactivatingPanel, .borderless, .resizable], // Sin titled para evitar el margen de semáforos
+            contentRect: NSRect(x: 0, y: 0, width: 850, height: 520),
+            styleMask: [.nonactivatingPanel, .borderless, .resizable],
             backing: .buffered,
             defer: false
         )
+        
+        newPanel.minSize = NSSize(width: 400, height: 400)
+        newPanel.maxSize = NSSize(width: 1300, height: 1000)
         
         newPanel.isFloatingPanel = true
         newPanel.level = .floating
