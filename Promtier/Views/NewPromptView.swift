@@ -952,7 +952,27 @@ struct NewPromptView: View {
             let targetWidth = geometry.size.width * 0.9
 
             VStack(spacing: 0) {
-                header(width: targetWidth)
+                NewPromptHeaderView(
+                    title: title,
+                    content: content,
+                    promptDescription: promptDescription,
+                    showcaseImages: showcaseImages,
+                    originalPrompt: originalPrompt,
+                    prompt: prompt,
+                    currentCategoryColor: currentCategoryColor,
+                    themeColor: themeColor,
+                    hasUnsavedChanges: hasUnsavedChanges,
+                    showingCloseAlert: $showingCloseAlert,
+                    showingVersionHistory: $showingVersionHistory,
+                    showingPremiumFor: $showingPremiumFor,
+                    isPinned: $isPinned,
+                    branchMessage: $branchMessage,
+                    discardChanges: { discardChanges() },
+                    saveCurrentDraft: { saveCurrentDraft() },
+                    branchPrompt: { branchPrompt() },
+                    savePrompt: { savePrompt() },
+                    closePopover: { MenuBarManager.shared.closePopover() }
+                )
 
                 ScrollView(showsIndicators: false) {
                     ScrollViewReader { proxy in
@@ -1721,179 +1741,6 @@ struct NewPromptView: View {
 
     // MARK: - Subviews
 
-    private func header(width: CGFloat) -> some View {
-        ZStack {
-            // Botones laterales (Cancel y Acciones)
-            HStack(alignment: .center) {
-                Button(action: {
-                    if hasUnsavedChanges {
-                        showingCloseAlert = true
-                    } else {
-                        discardChanges()
-                    }
-                }) {
-                    Text("cancel".localized(for: preferences.language))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(isHoveringCancel ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.05))
-                        )
-                }
-                .buttonStyle(.plain)
-                .onHover { isHoveringCancel = $0 }
-                .animation(.easeInOut(duration: 0.2), value: isHoveringCancel)
-
-                Spacer()
-
-                HStack(spacing: 12) {
-
-                    if originalPrompt != nil && !originalPrompt!.versionHistory.isEmpty {
-                        Button(action: {
-                            if preferences.isPremiumActive {
-                                showingVersionHistory = true
-                            } else {
-                                showingPremiumFor = "Version History"
-                            }
-                        }) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(themeColor)
-                                .frame(width: 32, height: 32)
-                                .background(themeColor.opacity(isHoveringHistory ? 0.25 : 0.1))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .onHover { isHoveringHistory = $0 }
-                        .animation(.easeInOut(duration: 0.2), value: isHoveringHistory)
-                        .help("Ver historial")
-                        .transition(.opacity)
-                    }
-
-
-                    Button(action: {
-                        // Force save current draft state
-                        saveCurrentDraft()
-
-                        // Extract title and content to floating manager
-                        FloatingZenManager.shared.show(title: title, promptDescription: promptDescription, content: content, showcaseImages: showcaseImages, promptId: originalPrompt?.id ?? prompt?.id, isEditing: true)
-                        // Close popover
-                        MenuBarManager.shared.closePopover()
-                    }) {
-                        Image(systemName: "pip.enter")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(themeColor)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(themeColor.opacity(isHoveringZen ? 0.25 : 0.1)))
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringZen = $0 }
-                    .animation(.easeInOut(duration: 0.2), value: isHoveringZen)
-                    .help("Floating Zen Mode")
-
-                    // Botón de fijar ventana (Pin)
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3)) {
-                            isPinned.toggle()
-                            MenuBarManager.shared.isModalActive = isPinned
-                        }
-                        HapticService.shared.playLight()
-                    }) {
-                        Image(systemName: isPinned ? "pin.fill" : "pin")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(isPinned ? .white : themeColor)
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle().fill(
-                                    isPinned
-                                        ? themeColor
-                                        : themeColor.opacity(isHoveringPin ? 0.25 : 0.1)
-                                )
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringPin = $0 }
-                    .animation(.easeInOut(duration: 0.2), value: isHoveringPin)
-                    .animation(.easeInOut(duration: 0.2), value: isPinned)
-                    .help(isPinned ? "Desfijar ventana (Cmd+L)" : "Fijar ventana (Cmd+L)")
-                    .keyboardShortcut("l", modifiers: .command)
-
-                    if (originalPrompt ?? prompt) != nil {
-                        Button(action: { 
-                            if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                branchPrompt() 
-                            } else {
-                                HapticService.shared.playError()
-                                withAnimation {
-                                    self.branchMessage = "required_fields".localized(for: self.preferences.language)
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                    withAnimation { if self.branchMessage == "required_fields".localized(for: self.preferences.language) { self.branchMessage = nil } }
-                                }
-                            }
-                        }) {
-                            Image(systemName: "arrow.branch")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(themeColor)
-                                .frame(width: 32, height: 32)
-                                .background(Circle().fill(themeColor.opacity(isHoveringBranch ? 0.25 : 0.1)))
-                        }
-                        .buttonStyle(.plain)
-                        .onHover { isHoveringBranch = $0 }
-                        .animation(.easeInOut(duration: 0.2), value: isHoveringBranch)
-                        .help("create_branch".localized(for: preferences.language))
-                    }
-
-                    Button(action: { 
-                        if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            savePrompt() 
-                        } else {
-                            HapticService.shared.playError()
-                            withAnimation {
-                                self.branchMessage = "required_fields".localized(for: self.preferences.language)
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                withAnimation { if self.branchMessage == "required_fields".localized(for: self.preferences.language) { self.branchMessage = nil } }
-                            }
-                        }
-                    }) {
-                        Text(prompt != nil ? "save".localized(for: preferences.language) : "create".localized(for: preferences.language))
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(title.isEmpty || content.isEmpty ? Color.gray.opacity(0.3) : (isHoveringSave ? currentCategoryColor.opacity(0.85) : (preferences.isHaloEffectEnabled ? currentCategoryColor : .blue)))
-                                    .shadow(color: title.isEmpty || content.isEmpty ? .clear : (preferences.isHaloEffectEnabled ? (isHoveringSave ? currentCategoryColor.opacity(0.4) : currentCategoryColor.opacity(0.2)) : .clear), radius: isHoveringSave ? 8 : 4, y: isHoveringSave ? 4 : 2)
-                            )
-                            .scaleEffect(isHoveringSave ? 1.02 : 1.0)
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { isHoveringSave = $0 }
-                    .animation(.easeInOut(duration: 0.2), value: isHoveringSave)
-                    .disabled(title.isEmpty || content.isEmpty)
-                    .keyboardShortcut("s", modifiers: [.command])
-                }
-            }
-            .padding(.horizontal, 16)
-
-            // Título central (Ajustado para estar siempre al centro real)
-            VStack(spacing: 2) {
-                Text(prompt != nil ? "edit_prompt".localized(for: preferences.language) : "new_prompt".localized(for: preferences.language))
-                    .font(.system(size: 15, weight: .bold))
-                Text(prompt != nil ? "update_details".localized(for: preferences.language) : "create_tool".localized(for: preferences.language))
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-            }
-            .allowsHitTesting(false) // Dejar que los clics pasen a los botones si hubiera solapamiento
-        }
-        .frame(width: width)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
-    }
 
                 private func imageGallery(width: CGFloat) -> some View {
                     let slotWidth = (width - 52) / 3

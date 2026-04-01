@@ -1,54 +1,35 @@
-# 🧠 Registro de Última Gran Modernización - 28 de Marzo de 2026
+# 🧠 Registro de Modernización y Rendimiento - Marzo 31 de 2024
 
 ## 🛠️ Estado actual de la arquitectura y rendimiento
 
-Hoy se ha completado un ciclo de modernización crítica que resuelve los 3 cuellos de botella más importantes detectados en la auditoría de rendimiento y seguridad.
+Hoy hemos completado un ciclo de **optimización crítica de recursos y refactorización UI**, resolviendo cuellos de botella severos, consumos excesivos de CPU/Batería y reduciendo el caos de re-renders de SwiftUI.
 
-### ✅ Cambios implementados (Fases 1, 2 y 3)
+### ✅ Cambios implementados
 
-1. **Seguridad Nativa de API Keys (Keychain)**
-   - Se eliminó el rastro de OpenAI y Gemini API Keys de `UserDefaults` (texto plano).
-   - Ahora se guardan en el **Keychain de macOS** bajo el `Bundle Identifier` (`kSecAttrService`).
-   - Se implementó un sistema de **migración automática**: al abrir la app, las llaves viejas se mueven a la bóveda segura y se borra el rastro inseguro.
+1. **Eficiencia Energética y CPU (Zero-Waste CPU) 🔋**
+   - **Gestor de Portapapeles (`ClipboardService`):** Se eliminó el `Timer` en bucle eterno a 1 segundo. Ahora escucha reactivamente notificaciones nativas (`NSApplication.willBecomeActiveNotification`) de macOS para evitar desgastar la batería en segundo plano (amigable con *App Nap*).
+   - **Animaciones GPU vs CPU:** Eliminado el bloque `.onReceive` de 25 FPS de `PlaceholderSlotView`. La animación de `dashPhase` se delegó a `.animation(...)` para correr en la GPU nativa de Metal sin tocar la CPU principal.
 
-2. **Modernización de Red (Async/Await)**
-   - Se erradicó el uso del framework `Combine` para las llamadas de IA.
-   - Los servicios `OpenAIService` y `GeminiService` ahora son 100% nativos de Swift Concurrency (`async/await`), lo que reduce el uso de CPU y simplifica el flujo de errores.
+2. **Supresión de Fallos de UI y Consola 🛑**
+   - **Arreglo del Bug de ProgressView Matemática:** Los `ProgressView` de macOS colisionaban con `.fixedSize()` propiciando la advertencia *maximum length (16.086957) doesn't satisfy min <= max*. Múltiples redimensiones de UI fueron parcheadas a un limpio `.scaleEffect()`.
+   - **Fix del Bucle de Cambios (Ver Undefined Behavior):** Reemplazo de lógica de vistas en `MenuBarManager.swift` (y creación de `PopoverContainerView`) para delegar el refresco del Locale a `@Environment` en vez de reinstanciar el host controller manualmente (esto provocaba `Publishing changes from within view updates is not allowed`).
+   - Se arregló el auto-hide del `AccessibilityBanner` (5 segundos).
 
-3. **Buscador masivo en Hilo Secundario (Background Threading)**
-   - El motor de búsqueda avanzado (Fuzzy, scoring, boosts) se movió de la UI a un hilo de fondo (`Task.detached`).
-   - Se implementó un sistema de **cancelación proactiva**: si el usuario escribe rápido, las tareas de búsqueda anteriores se cancelan para no saturar la CPU.
-   - Esto elimina por completo los "tirones" (beachballs) al navegar o filtrar miles de prompts.
+3. **Restricción y Blindaje de CoreData (Memoria RAM) 💾**
+   - Implementadas configuraciones de `fetchBatchSize = 25` y `50` en `PromptEntity` y `FolderEntity`. Core Data ahora dosificará los picos de memoria bajo demanda para colecciones amplias en vez de cargar todas las filas de golpe.
 
-4. **Optimización Inteligente de Imágenes (Smart Downsampling)**
-   - **Pegado Instantáneo (Cmd+V)**: Ya no se bloquea la interfaz al pegar capturas Retina. El sistema ahora lee bytes directos del `NSPasteboard` y delega la compresión al fondo.
-   - **Downsampling**: Redimensión automática a un máximo de **1200px** y compresión JPEG al 82% (calidad pro, peso mínimo < 300KB).
-   - **Formatos**: Soporte universal (HEIC, WebP, PNG, RAW) con conversión inteligente según si hay transparencia o no.
-
-5. **Correcciones Estructurales**
-   - Se repararon los errores de llaves `{}` en `NewPromptView.swift` tras la refactorización masiva.
-   - Se restauró la estabilidad de `SecondaryEditorCard` y el envío de prompts a la IA.
+4. **Desarticulación del God View y Modularización 🧩**
+   - La colosal vista `NewPromptView.swift` bajó de casi **4,200 líneas a ~2,860 líneas**. Hemos extraído exitosamente diversas vistas.
 
 ## 📁 Archivos más relevantes tocados
+- `CONTEXTO_ULTIMO_CAMBIO.md`
+- `Promtier/Services/MenuBarManager.swift`
+- `Promtier/Services/ClipboardService.swift`
+- `Promtier/Views/PlaceholderSlotView.swift`
+- `Promtier/Core/PromptEntity+Extensions.swift`
+- `Promtier/Views/AccessibilityBanner.swift`
 
-- `Promtier/Services/PreferencesManager.swift` (Enlace a Keychain)
-- `Promtier/Services/PromptService.swift` (Buscador asíncrono)
-- `Promtier/Services/OpenAIService.swift` (Migración a async/await)
-- `Promtier/Services/GeminiService.swift` (Migración a async/await)
-- `Promtier/Views/NewPromptView.swift` (Optimización de Cmd+V y correcciones)
-- `Promtier/Services/ImageOptimizer.swift` (Lógicas de downsampling)
+## ⚠️ Próximo paso (Continuación C)
 
-## 🧩 Especificaciones del Motor de Imágenes
-
-- **Input**: PNG, JPEG, TIFF, BMP, HEIC, WebP, RAW.
-- **Output**: PNG (si hay alpha) / JPEG .jpg (si es opaco).
-- **Límites**: 1200px lado largo, 82% calidad, Thumbnails de 480px.
-- **Background**: Procesamiento 100% fuera del Main Thread.
-
-## ⚠️ Próximo paso recomendado (Fase 4)
-
-**Desarticular el "God View" (`NewPromptView.swift`):**
-El archivo sigue teniendo >3,300 líneas. Aunque es estable y rápido, su mantenimiento es difícil. El siguiente paso lógico es extraer componentes como `SecondaryEditorCard` o la barra de herramientas a archivos independientes para facilitar futuras mejoras.
-
----
-*Actualizado para consolidar la Fase de Rendimiento y Seguridad (28/03/2026).*
+**Continuar Despedazando el "God View" (`NewPromptView.swift`):**
+A pesar del progreso, la vista `NewPromptView` interactúa con una gran maraña de variables `@State`. Al teclear texto, la app debe re-evaluar todo el struct principal y produce lag de tecleo y alto uso de la UI principal sobre CPU. Continuaremos extrayendo en Phase C las sub-vistas como `header()`, `bottomBar()`, `tagSection()`, etc para que aislemos los redibujos de la cadena SwiftUI.

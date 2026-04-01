@@ -144,6 +144,9 @@ extension PromptEntity {
     static func fetchAll(in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
         
+        // Optimización de Memoria (Evitar picos de RAM cargando demasiadas entidades)
+        request.fetchBatchSize = 25
+        
         // CONFIGURABLE: Ordenamiento por defecto
         request.sortDescriptors = [
             NSSortDescriptor(keyPath: \PromptEntity.useCount, ascending: false),
@@ -156,6 +159,7 @@ extension PromptEntity {
     /// Busca prompts por texto en título, contenido o etiquetas
     static func searchPrompts(query: String, in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.fetchBatchSize = 25
         
         if query.isEmpty {
             return fetchAll(in: context)
@@ -184,6 +188,7 @@ extension PromptEntity {
     /// Obtiene solo los favoritos
     static func fetchFavorites(in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.fetchBatchSize = 25
         request.predicate = NSPredicate(format: "isFavorite == YES")
         
         // CONFIGURABLE: Ordenamiento de favoritos

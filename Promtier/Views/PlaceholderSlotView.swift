@@ -62,14 +62,20 @@ struct PlaceholderSlotView: View {
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isTargeted)
-        .onReceive(Timer.publish(every: 0.04, on: .main, in: .common).autoconnect()) { _ in
-            if isHovering || isTargeted {
-                dashPhase -= 0.1
-            }
-        }
         .onHover { hovering in
             // Cambio de estado sin withAnimation global para evitar saltos
             isHovering = hovering
+        }
+        .onChange(of: isHovering || isTargeted) { _, isActive in
+            if isActive {
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    dashPhase -= 15
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    dashPhase = 0
+                }
+            }
         }
         .onTapGesture {
             onSelect()

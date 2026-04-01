@@ -29,11 +29,17 @@ class ClipboardService: ObservableObject {
     }
     
     private func startMonitoring() {
-        monitorTimer = Timer.publish(every: 1.0, on: .main, in: .common)
+        // Reducido a 2.5s para ahorrar muchisima batería (App Nap friendly)
+        monitorTimer = Timer.publish(every: 2.5, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.checkPasteboard()
             }
+        
+        // Comprobar forzosamente cada vez que la app pase a primer plano
+        NotificationCenter.default.addObserver(forName: NSApplication.willBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.checkPasteboard()
+        }
     }
     
     private func checkPasteboard() {
