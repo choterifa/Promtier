@@ -136,13 +136,7 @@ struct PromptCard: View {
         return PredefinedCategory.fromString(folderName)?.color ?? .blue
     }
     
-    private func getAppName(_ bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return url.deletingPathExtension().lastPathComponent
-        }
-        return bundleID
-    }
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Checkbox para selección en lote
@@ -204,8 +198,7 @@ struct PromptCard: View {
                     if isRecommended {
                         HStack(spacing: 3) {
                             if let activeApp = promptService.activeAppBundleID {
-                                if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
-                                    let icon = NSWorkspace.shared.icon(forFile: path)
+                                if let icon = AppInfoCache.getIcon(for: activeApp) {
                                     Image(nsImage: icon)
                                         .resizable()
                                         .frame(width: 11, height: 11)
@@ -214,7 +207,7 @@ struct PromptCard: View {
                                         .font(.system(size: 8, weight: .bold))
                                 }
                                 
-                                Text(getAppName(activeApp))
+                                Text(AppInfoCache.getName(for: activeApp))
                                     .font(.system(size: 9, weight: .bold))
                             }
                         }
