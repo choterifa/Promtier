@@ -37,3 +37,4 @@ A pesar del progreso, la vista `NewPromptView` interactúa con una gran maraña 
 Implementado cache de iconos y app names en PromptCard para evitar beachball. Continuar con MVVM para NewPromptView.
 Creado ViewModel base para NewPromptView con inicialización y guardado
 Iniciando refactorización MVVM en NewPromptView. Swift script/Ruby en progreso para aislar dependencias poco a poco y evitar romper la UI de \~2700 lineas.
+¡Listo! Eliminados todos los scripts .rb sobrantes y archvios test*.swift de basurita tecnológica. Hecho un commit limpio con la limpieza.
