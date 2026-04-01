@@ -1017,7 +1017,8 @@ class PromptService: ObservableObject {
                 
                 guard !originalQuery.isEmpty else { 
                     if !Task.isCancelled {
-                        await MainActor.run { self.filteredPrompts = filtered }
+                        let resultToSet = filtered
+                        await MainActor.run { self.filteredPrompts = resultToSet }
                     }
                     return 
                 }
@@ -1154,6 +1155,9 @@ class PromptService: ObservableObject {
         others = filtered
     }
     let finalFiltered = recommended + others
+    
+    // 🔥 Mensaje de consola importante de diagnóstico
+    print("🔍 [PromptService] Búsqueda finalizada: '\(query)' - Resultados encontrados: \(finalFiltered.count)")
     
     if !Task.isCancelled {
         await MainActor.run {

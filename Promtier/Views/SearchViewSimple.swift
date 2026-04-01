@@ -396,7 +396,7 @@ struct SearchViewSimple: View {
                                     isSidebarResizerHovered = inside
                                     if inside {
                                         NSCursor.resizeLeftRight.push()
-                                    } else if !isSidebarDragging {
+                                    } else {
                                         NSCursor.pop()
                                     }
                                     menuBarManager.setSidebarHovered(inside)
@@ -407,6 +407,7 @@ struct SearchViewSimple: View {
                                             if !isSidebarDragging {
                                                 isSidebarDragging = true
                                                 dragStartedSidebarWidth = preferences.sidebarWidth
+                                                // Ensure cursor doesn't reset when dragging fast
                                             }
                                             let proposed = dragStartedSidebarWidth + value.translation.width
                                             preferences.sidebarWidth = min(300, max(201, proposed))
@@ -414,9 +415,6 @@ struct SearchViewSimple: View {
                                         .onEnded { _ in
                                             isSidebarDragging = false
                                             dragStartedSidebarWidth = 0
-                                            if !isSidebarResizerHovered {
-                                                NSCursor.pop()
-                                            }
                                         }
                                 )
                         }
@@ -691,6 +689,7 @@ struct SearchViewSimple: View {
             isSelected: selectedPrompt?.id == prompt.id,
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
+                isSearchFocused = false
                 selectedPrompt = prompt
                 prewarmPreviewAssets(for: prompt)
                 if showingPreview && preferences.soundEnabled {
@@ -731,6 +730,7 @@ struct SearchViewSimple: View {
             isSelected: selectedPrompt?.id == prompt.id,
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
+                isSearchFocused = false
                 selectedPrompt = prompt
                 prewarmPreviewAssets(for: prompt)
                 if showingPreview && preferences.soundEnabled {

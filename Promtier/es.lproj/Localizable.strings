@@ -530,3 +530,6 @@
 "ai_response_language" = "Idioma respuesta IA";
 "ai_response_language_subtitle" = "Fuerza el idioma del contenido generado por IA";
 "welcome_guide" = "Guía de Bienvenida";
+
+"accessibility_permissions" = "Permisos de accesibilidad";
+"accessibility_required_for_paste" = "Se requieren permisos para pegar automáticamente";

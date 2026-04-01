@@ -920,7 +920,7 @@ struct FloatingAIDraftView: View {
         """
     }
     
-    enum DualTarget { case openai, gemini }
+    enum DualTarget: Sendable { case openai, gemini }
     
     private func typewriterAnimationDual(_ fullText: String, target: DualTarget) {
         let words = fullText.split(separator: " ", omittingEmptySubsequences: false).map { String($0) }

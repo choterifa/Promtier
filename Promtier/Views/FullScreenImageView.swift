@@ -122,7 +122,7 @@ struct FullScreenImageView: View {
             isEntering = false
             scrimOpacity = 0.0
         }
-        .onChange(of: source) { newSource in
+        .onChange(of: source) { _, newSource in
             Task {
                 let img: NSImage?
                 switch newSource {
