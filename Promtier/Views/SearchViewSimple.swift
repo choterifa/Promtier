@@ -425,7 +425,7 @@ struct SearchViewSimple: View {
                 // Contenido principal
                 VStack(spacing: 0) {
                     // Banner de Accesibilidad (Refinado)
-                    if !ShortcutManager.shared.isAccessibilityGranted && !preferences.suppressAccessibilityWarning {
+                    if !ShortcutManager.shared.isAccessibilityGranted {
                         AccessibilityBanner()
                             .transition(.move(edge: .top).combined(with: .opacity))
                             .zIndex(50)
@@ -1357,10 +1357,7 @@ struct AccessibilityBanner: View {
             }
             Spacer()
             HStack(spacing: 8) {
-                Button(NSLocalizedString("configure", comment: "")) { ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true) }.buttonStyle(.bordered).controlSize(.small)
-                Button(action: { withAnimation { preferences.suppressAccessibilityWarning = true } }) {
-                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).padding(6).background(Color.primary.opacity(0.05)).clipShape(Circle())
-                }.buttonStyle(.plain).help(NSLocalizedString("do_not_show_again", comment: ""))
+                Button(NSLocalizedString("configure", comment: "")) { ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true) }.buttonStyle(.bordered).controlSize(.small)
             }
         }.padding(.horizontal, 16).padding(.vertical, 10).background(Color.orange.opacity(0.08)).overlay(Rectangle().frame(height: 1).foregroundColor(.orange.opacity(0.15)), alignment: .bottom)
     }

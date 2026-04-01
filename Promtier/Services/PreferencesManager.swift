@@ -310,12 +310,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var suppressAccessibilityWarning: Bool {
-        didSet {
-            userDefaults.set(suppressAccessibilityWarning, forKey: "suppressAccessibilityWarning")
-        }
-    }
-    
     @Published var hasSeenOnboarding: Bool {
         didSet {
             userDefaults.set(hasSeenOnboarding, forKey: "hasSeenOnboarding")
@@ -491,7 +485,7 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = userDefaults.object(forKey: "showCopyNotifications") == nil ? true : userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
-        self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
+        // Se eliminó suppressAccessibilityWarning
         self.hasSeenOnboarding = userDefaults.bool(forKey: "hasSeenOnboarding")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
         self.visualEffectsEnabled = userDefaults.object(forKey: "visualEffectsEnabled") == nil ? true : userDefaults.bool(forKey: "visualEffectsEnabled")
@@ -652,7 +646,6 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
-        self.suppressAccessibilityWarning = false
         self.hasSeenOnboarding = false
         self.isPremiumActive = false
         self.ghostTipsEnabled = true

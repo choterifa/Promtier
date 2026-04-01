@@ -298,7 +298,7 @@ class ShortcutManager: ObservableObject {
     private var lastPermissionCheck: Date = Date.distantPast
     
     @discardableResult
-    func checkAccessibilityPermissions(forceDialog: Bool = false, ignoreSuppression: Bool = false) -> Bool {
+    func checkAccessibilityPermissions(forceDialog: Bool = false) -> Bool {
         // Evitar spam al sistema: si no es forzado, solo comprobar cada 60 segundos
         if !forceDialog && Date().timeIntervalSince(lastPermissionCheck) < 60 {
             return isAccessibilityGranted
@@ -322,14 +322,11 @@ class ShortcutManager: ObservableObject {
             hasLoggedInitialAccessibilityState = true
         }
         
-        // 2. Si no es confiable y se solicita diálogo (respetando la supresión a menos que se ignore)
+        // 2. Si no es confiable y se solicita diálogo
         if !isTrusted && forceDialog {
-            if !PreferencesManager.shared.suppressAccessibilityWarning || ignoreSuppression {
-                print("🏛️ Invocando diálogo de accesibilidad nativo de macOS")
-                // Esta llamada disparará el diálogo del sistema si el proceso no es confiable
-                let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-                AXIsProcessTrustedWithOptions(promptOptions)
-            }
+            print("🏛️ Invocando diálogo nativo de accesibilidad de macOS")
+            let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            AXIsProcessTrustedWithOptions(promptOptions)
         }
         
         return isTrusted

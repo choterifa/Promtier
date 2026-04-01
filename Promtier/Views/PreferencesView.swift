@@ -612,7 +612,7 @@ struct BehaviorTab: View {
                 
                 SettingsRow("accessibility", subtitle: shortcutManager.isAccessibilityGranted ? "accessibility_granted" : "accessibility_required", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
                     Button(shortcutManager.isAccessibilityGranted ? "accessibility_verified" : "accessibility_configure") {
-                        shortcutManager.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
+                        shortcutManager.checkAccessibilityPermissions(forceDialog: true)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)

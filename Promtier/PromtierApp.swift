@@ -14,7 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Aumentar el retraso a 3 segundos para dar tiempo al sistema TCC a inicializarse
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
+            ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false)
             
             // Mostrar Onboarding en primer lanzamiento
             if !PreferencesManager.shared.hasSeenOnboarding {

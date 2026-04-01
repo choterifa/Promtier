@@ -220,18 +220,11 @@ struct FloatingZenEditorView: View {
             ZStack {
                 if isGhostMode && !isMouseInside {
                     ZenGlassView(material: .hudWindow, blendingMode: .behindWindow)
-                        .overlay(Color(NSColor.windowBackgroundColor).opacity(0.2)) // Capa extra para legibilidad
+                        .overlay(Color(NSColor.windowBackgroundColor).opacity(0.2))
                         .opacity(0.9)
                 } else {
                     Color(NSColor.windowBackgroundColor)
-                    
-                    if let catColor = categoryColor, !manager.isCollapsed {
-                        LinearGradient(
-                            gradient: Gradient(colors: [catColor.opacity(0.08), Color.clear]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    }
+                    premiumBackground
                 }
             }
         )
@@ -274,6 +267,49 @@ struct FloatingZenEditorView: View {
         } message: {
             Text("Si cierras ahora, se perderán todos los cambios que hayas hecho en este prompt.")
         }
+    }
+    
+    // MARK: - Premium Background
+    
+    private var premiumBackground: some View {
+        ZStack {
+            if let catColor = categoryColor, !manager.isCollapsed {
+                // Capa de degradado base
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        catColor.opacity(0.12),
+                        catColor.opacity(0.05),
+                        Color.clear
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .transition(.opacity)
+                
+                // Brillo dinámico estilo "Halo"
+                if preferences.isHaloEffectEnabled {
+                    Circle()
+                        .fill(catColor.opacity(0.15))
+                        .frame(width: 300, height: 300)
+                        .blur(radius: 60)
+                        .offset(x: -150, y: -150)
+                }
+            }
+            
+            // Efecto Mágico (IA Trabajando)
+            if manager.isClassifying {
+                AngularGradient(
+                    gradient: Gradient(colors: [.purple.opacity(0.2), .blue.opacity(0.2), .purple.opacity(0.2)]),
+                    center: .center
+                )
+                .blur(radius: 40)
+                .symbolEffect(.variableColor, isActive: true)
+                .opacity(pulseMagic ? 0.8 : 0.4)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: pulseMagic)
+                .onAppear { pulseMagic = true }
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: manager.selectedFolder)
     }
     
     // MARK: - Subviews
