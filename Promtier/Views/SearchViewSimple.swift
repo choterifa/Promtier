@@ -844,6 +844,13 @@ struct SearchViewSimple: View {
     }
     
     private func handleLocalKeyEvent(_ event: NSEvent) -> NSEvent? {
+        // Ignorar eventos de teclado si hay otras ventanas modales flotantes activas
+        if OmniSearchManager.shared.isVisible ||
+           FloatingZenManager.shared.isVisible ||
+           FloatingAIDraftManager.shared.isVisible ||
+           FloatingOnboardingManager.shared.isVisible {
+            return event
+        }
         let keyCode = event.keyCode
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if keyCode == 53 && modifiers.isEmpty {
