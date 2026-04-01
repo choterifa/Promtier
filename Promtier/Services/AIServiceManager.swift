@@ -26,24 +26,24 @@ class AIServiceManager {
         }
     }
     
-    func generate(prompt: String) async throws -> String {
+    func generate(prompt: String, imageData: Data? = nil) async throws -> String {
         let prefs = PreferencesManager.shared
         
         switch prefs.preferredAIService {
         case .openai:
             guard prefs.openAIEnabled else { throw AIError.serviceDisabled }
             guard !prefs.openAIApiKey.isEmpty else { throw AIError.invalidAPIKey("OpenAI") }
-            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false)
+            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false, imageData: imageData)
             
         case .openrouter:
             guard prefs.openRouterEnabled else { throw AIError.serviceDisabled }
             guard !prefs.openRouterAPIKey.isEmpty else { throw AIError.invalidAPIKey("OpenRouter") }
-            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true)
+            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true, imageData: imageData)
             
         case .gemini:
             guard prefs.geminiEnabled else { throw AIError.serviceDisabled }
             guard !prefs.geminiAPIKey.isEmpty else { throw AIError.invalidAPIKey("Google Gemini") }
-            return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel)
+            return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
         }
     }
 }

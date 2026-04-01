@@ -3,9 +3,12 @@ import SwiftUI
 struct AccessibilityBanner: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isVisible = true
+    
+    // Rastrea si el banner ya se mostró al menos una vez en esta sesión de la app
+    static var hasShownThisSession = false
 
     var body: some View {
-        if isVisible {
+        if isVisible && !Self.hasShownThisSession {
             HStack(spacing: 12) {
                 Image(systemName: "lock.shield.fill").foregroundColor(.orange).font(.system(size: 14))
                 VStack(alignment: .leading, spacing: 2) {
@@ -23,6 +26,7 @@ struct AccessibilityBanner: View {
             .overlay(Rectangle().frame(height: 1).foregroundColor(.orange.opacity(0.15)), alignment: .bottom)
             .transition(.move(edge: .top).combined(with: .opacity))
             .onAppear {
+                Self.hasShownThisSession = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                     withAnimation(.easeInOut) {
                         isVisible = false

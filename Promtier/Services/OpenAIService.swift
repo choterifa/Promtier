@@ -115,7 +115,7 @@ class OpenAIService: ObservableObject {
     }
     
     /// Genera una respuesta basada en un prompt de forma asíncrona
-    func generate(prompt: String, model: String, apiKey: String, isOpenRouter: Bool = false) async throws -> String {
+    func generate(prompt: String, model: String, apiKey: String, isOpenRouter: Bool = false, imageData: Data? = nil) async throws -> String {
         let endpoint = isOpenRouter ? "https://openrouter.ai/api/v1/chat/completions" : "https://api.openai.com/v1/chat/completions"
         guard let url = URL(string: endpoint) else {
             throw URLError(.badURL)
@@ -130,11 +130,20 @@ class OpenAIService: ObservableObject {
             request.addValue("Promtier", forHTTPHeaderField: "X-Title")
         }
         
+        var userContent: Any = prompt
+        if let imageData = imageData {
+            let base64 = imageData.base64EncodedString()
+            userContent = [
+                ["type": "text", "text": prompt],
+                ["type": "image_url", "image_url": ["url": "data:image/jpeg;base64,\(base64)"]]
+            ]
+        }
+        
         let body: [String: Any] = [
             "model": model,
             "messages": [
-                ["role": "system", "content": "You are a helpful assistant that enhances and fixes AI prompts. Respond only with the improved prompt text."],
-                ["role": "user", "content": prompt]
+                ["role": "system", "content": "You are a helpful assistant that enhances and fixes AI prompts. Respond only with the improved prompt text. If an image is provided, describe it accurately to form a detailed prompt."],
+                ["role": "user", "content": userContent]
             ],
             "stream": false
         ]

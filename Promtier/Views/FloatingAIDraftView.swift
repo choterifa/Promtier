@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct FloatingAIDraftView: View {
     @EnvironmentObject var manager: FloatingAIDraftManager
@@ -26,6 +27,9 @@ struct FloatingAIDraftView: View {
     @State private var newPresetTitle: String = ""
     @State private var newPresetInstruction: String = ""
     @State private var newPresetIcon: String = "sparkles"
+    
+    // Drag & Drop State
+    @State private var isDraggingImage: Bool = false
     
     private var isAIAvailable: Bool {
         (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
@@ -390,6 +394,11 @@ struct FloatingAIDraftView: View {
         }
     }
     
+    private func generatePromptFromImage(data: Data) {
+        manager.content = "Genera un prompt súper descriptivo de esta imagen. Incluye colores, sujetos y detalles visuales."
+        runSingleAI(instruction: "Describe esta imagen detalladamente como un prompt, generando un título y seguido de la descripción completa.", content: "Extrayendo prompt de la imagen...", imageData: data)
+    }
+    
     private func saveResultAsPrompt() {
         let contentToSave = manager.responseText.isEmpty ? manager.content : manager.responseText
         guard !contentToSave.isEmpty else { return }
@@ -648,6 +657,41 @@ struct FloatingAIDraftView: View {
             
             // Custom Input
             HStack {
+                // Dropzone Cuadradito Mágico
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isDraggingImage ? Color.blue.opacity(0.15) : Color.primary.opacity(0.04))
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(isDraggingImage ? Color.blue.opacity(0.8) : Color.primary.opacity(0.08), style: StrokeStyle(lineWidth: isDraggingImage ? 1.5 : 1, dash: isDraggingImage ? [4] : []))
+                    
+                    Image(systemName: isDraggingImage ? "sparkles.tv" : "photo.on.rectangle.angled")
+                        .font(.system(size: 14))
+                        .foregroundColor(isDraggingImage ? .blue : .secondary)
+                }
+                .frame(width: 38, height: 38)
+                .help("Arrastra y suelta una imagen aquí adentro para analizarla")
+                .onDrop(of: [.image, .fileURL], isTargeted: $isDraggingImage) { providers in
+                    for provider in providers {
+                        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                            provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
+                                guard let data = data else { return }
+                                DispatchQueue.main.async { generatePromptFromImage(data: data) }
+                            }
+                            return true
+                        } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                            provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
+                                guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else { return }
+                                guard let imgData = try? Data(contentsOf: url) else { return }
+                                if NSImage(data: imgData) != nil {
+                                    DispatchQueue.main.async { generatePromptFromImage(data: imgData) }
+                                }
+                            }
+                            return true
+                        }
+                    }
+                    return false
+                }
+                
                 HStack {
                     Image(systemName: "terminal")
                         .font(.system(size: 10))
@@ -689,7 +733,7 @@ struct FloatingAIDraftView: View {
         runSingleAI(instruction: instruction, content: content)
     }
     
-    private func runSingleAI(instruction: String, content: String) {
+    private func runSingleAI(instruction: String, content: String, imageData: Data? = nil) {
         manager.responseText = ""
         manager.isGenerating = true
         manager.error = nil
@@ -700,8 +744,7 @@ struct FloatingAIDraftView: View {
         
         Task {
             do {
-                let response: String
-                response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: imageData)
                 
                 await MainActor.run {
                     manager.isGenerating = false

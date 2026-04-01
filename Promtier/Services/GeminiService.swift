@@ -16,7 +16,13 @@ struct GeminiRequest: Codable, Sendable {
     }
     
     struct GeminiPart: Codable, Sendable {
-        let text: String
+        let text: String?
+        let inlineData: GeminiInlineData?
+    }
+    
+    struct GeminiInlineData: Codable, Sendable {
+        let mimeType: String
+        let data: String
     }
 }
 
@@ -42,7 +48,7 @@ class GeminiService: ObservableObject {
     private init() {}
     
     /// Genera una respuesta basada en un prompt usando Google Gemini
-    func generate(prompt: String, model: String) async throws -> String {
+    func generate(prompt: String, model: String, imageData: Data? = nil) async throws -> String {
         let apiKey = PreferencesManager.shared.geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard !apiKey.isEmpty else {
@@ -57,10 +63,15 @@ class GeminiService: ObservableObject {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        var parts: [GeminiRequest.GeminiPart] = []
+        parts.append(GeminiRequest.GeminiPart(text: prompt, inlineData: nil))
+        
+        if let imageData = imageData {
+            parts.append(GeminiRequest.GeminiPart(text: nil, inlineData: GeminiRequest.GeminiInlineData(mimeType: "image/jpeg", data: imageData.base64EncodedString())))
+        }
+        
         let body = GeminiRequest(contents: [
-            GeminiRequest.GeminiContent(parts: [
-                GeminiRequest.GeminiPart(text: prompt)
-            ])
+            GeminiRequest.GeminiContent(parts: parts)
         ])
         
         request.httpBody = try? JSONEncoder().encode(body)
