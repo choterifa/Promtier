@@ -22,6 +22,7 @@ struct FloatingZenEditorView: View {
     @FocusState private var focusedField: ZenField?
     @State private var showDiscardAlert = false
     @State private var isDraggingImage = false
+    @State private var isDraggingMagicImage = false
     @State private var hoveredSlot: Int? = nil
     @State private var isHoveringPaste: Bool = false
     @State private var isHoveringOpen: Bool = false
@@ -112,6 +113,13 @@ struct FloatingZenEditorView: View {
                                 .foregroundColor(.secondary.opacity((isGhostMode && !isMouseInside) ? 0.85 : 0.5))
                                 .tracking(1.5)
                             Spacer()
+                            
+                            MagicImageDropZone(isDraggingImage: $isDraggingMagicImage) { data in
+                                extractMagicPrompt(from: data)
+                            }
+                            .scaleEffect(0.65)
+                            .frame(width: 25, height: 25)
+                            .padding(.trailing, 20) // to align exactly with the TextField constraints
                         }
                         .padding(.top, 8)
                         
@@ -751,6 +759,39 @@ struct FloatingZenEditorView: View {
                 try requestHandler.perform([request])
             } catch {
                 print("Vision OCR Error: \(error)")
+            }
+        }
+    }
+    
+    private func extractMagicPrompt(from data: Data) {
+        guard isMagicAvailable else { manager.title = "IA no configurada"; return }
+        manager.content = ""
+        
+        Task {
+            do {
+                let instruction = "Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores dominante, estilo artístico y configuración de iluminación. Empieza directamente con el prompt en inglés o español sin frases introductorias."
+                let systemPrompt = """
+                You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
+                
+                # INSTRUCTION FOR YOU:
+                \(instruction)
+                
+                # IMPORTANT:
+                Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+                """
+                
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
+                
+                await MainActor.run {
+                    manager.content = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if manager.title.isEmpty || manager.title == "Generando prompt..." {
+                        manager.title = "Prompt de Imagen"
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    manager.content = "Error generando prompt: \(error.localizedDescription)"
+                }
             }
         }
     }

@@ -395,8 +395,8 @@ struct FloatingAIDraftView: View {
     }
     
     private func generatePromptFromImage(data: Data) {
-        manager.content = "Genera un prompt súper descriptivo de esta imagen. Incluye colores, sujetos y detalles visuales."
-        runSingleAI(instruction: "Describe esta imagen detalladamente como un prompt, generando un título y seguido de la descripción completa.", content: "Extrayendo prompt de la imagen...", imageData: data)
+        manager.content = ""
+        runSingleAI(instruction: "Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores dominante, estilo artístico y configuración de iluminación. Empieza directamente con el prompt en inglés o español sin frases introductorias.", content: "", imageData: data)
     }
     
     private func saveResultAsPrompt() {
@@ -657,39 +657,8 @@ struct FloatingAIDraftView: View {
             
             // Custom Input
             HStack {
-                // Dropzone Cuadradito Mágico
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(isDraggingImage ? Color.blue.opacity(0.15) : Color.primary.opacity(0.04))
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(isDraggingImage ? Color.blue.opacity(0.8) : Color.primary.opacity(0.08), style: StrokeStyle(lineWidth: isDraggingImage ? 1.5 : 1, dash: isDraggingImage ? [4] : []))
-                    
-                    Image(systemName: isDraggingImage ? "sparkles.tv" : "photo.on.rectangle.angled")
-                        .font(.system(size: 14))
-                        .foregroundColor(isDraggingImage ? .blue : .secondary)
-                }
-                .frame(width: 38, height: 38)
-                .help("Arrastra y suelta una imagen aquí adentro para analizarla")
-                .onDrop(of: [.image, .fileURL], isTargeted: $isDraggingImage) { providers in
-                    for provider in providers {
-                        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                            provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                                guard let data = data else { return }
-                                DispatchQueue.main.async { generatePromptFromImage(data: data) }
-                            }
-                            return true
-                        } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-                            provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
-                                guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else { return }
-                                guard let imgData = try? Data(contentsOf: url) else { return }
-                                if NSImage(data: imgData) != nil {
-                                    DispatchQueue.main.async { generatePromptFromImage(data: imgData) }
-                                }
-                            }
-                            return true
-                        }
-                    }
-                    return false
+                MagicImageDropZone(isDraggingImage: $isDraggingImage) { data in
+                    generatePromptFromImage(data: data)
                 }
                 
                 HStack {
@@ -740,7 +709,7 @@ struct FloatingAIDraftView: View {
         customCommand = ""
         HapticService.shared.playImpact()
         
-        let systemPrompt = composeSystemPrompt(instruction: instruction, content: content)
+        let systemPrompt = composeSystemPrompt(instruction: instruction, content: content, imageData: imageData)
         
         Task {
             do {
@@ -765,7 +734,19 @@ struct FloatingAIDraftView: View {
         }
     }
     
-    private func composeSystemPrompt(instruction: String, content: String) -> String {
+    private func composeSystemPrompt(instruction: String, content: String, imageData: Data? = nil) -> String {
+        if imageData != nil {
+            return """
+            You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
+            
+            # INSTRUCTION FOR YOU:
+            \(instruction)
+            
+            # IMPORTANT:
+            Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+            """
+        }
+        
         return """
         You are an elite Prompt Engineer assistant. Your task is to apply a specific transformation to an existing AI prompt.
         
