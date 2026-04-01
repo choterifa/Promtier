@@ -558,7 +558,7 @@ struct FloatingZenEditorView: View {
             Button(action: { manager.saveAsNewPrompt() }) {
                 HStack(spacing: 8) {
                     if manager.isSaving || manager.isClassifying {
-                        ProgressView().scaleEffect(0.5).frame(width: 14, height: 14)
+                        ProgressView().controlSize(.mini)
                     } else {
                         Image(systemName: "plus")
                             .font(.system(size: 11, weight: .black))

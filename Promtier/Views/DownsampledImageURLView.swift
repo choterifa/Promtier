@@ -27,7 +27,6 @@ struct DownsampledImageURLView: View {
                     .overlay {
                         ProgressView()
                             .controlSize(.small)
-                            .fixedSize()
                             .opacity(0.85)
                     }
             }

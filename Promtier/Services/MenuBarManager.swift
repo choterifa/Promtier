@@ -201,12 +201,11 @@ class MenuBarManager: NSObject, ObservableObject {
             popover?.delegate = self
             
             // CONFIGURABLE: Vista principal SwiftUI
-            let contentView = SearchViewSimple()
+            let contentView = PopoverContainerView()
                 .environmentObject(self.promptService)
                 .environmentObject(self.preferencesManager)
                 .environmentObject(self.batchService)
                 .environmentObject(self)
-                .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
             
             let controller = NSHostingController(rootView: AnyView(contentView))
             controller.view.frame.size = size
@@ -432,41 +431,8 @@ class MenuBarManager: NSObject, ObservableObject {
                 self?.updatePopoverAppearance()
             }
             .store(in: &cancellables)
-            
-        // Observar cambio de idioma para refrescar la UI
-        preferencesManager.$language
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.refreshPopoverRootView()
-            }
-            .store(in: &cancellables)
     }
     
-    private func refreshPopoverRootView() {
-        guard let popover = popover, let button = statusItem?.button else { return }
-        
-        let contentView = SearchViewSimple()
-            .environmentObject(self.promptService)
-            .environmentObject(self.preferencesManager)
-            .environmentObject(self.batchService)
-            .environmentObject(self)
-            .environment(\.locale, Locale(identifier: self.preferencesManager.language.rawValue))
-            
-        // CORRECCIÓN: No reemplazar el controller, solo actualizar la rootView
-        // Esto evita que el popover se cierre y reabra internamente
-        if let hostingController = popover.contentViewController as? NSHostingController<AnyView> {
-            hostingController.rootView = AnyView(contentView)
-        } else {
-            popover.contentViewController = NSHostingController(rootView: AnyView(contentView))
-        }
-        
-        // CORRECCIÓN: Forzar reposicionamiento centrado si ya está visible
-        if popover.isShown {
-            DispatchQueue.main.async {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            }
-        }
-    }
     
     private func updatePopoverAppearance() {
         guard let popover = popover else { return }
@@ -658,5 +624,14 @@ extension MenuBarManager: NSPopoverDelegate {
         // Actualizar icono a estado activo
         statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
                                            accessibilityDescription: "Promtier Activo")
+    }
+}
+
+struct PopoverContainerView: View {
+    @EnvironmentObject var preferencesManager: PreferencesManager
+    
+    var body: some View {
+        SearchViewSimple()
+            .environment(\.locale, Locale(identifier: preferencesManager.language.rawValue))
     }
 }
