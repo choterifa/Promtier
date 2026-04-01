@@ -356,7 +356,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var geminiAPIKey: String {
         didSet {
-            _ = KeychainManager.shared.save(key: "geminiAPIKey", data: geminiAPIKey)
+            userDefaults.set(geminiAPIKey, forKey: "geminiAPIKey_local")
         }
     }
     
@@ -404,7 +404,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var openAIApiKey: String {
         didSet {
-            _ = KeychainManager.shared.save(key: "openAIApiKey", data: openAIApiKey)
+            userDefaults.set(openAIApiKey, forKey: "openAIApiKey_local")
         }
     }
     
@@ -496,11 +496,31 @@ class PreferencesManager: ObservableObject {
         self.disableImageAnimations = userDefaults.bool(forKey: "disableImageAnimations")
         self.showAdvancedFields = userDefaults.object(forKey: "showAdvancedFields") == nil ? true : userDefaults.bool(forKey: "showAdvancedFields")
         self.isHaloEffectEnabled = userDefaults.object(forKey: "isHaloEffectEnabled") == nil ? true : userDefaults.bool(forKey: "isHaloEffectEnabled")
-        self.geminiAPIKey = KeychainManager.shared.read(key: "geminiAPIKey") ?? ""
+        
+        // Migración de LLaves API fuera de Keychain para evitar prompts de permisos molestos
+        if let localGemini = userDefaults.string(forKey: "geminiAPIKey_local") {
+            self.geminiAPIKey = localGemini
+        } else if let legacyGemini = KeychainManager.shared.read(key: "geminiAPIKey") {
+            self.geminiAPIKey = legacyGemini
+            userDefaults.set(legacyGemini, forKey: "geminiAPIKey_local")
+            _ = KeychainManager.shared.delete(key: "geminiAPIKey")
+        } else {
+            self.geminiAPIKey = ""
+        }
         self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
-        self.openAIApiKey = KeychainManager.shared.read(key: "openAIApiKey") ?? ""
+        
+        if let localOpenAI = userDefaults.string(forKey: "openAIApiKey_local") {
+            self.openAIApiKey = localOpenAI
+        } else if let legacyOpenAI = KeychainManager.shared.read(key: "openAIApiKey") {
+            self.openAIApiKey = legacyOpenAI
+            userDefaults.set(legacyOpenAI, forKey: "openAIApiKey_local")
+            _ = KeychainManager.shared.delete(key: "openAIApiKey")
+        } else {
+            self.openAIApiKey = ""
+        }
+        
         self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
         self.pinnedFolderNames = userDefaults.stringArray(forKey: "pinnedFolderNames") ?? []
         self.snippets = [] // Assigned below
@@ -656,11 +676,13 @@ class PreferencesManager: ObservableObject {
         self.isHaloEffectEnabled = true
         self.geminiEnabled = false
         self.geminiAPIKey = ""
+        userDefaults.removeObject(forKey: "geminiAPIKey_local")
         _ = KeychainManager.shared.delete(key: "geminiAPIKey")
         self.geminiDefaultModel = "gemini-2.5-flash"
         self.preferredAIService = .openai
         self.openAIEnabled = true
         self.openAIApiKey = ""
+        userDefaults.removeObject(forKey: "openAIApiKey_local")
         _ = KeychainManager.shared.delete(key: "openAIApiKey")
         self.openAIDefaultModel = "gpt-4o"
         

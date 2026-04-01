@@ -41,6 +41,15 @@ class ClipboardService: ObservableObject {
         guard pasteboard.changeCount != lastPasteboardChangeCount else { return }
         lastPasteboardChangeCount = pasteboard.changeCount
         
+        // PROTECCION PRIVACIDAD: Ignorar portapapeles velados (como 1Password o Llavero de iCloud)
+        if let types = pasteboard.types {
+            if types.contains(NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")) ||
+               types.contains(NSPasteboard.PasteboardType("com.agilebits.onepassword")) {
+                self.lastSourceAppBundleID = nil
+                return
+            }
+        }
+        
         // Si el cambio ocurrió mientras otra app era la activa, registrar su bundleID
         if let frontmostApp = NSWorkspace.shared.frontmostApplication,
            frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {

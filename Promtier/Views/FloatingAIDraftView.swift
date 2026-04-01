@@ -371,6 +371,11 @@ struct FloatingAIDraftView: View {
                 isDraftFocused = true
                 checkAutoImprove()
                 setupKeyboardMonitor()
+            } else {
+                if let monitor = localMonitor {
+                    NSEvent.removeMonitor(monitor)
+                    localMonitor = nil
+                }
             }
         }
     }
