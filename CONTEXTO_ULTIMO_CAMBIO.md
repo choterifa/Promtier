@@ -35,3 +35,5 @@ Hoy hemos completado un ciclo de **optimización crítica de recursos y refactor
 **Continuar Despedazando el "God View" (`NewPromptView.swift`):**
 A pesar del progreso, la vista `NewPromptView` interactúa con una gran maraña de variables `@State`. Al teclear texto, la app debe re-evaluar todo el struct principal y produce lag de tecleo y alto uso de la UI principal sobre CPU. Continuaremos extrayendo en Phase C las sub-vistas como `header()`, `bottomBar()`, `tagSection()`, etc para que aislemos los redibujos de la cadena SwiftUI.
 Implementado cache de iconos y app names en PromptCard para evitar beachball. Continuar con MVVM para NewPromptView.
+Creado ViewModel base para NewPromptView con inicialización y guardado
+Iniciando refactorización MVVM en NewPromptView. Swift script/Ruby en progreso para aislar dependencias poco a poco y evitar romper la UI de \~2700 lineas.
