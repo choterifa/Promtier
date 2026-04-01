@@ -53,7 +53,7 @@ extension PromptEntity {
         var validThumbs: [Data] = []
 
         for index in storedPaths.indices {
-            guard let path = storedPaths[index], ImageStore.shared.fileExists(relativePath: path) else { continue }
+            guard let path = storedPaths[index], !path.isEmpty else { continue }
             validPaths.append(path)
             if let thumb = storedThumbs[index] {
                 validThumbs.append(thumb)
@@ -69,9 +69,8 @@ extension PromptEntity {
         if !prompt.showcaseImagePaths.isEmpty {
             prompt.showcaseImageCount = prompt.showcaseImagePaths.count
         } else if storedCount > 0 {
-            // Si el conteo decía que había imágenes pero ya no existen en disco,
-            // preferimos no exponer refs rotas en UI.
-            prompt.showcaseImageCount = 0
+            // Mantener el conteo para permitir fallback lazy (fetch/migración on-demand).
+            prompt.showcaseImageCount = storedCount
         } else {
             // Fallback legacy (antes de migración a disco)
             let legacyCount = [image1, image2, image3].compactMap { $0 }.count

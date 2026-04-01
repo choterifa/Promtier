@@ -383,6 +383,9 @@
 "characters" = "%d characters";
 "reference_images" = "Reference Images";
 "add_image" = "Add Image";
+"image_import_too_large" = "Image is too large (max %d MB).";
+"image_import_unsupported" = "Couldn't read that image. Try another format.";
+"image_import_slots_full" = "You can only attach up to 3 images.";
 "add_prompt_results" = "Add prompt results";
 "category" = "Category";
 "prompt_results" = "PROMPT RESULTS";

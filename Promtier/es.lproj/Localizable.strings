@@ -425,6 +425,9 @@
 "characters" = "%d caracteres";
 "reference_images" = "Imágenes de Referencia";
 "add_image" = "Añadir Imagen";
+"image_import_too_large" = "Imagen demasiado pesada (máx %d MB).";
+"image_import_unsupported" = "No se pudo leer esa imagen. Prueba otro formato.";
+"image_import_slots_full" = "Solo puedes adjuntar hasta 3 imágenes.";
 "add_prompt_results" = "Añadir resultados del prompt";
 "category" = "Categoría";
 "prompt_results" = "RESULTADOS DEL PROMPT";

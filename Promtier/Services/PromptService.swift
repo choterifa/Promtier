@@ -55,6 +55,15 @@ class PromptService: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private var filterTask: Task<Void, Never>?
+    private var promptLookup: [UUID: Prompt] = [:]
+    private var searchIndex: [UUID: PromptSearchDocument] = [:]
+
+    private struct PromptSearchDocument: Sendable {
+        let normalizedTitle: String
+        let normalizedContent: String
+        let normalizedFolder: String
+        let titleWords: [String]
+    }
     
     init() {
         // Observar cambios en búsqueda para filtrar automáticamente
@@ -351,6 +360,56 @@ class PromptService: ObservableObject {
         print("✅ Prompts de ejemplo verificados y creados si no existían.")
     }
     
+    // MARK: - Search Index Helpers
+
+    private func normalizeForSearch(_ text: String) -> String {
+        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+    }
+
+    private func buildSearchDocument(for prompt: Prompt) -> PromptSearchDocument {
+        let normalizedTitle = normalizeForSearch(prompt.title)
+        let normalizedContent = normalizeForSearch(String(prompt.content.prefix(1600)))
+        let normalizedFolder = normalizeForSearch(prompt.folder ?? "")
+        let titleWords = normalizedTitle.split(whereSeparator: \.isWhitespace).map(String.init)
+
+        return PromptSearchDocument(
+            normalizedTitle: normalizedTitle,
+            normalizedContent: normalizedContent,
+            normalizedFolder: normalizedFolder,
+            titleWords: titleWords
+        )
+    }
+
+    private func rebuildPromptIndices(with prompts: [Prompt]) {
+        var lookup: [UUID: Prompt] = [:]
+        lookup.reserveCapacity(prompts.count)
+
+        var documents: [UUID: PromptSearchDocument] = [:]
+        documents.reserveCapacity(prompts.count)
+
+        for prompt in prompts {
+            lookup[prompt.id] = prompt
+            documents[prompt.id] = buildSearchDocument(for: prompt)
+        }
+
+        promptLookup = lookup
+        searchIndex = documents
+    }
+
+    private func upsertPromptIndices(with prompt: Prompt) {
+        promptLookup[prompt.id] = prompt
+        searchIndex[prompt.id] = buildSearchDocument(for: prompt)
+    }
+
+    private func removePromptIndices(for id: UUID) {
+        promptLookup.removeValue(forKey: id)
+        searchIndex.removeValue(forKey: id)
+    }
+
+    func promptSnapshot(byId id: UUID) -> Prompt? {
+        promptLookup[id]
+    }
+    
     // MARK: - Operaciones CRUD
 
     private func fetchPromptSummaries(trashDict: [String: Date]) -> Result<[Prompt], Error> {
@@ -367,15 +426,19 @@ class PromptService: ObservableObject {
                 ]
                 request.returnsObjectsAsFaults = true
                 request.includesPropertyValues = true
+                request.fetchBatchSize = 200
 
                 let entities = try context.fetch(request)
-                prompts = entities.map { entity in
-                    var prompt = entity.toPrompt()
-                    // Aplicar la fecha de eliminación desde el diccionario de la papelera
-                    if let trashDate = trashDict[entity.id.uuidString] {
-                        prompt.deletedAt = trashDate
+                prompts.reserveCapacity(entities.count)
+                for entity in entities {
+                    autoreleasepool {
+                        var prompt = entity.toPrompt()
+                        // Aplicar la fecha de eliminación desde el diccionario de la papelera
+                        if let trashDate = trashDict[entity.id.uuidString] {
+                            prompt.deletedAt = trashDate
+                        }
+                        prompts.append(prompt)
                     }
-                    return prompt
                 }
             } catch {
                 fetchError = error
@@ -461,6 +524,7 @@ class PromptService: ObservableObject {
                     self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
                         ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
                     }
+                    self.rebuildPromptIndices(with: self.prompts)
                     self.filterPrompts(query: self.searchQuery)
                     ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
                     self.isLoading = false
@@ -641,6 +705,8 @@ class PromptService: ObservableObject {
     private func applyUpdatedPromptToInMemoryState(_ updatedPrompt: Prompt) {
         let apply = {
             var touched = false
+            var requiresHotkeyRefresh = false
+            let previousPrompt = self.promptLookup[updatedPrompt.id]
 
             if updatedPrompt.isInTrash {
                 if let i = self.prompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
@@ -655,6 +721,10 @@ class PromptService: ObservableObject {
                     touched = true
                 }
                 self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+                self.removePromptIndices(for: updatedPrompt.id)
+                if previousPrompt?.customShortcut != nil || (previousPrompt == nil && updatedPrompt.customShortcut != nil) {
+                    requiresHotkeyRefresh = true
+                }
             } else {
                 if let i = self.prompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
                     self.prompts[i] = updatedPrompt
@@ -663,6 +733,11 @@ class PromptService: ObservableObject {
                     self.prompts.append(updatedPrompt)
                     touched = true
                 }
+                if previousPrompt?.customShortcut != updatedPrompt.customShortcut
+                    || (previousPrompt == nil && updatedPrompt.customShortcut != nil) {
+                    requiresHotkeyRefresh = true
+                }
+                self.upsertPromptIndices(with: updatedPrompt)
                 if let i = self.trashedPrompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
                     self.trashedPrompts.remove(at: i)
                     touched = true
@@ -676,7 +751,9 @@ class PromptService: ObservableObject {
             }
 
             self.filterPrompts(query: self.searchQuery)
-            ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+            if requiresHotkeyRefresh {
+                ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+            }
         }
 
         if Thread.isMainThread {
@@ -695,7 +772,9 @@ class PromptService: ObservableObject {
 
         let apply = {
             var touched = false
+            var requiresHotkeyRefresh = false
             for prompt in updatedPrompts {
+                let previousPrompt = self.promptLookup[prompt.id]
                 if prompt.isInTrash {
                     if let i = self.prompts.firstIndex(where: { $0.id == prompt.id }) {
                         self.prompts.remove(at: i)
@@ -708,6 +787,10 @@ class PromptService: ObservableObject {
                         self.trashedPrompts.append(prompt)
                         touched = true
                     }
+                    self.removePromptIndices(for: prompt.id)
+                    if previousPrompt?.customShortcut != nil || (previousPrompt == nil && prompt.customShortcut != nil) {
+                        requiresHotkeyRefresh = true
+                    }
                 } else {
                     if let i = self.prompts.firstIndex(where: { $0.id == prompt.id }) {
                         self.prompts[i] = prompt
@@ -716,6 +799,11 @@ class PromptService: ObservableObject {
                         self.prompts.append(prompt)
                         touched = true
                     }
+                    if previousPrompt?.customShortcut != prompt.customShortcut
+                        || (previousPrompt == nil && prompt.customShortcut != nil) {
+                        requiresHotkeyRefresh = true
+                    }
+                    self.upsertPromptIndices(with: prompt)
                     if let i = self.trashedPrompts.firstIndex(where: { $0.id == prompt.id }) {
                         self.trashedPrompts.remove(at: i)
                         touched = true
@@ -730,7 +818,9 @@ class PromptService: ObservableObject {
 
             self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
             self.filterPrompts(query: self.searchQuery)
-            ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+            if requiresHotkeyRefresh {
+                ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+            }
         }
 
         if Thread.isMainThread {
@@ -1067,6 +1157,25 @@ class PromptService: ObservableObject {
         let safePrompts = self.prompts
         let safeActiveApp = self.activeAppBundleID
         let safeSortMode = self.promptSortMode
+        let safeSearchIndex = self.searchIndex
+        let indexedContentCharacterLimit = 1600
+        let minKeywordLength = 2
+        let quotedPhrasesRegex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
+        let normalizeSearch: (String) -> String = { text in
+            text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+        }
+        let buildDocument: (Prompt) -> PromptSearchDocument = { prompt in
+            let normalizedTitle = normalizeSearch(prompt.title)
+            let normalizedContent = normalizeSearch(String(prompt.content.prefix(indexedContentCharacterLimit)))
+            let normalizedFolder = normalizeSearch(prompt.folder ?? "")
+            let titleWords = normalizedTitle.split(whereSeparator: \.isWhitespace).map(String.init)
+            return PromptSearchDocument(
+                normalizedTitle: normalizedTitle,
+                normalizedContent: normalizedContent,
+                normalizedFolder: normalizedFolder,
+                titleWords: titleWords
+            )
+        }
         
         filterTask = Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
@@ -1079,9 +1188,9 @@ class PromptService: ObservableObject {
                 switch category {
                 case "recent":
                     let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
-                    let recentlyUsed = safePrompts.filter { 
+                    let recentlyUsed = safePrompts.filter {
                         if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
-                        return false 
+                        return false
                     }
                     
                     let mostUsed = safePrompts.filter { $0.useCount > 0 }
@@ -1112,12 +1221,10 @@ class PromptService: ObservableObject {
             if Task.isCancelled { return }
             
             // --- Smart Boost based on Active Application ---
-            if let activeApp = safeActiveApp, !activeApp.isEmpty {
-                if query.isEmpty {
-                    let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-                    let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-                    filtered = matched + others
-                }
+            if let activeApp = safeActiveApp, !activeApp.isEmpty, query.isEmpty {
+                let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+                filtered = matched + others
             }
             
             // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO
@@ -1127,157 +1234,153 @@ class PromptService: ObservableObject {
                 let normalizedSpaces = sanitized.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
                 let originalQuery = normalizedSpaces.trimmingCharacters(in: .whitespacesAndNewlines)
                 
-                guard !originalQuery.isEmpty else { 
+                guard !originalQuery.isEmpty else {
                     if !Task.isCancelled {
                         let resultToSet = filtered
                         await MainActor.run { self.filteredPrompts = resultToSet }
                     }
-                    return 
+                    return
                 }
                 
                 // 1. EXTRAER FRASES EXACTAS (entre comillas)
                 var phrasalQueries: [String] = []
                 var remainingQuery = originalQuery
                 
-                let regex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
-            if let matches = regex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
-                for match in matches.reversed() { // Reversa para no corromper índices al remover
-                    if let range = Range(match.range(at: 1), in: originalQuery) {
-                        phrasalQueries.append(originalQuery[range].lowercased())
-                    }
-                    if let fullRange = Range(match.range(at: 0), in: originalQuery) {
-                        remainingQuery.removeSubrange(fullRange)
+                if let matches = quotedPhrasesRegex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
+                    for match in matches.reversed() { // Reversa para no corromper índices al remover
+                        if let range = Range(match.range(at: 1), in: originalQuery) {
+                            phrasalQueries.append(normalizeSearch(String(originalQuery[range])))
+                        }
+                        if let fullRange = Range(match.range(at: 0), in: originalQuery) {
+                            remainingQuery.removeSubrange(fullRange)
+                        }
                     }
                 }
-            }
-            
-            // 2. NORMALIZACIÓN Y KEYWORDS RESTANTES
-            let normalizedRemaining = remainingQuery.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            let keywords = normalizedRemaining.components(separatedBy: .whitespaces)
-                .filter { $0.count >= 2 } // Ignorar conectores de 1 letra
-            
-            // 3. SCORING AVANZADO
-            let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
-                var score = 0
-                let title = prompt.title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                let content = prompt.content.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                let folder = (prompt.folder ?? "").folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
                 
-                // --- A. VALIDACIÓN DE FRASES COINCIDENTES ("Exact Match") ---
-                for phrase in phrasalQueries {
-                    if title.contains(phrase) { score += 500 }
-                    else if content.contains(phrase) { score += 200 }
-                    else { return (prompt, 0) } // Si pidió frase exacta y no está, descartar
-                }
+                // 2. NORMALIZACIÓN Y KEYWORDS RESTANTES
+                let normalizedRemaining = normalizeSearch(remainingQuery)
+                let keywords = normalizedRemaining
+                    .split(whereSeparator: \.isWhitespace)
+                    .map(String.init)
+                    .filter { $0.count >= minKeywordLength } // Ignorar conectores de 1 letra
                 
-                // --- B. VALIDACIÓN DE KEYWORDS (Lógica AND Flexible + FUZZY) ---
-                for kw in keywords {
-                    var kwFound = false
+                // 3. SCORING AVANZADO
+                let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
+                    var score = 0
+                    let document = safeSearchIndex[prompt.id] ?? buildDocument(prompt)
+                    let title = document.normalizedTitle
+                    let content = document.normalizedContent
+                    let folder = document.normalizedFolder
                     
-                    // B1. COINCIDENCIA POR PREFIJO (Muy relevante: Escribes "mar" y sale "Marketing")
-                    if title.hasPrefix(kw) { score += 150; kwFound = true }
-                    else if title.contains(" " + kw) { score += 100; kwFound = true } // Inicio de cualquier palabra en título
+                    // --- A. VALIDACIÓN DE FRASES COINCIDENTES ("Exact Match") ---
+                    for phrase in phrasalQueries {
+                        if title.contains(phrase) { score += 500 }
+                        else if content.contains(phrase) { score += 200 }
+                        else { return (prompt, 0) } // Si pidió frase exacta y no está, descartar
+                    }
                     
-                    // B2. FUZZY MATCHING (Tolerancia a 1 error en palabras > 4 letras)
-                    if !kwFound && kw.count > 4 {
-                        // Comprobamos si hay una coincidencia aproximada (simple fuzzy)
-                        // Si la palabra está casi bien escrita en el título
-                        let titleWords = title.components(separatedBy: .whitespaces)
-                        for word in titleWords where word.count > 3 {
-                            if word.commonPrefix(with: kw).count >= kw.count - 1 {
-                                score += 60 // Casi coincide
-                                kwFound = true
-                                break
+                    // --- B. VALIDACIÓN DE KEYWORDS (Lógica AND Flexible + FUZZY) ---
+                    for kw in keywords {
+                        var kwFound = false
+                        
+                        // B1. COINCIDENCIA POR PREFIJO (Muy relevante: Escribes "mar" y sale "Marketing")
+                        if title.hasPrefix(kw) { score += 150; kwFound = true }
+                        else if title.contains(" " + kw) { score += 100; kwFound = true } // Inicio de cualquier palabra en título
+                        
+                        // B2. FUZZY MATCHING (Tolerancia a 1 error en palabras > 4 letras)
+                        if !kwFound && kw.count > 4 {
+                            for word in document.titleWords where word.count > 3 {
+                                if word.commonPrefix(with: kw).count >= kw.count - 1 {
+                                    score += 60 // Casi coincide
+                                    kwFound = true
+                                    break
+                                }
                             }
+                        }
+                        
+                        // B3. BÚSQUEDA EN CONTENIDO
+                        if !kwFound && content.contains(kw) {
+                            score += 30
+                            kwFound = true
+                        }
+                        
+                        // B4. BÚSQUEDA EN CATEGORÍA
+                        if !kwFound && folder.contains(kw) {
+                            score += 20
+                            kwFound = true
+                        }
+                        
+                        // Si el usuario escribió una palabra y no está NI PARECIDA, penalizamos o descartamos
+                        if !kwFound { score -= 20 }
+                    }
+                    
+                    // --- C. BONUS POR RECIENCIA Y USO ---
+                    if score > 0 {
+                        score += Int(prompt.useCount) / 2
+                        if prompt.isFavorite { score += 40 }
+                        
+                        // Bonus por reciencia: Si se tocó en la última semana, impulsamos un poco
+                        let lastWeek = Date().addingTimeInterval(-7 * 86400)
+                        if prompt.modifiedAt > lastWeek {
+                            score += 30
+                        }
+                        if prompt.modifiedAt > Date().addingTimeInterval(-24 * 3600) {
+                            score += 20 // Acumulativo si es muy muy reciente
+                        }
+                        
+                        // BONUS POR APP ACTIVA
+                        if let activeApp = safeActiveApp, prompt.targetAppBundleIDs.contains(activeApp) {
+                            score += 500 // Impulso masivo para matches de app
                         }
                     }
                     
-                    // B3. BÚSQUEDA EN CONTENIDO
-                    if !kwFound && content.contains(kw) { 
-                        score += 30
-                        kwFound = true
-                    }
-                    
-                    // B4. BÚSQUEDA EN CATEGORÍA
-                    if !kwFound && folder.contains(kw) {
-                        score += 20
-                        kwFound = true
-                    }
-                    
-                    // Si el usuario escribió una palabra y no está NI PARECIDA, penalizamos o descartamos
-                    if !kwFound { score -= 20 }
+                    return (prompt, score)
                 }
                 
-                // --- C. BONUS POR RECIENCIA Y USO ---
-                if score > 0 {
-                    score += Int(prompt.useCount) / 2
-                    if prompt.isFavorite { score += 40 }
-                    
-                    // Bonus por reciencia: Si se tocó en la última semana, impulsamos un poco
-                    let lastWeek = Date().addingTimeInterval(-7 * 86400)
-                    if prompt.modifiedAt > lastWeek {
-                        score += 30
-                    }
-                    if prompt.modifiedAt > Date().addingTimeInterval(-24 * 3600) {
-                        score += 20 // Acumulativo si es muy muy reciente
-                    }
-                    
-                // BONUS POR APP ACTIVA
-                if let activeApp = safeActiveApp, prompt.targetAppBundleIDs.contains(activeApp) {
-                    score += 500 // Impulso masivo para matches de app
+                if Task.isCancelled { return }
+                
+                filtered = scoredPrompts
+                    .filter { $0.1 > 0 }
+                    .sorted { $0.1 > $1.1 }
+                    .map { $0.0 }
+            }
+            
+            if Task.isCancelled { return }
+            
+            // --- Terminal Global Sort ---
+            if query.isEmpty {
+                switch safeSortMode {
+                case .name:
+                    filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
+                case .newest:
+                    // Priorizar los más recientemente modificados para que reflejen la actividad real
+                    filtered.sort { $0.modifiedAt > $1.modifiedAt }
+                case .mostUsed:
+                    filtered.sort { $0.useCount > $1.useCount }
                 }
             }
             
-            return (prompt, score)
-        }
-        
-        if Task.isCancelled { return }
-        
-        filtered = scoredPrompts
-            .filter { $0.1 > 0 }
-            .sorted { $0.1 > $1.1 }
-            .map { $0.0 }
-    }
-    
-    if Task.isCancelled { return }
-    
-    // --- Terminal Global Sort ---
-    if query.isEmpty {
-        switch safeSortMode {
-        case .name:
-            filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
-        case .newest:
-            // Priorizar los más recientemente modificados para que reflejen la actividad real
-            filtered.sort { $0.modifiedAt > $1.modifiedAt }
-        case .mostUsed:
-            filtered.sort { $0.useCount > $1.useCount }
+            // --- RECOMMENDED ALWAYS ON TOP ---
+            // Un prompt es "Recomendado" solo si su array de aplicaciones asignadas
+            // INCLUYE la aplicación activa actual en pantalla.
+            let recommended: [Prompt]
+            let others: [Prompt]
+            if let activeApp = safeActiveApp {
+                recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+            } else {
+                recommended = []
+                others = filtered
+            }
+            let finalFiltered = recommended + others
+            
+            if !Task.isCancelled {
+                await MainActor.run {
+                    self.filteredPrompts = finalFiltered
+                }
+            }
         }
     }
-    
-    // --- RECOMMENDED ALWAYS ON TOP ---
-    // Un prompt es "Recomendado" solo si su array de aplicaciones asignadas
-    // INCLUYE la aplicación activa actual en pantalla.
-    let recommended: [Prompt]
-    let others: [Prompt]
-    if let activeApp = safeActiveApp {
-        recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-        others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-    } else {
-        recommended = []
-        others = filtered
-    }
-    let finalFiltered = recommended + others
-    
-    // 🔥 Mensaje de consola importante de diagnóstico
-    print("🔍 [PromptService] Búsqueda finalizada: '\(query)' - Resultados encontrados: \(finalFiltered.count)")
-    
-    if !Task.isCancelled {
-        await MainActor.run {
-            self.filteredPrompts = finalFiltered
-        }
-    }
-}
-}
 
     /// Obtiene prompts favoritos
     func getFavoritePrompts() -> [Prompt] {

@@ -8,10 +8,39 @@ final class PromptCardTextCache: @unchecked Sendable {
     nonisolated private static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
 
     nonisolated(unsafe) private let cache = NSCache<NSString, NSAttributedString>()
+    nonisolated(unsafe) private let variableCountCache = NSCache<NSString, NSNumber>()
 
     private init() {
         cache.countLimit = 768
         cache.totalCostLimit = 20 * 1024 * 1024
+        variableCountCache.countLimit = 4096
+    }
+
+    nonisolated func variableCount(for prompt: Prompt) -> Int {
+        let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):var-count"
+        if let cached = variableCountCache.object(forKey: key as NSString) {
+            return cached.intValue
+        }
+
+        let content = prompt.content
+        let fullRange = NSRange(content.startIndex..<content.endIndex, in: content)
+        var seen = Set<String>()
+        var count = 0
+
+        if let variableRegex = Self.variableRegex {
+            variableRegex.enumerateMatches(in: content, options: [], range: fullRange) { match, _, _ in
+                guard let captureRange = match?.range(at: 1),
+                      let range = Range(captureRange, in: content) else { return }
+
+                let variableName = String(content[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !variableName.isEmpty, !seen.contains(variableName) else { return }
+                seen.insert(variableName)
+                count += 1
+            }
+        }
+
+        variableCountCache.setObject(NSNumber(value: count), forKey: key as NSString)
+        return count
     }
 
     nonisolated func highlightedSnippet(

@@ -11,6 +11,10 @@ import AppKit
 import Vision
 
 struct FloatingZenEditorView: View {
+    private enum ImageImportPolicy {
+        static let maxInputBytes = 64 * 1024 * 1024
+    }
+
     @EnvironmentObject var manager: FloatingZenManager
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
@@ -636,7 +640,7 @@ struct FloatingZenEditorView: View {
                 pending += 1
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                     let optimized: Data? = {
-                        guard let data, let image = NSImage(data: data) else { return nil }
+                        guard let data, data.count <= ImageImportPolicy.maxInputBytes, let image = NSImage(data: data) else { return nil }
                         return self.optimizeImage(image)
                     }()
                     DispatchQueue.main.async {
@@ -910,4 +914,3 @@ func findNSScrollView(view: NSView?) -> NSScrollView? {
     }
     return nil
 }
-

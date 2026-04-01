@@ -12,6 +12,11 @@ import Combine
 import UniformTypeIdentifiers
 
 struct NewPromptView: View {
+    private enum ImageImportPolicy {
+        static let maxInputBytes = 64 * 1024 * 1024
+        static let maxSlots = 3
+    }
+
     var prompt: Prompt?
     var onClose: () -> Void
 
@@ -1462,34 +1467,23 @@ struct NewPromptView: View {
 
             // Cmd + V -> Paste Image globally
             if modifiers == .command && event.keyCode == 9 { // 'V' is keyCode 9
+                guard self.showcaseImages.count < ImageImportPolicy.maxSlots else {
+                    self.showImageImportWarning(self.imageSlotsFullMessage)
+                    return nil
+                }
                 let pb = NSPasteboard.general
                 // Check if the primary item is an image
                 if let types = pb.types, types.contains(where: { $0.rawValue.starts(with: "public.image") || $0 == .png || $0 == .tiff }) {
                     if let pbData = pb.data(forType: .png) ?? pb.data(forType: .tiff) ?? pb.data(forType: NSPasteboard.PasteboardType("public.jpeg")) {
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            if let optimizedData = ImageOptimizer.shared.optimize(imageData: pbData) {
-                                DispatchQueue.main.async {
-                                    if self.showcaseImages.count < 3 {
-                                        self.showcaseImages.append(optimizedData)
-                                        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                                    }
-                                }
-                            }
-                        }
+                        appendOptimizedImageData(pbData, at: nil)
                         return nil // Consume event
                     } else if let image = pb.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
                         DispatchQueue.global(qos: .userInitiated).async {
                             guard let tiffData = image.tiffRepresentation,
                                   let bitmap = NSBitmapImageRep(data: tiffData),
-                                  let jpData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]),
-                                  let optimizedData = ImageOptimizer.shared.optimize(imageData: jpData) else { return }
-                            
-                            DispatchQueue.main.async {
-                                if self.showcaseImages.count < 3 {
-                                    self.showcaseImages.append(optimizedData)
-                                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                                }
-                            }
+                                  let jpData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else { return }
+
+                            self.appendOptimizedImageData(jpData, at: nil)
                         }
                         return nil // Consume event
                     }
@@ -1828,7 +1822,13 @@ struct NewPromptView: View {
             return
         }
 
-        for provider in providers {
+        let remainingSlots = max(0, ImageImportPolicy.maxSlots - showcaseImages.count)
+        guard remainingSlots > 0 else {
+            showImageImportWarning(imageSlotsFullMessage)
+            return
+        }
+
+        for provider in providers.prefix(remainingSlots) {
             if provider.canLoadObject(ofClass: NSImage.self) {
                 _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
                     if let nsImage = image as? NSImage {
@@ -1836,57 +1836,34 @@ struct NewPromptView: View {
                             guard let tiffData = nsImage.tiffRepresentation,
                                   let bitmap = NSBitmapImageRep(data: tiffData),
                                   let baseData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else { return }
-                            
-                            let optimizedData = ImageOptimizer.shared.optimize(imageData: baseData)
-                            
-                            DispatchQueue.main.async {
-                                if let data = optimizedData {
-                                    self.insertImage(data, at: index)
-                                }
-                            }
+
+                            self.appendOptimizedImageData(baseData, at: index)
                         }
                     }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
                     if let data = data {
-                        // Optimize in background thread
-                        let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
-                        
-                        DispatchQueue.main.async {
-                            if let data = optimizedData {
-                                self.insertImage(data, at: index)
-                            }
-                        }
+                        self.appendOptimizedImageData(data, at: index)
                     }
                 }
             } else if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     if let url = url {
                         if url.isFileURL {
-                            if let data = try? Data(contentsOf: url) {
-                                // Optimize in background thread
-                                let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
-                                
-                                DispatchQueue.main.async {
-                                    if let data = optimizedData {
-                                        self.insertImage(data, at: index)
-                                    }
-                                }
+                            guard self.isAcceptableImageFile(url) else { return }
+                            if let data = try? Data(contentsOf: url, options: [.mappedIfSafe]) {
+                                self.appendOptimizedImageData(data, at: index)
                             }
                         } else {
                             // Descargar imagen de web URL (Chrome/Safari drag)
-                            URLSession.shared.dataTask(with: url) { data, _, _ in
-                                if let data = data {
-                                    // Optimize in background thread
-                                    let optimizedData = ImageOptimizer.shared.optimize(imageData: data)
-                                    
-                                    DispatchQueue.main.async {
-                                        if let data = optimizedData {
-                                            self.insertImage(data, at: index)
-                                        }
-                                    }
+                            URLSession.shared.dataTask(with: url) { data, response, _ in
+                                if let expectedSize = response?.expectedContentLength, expectedSize > Int64(ImageImportPolicy.maxInputBytes) {
+                                    self.showImageImportWarning(self.imageTooLargeMessage)
+                                    return
                                 }
+                                guard let data else { return }
+                                self.appendOptimizedImageData(data, at: index)
                             }.resume()
                         }
                     }
@@ -1895,8 +1872,62 @@ struct NewPromptView: View {
         }
     }
 
+    private func isAcceptableImageFile(_ url: URL) -> Bool {
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey])
+        if let bytes = values?.fileSize, bytes > ImageImportPolicy.maxInputBytes {
+            showImageImportWarning(imageTooLargeMessage)
+            return false
+        }
+        return true
+    }
+
+    private func appendOptimizedImageData(_ rawData: Data, at index: Int?) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            if rawData.count > ImageImportPolicy.maxInputBytes {
+                self.showImageImportWarning(self.imageTooLargeMessage)
+                return
+            }
+            guard let optimizedData = ImageOptimizer.shared.optimize(imageData: rawData) else {
+                self.showImageImportWarning(self.imageUnsupportedMessage)
+                return
+            }
+            DispatchQueue.main.async {
+                self.insertImage(optimizedData, at: index)
+            }
+        }
+    }
+
+    private var imageTooLargeMessage: String {
+        let format = "image_import_too_large".localized(for: preferences.language)
+        return String(format: format, ImageImportPolicy.maxInputBytes / (1024 * 1024))
+    }
+
+    private var imageUnsupportedMessage: String {
+        "image_import_unsupported".localized(for: preferences.language)
+    }
+
+    private var imageSlotsFullMessage: String {
+        "image_import_slots_full".localized(for: preferences.language)
+    }
+
+    private func showImageImportWarning(_ message: String) {
+        DispatchQueue.main.async {
+            HapticService.shared.playError()
+            withAnimation {
+                branchMessage = message
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                withAnimation {
+                    if branchMessage == message {
+                        branchMessage = nil
+                    }
+                }
+            }
+        }
+    }
+
     private func insertImage(_ data: Data, at index: Int?) {
-        if showcaseImages.count < 3 {
+        if showcaseImages.count < ImageImportPolicy.maxSlots {
             if let targetIndex = index, targetIndex < showcaseImages.count {
                 showcaseImages.insert(data, at: targetIndex)
                 selectedImageIndex = targetIndex
@@ -2116,20 +2147,19 @@ struct NewPromptView: View {
         
         panel.begin { response in
             guard response == .OK else { return }
-            
-            let urls = panel.urls
+
+            let remainingSlots = max(0, ImageImportPolicy.maxSlots - self.showcaseImages.count)
+            guard remainingSlots > 0 else {
+                self.showImageImportWarning(self.imageSlotsFullMessage)
+                return
+            }
+
+            let urls = Array(panel.urls.prefix(remainingSlots))
             DispatchQueue.global(qos: .userInitiated).async {
                 for url in urls {
-                    // Cargar y optimizar en background
-                    if let data = try? Data(contentsOf: url),
-                       let optimizedData = ImageOptimizer.shared.optimize(imageData: data) {
-                        
-                        DispatchQueue.main.async {
-                            if self.showcaseImages.count < 3 {
-                                self.showcaseImages.append(optimizedData)
-                                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                            }
-                        }
+                    guard self.isAcceptableImageFile(url) else { continue }
+                    if let data = try? Data(contentsOf: url, options: [.mappedIfSafe]) {
+                        self.appendOptimizedImageData(data, at: nil)
                     }
                 }
             }

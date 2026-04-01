@@ -46,7 +46,7 @@ struct PromptGridCard: View {
         return AttributedString(cached)
     }
     
-    private var variableCount: Int { prompt.extractTemplateVariables().count }
+    private var variableCount: Int { PromptCardTextCache.shared.variableCount(for: prompt) }
     
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue

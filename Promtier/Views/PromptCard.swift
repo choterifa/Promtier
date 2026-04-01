@@ -72,7 +72,7 @@ struct PromptCard: View {
     
     // EXTENSIÓN: Contador de variables
     private var variableCount: Int {
-        prompt.extractTemplateVariables().count
+        PromptCardTextCache.shared.variableCount(for: prompt)
     }
 
     private var variableCountText: String {

@@ -11,14 +11,18 @@ import SwiftUI
 
 struct PromptPreviewView: View {
     private enum PreviewImageProfile {
-        static let mediumPixelSize = 960
+        static let mediumPixelSize = 1120
+        static let thumbnailOnlyPixelSize = 640
     }
 
     let prompt: Prompt
+    let prefetchedShowcasePaths: [String]?
     @State private var showingFullScreenImageURL: URL? = nil
+    @State private var showingFullScreenImageData: Data? = nil
     @State private var isVisible = false
     @State private var showcaseImagePaths: [String] = []
     @State private var isLoadingImages: Bool = false
+    @State private var legacyFallbackImageData: Data? = nil
     @State private var cachedAttributedContent: AttributedString? = nil
     @State private var cachedContentTask: Task<Void, Never>? = nil
     @Environment(\.colorScheme) private var colorScheme 
@@ -30,7 +34,57 @@ struct PromptPreviewView: View {
     var onUse: (() -> Void)?
 
     private var templateVariableCount: Int {
-        prompt.extractTemplateVariables().count
+        PromptCardTextCache.shared.variableCount(for: prompt)
+    }
+
+    private struct ShowcaseEntry: Identifiable {
+        let id: String
+        let index: Int
+        let url: URL?
+        let relativePath: String?
+        let thumbnailData: Data?
+    }
+
+    private var showcaseEntries: [ShowcaseEntry] {
+        let total = max(showcaseImagePaths.count, prompt.showcaseThumbnails.count)
+        guard total > 0 || legacyFallbackImageData != nil else { return [] }
+
+        var entries: [ShowcaseEntry] = []
+        entries.reserveCapacity(max(1, total))
+
+        for index in 0..<total {
+            let path = showcaseImagePaths.indices.contains(index) ? showcaseImagePaths[index] : nil
+            let thumb = prompt.showcaseThumbnails.indices.contains(index) ? prompt.showcaseThumbnails[index] : nil
+            guard path != nil || thumb != nil else { continue }
+
+            entries.append(
+                ShowcaseEntry(
+                    id: "\(prompt.id.uuidString)-\(index)-\(path ?? "thumb-only")",
+                    index: index,
+                    url: path.map { ImageStore.shared.url(forRelativePath: $0) },
+                    relativePath: path,
+                    thumbnailData: thumb
+                )
+            )
+        }
+
+        if entries.isEmpty, let legacyFallbackImageData {
+            entries.append(
+                ShowcaseEntry(
+                    id: "\(prompt.id.uuidString)-legacy-fallback",
+                    index: 0,
+                    url: nil,
+                    relativePath: nil,
+                    thumbnailData: legacyFallbackImageData
+                )
+            )
+        }
+
+        return entries
+    }
+
+    private var shouldDisplayGallery: Bool {
+        !showcaseEntries.isEmpty || (prompt.showcaseImageCount > 0 && isLoadingImages)
     }
 
     private var resolvedCategoryColor: Color {
@@ -60,8 +114,14 @@ struct PromptPreviewView: View {
         return PromptPreviewThemeColor(NSColor(resolvedCategoryColor))
     }
     
-    init(prompt: Prompt, isFullScreenImageOpen: Binding<Bool> = .constant(false), onUse: (() -> Void)? = nil) {
+    init(
+        prompt: Prompt,
+        prefetchedShowcasePaths: [String]? = nil,
+        isFullScreenImageOpen: Binding<Bool> = .constant(false),
+        onUse: (() -> Void)? = nil
+    ) {
         self.prompt = prompt
+        self.prefetchedShowcasePaths = prefetchedShowcasePaths
         self._isFullScreenImageOpen = isFullScreenImageOpen
         self.onUse = onUse
     }
@@ -102,9 +162,28 @@ struct PromptPreviewView: View {
                     MenuBarManager.shared.fixTransientState()
                 }
         }
+        .sheet(
+            isPresented: Binding(
+                get: { showingFullScreenImageData != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        showingFullScreenImageData = nil
+                    }
+                }
+            )
+        ) {
+            if let data = showingFullScreenImageData {
+                FullScreenImageView(imageData: data)
+                    .onAppear { isFullScreenImageOpen = true }
+                    .onDisappear {
+                        isFullScreenImageOpen = false
+                        MenuBarManager.shared.fixTransientState()
+                    }
+            }
+        }
         .onAppear {
             isVisible = true
-            showcaseImagePaths = prompt.showcaseImagePaths
+            showcaseImagePaths = prefetchedShowcasePaths ?? prompt.showcaseImagePaths
             updateCachedContent()
         }
         .onDisappear {
@@ -126,8 +205,13 @@ struct PromptPreviewView: View {
                 if isLoadingImages { return }
                 isLoadingImages = true
                 let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                var legacyFallback: Data? = nil
+                if paths.isEmpty {
+                    legacyFallback = await promptService.fetchShowcaseImages(byId: prompt.id).first
+                }
                 await MainActor.run {
                     self.showcaseImagePaths = paths
+                    self.legacyFallbackImageData = legacyFallback
                     self.isLoadingImages = false
                 }
             }
@@ -234,7 +318,7 @@ struct PromptPreviewView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Galería al inicio si la preferencia es true
-                if preferences.previewImagesFirst && !showcaseImagePaths.isEmpty {
+                if preferences.previewImagesFirst && shouldDisplayGallery {
                     showcaseGallery
                     Divider().padding(.top, 4).padding(.bottom, 8) // Espacio reducido
                 }
@@ -383,7 +467,7 @@ struct PromptPreviewView: View {
                 }
                 
                 // Galería al final si la preferencia es false
-                if !preferences.previewImagesFirst && !showcaseImagePaths.isEmpty {
+                if !preferences.previewImagesFirst && shouldDisplayGallery {
                     Divider().padding(.top, 12).padding(.bottom, 8) // Separador para cuando está abajo
                     showcaseGallery
                 }
@@ -397,7 +481,7 @@ struct PromptPreviewView: View {
     // MARK: - Subviews
     
     private var showcaseGallery: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 8) {
             
             HStack(spacing: 8) {
                 Image(systemName: "photo.on.rectangle.angled")
@@ -409,23 +493,76 @@ struct PromptPreviewView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(Array(showcaseImagePaths.enumerated()), id: \.offset) { index, relativePath in
-                        let url = ImageStore.shared.url(forRelativePath: relativePath)
-                        let thumbnailData = prompt.showcaseThumbnails.indices.contains(index) ? prompt.showcaseThumbnails[index] : nil
-                        GalleryThumbnail(
-                            url: url,
-                            promptId: prompt.id,
-                            index: index,
-                            relativePath: relativePath,
-                            thumbnailData: thumbnailData
-                        ) {
-                            showingFullScreenImageURL = url
+                    ForEach(showcaseEntries) { entry in
+                        if let url = entry.url, let relativePath = entry.relativePath {
+                            GalleryThumbnail(
+                                url: url,
+                                promptId: prompt.id,
+                                index: entry.index,
+                                relativePath: relativePath,
+                                thumbnailData: entry.thumbnailData
+                            ) {
+                                if ImageStore.shared.fileExists(relativePath: relativePath) {
+                                    showingFullScreenImageURL = url
+                                    return
+                                }
+                                if let thumb = entry.thumbnailData {
+                                    // Fallback de seguridad para no romper la apertura del preview.
+                                    showingFullScreenImageData = thumb
+                                    return
+                                }
+                                Task {
+                                    let resolvedPaths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                                    await MainActor.run {
+                                        if !resolvedPaths.isEmpty {
+                                            showcaseImagePaths = resolvedPaths
+                                        }
+                                        if resolvedPaths.indices.contains(entry.index) {
+                                            let resolvedURL = ImageStore.shared.url(forRelativePath: resolvedPaths[entry.index])
+                                            showingFullScreenImageURL = resolvedURL
+                                        }
+                                    }
+                                }
+                            }
+                        } else if let thumbnailData = entry.thumbnailData {
+                            GalleryThumbnailData(
+                                promptId: prompt.id,
+                                index: entry.index,
+                                thumbnailData: thumbnailData
+                            ) {
+                                Task {
+                                    let resolvedPaths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                                    await MainActor.run {
+                                        if !resolvedPaths.isEmpty {
+                                            showcaseImagePaths = resolvedPaths
+                                        }
+                                        if resolvedPaths.indices.contains(entry.index) {
+                                            let resolvedURL = ImageStore.shared.url(forRelativePath: resolvedPaths[entry.index])
+                                            showingFullScreenImageURL = resolvedURL
+                                        } else {
+                                            // Fallback de seguridad (solo si aún no hay path en disco).
+                                            showingFullScreenImageData = thumbnailData
+                                        }
+                                    }
+                                }
+                            }
                         }
+                    }
+
+                    if showcaseEntries.isEmpty && isLoadingImages {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.primary.opacity(0.06))
+                            .frame(width: 280, height: 180)
+                            .overlay {
+                                ProgressView()
+                                    .controlSize(.regular)
+                            }
                     }
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 2)
             }
+
         }
     }
 
@@ -480,6 +617,72 @@ struct PromptPreviewView: View {
             }
             .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
             // Captura scroll del trackpad a nivel AppKit — overlay para recibir eventos
+            .overlay(
+                ScrollWheelCapture { delta in
+                    let newOffset = verticalOffset + delta * 0.6
+                    withAnimation(.interactiveSpring()) {
+                        verticalOffset = max(-80, min(80, newOffset))
+                    }
+                }
+                .frame(width: 280, height: 180)
+            )
+            .onTapGesture(count: 2) {
+                action()
+            }
+            .onTapGesture {
+                action()
+            }
+            .onHover { hovering in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isHovered = hovering
+                }
+            }
+        }
+    }
+
+    private struct GalleryThumbnailData: View {
+        let promptId: UUID
+        let index: Int
+        let thumbnailData: Data
+        let action: () -> Void
+
+        @State private var isHovered = false
+        @State private var verticalOffset: CGFloat = 0
+
+        var body: some View {
+            DownsampledImageView(
+                imageData: thumbnailData,
+                cacheKey: "\(promptId.uuidString):preview:thumb-only:\(index):\(PreviewImageProfile.thumbnailOnlyPixelSize)",
+                maxPixelSize: PreviewImageProfile.thumbnailOnlyPixelSize,
+                contentMode: .fill
+            )
+            .scaleEffect(1.15)
+            .offset(y: verticalOffset)
+            .frame(width: 280, height: 180)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+            )
+            .overlay(alignment: .bottomTrailing) {
+                Button(action: { action() }) {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 22, height: 22)
+                            .shadow(color: .black.opacity(0.1), radius: 4)
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.primary.opacity(0.7))
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(10)
+                .opacity(isHovered ? 1 : 0)
+                .scaleEffect(isHovered ? 1 : 0.8)
+            }
+            .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
             .overlay(
                 ScrollWheelCapture { delta in
                     let newOffset = verticalOffset + delta * 0.6
