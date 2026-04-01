@@ -412,12 +412,7 @@ struct EditorCard: View {
 
             aiTask = Task {
                 do {
-                    let fullResponse: String
-                    if preferences.preferredAIService == .openai {
-                        fullResponse = try await OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                    } else {
-                        fullResponse = try await GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
-                    }
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: fullPrompt)
                     
                     await MainActor.run {
                         self.isAIGenerating = false
@@ -865,12 +860,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     let fullPrompt = (action == .instruct) ? "Execute the following instruction/command: \(instruction ?? "")\nRespond ONLY with the result:\n\(textToProcess)" : "\(action.systemPrompt)\(contextInstruction)"
         
                     aiTask = Task {                do {
-                    let fullResponse: String
-                    if preferences.preferredAIService == .openai {
-                        fullResponse = try await OpenAIService.shared.generate(prompt: fullPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                    } else {
-                        fullResponse = try await GeminiService.shared.generate(prompt: fullPrompt, model: preferences.geminiDefaultModel)
-                    }
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: fullPrompt)
                     
                     await MainActor.run {
                         self.isAIGenerating = false

@@ -4,6 +4,10 @@ import UniformTypeIdentifiers
 
 // VISTA PRINCIPAL SIMPLIFICADA: Búsqueda básica con resultados
 struct SearchViewSimple: View {
+    private enum PreviewPrewarmProfile {
+        static let maxPixelSize = 960
+    }
+
     private enum PromptCopyFormat {
         case plainText
         case markdown
@@ -324,12 +328,7 @@ struct SearchViewSimple: View {
             
             delayedPrewarmTask?.cancel()
             if let firstPrompt = promptService.filteredPrompts.first {
-                delayedPrewarmTask = Task(priority: .utility) {
-                    try? await Task.sleep(nanoseconds: 80_000_000)
-                    await MainActor.run {
-                        prewarmPreviewAssets(for: firstPrompt, force: true)
-                    }
-                }
+                prewarmPreviewAssets(for: firstPrompt, force: true)
             }
         }
         .onDisappear {
@@ -1253,8 +1252,12 @@ struct SearchViewSimple: View {
 
                 if let first = paths.first {
                     let url = ImageStore.shared.url(forRelativePath: first)
-                    let cacheKey = "\(prompt.id.uuidString):preview:0:1600:\(first)"
-                    await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey, maxPixelSize: 1600)
+                    let cacheKey = "\(prompt.id.uuidString):preview:0:\(PreviewPrewarmProfile.maxPixelSize):\(first)"
+                    await ImageDecodeThrottler.prewarm(
+                        url: url,
+                        cacheKey: cacheKey,
+                        maxPixelSize: PreviewPrewarmProfile.maxPixelSize
+                    )
                 }
             }
         }
@@ -1313,6 +1316,5 @@ struct SearchViewSimple: View {
 }
 
 // MARK: - Guía Visual de Redimensionado HUD
-
 
 

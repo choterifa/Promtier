@@ -28,14 +28,13 @@ struct AIPlaygroundView: View {
                 
                 Spacer()
                 
-                let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-                let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
                 
-                if useOpenAI || useGemini {
+
+                if preferences.openAIEnabled || preferences.geminiEnabled || preferences.openRouterEnabled {
                     HStack(spacing: 8) {
-                        Text(useOpenAI ? "OpenAI" : "Google Gemini")
+                        Text(preferences.preferredAIService.rawValue.capitalized)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(useOpenAI ? .green : .blue)
+                            .foregroundColor(preferences.preferredAIService == .openrouter ? .purple : (preferences.preferredAIService == .openai ? .green : .blue))
                         
                         Button(action: generateResponse) {
                             if isGenerating {
@@ -146,10 +145,9 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
-        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
+        let isAnyEnabled = preferences.openAIEnabled || preferences.geminiEnabled || preferences.openRouterEnabled
         
-        guard useOpenAI || useGemini else { return }
+        guard isAnyEnabled else { return }
         
         responseText = ""
         isGenerating = true
@@ -171,12 +169,7 @@ struct AIPlaygroundView: View {
         
         Task {
             do {
-                let response: String
-                if useOpenAI {
-                    response = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                } else {
-                    response = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-                }
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
                     self.responseText = response

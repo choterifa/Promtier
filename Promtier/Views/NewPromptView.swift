@@ -2210,12 +2210,7 @@ struct NewPromptView: View {
         
         Task {
             do {
-                let fullResponse: String
-                if preferences.preferredAIService == .openai {
-                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                } else {
-                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-                }
+                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
                     self.isAutocompleting = false
@@ -2315,12 +2310,7 @@ struct NewPromptView: View {
         
         Task {
             do {
-                let fullResponse: String
-                if preferences.preferredAIService == .openai {
-                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                } else {
-                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-                }
+                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
                     self.isAutocompleting = false
@@ -2414,12 +2404,7 @@ struct NewPromptView: View {
         
         Task {
             do {
-                let fullResponse: String
-                if preferences.preferredAIService == .openai {
-                    fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: preferences.openAIDefaultModel, apiKey: preferences.openAIApiKey)
-                } else {
-                    fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: preferences.geminiDefaultModel)
-                }
+                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
                     self.isCategorizing = false

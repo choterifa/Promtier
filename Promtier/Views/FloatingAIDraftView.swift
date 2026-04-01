@@ -835,14 +835,7 @@ struct FloatingAIDraftView: View {
             do {
                 let response: String
                 let prefs = preferences
-                let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
-                let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
-                
-                if prefs.preferredAIService == .openai {
-                    response = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
-                } else {
-                    response = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
-                }
+                response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 
                 await MainActor.run {
                     manager.isGenerating = false

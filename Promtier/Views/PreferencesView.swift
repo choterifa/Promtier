@@ -696,6 +696,7 @@ struct AITab: View {
                             preferences.openAIEnabled = newValue
                             if newValue {
                                 preferences.geminiEnabled = false
+                                preferences.openRouterEnabled = false
                                 preferences.preferredAIService = .openai
                             }
                         }
@@ -798,6 +799,77 @@ struct AITab: View {
                 }
             }
 
+            SettingsSection(title: "OpenRouter", icon: "network") {
+                SettingsRow("OpenRouter Service", subtitle: "200+ Modelos") {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.openRouterEnabled },
+                        set: { newValue in
+                            preferences.openRouterEnabled = newValue
+                            if newValue {
+                                preferences.geminiEnabled = false
+                                preferences.openAIEnabled = false
+                                preferences.preferredAIService = .openrouter
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                }
+
+                VStack(spacing: 1) {
+                    SettingsRow("API Key") {
+                        HStack(spacing: 8) {
+                            SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 220)
+                            
+                            Button(action: {
+                                if let pasted = NSPasteboard.general.string(forType: .string) {
+                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    preferences.openRouterAPIKey = trimmed
+                                    HapticService.shared.playLight()
+                                }
+                            }) {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.blue)
+                                    .padding(4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            .buttonStyle(.plain)
+                            .help("paste".localized(for: preferences.language))
+                        }
+                    }
+
+                    Divider().padding(.leading, 20)
+
+                    SettingsRow("ID de Modelo") {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            HStack(spacing: 8) {
+                                TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(width: 200)
+                            }
+                            Link("Explorar Modelos ↗", destination: URL(string: "https://openrouter.ai/models")!)
+                                .font(.system(size: 10))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    HStack {
+                        Text("Tus claves se cifran en el Keychain de Apple.\nPromtier no sube ni almacena tus claves en ningún servidor intermediario.")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary.opacity(0.7))
+                            .padding(.top, 8)
+                            .multilineTextAlignment(.leading)
+                        Spacer()
+                    }
+                }
+                .disabled(!preferences.openRouterEnabled)
+                .opacity(preferences.openRouterEnabled ? 1 : 0.5)
+            }
+            
             SettingsSection(title: "Google Gemini", icon: "sparkles") {
                 SettingsRow(
                     LocalizedStringKey("gemini_service".localized(for: preferences.language)),
@@ -809,6 +881,7 @@ struct AITab: View {
                             preferences.geminiEnabled = newValue
                             if newValue {
                                 preferences.openAIEnabled = false
+                                preferences.openRouterEnabled = false
                                 preferences.preferredAIService = .gemini
                             }
                         }

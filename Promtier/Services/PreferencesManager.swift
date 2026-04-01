@@ -15,6 +15,7 @@ import ServiceManagement
 enum AIService: String, Codable, CaseIterable {
     case gemini = "gemini"
     case openai = "openai"
+    case openrouter = "openrouter"
 }
 
 struct DraftPreset: Codable, Identifiable, Equatable {
@@ -356,6 +357,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var geminiAPIKey: String {
         didSet {
+            KeychainHelper.standard.saveString(geminiAPIKey, service: "com.valencia.promtier", account: "geminiAPIKey")
             userDefaults.set(geminiAPIKey, forKey: "geminiAPIKey_local")
         }
     }
@@ -404,6 +406,7 @@ class PreferencesManager: ObservableObject {
     
     @Published var openAIApiKey: String {
         didSet {
+            KeychainHelper.standard.saveString(openAIApiKey, service: "com.valencia.promtier", account: "openAIApiKey")
             userDefaults.set(openAIApiKey, forKey: "openAIApiKey_local")
         }
     }
@@ -411,6 +414,26 @@ class PreferencesManager: ObservableObject {
     @Published var openAIDefaultModel: String {
         didSet {
             userDefaults.set(openAIDefaultModel, forKey: "openAIDefaultModel")
+        }
+    }
+    
+    // MARK: OpenRouter Config
+    @Published var openRouterEnabled: Bool {
+        didSet {
+            userDefaults.set(openRouterEnabled, forKey: "openRouterEnabled")
+        }
+    }
+    
+    @Published var openRouterAPIKey: String {
+        didSet {
+            KeychainHelper.standard.saveString(openRouterAPIKey, service: "com.valencia.promtier", account: "openRouterAPIKey")
+            userDefaults.set(openRouterAPIKey, forKey: "openRouterAPIKey_local")
+        }
+    }
+    
+    @Published var openRouterDefaultModel: String {
+        didSet {
+            userDefaults.set(openRouterDefaultModel, forKey: "openRouterDefaultModel")
         }
     }
     
@@ -508,6 +531,20 @@ class PreferencesManager: ObservableObject {
             self.geminiAPIKey = ""
         }
         self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
+        
+        self.openRouterEnabled = userDefaults.object(forKey: "openRouterEnabled") as? Bool ?? false
+        
+        if let localOpenRouter = userDefaults.string(forKey: "openRouterAPIKey_local") {
+            self.openRouterAPIKey = localOpenRouter
+        } else if let legacyOpenRouter = KeychainHelper.standard.readString(service: "com.valencia.promtier", account: "openRouterAPIKey") {
+            self.openRouterAPIKey = legacyOpenRouter
+            userDefaults.set(legacyOpenRouter, forKey: "openRouterAPIKey_local")
+        } else {
+            self.openRouterAPIKey = ""
+        }
+        
+        self.openRouterDefaultModel = userDefaults.string(forKey: "openRouterDefaultModel") ?? "anthropic/claude-3-opus"
+        
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
         
@@ -561,18 +598,32 @@ class PreferencesManager: ObservableObject {
     }
 
     private func normalizeAISettings() {
-        // Exclusividad: solo un proveedor activo a la vez.
-        if openAIEnabled && geminiEnabled {
-            switch preferredAIService {
-            case .gemini:
-                openAIEnabled = false
-            case .openai:
-                geminiEnabled = false
+        // Asegurarse de que si preferredAIService se configuró, el respectivo toggle esté activo
+        switch preferredAIService {
+        case .openrouter:
+            if !openRouterEnabled { 
+                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : .openai)
             }
-        } else if openAIEnabled {
-            preferredAIService = .openai
-        } else if geminiEnabled {
-            preferredAIService = .gemini
+        case .openai:
+            if !openAIEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : .openai)
+            }
+        case .gemini:
+            if !geminiEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : .openai)
+            }
+        }
+        
+        // Ahora si preferredAIService es valido, apagamos el resto
+        if preferredAIService == .openrouter {
+            openAIEnabled = false
+            geminiEnabled = false
+        } else if preferredAIService == .openai {
+            openRouterEnabled = false
+            geminiEnabled = false
+        } else if preferredAIService == .gemini {
+            openRouterEnabled = false
+            openAIEnabled = false
         }
     }
     
@@ -679,6 +730,13 @@ class PreferencesManager: ObservableObject {
         userDefaults.removeObject(forKey: "geminiAPIKey_local")
         _ = KeychainManager.shared.delete(key: "geminiAPIKey")
         self.geminiDefaultModel = "gemini-2.5-flash"
+        
+        self.openRouterEnabled = false
+        self.openRouterAPIKey = ""
+        userDefaults.removeObject(forKey: "openRouterAPIKey_local")
+        KeychainHelper.standard.delete(service: "com.valencia.promtier", account: "openRouterAPIKey")
+        self.openRouterDefaultModel = "anthropic/claude-3-opus"
+        
         self.preferredAIService = .openai
         self.openAIEnabled = true
         self.openAIApiKey = ""

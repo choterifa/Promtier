@@ -11,7 +11,7 @@ import SwiftUI
 
 struct PromptPreviewView: View {
     private enum PreviewImageProfile {
-        static let mediumPixelSize = 1600
+        static let mediumPixelSize = 960
     }
 
     let prompt: Prompt
@@ -28,6 +28,10 @@ struct PromptPreviewView: View {
     @Binding var isFullScreenImageOpen: Bool
     
     var onUse: (() -> Void)?
+
+    private var templateVariableCount: Int {
+        prompt.extractTemplateVariables().count
+    }
 
     private var resolvedCategoryColor: Color {
         if let folderName = prompt.folder {
@@ -162,11 +166,11 @@ struct PromptPreviewView: View {
             // Acciones a la derecha
             HStack(spacing: 8) {
                 // Badge de variables si tiene
-                if prompt.hasTemplateVariables() {
+                if templateVariableCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "cube.transparent.fill")
                             .font(.system(size: 10))
-                        Text("\(prompt.extractTemplateVariables().count)")
+                        Text("\(templateVariableCount)")
                             .font(.system(size: 11, weight: .bold))
                     }
                     .padding(.horizontal, 8)
@@ -495,13 +499,6 @@ struct PromptPreviewView: View {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     isHovered = hovering
                 }
-            }
-            .task {
-                await ImageDecodeThrottler.prewarm(
-                    url: url,
-                    cacheKey: "\(promptId.uuidString):preview:\(index):\(PreviewImageProfile.mediumPixelSize):\(relativePath)",
-                    maxPixelSize: PreviewImageProfile.mediumPixelSize
-                )
             }
         }
     }

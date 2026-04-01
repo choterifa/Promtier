@@ -201,16 +201,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         \(content)
         """
         
-        let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
-        let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
-        
         do {
-            var fullResponse: String
-            if prefs.preferredAIService == .openai {
-                fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
-            } else {
-                fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
-            }
+            let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
             
             var final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
             if final.hasPrefix("\"") && final.hasSuffix("\"") {
@@ -241,16 +233,8 @@ class FloatingZenManager: NSObject, ObservableObject {
         Content: \(content)
         """
         
-        let model = prefs.preferredAIService == .openai ? prefs.openAIDefaultModel : prefs.geminiDefaultModel
-        let apiKey = prefs.preferredAIService == .openai ? prefs.openAIApiKey : prefs.geminiAPIKey
-        
         do {
-            var fullResponse: String
-            if prefs.preferredAIService == .openai {
-                fullResponse = try await OpenAIService.shared.generate(prompt: systemPrompt, model: model, apiKey: apiKey)
-            } else {
-                fullResponse = try await GeminiService.shared.generate(prompt: systemPrompt, model: model)
-            }
+            let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
             
             let final = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
             if folders.contains(final) {

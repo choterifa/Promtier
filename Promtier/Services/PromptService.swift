@@ -625,7 +625,8 @@ class PromptService: ObservableObject {
                     applyShowcaseImages(prompt.showcaseImages, to: entity, promptId: prompt.id, clearExisting: true)
                 }
                 dataController.save()
-                loadPrompts()
+                let updatedPrompt = entity.toPrompt()
+                applyUpdatedPromptToInMemoryState(updatedPrompt)
                 return true
             }
         } catch {
@@ -633,6 +634,110 @@ class PromptService: ObservableObject {
         }
         
         return false
+    }
+
+    /// Actualiza el estado publicado sin forzar una recarga global de Core Data.
+    /// Esto evita bloqueos al usar/cambiar favorito de un prompt.
+    private func applyUpdatedPromptToInMemoryState(_ updatedPrompt: Prompt) {
+        let apply = {
+            var touched = false
+
+            if updatedPrompt.isInTrash {
+                if let i = self.prompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
+                    self.prompts.remove(at: i)
+                    touched = true
+                }
+                if let i = self.trashedPrompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
+                    self.trashedPrompts[i] = updatedPrompt
+                    touched = true
+                } else {
+                    self.trashedPrompts.append(updatedPrompt)
+                    touched = true
+                }
+                self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+            } else {
+                if let i = self.prompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
+                    self.prompts[i] = updatedPrompt
+                    touched = true
+                } else {
+                    self.prompts.append(updatedPrompt)
+                    touched = true
+                }
+                if let i = self.trashedPrompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
+                    self.trashedPrompts.remove(at: i)
+                    touched = true
+                }
+            }
+
+            // Fallback de seguridad: si no logramos reconciliar en memoria, recargamos completo.
+            if !touched {
+                self.loadPrompts()
+                return
+            }
+
+            self.filterPrompts(query: self.searchQuery)
+            ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+        }
+
+        if Thread.isMainThread {
+            apply()
+        } else {
+            DispatchQueue.main.async(execute: apply)
+        }
+    }
+
+    private func applyUpdatedPromptsToInMemoryState(_ updatedPrompts: [Prompt]) {
+        guard !updatedPrompts.isEmpty else { return }
+        if updatedPrompts.count == 1, let only = updatedPrompts.first {
+            applyUpdatedPromptToInMemoryState(only)
+            return
+        }
+
+        let apply = {
+            var touched = false
+            for prompt in updatedPrompts {
+                if prompt.isInTrash {
+                    if let i = self.prompts.firstIndex(where: { $0.id == prompt.id }) {
+                        self.prompts.remove(at: i)
+                        touched = true
+                    }
+                    if let i = self.trashedPrompts.firstIndex(where: { $0.id == prompt.id }) {
+                        self.trashedPrompts[i] = prompt
+                        touched = true
+                    } else {
+                        self.trashedPrompts.append(prompt)
+                        touched = true
+                    }
+                } else {
+                    if let i = self.prompts.firstIndex(where: { $0.id == prompt.id }) {
+                        self.prompts[i] = prompt
+                        touched = true
+                    } else {
+                        self.prompts.append(prompt)
+                        touched = true
+                    }
+                    if let i = self.trashedPrompts.firstIndex(where: { $0.id == prompt.id }) {
+                        self.trashedPrompts.remove(at: i)
+                        touched = true
+                    }
+                }
+            }
+
+            if !touched {
+                self.loadPrompts()
+                return
+            }
+
+            self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+            self.filterPrompts(query: self.searchQuery)
+            ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+        }
+
+        if Thread.isMainThread {
+            apply()
+        } else {
+            DispatchQueue.main.async(execute: apply)
+        }
     }
 
     /// Actualiza solo las imágenes de showcase (y su conteo) en background.
@@ -645,6 +750,7 @@ class PromptService: ObservableObject {
                 }
                 let context: NSManagedObjectContext = self.dataController.backgroundContext
                 var ok = false
+                var updatedPrompt: Prompt? = nil
 
                 context.performAndWaitCompat {
                     let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
@@ -657,14 +763,15 @@ class PromptService: ObservableObject {
                         entity.modifiedAt = Date()
 
                         try context.save()
+                        updatedPrompt = entity.toPrompt()
                         ok = true
                     } catch {
                         print("Error actualizando imágenes de showcase: \(error)")
                     }
                 }
 
-                if ok {
-                    DispatchQueue.main.async { self.loadPrompts() }
+                if ok, let updatedPrompt {
+                    self.applyUpdatedPromptToInMemoryState(updatedPrompt)
                 }
                 continuation.resume(returning: ok)
             }
@@ -732,12 +839,14 @@ class PromptService: ObservableObject {
         do {
             let entities = try context.fetch(request)
             let now = Date()
+            var updatedPrompts: [Prompt] = []
             for entity in entities {
                 entity.deletedAt = now
                 entity.modifiedAt = now
+                updatedPrompts.append(entity.toPrompt())
             }
             dataController.save()
-            loadPrompts()
+            applyUpdatedPromptsToInMemoryState(updatedPrompts)
             return true
         } catch {
             print("Error eliminando prompts en lote: \(error)")
@@ -757,12 +866,14 @@ class PromptService: ObservableObject {
         do {
             let entities = try context.fetch(request)
             let now = Date()
+            var updatedPrompts: [Prompt] = []
             for entity in entities {
                 entity.folder = folderName
                 entity.modifiedAt = now
+                updatedPrompts.append(entity.toPrompt())
             }
             dataController.save()
-            loadPrompts()
+            applyUpdatedPromptsToInMemoryState(updatedPrompts)
             return true
         } catch {
             print("Error moviendo prompts en lote: \(error)")
@@ -782,12 +893,14 @@ class PromptService: ObservableObject {
         do {
             let entities = try context.fetch(request)
             let now = Date()
+            var updatedPrompts: [Prompt] = []
             for entity in entities {
                 entity.isFavorite = true
                 entity.modifiedAt = now
+                updatedPrompts.append(entity.toPrompt())
             }
             dataController.save()
-            loadPrompts()
+            applyUpdatedPromptsToInMemoryState(updatedPrompts)
             return true
         } catch {
             print("Error marcando favoritos en lote: \(error)")

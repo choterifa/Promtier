@@ -115,8 +115,9 @@ class OpenAIService: ObservableObject {
     }
     
     /// Genera una respuesta basada en un prompt de forma asíncrona
-    func generate(prompt: String, model: String, apiKey: String) async throws -> String {
-        guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
+    func generate(prompt: String, model: String, apiKey: String, isOpenRouter: Bool = false) async throws -> String {
+        let endpoint = isOpenRouter ? "https://openrouter.ai/api/v1/chat/completions" : "https://api.openai.com/v1/chat/completions"
+        guard let url = URL(string: endpoint) else {
             throw URLError(.badURL)
         }
         
@@ -124,6 +125,10 @@ class OpenAIService: ObservableObject {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if isOpenRouter {
+            request.addValue("https://promtier.valencia", forHTTPHeaderField: "HTTP-Referer")
+            request.addValue("Promtier", forHTTPHeaderField: "X-Title")
+        }
         
         let body: [String: Any] = [
             "model": model,
