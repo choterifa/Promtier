@@ -427,6 +427,7 @@ struct AppearanceTab: View {
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowWidth = preferences.previewWidth
+                            preferences.saveWindowDimensions()
                         }
                     })
                     .onChange(of: preferences.previewWidth) { _, _ in
@@ -442,6 +443,7 @@ struct AppearanceTab: View {
                         preferences.isResizingVisible = editing
                         if !editing {
                             preferences.windowHeight = preferences.previewHeight
+                            preferences.saveWindowDimensions()
                         }
                     })
                     .onChange(of: preferences.previewHeight) { _, _ in

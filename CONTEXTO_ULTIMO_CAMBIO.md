@@ -1,4 +1,25 @@
-# 🧠 Registro de Modernización y Rendimiento - Marzo 31 de 2024
+# 🧠 Registro de Modernización y Rendimiento - Abril 1 de 2026
+
+## 🛡️ Auditoría de Seguridad & Nueva API de OpenRouter (Fase Actual)
+
+Hoy se ejecutó una auditoría técnica profunda y se integraron varias mejoras de fondo:
+1. **Arquitectura y Seguridad (Keychain):** Se migró todo el almacenamiento de claves API (OpenAI, Gemini) e incorporamos **OpenRouter**, que ahora delegan su gestión al Keychain seguro del sistema (`KeychainHelper.swift`) utilizando el flag de Apple `kSecAttrAccessibleAfterFirstUnlock` para no abrumar al usuario con contraseñas innecesarias respetando su integridad.
+2. **Unificación de IA con `AIServiceManager`:** Toda la lógica redundante y sucia que permitía a funciones seguir generando comandos en background (incluso si configurabas los toggles del UI en Off) fue suprimida. Todas las funciones de la app (DraftView, TextEditor y AlternativeGenerator) se centralizaron en un manager que valida y rechaza ejecuciones prohibidas.
+3. **Refinamiento UI (Resolución Bug):** El panel de ajuste de ventana con fantasma oscuro y ancho/alto ya no estorba cuando usas el `ResizeHandle` de la esquina y su visibilidad se dejó exclusivamente para el modulo de `PreferencesView`.
+
+---
+
+# 🧠 Registro de Modernización y Rendimiento - Abril 1 de 2026
+
+## 🛡️ Auditoría de Seguridad & Nueva API de OpenRouter (Fase Actual)
+
+1. **Arquitectura y Seguridad (Keychain):** Se migró todo el almacenamiento de claves API (OpenAI, Gemini) e incorporamos **OpenRouter**, que ahora delegan su gestión al Keychain seguro del sistema (`KeychainHelper.swift`) utilizando el flag de Apple `kSecAttrAccessibleAfterFirstUnlock` para no abrumar al usuario con contraseñas innecesarias.
+2. **Unificación de IA con `AIServiceManager`:** Toda la lógica redundante y sucia que permitía a funciones de IA correr incluso si configurabas los toggles del UI en "Off" fue suprimida. Todas las llamadas (DraftView, TextEditor, PlayGround y AlternativeGenerator) se centralizaron en un manager que valida y rechaza ejecuciones prohibidas.
+3. **Refinamiento UI (Resolución Bug):** La ventana fantasma y marco oscuro de ajuste de resolución con indicadores de Ancho/Alto ya no estorba cuando usas el `ResizeHandle` de la esquina para dimensionar las ventanas libremente, dejándose intacto y exclusivamente visual para la vista de preferencias (`PreferencesView`).
+
+---
+
+# 🧠 Registro de Modernización y Rendimiento - Marzo 31 de 2024/
 
 ## 🛠️ Estado actual de la arquitectura y rendimiento
 

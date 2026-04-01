@@ -67,7 +67,6 @@ struct ResizeHandle: View {
 
                             preferences.windowWidth  = newWidth
                             preferences.windowHeight = newHeight
-                            preferences.isResizingVisible = true
                             preferences.previewWidth  = newWidth
                             preferences.previewHeight = newHeight
                         }
@@ -77,7 +76,6 @@ struct ResizeHandle: View {
                             if !isHovered {
                                 NSCursor.pop()
                             }
-                            preferences.isResizingVisible = false
                             preferences.saveWindowDimensions()
                             HapticService.shared.playAlignment()
                         }
