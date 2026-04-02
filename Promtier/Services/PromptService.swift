@@ -914,34 +914,79 @@ class PromptService: ObservableObject {
     func deletePrompt(_ prompt: Prompt) -> Bool {
         var trashed = prompt
         trashed.deletedAt = Date()
-        return updatePrompt(trashed)
+        
+        // 1. Update memory eagerly (Optimistic UI update, ultra fast)
+        self.applyUpdatedPromptToInMemoryState(trashed)
+        
+        let targetId = trashed.id
+        let targetDate = trashed.deletedAt ?? Date()
+        
+        // 2. Offload Core Data generic save operation to a background thread / context
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let bgContext = self.dataController.container.newBackgroundContext()
+            
+            bgContext.performAndWait {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "id == %@", targetId as CVarArg)
+                
+                do {
+                    if let entity = try bgContext.fetch(request).first {
+                        entity.deletedAt = targetDate
+                        entity.modifiedAt = targetDate
+                        if bgContext.hasChanges { try bgContext.save() }
+                    }
+                } catch {
+                    print("Error soft-deleting in background: \(error)")
+                }
+            }
+        }
+        
+        return true
     }
 
-    /// Mueve múltiples prompts a la papelera en una sola operación (evita recargar por cada item)
+    /// Mueve múltiples prompts a la papelera en una sola operación optimizada
     func deletePrompts(withIds ids: [UUID]) -> Bool {
         guard !ids.isEmpty else { return false }
-        let context = dataController.viewContext
-        let nsuuids = ids.map { $0 as NSUUID }
-
-        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id IN %@", nsuuids)
-
-        do {
-            let entities = try context.fetch(request)
-            let now = Date()
-            var updatedPrompts: [Prompt] = []
-            for entity in entities {
-                entity.deletedAt = now
-                entity.modifiedAt = now
-                updatedPrompts.append(entity.toPrompt())
+        
+        let now = Date()
+        var immediateUpdates: [Prompt] = []
+        
+        // 1. Eagerly update Memory Model
+        for id in ids {
+            if var p = self.promptLookup[id] {
+                p.deletedAt = now
+                p.modifiedAt = now
+                immediateUpdates.append(p)
             }
-            dataController.save()
-            applyUpdatedPromptsToInMemoryState(updatedPrompts)
-            return true
-        } catch {
-            print("Error eliminando prompts en lote: \(error)")
-            return false
         }
+        self.applyUpdatedPromptsToInMemoryState(immediateUpdates)
+        
+        let nsuuids = ids.map { $0 as NSUUID }
+        
+        // 2. Offload save processing
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let bgContext = self.dataController.container.newBackgroundContext()
+            
+            bgContext.performAndWait {
+                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+                request.predicate = NSPredicate(format: "id IN %@", nsuuids)
+                
+                do {
+                    let entities = try bgContext.fetch(request)
+                    for entity in entities {
+                        entity.deletedAt = now
+                        entity.modifiedAt = now
+                    }
+                    if bgContext.hasChanges { try bgContext.save() }
+                } catch {
+                    print("Error batch deleting in background: \(error)")
+                }
+            }
+        }
+        
+        return true
     }
 
     /// Mueve múltiples prompts a una carpeta/categoría en una sola operación

@@ -8,6 +8,16 @@ Hoy se ejecutó una auditoría técnica profunda y se integraron varias mejoras 
 2. **Unificación de IA con `AIServiceManager`:** Toda la lógica redundante y sucia que permitía a funciones seguir generando comandos en background (incluso si configurabas los toggles del UI en Off) fue suprimida. Todas las funciones de la app (DraftView, TextEditor y AlternativeGenerator) se centralizaron en un manager que valida y rechaza ejecuciones prohibidas.
 3. **Refinamiento UI (Resolución Bug):** El panel de ajuste de ventana con fantasma oscuro y ancho/alto ya no estorba cuando usas el `ResizeHandle` de la esquina y su visibilidad se dejó exclusivamente para el modulo de `PreferencesView`.
 
+## ⚡️ Optimización de Rendimiento & Pulido UI (Optimistic UI) - Abril 1 de 2026
+
+1. **Optimización de Borrado de Prompts (Core Data en Background):** Se eliminó el "congelamiento" de 1-2 segundos de la interfaz al enviar prompts a la papelera. Se implementó una actualización instantánea en memoria (`applyUpdatedPromptToInMemoryState`), delegando la escritura física a un contexto secundario de Core Data (`DispatchQueue.global`).
+2. **Corrección de Ciclo de Vida de Ventanas (Save / Drafts):** Se arregló el comportamiento invasivo y persistente donde guardar un prompt cerraba por completo la aplicación (popover). Se ajustó el uso de `onClose()` y la detección estricta de `hasUnsavedChanges` para evitar falsos positivos de guardado de drafts.
+3. **Micro-interacciones y UI Fixes:**
+   - Agregados ligeros efectos `.onHover` (borde y opacidad de acento) a los botones secundarios ("Add Alternative", "Magic Variant", "Ninguno").
+   - Reparados "puntos ciegos" en la captura de eventos del mouse aplicando `.contentShape(Rectangle())` al componente tarjeta en `EditorCard`.
+   - Se ajustó la escala excesiva del spinner de Magic Variant (`0.4` scale) y se redujeron sus márgenes.
+4. **Limpieza de Warnings Xcode Swift 6:** Solucionadas advertencias misceláneas de tipos (manejo estricto de Optional Dates y arrays no-optionals), inicializaciones inmutables y valores no usados en `PromptService.swift`, `NewPromptViewModel.swift`, `NewPromptView.swift` y `ClipboardService.swift`.
+
 ---
 
 # 🧠 Registro de Modernización y Rendimiento - Abril 1 de 2026

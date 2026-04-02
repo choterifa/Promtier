@@ -99,7 +99,7 @@ class ClipboardService: ObservableObject {
         }
         
         // 1. Forzar que la aplicación se oculte para devolver el foco de forma inmediata y fiable
-        DispatchQueue.main.async { [weak self] in
+        DispatchQueue.main.async {
             if MenuBarManager.shared.isPopoverShown {
                 MenuBarManager.shared.closePopover()
             }

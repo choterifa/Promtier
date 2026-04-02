@@ -167,8 +167,8 @@ struct EditorCard: View {
                                         if isAutocompleting {
                                             ProgressView()
                                                 .progressViewStyle(.circular)
-                                                .scaleEffect(0.6)
-                                                .frame(width: 12, height: 12)
+                                                .scaleEffect(0.4)
+                                                .frame(width: 8, height: 8)
                                         } else {
                                             Image(systemName: "wand.and.stars")
                                                 .font(.system(size: 10, weight: .bold))
@@ -357,6 +357,7 @@ struct EditorCard: View {
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
+            .contentShape(Rectangle()) // <---- CRITICAL: Evita zonas muertas transparentes
             .onHover { hovering in
                 isHovering = hovering
             }
@@ -874,6 +875,7 @@ struct SecondaryEditorCard<Actions: View>: View {
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
+            .contentShape(Rectangle()) // <---- CRITICAL: Evita zonas muertas transparentes
             .onHover { hovering in
                 isHovering = hovering
             }

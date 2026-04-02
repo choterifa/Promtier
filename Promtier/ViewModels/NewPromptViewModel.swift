@@ -35,14 +35,14 @@ final class NewPromptViewModel: ObservableObject {
             self.title = prompt.title
             self.content = prompt.content
             self.negativePrompt = prompt.negativePrompt ?? ""
-            self.alternatives = prompt.alternatives ?? []
+            self.alternatives = prompt.alternatives
             self.promptDescription = prompt.promptDescription ?? ""
             self.selectedFolder = prompt.folder
-            self.tags = prompt.tags ?? []
+            self.tags = prompt.tags
             self.isFavorite = prompt.isFavorite
             self.selectedIcon = prompt.icon
-            self.showcaseImages = prompt.showcaseImages ?? []
-            self.targetAppBundleIDs = prompt.targetAppBundleIDs ?? []
+            self.showcaseImages = prompt.showcaseImages
+            self.targetAppBundleIDs = prompt.targetAppBundleIDs
             self.customShortcut = prompt.customShortcut
         } else if let folder = initialFolder {
             self.selectedFolder = folder
@@ -79,7 +79,7 @@ final class NewPromptViewModel: ObservableObject {
         // Setup updated object
         let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
         
-        var existingPrompt = originalPrompt
+        let existingPrompt = originalPrompt
         if existingPrompt != nil {
             var updated = existingPrompt!
             updated.title = title

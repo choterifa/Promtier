@@ -162,6 +162,8 @@ struct NewPromptView: View {
     // Estados de Hover para la cabecera
     @State private var isHoveringCancel = false
     @State private var isHoveringHistory = false
+    @State private var isHoveringAddAlternative = false
+    @State private var isHoveringMagicVariant = false
     @State private var isHoveringFavorite = false
     @State private var isHoveringZen = false
     @State private var isHoveringPin = false
@@ -482,7 +484,7 @@ struct NewPromptView: View {
                                         }
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(themeColor)
-                                        .padding(.horizontal, 24)
+                                        .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
                                         .background(
                                             ZStack {
@@ -491,13 +493,18 @@ struct NewPromptView: View {
                                                         .blur(radius: 12)
                                                 }
                                                 RoundedRectangle(cornerRadius: 14)
-                                                    .fill(themeColor.opacity(0.15))
+                                                    .fill(themeColor.opacity(isHoveringAddAlternative ? 0.25 : 0.15))
                                             }
                                         )
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 14)
-                                                .stroke(themeColor.opacity(0.2), lineWidth: 1.5)
+                                                .stroke(themeColor.opacity(isHoveringAddAlternative ? 0.4 : 0.2), lineWidth: 1.5)
                                         )
+                                        .onHover { hovering in
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                isHoveringAddAlternative = hovering
+                                            }
+                                        }
                                     }
                                     .buttonStyle(.plain)
                                     
@@ -519,13 +526,18 @@ struct NewPromptView: View {
                                             .padding(.vertical, 10)
                                             .background(
                                                 ZStack {
-                                                    Color.blue
+                                                    Color.blue.opacity(isHoveringMagicVariant ? 0.8 : 1.0)
                                                     if preferences.isHaloEffectEnabled {
-                                                        Color.blue.opacity(0.3).blur(radius: 8)
+                                                        Color.blue.opacity(isHoveringMagicVariant ? 0.5 : 0.3).blur(radius: 8)
                                                     }
                                                 }
                                             )
                                             .cornerRadius(14)
+                                            .onHover { hovering in
+                                                withAnimation(.easeInOut(duration: 0.2)) {
+                                                    isHoveringMagicVariant = hovering
+                                                }
+                                            }
                                         }
                                         .buttonStyle(.plain)
                                         .disabled(contentHoister.slowText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGeneratingAlternativeDirect)
@@ -960,10 +972,9 @@ struct NewPromptView: View {
                    existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
                    existingPrompt.customShortcut != customShortcut
         } else {
-            return !title.isEmpty || !content.isEmpty || !promptDescription.isEmpty ||
-                   !negativePrompt.isEmpty || !alternatives.isEmpty || !showcaseImages.isEmpty ||
-                   !tags.isEmpty || !targetAppBundleIDs.isEmpty || customShortcut != nil ||
-                   isFavorite || selectedFolder != nil || selectedIcon != nil
+            // Para un prompt nuevo, solo consideramos que hay cambios sin guardar
+            // si el usuario realmente ha escrito algo de contenido.
+            return !isContentEmpty
         }
     }
 
@@ -2098,20 +2109,14 @@ struct NewPromptView: View {
 
 
         if closeAfter {
-            let isNewPrompt = (originalPrompt ?? prompt) == nil
+            let _ = (originalPrompt ?? prompt) == nil
             
             if preferences.isPremiumActive && preferences.visualEffectsEnabled {
                 showParticles = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    if isNewPrompt {
-                        menuBarManager.closePopover()
-                    }
                     onClose()
                 }
             } else {
-                if isNewPrompt {
-                    menuBarManager.closePopover()
-                }
                 onClose()
             }
         }
@@ -2356,7 +2361,7 @@ struct NewPromptView: View {
         
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedDescription = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        let _ = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let command = magicCommand.trimmingCharacters(in: .whitespacesAndNewlines)
         

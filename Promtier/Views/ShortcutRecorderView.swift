@@ -220,6 +220,8 @@ struct ReusableShortcutRecorderView: View {
     @Binding var shortcutString: String?
     @State private var isRecording = false
     @State private var localMonitor: Any?
+    @State private var isHovering = false
+    @State private var isHoveringClear = false
     
     private var formattedShortcut: String {
         guard let shortcut = shortcutString, let (keyCode, modifiers) = parseShortcut(shortcut) else { return "Ninguno" }
@@ -269,12 +271,17 @@ struct ReusableShortcutRecorderView: View {
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(isRecording ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
+                        .fill(isRecording ? Color.blue.opacity(0.15) : Color.primary.opacity(isHovering ? 0.1 : 0.05))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(isRecording ? Color.blue : Color.clear, lineWidth: 1)
+                                .stroke(isRecording ? Color.blue : (isHovering ? Color.primary.opacity(0.2) : Color.clear), lineWidth: 1)
                         )
                 )
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHovering = hovering
+                    }
+                }
             }
             .buttonStyle(.plain)
             
@@ -284,9 +291,14 @@ struct ReusableShortcutRecorderView: View {
                 }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary.opacity(0.6))
+                        .foregroundColor(isHoveringClear ? .red : .secondary.opacity(0.6))
                 }
                 .buttonStyle(.plain)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHoveringClear = hovering
+                    }
+                }
                 .help("Eliminar atajo")
             } else if isRecording {
                 Button(action: {
