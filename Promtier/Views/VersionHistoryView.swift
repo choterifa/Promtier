@@ -28,11 +28,11 @@ struct VersionHistoryView: View {
                     Image(systemName: "clock.arrow.circlepath")
                         .foregroundColor(.blue)
                         .font(.system(size: 16, weight: .semibold))
-                    Text("Historial de Versiones")
+                    Text("version_history".localized(for: preferences.language))
                         .font(.system(size: 17, weight: .bold))
                 }
                 Spacer()
-                Text("\(snapshots.count) versiones guardadas")
+                Text(String(format: "version_history_count".localized(for: preferences.language), snapshots.count))
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                 Button(action: { dismiss() }) {
@@ -82,7 +82,7 @@ struct VersionHistoryView: View {
                             }
                             Spacer()
                             Button(action: { onRestore(snap) }) {
-                                Label("Restaurar", systemImage: "arrow.counterclockwise")
+                                Label("restore_version".localized(for: preferences.language), systemImage: "arrow.counterclockwise")
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 14)
@@ -106,7 +106,7 @@ struct VersionHistoryView: View {
                             VStack(alignment: .leading, spacing: 20) {
                                 // 1. Contenido principal
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("PROMPT")
+                                    Text("main_prompt".localized(for: preferences.language))
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundColor(.secondary)
                                     Text(snap.content)
@@ -117,7 +117,7 @@ struct VersionHistoryView: View {
                                 // 2. Negative Prompt (si existe)
                                 if let neg = snap.negativePrompt, !neg.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("NEGATIVE PROMPT")
+                                        Text("negative_prompt".localized(for: preferences.language))
                                             .font(.system(size: 10, weight: .bold))
                                             .foregroundColor(.red.opacity(0.6))
                                         Text(neg)
@@ -132,9 +132,7 @@ struct VersionHistoryView: View {
                                 // 3. Alternativas (si existen)
                                 if !snap.alternatives.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("ALTERNATIVES")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.blue.opacity(0.6))
+                                        Text("alternatives".localized(for: preferences.language))
                                         
                                         ForEach(Array(snap.alternatives.enumerated()), id: \.offset) { _, alt in
                                             Text(alt)
@@ -152,7 +150,7 @@ struct VersionHistoryView: View {
                         }
                     } else {
                         Spacer()
-                        Text("Selecciona una versión")
+                        Text("select_version".localized(for: preferences.language))
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity)
@@ -185,6 +183,8 @@ private struct SnapshotRow: View {
     let snapshot: PromptSnapshot
     let isSelected: Bool
 
+    @EnvironmentObject var preferences: PreferencesManager
+
     private var relativeDate: String {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .short
@@ -201,7 +201,7 @@ private struct SnapshotRow: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(isSelected ? .blue : .secondary)
                 Spacer()
-                Text("\(snapshot.content.count) car.")
+                Text(String(format: "char_count_short".localized(for: preferences.language), snapshot.content.count))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary.opacity(0.7))
             }

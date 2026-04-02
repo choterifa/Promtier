@@ -1,5 +1,11 @@
 /* General */
 "search_placeholder" = "Search your prompts...";
+"openrouter_service" = "OpenRouter Service";
+"openrouter_subtitle" = "200+ Models";
+"openrouter_model_id" = "Model ID";
+"openrouter_explore_models" = "Explore Models ↗";
+"security_notice" = "Your keys are safely encrypted in Apple Keychain.\nPromtier does not upload or store your keys on any intermediate server.";
+
 "new_prompt" = "New Prompt";
 "settings" = "Settings";
 "trash" = "Trash";
@@ -518,3 +524,7 @@
 
 "accessibility_permissions" = "Accessibility permissions";
 "accessibility_required_for_paste" = "Permissions required for auto-paste";
+"version_history_count" = "%d versions saved";
+"restore_version" = "Restore";
+"select_version" = "Select a version";
+"char_count_short" = "%d chars";

@@ -12,12 +12,12 @@ struct AccessibilityBanner: View {
             HStack(spacing: 12) {
                 Image(systemName: "lock.shield.fill").foregroundColor(.orange).font(.system(size: 14))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("accessibility_permissions", comment: "")).font(.system(size: 12, weight: .bold))
-                    Text(NSLocalizedString("accessibility_required_for_paste", comment: "")).font(.system(size: 11)).foregroundColor(.secondary)
+                    Text("accessibility_permissions".localized(for: preferences.language)).font(.system(size: 12, weight: .bold))
+                    Text("accessibility_required_for_paste".localized(for: preferences.language)).font(.system(size: 11)).foregroundColor(.secondary)
                 }
                 Spacer()
                 HStack(spacing: 8) {
-                    Button(NSLocalizedString("accessibility_configure", comment: "")) { ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true) }.buttonStyle(.bordered).controlSize(.small)
+                    Button("accessibility_configure".localized(for: preferences.language)) { ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true) }.buttonStyle(.bordered).controlSize(.small)
                 }
             }
             .padding(.horizontal, 16)

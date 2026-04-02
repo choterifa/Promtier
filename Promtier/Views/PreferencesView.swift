@@ -610,8 +610,8 @@ struct BehaviorTab: View {
                 
                 Divider().padding(.leading, 20)
                 
-                SettingsRow("accessibility", subtitle: shortcutManager.isAccessibilityGranted ? "accessibility_granted" : "accessibility_required", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
-                    Button(shortcutManager.isAccessibilityGranted ? "accessibility_verified" : "accessibility_configure") {
+                SettingsRow(LocalizedStringKey("accessibility_permissions".localized(for: preferences.language)), subtitle: LocalizedStringKey(shortcutManager.isAccessibilityGranted ? "accessibility_granted".localized(for: preferences.language) : "accessibility_required_for_paste".localized(for: preferences.language)), icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
+                    Button(LocalizedStringKey((shortcutManager.isAccessibilityGranted ? "accessibility_verified" : "accessibility_configure").localized(for: preferences.language))) {
                         shortcutManager.checkAccessibilityPermissions(forceDialog: true)
                     }
                     .buttonStyle(.bordered)
@@ -798,77 +798,6 @@ struct AITab: View {
                         .padding(.bottom, 10)
                 }
             }
-
-            SettingsSection(title: "OpenRouter", icon: "network") {
-                SettingsRow("OpenRouter Service", subtitle: "200+ Modelos") {
-                    Toggle("", isOn: Binding(
-                        get: { preferences.openRouterEnabled },
-                        set: { newValue in
-                            preferences.openRouterEnabled = newValue
-                            if newValue {
-                                preferences.geminiEnabled = false
-                                preferences.openAIEnabled = false
-                                preferences.preferredAIService = .openrouter
-                            }
-                        }
-                    ))
-                    .toggleStyle(.switch)
-                }
-
-                VStack(spacing: 1) {
-                    SettingsRow("API Key") {
-                        HStack(spacing: 8) {
-                            SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 220)
-                            
-                            Button(action: {
-                                if let pasted = NSPasteboard.general.string(forType: .string) {
-                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    preferences.openRouterAPIKey = trimmed
-                                    HapticService.shared.playLight()
-                                }
-                            }) {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.blue)
-                                    .padding(4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(4)
-                            }
-                            .buttonStyle(.plain)
-                            .help("paste".localized(for: preferences.language))
-                        }
-                    }
-
-                    Divider().padding(.leading, 20)
-
-                    SettingsRow("ID de Modelo") {
-                        VStack(alignment: .trailing, spacing: 4) {
-                            HStack(spacing: 8) {
-                                TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
-                                    .textFieldStyle(.roundedBorder)
-                                    .font(.system(.body, design: .monospaced))
-                                    .frame(width: 200)
-                            }
-                            Link("Explorar Modelos ↗", destination: URL(string: "https://openrouter.ai/models")!)
-                                .font(.system(size: 10))
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    
-                    HStack {
-                        Text("Tus claves se cifran en el Keychain de Apple.\nPromtier no sube ni almacena tus claves en ningún servidor intermediario.")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary.opacity(0.7))
-                            .padding(.top, 8)
-                            .multilineTextAlignment(.leading)
-                        Spacer()
-                    }
-                }
-                .disabled(!preferences.openRouterEnabled)
-                .opacity(preferences.openRouterEnabled ? 1 : 0.5)
-            }
             
             SettingsSection(title: "Google Gemini", icon: "sparkles") {
                 SettingsRow(
@@ -955,6 +884,77 @@ struct AITab: View {
                     .padding(.leading, 20)
                 }
             }
+
+            SettingsSection(title: "OpenRouter", icon: "network") {
+                SettingsRow(
+                    LocalizedStringKey("openrouter_service".localized(for: preferences.language)),
+                    subtitle: LocalizedStringKey("openrouter_subtitle".localized(for: preferences.language))
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.openRouterEnabled },
+                        set: { newValue in
+                            preferences.openRouterEnabled = newValue
+                            if newValue {
+                                preferences.geminiEnabled = false
+                                preferences.openAIEnabled = false
+                                preferences.preferredAIService = .openrouter
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                }
+
+                VStack(spacing: 1) {
+                    SettingsRow(LocalizedStringKey("api_key".localized(for: preferences.language))) {
+                        HStack(spacing: 8) {
+                            SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 220)
+                            
+                            Button(action: {
+                                if let pasted = NSPasteboard.general.string(forType: .string) {
+                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    preferences.openRouterAPIKey = trimmed
+                                    HapticService.shared.playLight()
+                                }
+                            }) {
+                                Image(systemName: "doc.on.clipboard")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.blue)
+                                    .padding(4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            .buttonStyle(.plain)
+                            .help("paste".localized(for: preferences.language))
+                        }
+                    }
+
+                    Divider().padding(.leading, 20)
+
+                    SettingsRow(LocalizedStringKey("openrouter_model_id".localized(for: preferences.language))) {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            HStack(spacing: 8) {
+                                TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.system(.body, design: .monospaced))
+                                    .frame(width: 320)
+                            }
+                            Link(LocalizedStringKey("openrouter_explore_models".localized(for: preferences.language)), destination: URL(string: "https://openrouter.ai/models")!)
+                                .font(.system(size: 10))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .disabled(!preferences.openRouterEnabled)
+                .opacity(preferences.openRouterEnabled ? 1 : 0.5)
+            }
+            
+            Text(LocalizedStringKey("security_notice".localized(for: preferences.language)))
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .padding(.top, 10)
         }
     }
 
