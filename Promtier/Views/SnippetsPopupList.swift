@@ -15,14 +15,16 @@ struct SnippetsPopupList: View {
     let onDismiss: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
+    @StateObject private var debouncer = Debouncer(delay: 0.15)
     
     var filteredSnippets: [Snippet] {
-        if query.isEmpty {
+        let q = debouncer.debouncedValue
+        if q.isEmpty {
             return preferences.snippets
         } else {
             return preferences.snippets.filter {
-                $0.shortcut.localizedCaseInsensitiveContains(query) ||
-                $0.title.localizedCaseInsensitiveContains(query)
+                $0.shortcut.localizedCaseInsensitiveContains(q) ||
+                $0.title.localizedCaseInsensitiveContains(q)
             }
         }
     }
@@ -108,8 +110,10 @@ struct SnippetsPopupList: View {
         // KeyEvent handler local para navegación de flechas
         .onAppear {
             self.selectedIndex = 0
+            self.debouncer.debouncedValue = self.query
         }
-        .onChange(of: query) { _, _ in
+        .onChange(of: query) { _, newQuery in
+            self.debouncer.send(newQuery)
             self.selectedIndex = 0
         }
         .onExitCommand {

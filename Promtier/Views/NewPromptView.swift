@@ -24,11 +24,29 @@ struct NewPromptView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
 
-    @State private var title = ""
-    @State private var content = ""
+    @StateObject private var titleHoister = TextHoister()
+    @StateObject private var contentHoister = TextHoister()
     @State private var negativePrompt = ""
     @State private var alternatives: [String] = []
-    @State private var promptDescription = ""
+    @StateObject private var promptDescriptionHoister = TextHoister()
+
+    var title: String {
+        get { titleHoister.fastText }
+        nonmutating set { titleHoister.updateFast(newValue) }
+    }
+    var content: String {
+        get { contentHoister.fastText }
+        nonmutating set { contentHoister.updateFast(newValue) }
+    }
+    var promptDescription: String {
+        get { promptDescriptionHoister.fastText }
+        nonmutating set { promptDescriptionHoister.updateFast(newValue) }
+    }
+
+    var titleBinding: Binding<String> { Binding(get: { title }, set: { title = $0 }) }
+    var contentBinding: Binding<String> { Binding(get: { content }, set: { content = $0 }) }
+    var promptDescriptionBinding: Binding<String> { Binding(get: { promptDescription }, set: { promptDescription = $0 }) }
+
     @State private var selectedFolder: String?
     @State private var isFavorite = false
     @State private var selectedIcon: String?
@@ -297,9 +315,9 @@ struct NewPromptView: View {
 
             // SEC 1: MAIN
             EditorCard(
-                title: $title,
-                content: $content,
-                promptDescription: $promptDescription,
+                title: titleBinding,
+                content: contentBinding,
+                promptDescription: promptDescriptionBinding,
                 isFavorite: $isFavorite,
                 selectedFolder: $selectedFolder,
                 selectedIcon: $selectedIcon,
@@ -511,7 +529,7 @@ struct NewPromptView: View {
                                             .cornerRadius(14)
                                         }
                                         .buttonStyle(.plain)
-                                        .disabled(content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGeneratingAlternativeDirect)
+                                        .disabled(contentHoister.slowText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGeneratingAlternativeDirect)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -980,6 +998,9 @@ struct NewPromptView: View {
 
     var body: some View {
         GeometryReader { geometry in
+            let _ = titleHoister.slowText
+            let _ = contentHoister.slowText
+            let _ = promptDescriptionHoister.slowText
             let targetWidth = geometry.size.width * 0.9
 
             VStack(spacing: 0) {
@@ -1800,51 +1821,52 @@ struct NewPromptView: View {
                         .padding(.horizontal, 8)
                         .padding(.bottom, 0)
 
-                        ScrollView(.horizontal, showsIndicators: false) {                HStack(spacing: 12) {
-                    // Imágenes actuales
-                    ForEach(0..<showcaseImages.count, id: \.self) { index in
-                        ImageSlotView(
-                            imageData: showcaseImages[index],
-                            slotWidth: slotWidth,
-                            slotHeight: slotHeight,
-                            isSelected: selectedImageIndex == index,
-                            tintColor: themeColor,
-                            onRemove: { 
-                                showcaseImages.remove(at: index)
-                                if selectedImageIndex >= showcaseImages.count {
-                                    selectedImageIndex = max(0, showcaseImages.count - 1)
+                        ScrollView(.horizontal, showsIndicators: false) {                
+                            LazyHStack(spacing: 12) {
+                                // Imágenes actuales
+                                ForEach(0..<showcaseImages.count, id: \.self) { index in
+                                    ImageSlotView(
+                                        imageData: showcaseImages[index],
+                                        slotWidth: slotWidth,
+                                        slotHeight: slotHeight,
+                                        isSelected: selectedImageIndex == index,
+                                        tintColor: themeColor,
+                                        onRemove: { 
+                                            showcaseImages.remove(at: index)
+                                            if selectedImageIndex >= showcaseImages.count {
+                                                selectedImageIndex = max(0, showcaseImages.count - 1)
+                                            }
+                                        },
+                                        onPreview: { 
+                                            selectedImageIndex = index
+                                            showingFullScreenImage = showcaseImages[index] 
+                                        },
+                                        onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
+                                        onDragStart: { self.draggedImageIndex = index }
+                                    )
                                 }
-                            },
-                            onPreview: { 
-                                selectedImageIndex = index
-                                showingFullScreenImage = showcaseImages[index] 
-                            },
-                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-                            onDragStart: { self.draggedImageIndex = index }
-                        )
-                    }
 
-                    // Placeholders para completar hasta 3
-                    ForEach(showcaseImages.count..<3, id: \.self) { index in
-                        PlaceholderSlotView(
-                            slotWidth: slotWidth,
-                            slotHeight: slotHeight,
-                            onSelect: selectImages,
-                            onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-                            tintColor: Color(hex: promptService.folders.first(where: { $0.name == selectedFolder })?.displayColor ?? "#007AFF")
-                        )
+                                // Placeholders para completar hasta 3
+                                ForEach(showcaseImages.count..<3, id: \.self) { index in
+                                    PlaceholderSlotView(
+                                        slotWidth: slotWidth,
+                                        slotHeight: slotHeight,
+                                        onSelect: selectImages,
+                                        onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
+                                        tintColor: Color(hex: promptService.folders.first(where: { $0.name == selectedFolder })?.displayColor ?? "#007AFF")
+                                    )
+                                }
+                            }
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
+                        }
+                    }
+                    .padding(.top, 16)
+                    .contentShape(Rectangle())
+                    .onPasteCommand(of: [.image]) { providers in
+                        handleGalleryDrop(providers: providers)
                     }
                 }
-                .padding(.vertical, 12)
-                .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
-                .contentShape(Rectangle())
-            }
-            .onPasteCommand(of: [.image]) { providers in
-                handleGalleryDrop(providers: providers)
-            }
-        }
-        .padding(.top, 16)
-    }
 
     private func handleGalleryDrop(providers: [NSItemProvider], at index: Int? = nil) {
         if let sourceIndex = draggedImageIndex {
@@ -2783,7 +2805,6 @@ struct NewPromptView: View {
         }
     }
 }
-
 
 
 
