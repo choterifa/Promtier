@@ -11,7 +11,7 @@ Hoy se ejecutó una auditoría técnica profunda y se integraron varias mejoras 
 ## ⚡️ Optimización de Rendimiento & Pulido UI (Optimistic UI) - Abril 1 de 2026
 
 1. **Optimización de Borrado de Prompts (Core Data en Background):** Se eliminó el "congelamiento" de 1-2 segundos de la interfaz al enviar prompts a la papelera. Se implementó una actualización instantánea en memoria (`applyUpdatedPromptToInMemoryState`), delegando la escritura física a un contexto secundario de Core Data (`DispatchQueue.global`).
-2. **Corrección de Ciclo de Vida de Ventanas (Save / Drafts):** Se arregló el comportamiento invasivo y persistente donde guardar un prompt cerraba por completo la aplicación (popover). Se ajustó el uso de `onClose()` y la detección estricta de `hasUnsavedChanges` para evitar falsos positivos de guardado de drafts.
+2. **Corrección de Ciclo de Vida de Ventanas (Save / Drafts):** Se arregló el comportamiento invasivo y persistente donde guardar un prompt cerraba por completo la aplicación (popover). Se refactorizó la lógica en `NewPromptView` para que la alerta de "Tiene cambios sin guardar" (Drafts) **nunca** aparezca si el usuario no ha escrito al menos un título o un contenido, evitando esos saltos molestos al intentar cerrar una ventana vacía e impidiendo que el disco duro guarde basuras vacías en el sistema de Drafts.
 3. **Micro-interacciones y UI Fixes:**
    - Agregados ligeros efectos `.onHover` (borde y opacidad de acento) a los botones secundarios ("Add Alternative", "Magic Variant", "Ninguno").
    - Reparados "puntos ciegos" en la captura de eventos del mouse aplicando `.contentShape(Rectangle())` al componente tarjeta en `EditorCard`.

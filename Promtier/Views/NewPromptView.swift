@@ -288,11 +288,11 @@ struct NewPromptView: View {
 
     // Propiedad calculada para saber si el prompt está vacío
     private var isContentEmpty: Bool {
-        title.trimmingCharacters(in: .whitespaces).isEmpty &&
-        content.trimmingCharacters(in: .whitespaces).isEmpty &&
-        negativePrompt.trimmingCharacters(in: .whitespaces).isEmpty &&
-        alternatives.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty }) &&
-        promptDescription.trimmingCharacters(in: .whitespaces).isEmpty &&
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        alternatives.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) &&
+        promptDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         showcaseImages.isEmpty
     }
 
@@ -973,7 +973,13 @@ struct NewPromptView: View {
                    existingPrompt.customShortcut != customShortcut
         } else {
             // Para un prompt nuevo, solo consideramos que hay cambios sin guardar
-            // si el usuario realmente ha escrito algo de contenido.
+            // si el usuario realmente ha escrito un título o contenido explícito.
+            let isTitleEmpty = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let isContentTextEmpty = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            
+            if isTitleEmpty && isContentTextEmpty {
+                return false
+            }
             return !isContentEmpty
         }
     }
@@ -1739,6 +1745,14 @@ struct NewPromptView: View {
     }
 
     private func saveCurrentDraft() {
+        let isTitleEmpty = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let isContentTextEmpty = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        // No guardar draft de un nuevo prompt vacío (sin title ni contenido útil)
+        if originalPrompt == nil && isTitleEmpty && isContentTextEmpty {
+            return
+        }
+
         // No guardar si el contenido es idéntico al original que estamos editando
         if let original = originalPrompt {
             let hasChanges = title != original.title ||
