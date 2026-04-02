@@ -156,7 +156,6 @@ struct NewPromptView: View {
     // Identificador para rastrear cambios y guardar borradores
     @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
-    @State private var autoSaveWorkItem: DispatchWorkItem? = nil
     /// Guard que impide que un auto-guardado pendiente se ejecute después de descartar
     @State private var isDiscarding: Bool = false
     
@@ -982,15 +981,13 @@ struct NewPromptView: View {
             }
             selectedFolder = nil
         }
-        savePrompt(closeAfter: true, isAutoSave: false)
+        savePrompt(closeAfter: true)
     }
 
     private func discardChanges() {
         // Cancelar inmediatamente cualquier auto-guardado pendiente para que no
         // se ejecute después de que el usuario haya elegido Descartar.
         isDiscarding = true
-        autoSaveWorkItem?.cancel()
-        autoSaveWorkItem = nil
         DraftService.shared.clearDraft()
         MenuBarManager.shared.isModalActive = false
         onClose()
@@ -1120,8 +1117,6 @@ struct NewPromptView: View {
                 localMonitor = nil
             }
             // Cancelar auto-guardado pendiente al salir de la vista
-            autoSaveWorkItem?.cancel()
-            autoSaveWorkItem = nil
             MenuBarManager.shared.isModalActive = false
         }
         .onChange(of: draftState) { _, _ in
@@ -1132,25 +1127,6 @@ struct NewPromptView: View {
                 self.setupOnAppear()
             }
         }
-    }
-
-    private func debounceAutoSave() {
-        // Si el usuario ya descartó los cambios, no programar ningún guardado
-        guard !isDiscarding else { return }
-        
-        autoSaveWorkItem?.cancel()
-        let workItem = DispatchWorkItem { [self] in
-            // Doble verificación: asegurarse de que no se haya descartado
-            // durante el tiempo de espera del debounce (2 s)
-            guard !isDiscarding else { return }
-            // Solo auto-guardar si estamos editando un prompt existente
-            // Y no guardar si el prompt está vacío
-            if originalPrompt != nil && !title.trimmingCharacters(in: .whitespaces).isEmpty && !content.trimmingCharacters(in: .whitespaces).isEmpty {
-                savePrompt(closeAfter: false, isAutoSave: true)
-            }
-        }
-        autoSaveWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
 
     private func dismissSnippetsOverlay() {
@@ -1860,6 +1836,7 @@ struct NewPromptView: View {
                             .padding(.vertical, 12)
                             .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
                         }
+                        .frame(height: slotHeight + 24) // ✅ CRÍTICO: Previene infinite layout loops (beachball) en ScrollViews anidados
                     }
                     .padding(.top, 16)
                     .contentShape(Rectangle())
@@ -2027,10 +2004,8 @@ struct NewPromptView: View {
         }
     }
 
-    private func savePrompt(closeAfter: Bool = true, isAutoSave: Bool = false) {
-        if !isAutoSave {
-            isSaving = true
-        }
+    private func savePrompt(closeAfter: Bool = true) {
+        isSaving = true
 
         // Limpiar borrador al guardar con éxito (solo si cerramos o es explícito)
         if closeAfter {
@@ -2063,7 +2038,7 @@ struct NewPromptView: View {
             var updated = existingPrompt
 
             // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
-            if preferences.isPremiumActive && !isAutoSave {
+            if preferences.isPremiumActive {
                 let coreChanges = existingPrompt.title != title ||
                                  existingPrompt.content != content ||
                                  existingPrompt.negativePrompt != newNegativePrompt ||
@@ -2119,25 +2094,22 @@ struct NewPromptView: View {
             )
             new.isFavorite = isFavorite
             _ = promptService.createPrompt(new)
-
-            if isAutoSave {
-                DispatchQueue.main.async { self.originalPrompt = new }
-            }
         }
+
 
         if closeAfter {
             let isNewPrompt = (originalPrompt ?? prompt) == nil
             
-            if preferences.isPremiumActive && preferences.visualEffectsEnabled && !isAutoSave {
+            if preferences.isPremiumActive && preferences.visualEffectsEnabled {
                 showParticles = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    if isNewPrompt && !isAutoSave {
+                    if isNewPrompt {
                         menuBarManager.closePopover()
                     }
                     onClose()
                 }
             } else {
-                if isNewPrompt && !isAutoSave {
+                if isNewPrompt {
                     menuBarManager.closePopover()
                 }
                 onClose()
@@ -2420,16 +2392,20 @@ struct NewPromptView: View {
             do {
                 if magicTarget == .content {
                     let negativeSystemPrompt = """
-                    You are an expert prompt engineer. Your goal is to generate a DEFAULT NEGATIVE PROMPT based on the newly requested prompt logic.
+                    You are an expert AI prompt engineer. Your task is to generate a highly effective and targeted NEGATIVE PROMPT (behaviors or clichés the AI should AVOID) based on the user's topic: '\(command)'.
+                    
+                    The original content is:
+                    '\(trimmedContent)'
                     
                     INSTRUCTION:
-                    Generate a list of things to AVOID (negative prompt) that complements this instruction: '\(command)'. 
-                    Maintain the EXACT SAME LANGUAGE as the prompt content.
-                    Keep it practical (e.g., "bad quality, blurry, deformed" if it's an image, or "no jargon, no generic greetings" if it's text).
+                    1. Analyze the context and command to anticipate the common mistakes, clichés, or lazy habits an AI might naturally fall into when executing this request.
+                    2. Create a concise, advanced negative prompt that explicitly forbids those bad output habits.
+                    3. Do not use generic filler like "bad grammar, spelling errors". Be hyper-specific to the domain (e.g. "no corporate jargon, no poetic conclusions, avoid predictable analogies").
+                    4. Format it as a single punchy directive or a short comma-separated list of forbidden behaviors. Do not exceed 25 words.
+                    5. Write the negative prompt in the EXACT SAME LANGUAGE as the original content.
                     
                     CRITICAL RULE:
-                    - Respond ONLY with the final negative prompt text.
-                    - Do NOT add quotes, labels, or conversational filler.
+                    - Respond ONLY with the raw negative prompt text. No quotes, no introductions, no labels.
                     """
                     
                     let alternativeSystemPrompt = """

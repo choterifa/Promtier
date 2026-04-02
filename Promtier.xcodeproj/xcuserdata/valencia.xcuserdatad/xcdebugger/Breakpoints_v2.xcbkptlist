@@ -3,43 +3,4 @@
    uuid = "CF1B92CB-FF24-4CD0-BF9E-926499CEA25C"
    type = "1"
    version = "2.0">
-   <Breakpoints>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.AddressBreakpoint">
-         <BreakpointContent
-            uuid = "93444582-45E0-4C5F-9B33-EF9A7D5549EB"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            symbolName = "*0x18ce76138">
-            <Locations>
-               <Location
-                  uuid = "93444582-45E0-4C5F-9B33-EF9A7D5549EB - 4aeea37299750e5a"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "__CFURLCache::logCacheEvent(CFURLCacheEventType, _CFURLRequest const*)"
-                  moduleName = "CFNetwork"
-                  usesParentBreakpointCondition = "Yes">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "66039F60-0991-418B-85C2-9F1EBB667BBE"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Promtier/Models/Folder.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "9"
-            endingLineNumber = "9"
-            landmarkName = "unknown"
-            landmarkType = "0">
-         </BreakpointContent>
-      </BreakpointProxy>
-   </Breakpoints>
 </Bucket>

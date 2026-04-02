@@ -165,13 +165,19 @@ struct EditorCard: View {
                                 }) {
                                     HStack(spacing: 4) {
                                         if isAutocompleting {
-                                            ProgressView().progressViewStyle(.circular).scaleEffect(0.6)
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .scaleEffect(0.6)
+                                                .frame(width: 12, height: 12)
                                         } else {
                                             Image(systemName: "wand.and.stars")
                                                 .font(.system(size: 10, weight: .bold))
+                                                .frame(width: 12, height: 12)
                                         }
-                                        Text("MAGIC")
+                                        
+                                        Text(isAutocompleting ? "STOP" : "MAGIC")
                                             .font(.system(size: 10.5, weight: .heavy))
+                                            .frame(width: 42, alignment: .center)
                                     }
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)

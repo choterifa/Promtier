@@ -6,7 +6,7 @@
 //  Created by Carlos on 15/03/26.
 //
 
-import Foundation
+import Foundation   
 
 // MODELO DE CARPETA: Organización jerárquica
 struct Folder: Identifiable, Codable, Hashable {
