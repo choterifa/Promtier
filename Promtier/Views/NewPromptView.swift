@@ -494,7 +494,7 @@ struct NewPromptView: View {
                                                     Image(systemName: "wand.and.stars")
                                                         .font(.system(size: 13, weight: .bold))
                                                 }
-                                                Text("Variante Mágica")
+                                                Text("magic_variant".localized(for: preferences.language))
                                             }
                                             .font(.system(size: 12, weight: .bold))
                                             .foregroundColor(.white)

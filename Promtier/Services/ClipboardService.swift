@@ -144,9 +144,17 @@ class ClipboardService: ObservableObject {
         }
     }
     
-    /// Obtiene el contenido actual del clipboard
+    /// Obtiene el contenido actual del clipboard, con sanitización de seguridad
     func getClipboardContent() -> String? {
-        return NSPasteboard.general.string(forType: .string)
+        guard let content = NSPasteboard.general.string(forType: .string) else { return nil }
+        
+        // 🛡️ Seguridad/Auditoría: Validar y truncar para evitar desbordes de memoria o caídas (Ej: más de 500,000 caracteres)
+        let maxLimit = 500_000
+        if content.count > maxLimit {
+            return String(content.prefix(maxLimit))
+        }
+        
+        return content
     }
     
     // MARK: - Historial

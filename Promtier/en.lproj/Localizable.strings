@@ -528,3 +528,4 @@
 "restore_version" = "Restore";
 "select_version" = "Select a version";
 "char_count_short" = "%d chars";
+"magic_variant" = "Magic Variant";
