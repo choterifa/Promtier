@@ -185,12 +185,43 @@ struct FloatingAIDraftView: View {
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else if let error = manager.error {
-                            ScrollView {
-                                Text(error)
-                                    .foregroundColor(.red)
-                                    .font(.system(size: 13, design: .monospaced))
-                                    .padding(8)
+                            VStack(spacing: 16) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.red.opacity(0.8))
+                                
+                                VStack(spacing: 8) {
+                                    Text("Error de Conexión")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(error)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 16)
+                                }
+                                
+                                Button(action: {
+                                    if let lastReq = manager.history.last?.input {
+                                        runAI(instruction: lastReq)
+                                    } else {
+                                        manager.error = nil
+                                    }
+                                }) {
+                                    Text("Reintentar")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.red.opacity(0.8))
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.top, 8)
                             }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.red.opacity(0.05)))
                         } else if !manager.responseText.isEmpty {
                             if manager.isDiffActive {
                                 ScrollView(showsIndicators: false) {
@@ -409,29 +440,57 @@ struct FloatingAIDraftView: View {
         let contentToSave = manager.responseText.isEmpty ? manager.content : manager.responseText
         guard !contentToSave.isEmpty else { return }
         
-        let newPrompt = Prompt(
-            title: "Quick Edit \(Date().formatted(.dateTime.day().month().hour().minute()))",
-            content: contentToSave,
-            folder: "Sin clasificar",
-            icon: "sparkles"
-        )
+        self.toastMsg = "Analizando y guardando..."
+        self.toastIcon = "sparkles"
+        withAnimation(.spring()) { showSavedToast = true }
         
-        _ = PromptService.shared.createPrompt(newPrompt)
-        
-        self.toastMsg = "¡Guardado en Galería!"
-        self.toastIcon = "square.and.arrow.down.fill"
-        withAnimation(.spring()) {
-            showSavedToast = true
-        }
-        
-        toastTimer?.invalidate()
-        toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-            withAnimation {
-                showSavedToast = false
+        Task {
+            do {
+                let metadata = try await AIServiceManager.shared.generatePromptMetadata(title: "", content: contentToSave)
+                
+                let newPrompt = Prompt(
+                    title: metadata.title,
+                    content: metadata.content,
+                    promptDescription: metadata.description,
+                    folder: nil, // Esto hará que la app intente auto-categorizarlo después si es posible, o se quede sin clasificar
+                    icon: "sparkles",
+                    negativePrompt: metadata.negativePrompt
+                )
+                
+                await MainActor.run {
+                    _ = PromptService.shared.createPrompt(newPrompt)
+                    
+                    self.toastMsg = "¡Guardado en Galería!"
+                    self.toastIcon = "square.and.arrow.down.fill"
+                    HapticService.shared.playSuccess()
+                    
+                    self.toastTimer?.invalidate()
+                    self.toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+                        withAnimation { self.showSavedToast = false }
+                    }
+                }
+            } catch {
+                // Fallback de guardado rápido si falla la IA
+                await MainActor.run {
+                    let newPrompt = Prompt(
+                        title: "Quick Edit \(Date().formatted(.dateTime.day().month().hour().minute()))",
+                        content: contentToSave,
+                        folder: "Sin clasificar",
+                        icon: "sparkles"
+                    )
+                    _ = PromptService.shared.createPrompt(newPrompt)
+                    
+                    self.toastMsg = "Guardado (Sin Metadata)"
+                    self.toastIcon = "exclamationmark.triangle.fill"
+                    HapticService.shared.playSuccess()
+                    
+                    self.toastTimer?.invalidate()
+                    self.toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+                        withAnimation { self.showSavedToast = false }
+                    }
+                }
             }
         }
-        
-        HapticService.shared.playSuccess()
     }
     
     private var headerBar: some View {
