@@ -8,6 +8,11 @@ struct SearchViewSimple: View {
         static let maxPixelSize = 1120
     }
 
+    private struct FolderPresentation {
+        let color: Color
+        let icon: String?
+    }
+
     private enum PromptCopyFormat {
         case plainText
         case markdown
@@ -38,11 +43,15 @@ struct SearchViewSimple: View {
     @State private var isFullScreenImageOpen: Bool = false
     // Prewarm de preview/texto para evitar beachball al abrir preview tras arrancar.
     @State private var prewarmTask: Task<Void, Never>? = nil
+    @State private var secondaryImagePrewarmTask: Task<Void, Never>? = nil
     @State private var delayedPrewarmTask: Task<Void, Never>? = nil
     @State private var previewPrefetchTask: Task<Void, Never>? = nil
     @State private var lastPrewarmedPreviewKey: String? = nil
+    @State private var lastSecondaryImagePrewarmKey: String? = nil
     @State private var prefetchedPreviewPaths: [String] = []
     @State private var prefetchedPreviewPromptId: UUID? = nil
+    @State private var previewPathsCache: [UUID: [String]] = [:]
+    @State private var visiblePromptIds: Set<UUID> = []
     
     @State private var dragStartedSidebarWidth: CGFloat = 0
     @State private var isSidebarDragging: Bool = false
@@ -107,6 +116,12 @@ struct SearchViewSimple: View {
              GhostTip(title: "gt_drag_images".localized(for: preferences.language), icon: "photo", shortcut: "gt_images_hint".localized(for: preferences.language)),
             GhostTip(title: "gt_zoom_images".localized(for: preferences.language), icon: "magnifyingglass", shortcut: "gt_zoom_hint".localized(for: preferences.language))
         ]
+    }
+
+    private var folderPresentationByName: [String: FolderPresentation] {
+        Dictionary(uniqueKeysWithValues: promptService.folders.map {
+            ($0.name, FolderPresentation(color: Color(hex: $0.displayColor), icon: $0.icon))
+        })
     }
     
     var body: some View {
@@ -334,6 +349,12 @@ struct SearchViewSimple: View {
                 prewarmPreviewAssets(for: firstPrompt, force: true)
             }
             ensureValidSelection(autoselectFirst: true)
+
+            if let selectedPrompt,
+               let firstPrompt = promptService.filteredPrompts.first,
+               firstPrompt.id != selectedPrompt.id {
+                prewarmSecondaryImageAssets(for: firstPrompt, force: true)
+            }
         }
         .onDisappear {
             if let monitor = localEventMonitor {
@@ -341,6 +362,7 @@ struct SearchViewSimple: View {
                 localEventMonitor = nil
             }
             prewarmTask?.cancel()
+            secondaryImagePrewarmTask?.cancel()
             previewPrefetchTask?.cancel()
             delayedPrewarmTask?.cancel()
         }
@@ -356,6 +378,11 @@ struct SearchViewSimple: View {
         .onChange(of: selectedPrompt?.id) { _, _ in
             guard let selectedPrompt else { return }
             prewarmPreviewAssets(for: selectedPrompt)
+
+            if let firstPrompt = promptService.filteredPrompts.first,
+               firstPrompt.id != selectedPrompt.id {
+                prewarmSecondaryImageAssets(for: firstPrompt)
+            }
         }
         .onChange(of: showingPreview) { _, isShown in
             if !isShown {
@@ -363,13 +390,18 @@ struct SearchViewSimple: View {
             }
         }
         .onChange(of: promptService.filteredPrompts.map(\.id)) { _, _ in
+            pruneVisiblePromptIds()
             ensureValidSelection(autoselectFirst: true)
         }
         .onChange(of: promptService.filteredPrompts.first?.id) { _, newValue in
-            guard selectedPrompt == nil,
-                  let newValue,
+            guard let newValue,
                   let firstPrompt = promptService.filteredPrompts.first(where: { $0.id == newValue }) else { return }
-            prewarmPreviewAssets(for: firstPrompt, force: true)
+
+            if selectedPrompt == nil || selectedPrompt?.id == firstPrompt.id {
+                prewarmPreviewAssets(for: firstPrompt, force: true)
+            } else {
+                prewarmSecondaryImageAssets(for: firstPrompt, force: true)
+            }
         }
         .onReceive(promptService.$prompts) { _ in
             refreshSelectedPromptFromStore()
@@ -445,245 +477,11 @@ struct SearchViewSimple: View {
                             .zIndex(50)
                     }
                     
-                    // Header Premium con búsqueda
-                    VStack(spacing: 0) {
-                        HStack(spacing: 16) {
-                            // Botón Colapsar Sidebar / Cambiar a Grid
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        preferences.isGridView.toggle()
-                                        if preferences.autoHideSidebarInGallery {
-                                            preferences.showSidebar = !preferences.isGridView
-                                        }
-                                    }
-                                }) {
-                                    Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(preferences.isGridView ? .blue : .secondary)
-                                        .frame(width: 32, height: 32)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.15 : 0.1) : Color.primary.opacity(isViewToggleHovered ? 0.08 : 0.04))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.3 : 0.15) : Color.primary.opacity(isViewToggleHovered ? 0.12 : 0.06), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    isViewToggleHovered = hovering
-                                }
-                                .help(preferences.isGridView ? "List View" : "Grid View")
-                            
-                            // Buscador Estilizado
-                            HStack(spacing: 12) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.blue)
-                                
-                                TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
-                                    .textFieldStyle(.plain)
-                                    .font(.system(size: 15 * preferences.fontSize.scale))
-                                    .disableAutocorrection(true)
-                                    .focused($isSearchFocused)
-                                    .onExitCommand {
-                                        isSearchFocused = false
-                                    }
-                                    .onChange(of: promptService.searchQuery) { _, newValue in
-                                        isNavigatingWithKeys = false
-                                        if newValue.count > 40 {
-                                            promptService.searchQuery = String(newValue.prefix(40))
-                                        }
-                                    }
-                                
-                                if !promptService.searchQuery.isEmpty {
-                                    Button(action: { promptService.searchQuery = "" }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.secondary.opacity(0.5))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.primary.opacity(0.04))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                                    )
-                            )
-                            
-                            // Acciones rápidas
-                            HStack(spacing: 10) {
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        selectedPrompt = nil
-                                        menuBarManager.activeViewState = .newPrompt
-                                    }
-                                }) {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 34, height: 34)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(isPlusHovered ? Color.blue.opacity(0.85) : Color.blue)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(Color.white.opacity(isPlusHovered ? 0.2 : 0), lineWidth: 1)
-                                                )
-                                                .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(isPlusHovered ? 0.4 : 0.3) : .clear, radius: isPlusHovered ? 6 : 4, y: 2)
-                                        )
-                                        .scaleEffect(isPlusHovered ? 1.03 : 1.0)
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        isPlusHovered = hovering
-                                    }
-                                }
-                                .help("new_prompt".localized(for: preferences.language) + " (N)")
-                                
-                                
-                                // Botón de Selección en Lote
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        batchService.isSelectionModeActive.toggle()
-                                        if !batchService.isSelectionModeActive {
-                                            batchService.clearSelection()
-                                        }
-                                    }
-                                    HapticService.shared.playLight()
-                                }) {
-                                    Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
-                                        .frame(width: 34, height: 34)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.12) : Color.primary.opacity(isBatchHovered ? 0.08 : 0.04))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.3) : Color.primary.opacity(isBatchHovered ? 0.12 : 0.06), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    isBatchHovered = hovering
-                                }
-                                .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
-
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        menuBarManager.activeViewState = .preferences
-                                    }
-                                }) {
-                                    Image(systemName: "gearshape.fill")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.primary.opacity(0.7))
-                                        .frame(width: 34, height: 34)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.primary.opacity(isSettingsHovered ? 0.08 : 0.04))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(Color.primary.opacity(isSettingsHovered ? 0.12 : 0.06), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    isSettingsHovered = hovering
-                                }
-                                .help("settings".localized(for: preferences.language) + " (Cmd+,)")
-                            }
-                        }
-                        .padding(.leading, 14)
-                        .padding(.trailing, 24)
-                        .padding(.vertical, 20)
-                    }
-                    .background(Color(NSColor.windowBackgroundColor))
-                    .onTapGesture {
-                        isSearchFocused = false
-                    }
+                    searchHeaderView
                     
                     Divider().padding(.leading, 14).padding(.trailing, 24)
                     
-                    // Contenido principal
-                    if promptService.filteredPrompts.isEmpty {
-                        VStack(spacing: 32) {
-                            Spacer()
-                            Image(systemName: "text.bubble")
-                                .font(.system(size: 64))
-                                .foregroundColor(.secondary.opacity(0.6))
-                            
-                            VStack(spacing: 12) {
-                                Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
-                                    .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                
-                                Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
-                                    .font(.system(size: 14 * preferences.fontSize.scale))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            if promptService.searchQuery.isEmpty {
-                                Button("create_first_prompt".localized(for: preferences.language)) {
-                                    selectedPrompt = nil
-                                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.large)
-                            }
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(.leading, 14)
-                        .padding(.trailing, 24)
-                    } else {
-                        // Lista moderna o Grid de prompts
-                        ScrollViewReader { proxy in
-                            ScrollView {
-                                if preferences.isGridView {
-                                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
-                                        ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                            promptGridCard(for: prompt)
-                                                .id(prompt.id)
-                                        }
-                                    }
-                                    .padding(.leading, 14)
-                                    .padding(.trailing, 14)
-                                    .padding(.vertical, 16)
-                                } else {
-                                    LazyVStack(spacing: 12) {
-                                        ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                            promptRow(for: prompt)
-                                                .id(prompt.id)
-                                        }
-                                    }
-                                    .padding(.leading, 14)
-                                    .padding(.trailing, 14)
-                                    .padding(.vertical, 16)
-                                }
-                            }
-                            .scrollIndicators(.hidden)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                isSearchFocused = false
-                            }
-                            .onChange(of: selectedPrompt?.id) { _, newId in
-                                if let id = newId {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        proxy.scrollTo(id, anchor: .center)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    promptContentView
                 }
             }
             .coordinateSpace(name: "sidebarContainer")
@@ -698,14 +496,298 @@ struct SearchViewSimple: View {
         }
     }
 
+    private var searchHeaderView: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                Button(action: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        preferences.isGridView.toggle()
+                        if preferences.autoHideSidebarInGallery {
+                            preferences.showSidebar = !preferences.isGridView
+                        }
+                    }
+                }) {
+                    Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(preferences.isGridView ? .blue : .secondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.15 : 0.1) : Color.primary.opacity(isViewToggleHovered ? 0.08 : 0.04))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.3 : 0.15) : Color.primary.opacity(isViewToggleHovered ? 0.12 : 0.06), lineWidth: 1)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    isViewToggleHovered = hovering
+                }
+                .help(preferences.isGridView ? "List View" : "Grid View")
+
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.blue)
+
+                    TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 15 * preferences.fontSize.scale))
+                        .disableAutocorrection(true)
+                        .focused($isSearchFocused)
+                        .onExitCommand {
+                            isSearchFocused = false
+                        }
+                        .onChange(of: promptService.searchQuery) { _, newValue in
+                            isNavigatingWithKeys = false
+                            if newValue.count > 40 {
+                                promptService.searchQuery = String(newValue.prefix(40))
+                            }
+                        }
+
+                    if !promptService.searchQuery.isEmpty {
+                        Button(action: { promptService.searchQuery = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primary.opacity(0.04))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
+                )
+
+                HStack(spacing: 10) {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedPrompt = nil
+                            menuBarManager.activeViewState = .newPrompt
+                        }
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 34, height: 34)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(isPlusHovered ? Color.blue.opacity(0.85) : Color.blue)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.white.opacity(isPlusHovered ? 0.2 : 0), lineWidth: 1)
+                                    )
+                                    .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(isPlusHovered ? 0.4 : 0.3) : .clear, radius: isPlusHovered ? 6 : 4, y: 2)
+                            )
+                            .scaleEffect(isPlusHovered ? 1.03 : 1.0)
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isPlusHovered = hovering
+                        }
+                    }
+                    .help("new_prompt".localized(for: preferences.language) + " (N)")
+
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            batchService.isSelectionModeActive.toggle()
+                            if !batchService.isSelectionModeActive {
+                                batchService.clearSelection()
+                            }
+                        }
+                        HapticService.shared.playLight()
+                    }) {
+                        Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
+                            .frame(width: 34, height: 34)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.12) : Color.primary.opacity(isBatchHovered ? 0.08 : 0.04))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.3) : Color.primary.opacity(isBatchHovered ? 0.12 : 0.06), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        isBatchHovered = hovering
+                    }
+                    .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
+
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            menuBarManager.activeViewState = .preferences
+                        }
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary.opacity(0.7))
+                            .frame(width: 34, height: 34)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.primary.opacity(isSettingsHovered ? 0.08 : 0.04))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.primary.opacity(isSettingsHovered ? 0.12 : 0.06), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        isSettingsHovered = hovering
+                    }
+                    .help("settings".localized(for: preferences.language) + " (Cmd+,)")
+                }
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, 24)
+            .padding(.vertical, 20)
+        }
+        .background(Color(NSColor.windowBackgroundColor))
+        .onTapGesture {
+            isSearchFocused = false
+        }
+    }
+
+    @ViewBuilder
+    private var promptContentView: some View {
+        if promptService.filteredPrompts.isEmpty {
+            VStack(spacing: 32) {
+                Spacer()
+                Image(systemName: "text.bubble")
+                    .font(.system(size: 64))
+                    .foregroundColor(.secondary.opacity(0.6))
+
+                VStack(spacing: 12) {
+                    Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
+                        .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
+                        .font(.system(size: 14 * preferences.fontSize.scale))
+                        .foregroundColor(.secondary)
+                }
+
+                if promptService.searchQuery.isEmpty {
+                    Button("create_first_prompt".localized(for: preferences.language)) {
+                        selectedPrompt = nil
+                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                }
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.leading, 14)
+            .padding(.trailing, 24)
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    if preferences.isGridView {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
+                            ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                promptGridCard(for: prompt)
+                                    .id(prompt.id)
+                            }
+                        }
+                        .padding(.leading, 14)
+                        .padding(.trailing, 14)
+                        .padding(.vertical, 16)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(promptService.filteredPrompts, id: \.id) { prompt in
+                                promptRow(for: prompt)
+                                    .id(prompt.id)
+                            }
+                        }
+                        .padding(.leading, 14)
+                        .padding(.trailing, 14)
+                        .padding(.vertical, 16)
+                    }
+                }
+                .scrollIndicators(.hidden)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isSearchFocused = false
+                }
+                .onChange(of: selectedPrompt?.id) { _, newId in
+                    guard let id = newId else { return }
+                    guard !visiblePromptIds.contains(id) else { return }
+
+                    if isNavigatingWithKeys {
+                        proxy.scrollTo(id, anchor: .center)
+                    } else {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            proxy.scrollTo(id, anchor: .center)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func categoryColor(for prompt: Prompt) -> Color {
+        guard let folderName = prompt.folder, !folderName.isEmpty else { return .blue }
+        if let folder = folderPresentationByName[folderName] {
+            return folder.color
+        }
+        return PredefinedCategory.fromString(folderName)?.color ?? .blue
+    }
+
+    private func resolvedIcon(for prompt: Prompt) -> String {
+        if let customIcon = prompt.icon, !customIcon.isEmpty {
+            return customIcon
+        }
+        guard let folderName = prompt.folder, !folderName.isEmpty else {
+            return "doc.text.fill"
+        }
+        if let folder = folderPresentationByName[folderName] {
+            return folder.icon ?? "folder.fill"
+        }
+        return PredefinedCategory.fromString(folderName)?.icon ?? "folder.fill"
+    }
+
+    private func markPromptVisible(_ id: UUID) {
+        if !visiblePromptIds.contains(id) {
+            visiblePromptIds.insert(id)
+        }
+    }
+
+    private func markPromptHidden(_ id: UUID) {
+        if visiblePromptIds.contains(id) {
+            visiblePromptIds.remove(id)
+        }
+    }
+
+    private func pruneVisiblePromptIds() {
+        let filteredIds = Set(promptService.filteredPrompts.map(\.id))
+        let pruned = visiblePromptIds.intersection(filteredIds)
+        if pruned != visiblePromptIds {
+            visiblePromptIds = pruned
+        }
+    }
+
     @ViewBuilder
     private func promptGridCard(for prompt: Prompt) -> some View {
+        let categoryColor = categoryColor(for: prompt)
         PromptGridCard(
             prompt: prompt,
+            precomputedCategoryColor: categoryColor,
             isSelected: selectedPrompt?.id == prompt.id,
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
                 isSearchFocused = false
+                isNavigatingWithKeys = false
                 let latest = latestPrompt(for: prompt)
                 selectedPrompt = latest
                 prewarmPreviewAssets(for: latest)
@@ -716,6 +798,7 @@ struct SearchViewSimple: View {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             },
             onDoubleTap: {
+                isNavigatingWithKeys = false
                 selectedPrompt = latestPrompt(for: prompt)
                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
             },
@@ -725,6 +808,12 @@ struct SearchViewSimple: View {
                 if isHovering { prewarmPreviewAssets(for: prompt) }
             }
         )
+        .onAppear {
+            markPromptVisible(prompt.id)
+        }
+        .onDisappear {
+            markPromptHidden(prompt.id)
+        }
         .contextMenu { promptContextMenu(for: prompt) }
         .popover(
             isPresented: Binding(
@@ -744,12 +833,17 @@ struct SearchViewSimple: View {
 
     @ViewBuilder
     private func promptRow(for prompt: Prompt) -> some View {
+        let categoryColor = categoryColor(for: prompt)
+        let icon = resolvedIcon(for: prompt)
         PromptCard(
             prompt: prompt,
+            precomputedCategoryColor: categoryColor,
+            precomputedResolvedIcon: icon,
             isSelected: selectedPrompt?.id == prompt.id,
             isHovered: hoveredPrompt?.id == prompt.id,
             onTap: {
                 isSearchFocused = false
+                isNavigatingWithKeys = false
                 let latest = latestPrompt(for: prompt)
                 selectedPrompt = latest
                 prewarmPreviewAssets(for: latest)
@@ -760,6 +854,7 @@ struct SearchViewSimple: View {
                 NSApp.keyWindow?.makeKeyAndOrderFront(nil)
             },
             onDoubleTap: {
+                isNavigatingWithKeys = false
                 selectedPrompt = latestPrompt(for: prompt)
                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
             },
@@ -770,6 +865,12 @@ struct SearchViewSimple: View {
                 if isHovering { prewarmPreviewAssets(for: prompt) }
             }
         )
+        .onAppear {
+            markPromptVisible(prompt.id)
+        }
+        .onDisappear {
+            markPromptHidden(prompt.id)
+        }
         .contextMenu { promptContextMenu(for: prompt) }
         .popover(
             isPresented: Binding(
@@ -1317,19 +1418,56 @@ struct SearchViewSimple: View {
         case preview
     }
 
+    @MainActor
+    private func cachedPreviewPaths(for promptId: UUID) -> [String]? {
+        previewPathsCache[promptId]
+    }
+
+    @MainActor
+    private func storePreviewPathsInCache(_ paths: [String], for promptId: UUID) {
+        guard !paths.isEmpty else { return }
+        previewPathsCache[promptId] = paths
+    }
+
     private func loadPreviewPaths(for prompt: Prompt) async -> [String] {
-        var paths = prompt.showcaseImagePaths
-        if prompt.showcaseImageCount > 0 && paths.isEmpty {
-            paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+        if !prompt.showcaseImagePaths.isEmpty {
+            await storePreviewPathsInCache(prompt.showcaseImagePaths, for: prompt.id)
+            return prompt.showcaseImagePaths
         }
-        return paths
+
+        if let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+            return cached
+        }
+
+        guard prompt.showcaseImageCount > 0 else { return [] }
+
+        let fetched = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+        if !fetched.isEmpty {
+            await storePreviewPathsInCache(fetched, for: prompt.id)
+        }
+        return fetched
     }
 
     private func refreshPreviewPrefetchIfNeeded(for prompt: Prompt) {
         let latest = latestPrompt(for: prompt)
+
+        if !latest.showcaseImagePaths.isEmpty {
+            storePreviewPathsInCache(latest.showcaseImagePaths, for: latest.id)
+            prefetchedPreviewPromptId = latest.id
+            prefetchedPreviewPaths = latest.showcaseImagePaths
+            return
+        }
+
+        if let cached = previewPathsCache[latest.id], !cached.isEmpty {
+            prefetchedPreviewPromptId = latest.id
+            prefetchedPreviewPaths = cached
+            return
+        }
+
         if prefetchedPreviewPromptId == latest.id && !prefetchedPreviewPaths.isEmpty {
             return
         }
+
         previewPrefetchTask?.cancel()
         previewPrefetchTask = Task(priority: .userInitiated) {
             let paths = await loadPreviewPaths(for: latest)
@@ -1338,28 +1476,41 @@ struct SearchViewSimple: View {
                 guard selectedPrompt?.id == latest.id else { return }
                 prefetchedPreviewPromptId = latest.id
                 prefetchedPreviewPaths = paths
+                if !paths.isEmpty {
+                    previewPathsCache[latest.id] = paths
+                }
             }
         }
     }
 
     private func openPreview(for prompt: Prompt, soundEffect: PreviewOpenSound = .interaction) {
         let latest = latestPrompt(for: prompt)
-        Task(priority: .userInitiated) {
-            let prefetchedPaths = await loadPreviewPaths(for: latest)
 
-            await MainActor.run {
-                selectedPrompt = latestPrompt(for: latest)
-                prefetchedPreviewPromptId = latest.id
-                prefetchedPreviewPaths = prefetchedPaths
-                showingPreview = true
-                guard preferences.soundEnabled else { return }
-                switch soundEffect {
-                case .interaction:
-                    SoundService.shared.playInteractionSound()
-                case .preview:
-                    SoundService.shared.playPreviewSound()
-                }
+        selectedPrompt = latest
+        if !latest.showcaseImagePaths.isEmpty {
+            storePreviewPathsInCache(latest.showcaseImagePaths, for: latest.id)
+            prefetchedPreviewPromptId = latest.id
+            prefetchedPreviewPaths = latest.showcaseImagePaths
+        } else if let cached = previewPathsCache[latest.id], !cached.isEmpty {
+            prefetchedPreviewPromptId = latest.id
+            prefetchedPreviewPaths = cached
+        } else {
+            prefetchedPreviewPromptId = latest.id
+            prefetchedPreviewPaths = []
+        }
+
+        showingPreview = true
+        if preferences.soundEnabled {
+            switch soundEffect {
+            case .interaction:
+                SoundService.shared.playInteractionSound()
+            case .preview:
+                SoundService.shared.playPreviewSound()
             }
+        }
+
+        if latest.showcaseImageCount > 0 && prefetchedPreviewPaths.isEmpty {
+            refreshPreviewPrefetchIfNeeded(for: latest)
         }
     }
 
@@ -1387,19 +1538,61 @@ struct SearchViewSimple: View {
             }
 
             if prompt.showcaseImageCount > 0 {
-                let paths: [String] = !prompt.showcaseImagePaths.isEmpty
-                    ? prompt.showcaseImagePaths
-                    : await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                var paths = prompt.showcaseImagePaths
+                if paths.isEmpty, let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+                    paths = cached
+                }
+                if paths.isEmpty {
+                    paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+                }
+                if !paths.isEmpty {
+                    await storePreviewPathsInCache(paths, for: prompt.id)
+                }
 
-                if let first = paths.first {
-                    let url = ImageStore.shared.url(forRelativePath: first)
-                    let cacheKey = "\(prompt.id.uuidString):preview:0:\(PreviewPrewarmProfile.maxPixelSize):\(first)"
+                for (index, relativePath) in paths.prefix(2).enumerated() {
+                    let url = ImageStore.shared.url(forRelativePath: relativePath)
+                    let cacheKey = "\(prompt.id.uuidString):preview:\(index):\(PreviewPrewarmProfile.maxPixelSize):\(relativePath)"
                     await ImageDecodeThrottler.prewarm(
                         url: url,
                         cacheKey: cacheKey,
                         maxPixelSize: PreviewPrewarmProfile.maxPixelSize
                     )
                 }
+            }
+        }
+    }
+
+    private func prewarmSecondaryImageAssets(for prompt: Prompt, force: Bool = false) {
+        let key = "secondary:\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970)"
+        if !force && lastSecondaryImagePrewarmKey == key { return }
+        lastSecondaryImagePrewarmKey = key
+
+        secondaryImagePrewarmTask?.cancel()
+        secondaryImagePrewarmTask = Task(priority: .utility) {
+            var paths = prompt.showcaseImagePaths
+
+            if paths.isEmpty, let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+                paths = cached
+            }
+
+            if paths.isEmpty, prompt.showcaseImageCount > 0 {
+                paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+            }
+
+            guard !Task.isCancelled else { return }
+            guard !paths.isEmpty else { return }
+
+            await storePreviewPathsInCache(paths, for: prompt.id)
+
+            for (index, relativePath) in paths.prefix(2).enumerated() {
+                guard !Task.isCancelled else { return }
+                let url = ImageStore.shared.url(forRelativePath: relativePath)
+                let cacheKey = "\(prompt.id.uuidString):preview:\(index):\(PreviewPrewarmProfile.maxPixelSize):\(relativePath)"
+                await ImageDecodeThrottler.prewarm(
+                    url: url,
+                    cacheKey: cacheKey,
+                    maxPixelSize: PreviewPrewarmProfile.maxPixelSize
+                )
             }
         }
     }

@@ -27,10 +27,6 @@ struct CategorySidebar: View {
         PredefinedCategory.allCases
     }
     
-    private var categoryCounts: [String: Int] {
-        viewModel.categoryCounts(for: promptService.prompts)
-    }
-    
     var body: some View {
         VStack(spacing: 0) {
             // Header sutil
@@ -139,7 +135,7 @@ struct CategorySidebar: View {
                         title: "recent",
                         icon: "clock.arrow.2.circlepath",
                         color: .purple,
-                        count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
+                        count: viewModel.recentCount,
                         isSelected: promptService.selectedCategory == "recent"
                     ) {
                         promptService.selectedCategory = "recent"
@@ -150,7 +146,7 @@ struct CategorySidebar: View {
                         title: "favorites",
                         icon: "star.fill",
                         color: .yellow,
-                        count: promptService.prompts.filter { $0.isFavorite }.count,
+                        count: viewModel.favoritesCount,
                         isSelected: promptService.selectedCategory == "favorites",
                         isDropTarget: viewModel.isTargetedFavoritos,
                         action: {
@@ -169,7 +165,7 @@ struct CategorySidebar: View {
                         title: "uncategorized",
                         icon: "folder.fill",
                         color: .gray,
-                        count: categoryCounts["uncategorized"] ?? 0,
+                        count: viewModel.categoryCount(for: "uncategorized"),
                         isSelected: promptService.selectedCategory == "uncategorized",
                         isDropTarget: viewModel.isTargetedSinCategoria,
                         action: {
@@ -208,13 +204,19 @@ struct CategorySidebar: View {
         .onHover { hovering in
             menuBarManager.setSidebarHovered(hovering)
         }
+        .onAppear {
+            viewModel.refreshCounters(with: promptService.prompts)
+        }
+        .onReceive(promptService.$prompts) { prompts in
+            viewModel.refreshCounters(with: prompts)
+        }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDeleteAlert, presenting: viewModel.folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
                 viewModel.confirmDelete(promptService: promptService)
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
         } message: { folder in
-            let count = categoryCounts[folder.name] ?? 0
+            let count = viewModel.categoryCount(for: folder.name)
             Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
         }
         .frame(maxWidth: .infinity)
@@ -291,7 +293,7 @@ struct CategorySidebar: View {
     
     @ViewBuilder
     private func pinnedFolderRow(_ folder: Folder) -> some View {
-        let count: Int = categoryCounts[folder.name] ?? 0
+        let count = viewModel.categoryCount(for: folder.name)
         SidebarItem(
             title: LocalizedStringKey(folder.name),
             icon: folder.icon ?? "folder.fill",
@@ -347,7 +349,7 @@ struct CategorySidebar: View {
     
     @ViewBuilder
     private func folderRow(_ folder: Folder) -> some View {
-        let count: Int = categoryCounts[folder.name] ?? 0
+        let count = viewModel.categoryCount(for: folder.name)
         SidebarItem(
             title: LocalizedStringKey(folder.name),
             icon: folder.icon ?? "folder.fill",
@@ -416,7 +418,7 @@ struct CategorySidebar: View {
             }
             
             Button(role: .destructive) {
-                viewModel.requestDelete(folder: folder, counts: categoryCounts)
+                viewModel.requestDelete(folder: folder, counts: viewModel.categoryCounts)
                 if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         _ = promptService.deleteFolder(folder)

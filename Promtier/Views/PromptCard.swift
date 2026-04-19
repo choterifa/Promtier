@@ -39,6 +39,8 @@ struct IndicatorBadge: View {
 
 struct PromptCard: View {
     let prompt: Prompt
+    let precomputedCategoryColor: Color
+    let precomputedResolvedIcon: String
     let isSelected: Bool
     let isHovered: Bool
     let onTap: () -> Void
@@ -123,19 +125,33 @@ struct PromptCard: View {
     }
     
     private var currentCategoryColor: Color {
-        if let folder = prompt.folder {
-            return getFolderColor(for: folder)
-        }
-        return .blue
+        precomputedCategoryColor
     }
-    
-    private func getFolderColor(for folderName: String) -> Color {
-        if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
-            return Color(hex: customFolder.displayColor)
-        }
-        return PredefinedCategory.fromString(folderName)?.color ?? .blue
+
+    init(
+        prompt: Prompt,
+        precomputedCategoryColor: Color = .blue,
+        precomputedResolvedIcon: String = "doc.text.fill",
+        isSelected: Bool,
+        isHovered: Bool,
+        onTap: @escaping () -> Void,
+        onDoubleTap: @escaping () -> Void,
+        onCopy: (() -> Void)?,
+        onCopyPack: (() -> Void)?,
+        onHover: @escaping (Bool) -> Void
+    ) {
+        self.prompt = prompt
+        self.isSelected = isSelected
+        self.isHovered = isHovered
+        self.onTap = onTap
+        self.onDoubleTap = onDoubleTap
+        self.onCopy = onCopy
+        self.onCopyPack = onCopyPack
+        self.onHover = onHover
+
+        self.precomputedCategoryColor = precomputedCategoryColor
+        self.precomputedResolvedIcon = precomputedResolvedIcon
     }
-    
 
     var body: some View {
         HStack(spacing: 16) {
@@ -154,16 +170,7 @@ struct PromptCard: View {
             }
             
             // Icono de categoría/Prompt
-            let resolvedIcon: String = {
-                if let customIcon = prompt.icon, !customIcon.isEmpty { return customIcon }
-                if let folder = prompt.folder {
-                    if let customFolder = promptService.folders.first(where: { $0.name == folder }) {
-                        return customFolder.icon ?? "folder.fill"
-                    }
-                    return PredefinedCategory.fromString(folder)?.icon ?? "folder.fill"
-                }
-                return "doc.text.fill"
-            }()
+            let resolvedIcon = precomputedResolvedIcon
             
             let color = currentCategoryColor
             ZStack {
@@ -185,7 +192,7 @@ struct PromptCard: View {
                         .lineLimit(2)
                     
                     if let folder = prompt.folder, !folder.isEmpty {
-                        let color = getFolderColor(for: folder)
+                        let color = currentCategoryColor
                         Text(folder)
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(color)

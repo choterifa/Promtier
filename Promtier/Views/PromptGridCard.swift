@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
 struct PromptGridCard: View {
     let prompt: Prompt
+    let precomputedCategoryColor: Color
     let isSelected: Bool
     let isHovered: Bool
     let onTap: () -> Void
@@ -58,19 +59,31 @@ struct PromptGridCard: View {
     }
     
     private var currentCategoryColor: Color {
-        if let folder = prompt.folder {
-            if let customFolder = promptService.folders.first(where: { $0.name == folder }) {
-                return Color(hex: customFolder.displayColor)
-            }
-        }
-        return .blue
+        precomputedCategoryColor
     }
 
-    private func getAppName(_ bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return url.deletingPathExtension().lastPathComponent
+    @ViewBuilder
+    private var recommendedBadge: some View {
+        if isRecommended, let activeApp = promptService.activeAppBundleID {
+            HStack(spacing: 3) {
+                if let icon = AppInfoCache.getIcon(for: activeApp) {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 11, height: 11)
+                } else {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 8, weight: .bold))
+                }
+
+                Text(AppInfoCache.getName(for: activeApp))
+                    .font(.system(size: 9, weight: .bold))
+            }
+            .foregroundColor(.purple)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.purple.opacity(0.15))
+            .clipShape(Capsule())
         }
-        return bundleID
     }
 
     private var previewThumbnailData: Data? {
@@ -83,6 +96,26 @@ struct PromptGridCard: View {
 
     private var hasPreviewImage: Bool {
         previewThumbnailData != nil || previewRelativePath != nil
+    }
+
+    init(
+        prompt: Prompt,
+        precomputedCategoryColor: Color = .blue,
+        isSelected: Bool,
+        isHovered: Bool,
+        onTap: @escaping () -> Void,
+        onDoubleTap: @escaping () -> Void,
+        onCopy: (() -> Void)?,
+        onHover: @escaping (Bool) -> Void
+    ) {
+        self.prompt = prompt
+        self.precomputedCategoryColor = precomputedCategoryColor
+        self.isSelected = isSelected
+        self.isHovered = isHovered
+        self.onTap = onTap
+        self.onDoubleTap = onDoubleTap
+        self.onCopy = onCopy
+        self.onHover = onHover
     }
     
     var body: some View {
@@ -120,29 +153,7 @@ struct PromptGridCard: View {
                         .clipShape(Capsule())
                 }
                 
-                if isRecommended {
-                    HStack(spacing: 3) {
-                        if let activeApp = promptService.activeAppBundleID {
-                            if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: activeApp)?.path {
-                                let icon = NSWorkspace.shared.icon(forFile: path)
-                                Image(nsImage: icon)
-                                    .resizable()
-                                    .frame(width: 11, height: 11)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 8, weight: .bold))
-                            }
-                            
-                            Text(getAppName(activeApp))
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                    }
-                    .foregroundColor(.purple)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.purple.opacity(0.15))
-                    .clipShape(Capsule())
-                }
+                recommendedBadge
             }
             .padding(.horizontal, 20)
             .padding(.top, 14)

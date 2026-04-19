@@ -23,11 +23,10 @@ struct NewPromptView: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
+    @StateObject private var viewModel: NewPromptViewModel
 
     @StateObject private var titleHoister = TextHoister()
     @StateObject private var contentHoister = TextHoister()
-    @State private var negativePrompt = ""
-    @State private var alternatives: [String] = []
     @StateObject private var promptDescriptionHoister = TextHoister()
 
     var title: String {
@@ -47,10 +46,98 @@ struct NewPromptView: View {
     var contentBinding: Binding<String> { Binding(get: { content }, set: { content = $0 }) }
     var promptDescriptionBinding: Binding<String> { Binding(get: { promptDescription }, set: { promptDescription = $0 }) }
 
-    @State private var selectedFolder: String?
-    @State private var isFavorite = false
-    @State private var selectedIcon: String?
-    @State private var showcaseImages: [Data] = []
+    var negativePrompt: String {
+        get { viewModel.negativePrompt }
+        nonmutating set { viewModel.negativePrompt = newValue }
+    }
+    var alternatives: [String] {
+        get { viewModel.alternatives }
+        nonmutating set { viewModel.alternatives = newValue }
+    }
+    var selectedFolder: String? {
+        get { viewModel.selectedFolder }
+        nonmutating set { viewModel.selectedFolder = newValue }
+    }
+    var isFavorite: Bool {
+        get { viewModel.isFavorite }
+        nonmutating set { viewModel.isFavorite = newValue }
+    }
+    var selectedIcon: String? {
+        get { viewModel.selectedIcon }
+        nonmutating set { viewModel.selectedIcon = newValue }
+    }
+    var showcaseImages: [Data] {
+        get { viewModel.showcaseImages }
+        nonmutating set { viewModel.showcaseImages = newValue }
+    }
+    var tags: [String] {
+        get { viewModel.tags }
+        nonmutating set { viewModel.tags = newValue }
+    }
+    var newTag: String {
+        get { viewModel.newTag }
+        nonmutating set { viewModel.newTag = newValue }
+    }
+    var targetAppBundleIDs: [String] {
+        get { viewModel.targetAppBundleIDs }
+        nonmutating set { viewModel.targetAppBundleIDs = newValue }
+    }
+    var customShortcut: String? {
+        get { viewModel.customShortcut }
+        nonmutating set { viewModel.customShortcut = newValue }
+    }
+    var showingPremiumFor: String? {
+        get { viewModel.showingPremiumFor }
+        nonmutating set { viewModel.showingPremiumFor = newValue }
+    }
+    var showingMagicOptions: Bool {
+        get { viewModel.showingMagicOptions }
+        nonmutating set { viewModel.showingMagicOptions = newValue }
+    }
+    var branchMessage: String? {
+        get { viewModel.branchMessage }
+        nonmutating set { viewModel.branchMessage = newValue }
+    }
+    var isAutocompleting: Bool {
+        get { viewModel.isAutocompleting }
+        nonmutating set { viewModel.isAutocompleting = newValue }
+    }
+    var isCategorizing: Bool {
+        get { viewModel.isCategorizing }
+        nonmutating set { viewModel.isCategorizing = newValue }
+    }
+    var showNegativeField: Bool {
+        get { viewModel.showNegativeField }
+        nonmutating set { viewModel.showNegativeField = newValue }
+    }
+    var showAlternativeField: Bool {
+        get { viewModel.showAlternativeField }
+        nonmutating set { viewModel.showAlternativeField = newValue }
+    }
+    var magicCommand: String {
+        get { viewModel.magicCommand }
+        nonmutating set { viewModel.magicCommand = newValue }
+    }
+    var magicTarget: MagicTarget {
+        get { viewModel.magicTarget }
+        nonmutating set { viewModel.magicTarget = newValue }
+    }
+    var isGeneratingAlternativeDirect: Bool {
+        get { viewModel.isGeneratingAlternativeDirect }
+        nonmutating set { viewModel.isGeneratingAlternativeDirect = newValue }
+    }
+    var originalPrompt: Prompt? {
+        get { viewModel.originalPrompt }
+        nonmutating set { viewModel.originalPrompt = newValue }
+    }
+
+    private func vmBinding<T>(_ keyPath: ReferenceWritableKeyPath<NewPromptViewModel, T>) -> Binding<T> {
+        Binding(
+            get: { viewModel[keyPath: keyPath] },
+            set: { viewModel[keyPath: keyPath] = $0 }
+        )
+    }
+
     @State private var isSaving = false
     @State private var showingZenEditor = false
     @State private var zenTarget: ZenEditorTarget? = nil
@@ -81,18 +168,9 @@ struct NewPromptView: View {
     @State private var draggedImageIndex: Int? = nil
     @State private var showingFullScreenImage: Data? = nil
 
-    @State private var tags: [String] = []
-    @State private var newTag: String = ""
     @State private var showingTagEditor: Bool = false
     @State private var showingCloseAlert: Bool = false
     @State private var selectedImageIndex: Int = 0 // Track which image is selected for spacebar preview
-    
-    // Magic Options State
-    @State private var showingMagicOptions: Bool = false
-    @State private var magicCommand: String = ""
-    @State private var magicTarget: MagicTarget = .content
-    
-    @State private var isGeneratingAlternativeDirect: Bool = false
 
     @State private var insertionRequest: String? = nil
     @State private var replaceSnippetRequest: String? = nil
@@ -116,15 +194,8 @@ struct NewPromptView: View {
     @State private var activeGeneratingID: String? = nil
     @State private var showParticles: Bool = false
     @State private var showingVersionHistory: Bool = false
-    @State private var showingPremiumFor: String? = nil // Determina qué feature premium mostrar en el upsell
-
-    @State private var showNegativeField: Bool = false
-    @State private var showAlternativeField: Bool = false
-    @State private var customShortcut: String? = nil
-
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
-    @State private var targetAppBundleIDs: [String] = []
     @State private var showingShortcutHelp: Bool = false
     @State private var localMonitor: Any? = nil
     struct DiffComparison: Identifiable {
@@ -136,14 +207,8 @@ struct NewPromptView: View {
     }
 
     @State private var diffComparison: DiffComparison? = nil
-    @State private var branchMessage: String? = nil
-
-    @State private var isAutocompleting: Bool = false
-    @State private var isCategorizing: Bool = false
-    @State private var aiTask: Task<Void, Never>? = nil
 
     // Identificador para rastrear cambios y guardar borradores
-    @State private var originalPrompt: Prompt? = nil
     @State private var isDraftRestored = false
     /// Guard que impide que un auto-guardado pendiente se ejecute después de descartar
     @State private var isDiscarding: Bool = false
@@ -269,7 +334,7 @@ struct NewPromptView: View {
     init(prompt: Prompt? = nil, onClose: @escaping () -> Void) {
         self.prompt = prompt
         self.onClose = onClose
-        self._originalPrompt = State(initialValue: prompt)
+        self._viewModel = StateObject(wrappedValue: NewPromptViewModel(prompt: prompt))
     }
 
     @ViewBuilder
@@ -289,14 +354,14 @@ struct NewPromptView: View {
                 title: titleBinding,
                 content: contentBinding,
                 promptDescription: promptDescriptionBinding,
-                isFavorite: $isFavorite,
-                selectedFolder: $selectedFolder,
-                selectedIcon: $selectedIcon,
+                isFavorite: vmBinding(\.isFavorite),
+                selectedFolder: vmBinding(\.selectedFolder),
+                selectedIcon: vmBinding(\.selectedIcon),
                 fallbackIconName: selectedFolder.flatMap { PredefinedCategory.fromString($0)?.icon } ?? "doc.text.fill",
                 showingIconPicker: $showingIconPicker,
                 showingZenEditor: $showingZenEditor,
                 zenTarget: $zenTarget,
-                showingPremiumFor: $showingPremiumFor,
+                showingPremiumFor: vmBinding(\.showingPremiumFor),
                 insertionRequest: $insertionRequest,
                 replaceSnippetRequest: $replaceSnippetRequest,
                 showSnippets: $showSnippets,
@@ -320,7 +385,7 @@ struct NewPromptView: View {
                 aiResult: $aiResult,
                 originalPrompt: originalPrompt,
                 prompt: prompt,
-                branchMessage: $branchMessage,
+                branchMessage: vmBinding(\.branchMessage),
                 editorID: "main",
                 currentCategoryColor: currentCategoryColor
             )
@@ -331,10 +396,10 @@ struct NewPromptView: View {
             // SECTION 2: ADVANCED FIELDS
             if preferences.showAdvancedFields || !negativePrompt.isEmpty || alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
                 PromptAdvancedFieldsView(
-                    negativePrompt: $negativePrompt,
-                    alternatives: $alternatives,
+                    negativePrompt: vmBinding(\.negativePrompt),
+                    alternatives: vmBinding(\.alternatives),
                     content: contentBinding,
-                    branchMessage: $branchMessage,
+                    branchMessage: vmBinding(\.branchMessage),
                     focusNegative: $focusNegative,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
@@ -350,8 +415,8 @@ struct NewPromptView: View {
                     activeGeneratingID: $activeGeneratingID,
                     selectedNegativeRange: $selectedNegativeRange,
                     aiNegativeResult: $aiNegativeResult,
-                    showingPremiumFor: $showingPremiumFor,
-                    isGeneratingAlternativeDirect: $isGeneratingAlternativeDirect,
+                    showingPremiumFor: vmBinding(\.showingPremiumFor),
+                    isGeneratingAlternativeDirect: vmBinding(\.isGeneratingAlternativeDirect),
                     themeColor: themeColor,
                     currentCategoryColor: currentCategoryColor,
                     preferences: preferences,
@@ -415,7 +480,7 @@ struct NewPromptView: View {
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(.primary.opacity(0.8))
                                 Spacer()
-                                ReusableShortcutRecorderView(title: "", shortcutString: $customShortcut)
+                                ReusableShortcutRecorderView(title: "", shortcutString: vmBinding(\.customShortcut))
                             }
                         } else {
                             // Mostrar locked state para transparencia
@@ -445,15 +510,15 @@ struct NewPromptView: View {
                 }
 
                 PromptTagsEditorView(
-                    tags: $tags,
-                    newTag: $newTag,
+                    tags: vmBinding(\.tags),
+                    newTag: vmBinding(\.newTag),
                     showingTagEditor: $showingTagEditor,
                     preferences: preferences
                 )
 
                 // Contextual Awareness (App Association)
                 PromptAppTargetsView(
-                    targetAppBundleIDs: $targetAppBundleIDs,
+                    targetAppBundleIDs: vmBinding(\.targetAppBundleIDs),
                     themeColor: themeColor,
                     currentCategoryColor: currentCategoryColor,
                     preferences: preferences,
@@ -462,11 +527,11 @@ struct NewPromptView: View {
 
                 // Prompt Results (Extracted Component)
                 PromptImageShowcaseView(
-                    showcaseImages: $showcaseImages,
+                    showcaseImages: vmBinding(\.showcaseImages),
                     draggedImageIndex: $draggedImageIndex,
                     showingFullScreenImage: $showingFullScreenImage,
                     selectedImageIndex: $selectedImageIndex,
-                    branchMessage: $branchMessage,
+                    branchMessage: vmBinding(\.branchMessage),
                     preferences: preferences,
                     themeColor: themeColor
                 )
@@ -518,10 +583,10 @@ struct NewPromptView: View {
                 get: { index < aiAlternativeResults.count ? aiAlternativeResults[index] : nil },
                 set: { if index < aiAlternativeResults.count { aiAlternativeResults[index] = $0 } }
             ),
-            showingPremiumFor: $showingPremiumFor,
+            showingPremiumFor: vmBinding(\.showingPremiumFor),
             originalPrompt: originalPrompt,
             prompt: prompt,
-            branchMessage: $branchMessage,
+            branchMessage: vmBinding(\.branchMessage),
             editorID: "alt-\(index)",
             currentCategoryColor: currentCategoryColor
         ) {
@@ -773,9 +838,9 @@ struct NewPromptView: View {
                     hasUnsavedChanges: hasUnsavedChanges,
                     showingCloseAlert: $showingCloseAlert,
                     showingVersionHistory: $showingVersionHistory,
-                    showingPremiumFor: $showingPremiumFor,
+                    showingPremiumFor: vmBinding(\.showingPremiumFor),
                     isPinned: $isPinned,
-                    branchMessage: $branchMessage,
+                    branchMessage: vmBinding(\.branchMessage),
                     discardChanges: { discardChanges() },
                     saveCurrentDraft: { saveCurrentDraft() },
                     branchPrompt: { branchPrompt() },
@@ -872,8 +937,6 @@ struct NewPromptView: View {
             setupKeyboardMonitor()
         }
         .onDisappear {
-            aiTask?.cancel()
-            aiTask = nil
             if let monitor = localMonitor {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
@@ -888,6 +951,15 @@ struct NewPromptView: View {
             DispatchQueue.main.async {
                 self.setupOnAppear()
             }
+        }
+        .onReceive(viewModel.$title.dropFirst()) { _ in
+            syncHoistedFieldsFromViewModel()
+        }
+        .onReceive(viewModel.$content.dropFirst()) { _ in
+            syncHoistedFieldsFromViewModel()
+        }
+        .onReceive(viewModel.$promptDescription.dropFirst()) { _ in
+            syncHoistedFieldsFromViewModel()
         }
     }
 
@@ -927,9 +999,9 @@ struct NewPromptView: View {
                     ),
                     selectedRange: zenBindingSelection,
                     aiResult: zenBindingAIResult,
-                    showingPremiumFor: $showingPremiumFor,
+                    showingPremiumFor: vmBinding(\.showingPremiumFor),
                     originalPrompt: originalPrompt,
-                    branchMessage: $branchMessage
+                    branchMessage: vmBinding(\.branchMessage)
                 )
                 .environmentObject(preferences)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1070,7 +1142,7 @@ struct NewPromptView: View {
                                             .font(.system(size: 12, weight: .medium))
                                             .foregroundStyle(.secondary)
                                             
-                                        TextField("Ej: Haz el texto más amigable...", text: $magicCommand, axis: .vertical)
+                                        TextField("Ej: Haz el texto más amigable...", text: vmBinding(\.magicCommand), axis: .vertical)
                                             .textFieldStyle(.plain)
                                             .padding(12)
                                             .background(Color(NSColor.controlBackgroundColor))
@@ -1439,6 +1511,7 @@ struct NewPromptView: View {
 
                 if !self.negativePrompt.isEmpty { self.showNegativeField = true }
                 if !self.alternatives.isEmpty { self.showAlternativeField = true }
+                self.syncHoistedFieldsToViewModel()
             }
 
         } else if let prompt = prompt {
@@ -1469,6 +1542,7 @@ struct NewPromptView: View {
 
             if !negativePrompt.isEmpty { showNegativeField = true }
             if !alternatives.isEmpty { showAlternativeField = true }
+            syncHoistedFieldsToViewModel()
 
             // Lazy-load de imágenes
             if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
@@ -1787,98 +1861,42 @@ struct NewPromptView: View {
 
     // MARK: - AI Magic Features (ViewModel-backed)
 
-    private func makeWorkingViewModel() -> NewPromptViewModel {
-        let vm = NewPromptViewModel(prompt: originalPrompt ?? prompt)
-        vm.title = title
-        vm.content = content
-        vm.negativePrompt = negativePrompt
-        vm.alternatives = alternatives
-        vm.promptDescription = promptDescription
-        vm.selectedFolder = selectedFolder
-        vm.isFavorite = isFavorite
-        vm.selectedIcon = selectedIcon
-        vm.showcaseImages = showcaseImages
-        vm.tags = tags
-        vm.targetAppBundleIDs = targetAppBundleIDs
-        vm.customShortcut = customShortcut
-        vm.showingPremiumFor = showingPremiumFor
-        vm.showingMagicOptions = showingMagicOptions
-        vm.branchMessage = branchMessage
-        vm.isAutocompleting = isAutocompleting
-        vm.isCategorizing = isCategorizing
-        vm.showNegativeField = showNegativeField
-        vm.showAlternativeField = showAlternativeField
-        vm.magicCommand = magicCommand
-        vm.magicTarget = magicTarget
-        vm.isGeneratingAlternativeDirect = isGeneratingAlternativeDirect
-        return vm
+    private func syncHoistedFieldsToViewModel() {
+        viewModel.title = title
+        viewModel.content = content
+        viewModel.promptDescription = promptDescription
     }
 
-    private func applyViewModelState(_ vm: NewPromptViewModel) {
-        title = vm.title
-        content = vm.content
-        negativePrompt = vm.negativePrompt
-        alternatives = vm.alternatives
-        promptDescription = vm.promptDescription
-        selectedFolder = vm.selectedFolder
-        isFavorite = vm.isFavorite
-        selectedIcon = vm.selectedIcon
-        showcaseImages = vm.showcaseImages
-        tags = vm.tags
-        targetAppBundleIDs = vm.targetAppBundleIDs
-        customShortcut = vm.customShortcut
-        showingPremiumFor = vm.showingPremiumFor
-        showingMagicOptions = vm.showingMagicOptions
-        branchMessage = vm.branchMessage
-        isAutocompleting = vm.isAutocompleting
-        isCategorizing = vm.isCategorizing
-        showNegativeField = vm.showNegativeField
-        showAlternativeField = vm.showAlternativeField
-        magicCommand = vm.magicCommand
-        magicTarget = vm.magicTarget
-        isGeneratingAlternativeDirect = vm.isGeneratingAlternativeDirect
-    }
-
-    private func startViewModelSync(_ vm: NewPromptViewModel) {
-        aiTask?.cancel()
-        aiTask = Task {
-            while !Task.isCancelled {
-                var shouldStop = false
-                await MainActor.run {
-                    applyViewModelState(vm)
-                    shouldStop = !vm.isAutocompleting && !vm.isCategorizing && !vm.isGeneratingAlternativeDirect
-                }
-                if shouldStop { break }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-            }
-            await MainActor.run {
-                applyViewModelState(vm)
-            }
+    private func syncHoistedFieldsFromViewModel() {
+        if viewModel.title != title {
+            title = viewModel.title
+        }
+        if viewModel.content != content {
+            content = viewModel.content
+        }
+        if viewModel.promptDescription != promptDescription {
+            promptDescription = viewModel.promptDescription
         }
     }
 
     private func autocompletePromptContent() {
-        let vm = makeWorkingViewModel()
-        vm.autocompletePromptContent(preferences: preferences, promptService: promptService)
-        startViewModelSync(vm)
+        syncHoistedFieldsToViewModel()
+        viewModel.autocompletePromptContent(preferences: preferences, promptService: promptService)
     }
 
     private func executeMagicWithCommand() {
-        let vm = makeWorkingViewModel()
-        vm.executeMagicWithCommand(preferences: preferences)
-        startViewModelSync(vm)
+        syncHoistedFieldsToViewModel()
+        viewModel.executeMagicWithCommand(preferences: preferences)
     }
 
     private func autoCategorizePrompt() {
-        let vm = makeWorkingViewModel()
-        vm.autoCategorizePrompt(preferences: preferences, promptService: promptService)
-        startViewModelSync(vm)
+        syncHoistedFieldsToViewModel()
+        viewModel.autoCategorizePrompt(preferences: preferences, promptService: promptService)
     }
 
     private func generateAlternativeDirect() {
-        let vm = makeWorkingViewModel()
-        vm.generateAlternativeDirect(preferences: preferences)
-        startViewModelSync(vm)
+        syncHoistedFieldsToViewModel()
+        viewModel.generateAlternativeDirect(preferences: preferences)
     }
 
     private var snippetOverlay: some View {

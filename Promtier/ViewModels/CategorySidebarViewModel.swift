@@ -14,7 +14,11 @@ class CategorySidebarViewModel: ObservableObject {
     @Published var showingFolderManager = false
     @Published var dropTargetFolderId: UUID? = nil
     @Published var isTargetedFavoritos = false
-    @State var isTargetedSinCategoria = false
+    @Published var isTargetedSinCategoria = false
+
+    @Published private(set) var categoryCounts: [String: Int] = [:]
+    @Published private(set) var recentCount: Int = 0
+    @Published private(set) var favoritesCount: Int = 0
     
     // Reordenado (Sidebar)
     @Published var draggedFolder: Folder? = nil
@@ -29,13 +33,30 @@ class CategorySidebarViewModel: ObservableObject {
     @Published var isHeaderHovered = false
     @Published var isSystemSectionExpanded = true
     
-    func categoryCounts(for prompts: [Prompt]) -> [String: Int] {
+    func refreshCounters(with prompts: [Prompt]) {
         var counts: [String: Int] = [:]
+        var recent = 0
+        var favorites = 0
+
         for prompt in prompts {
             let folder = prompt.folder ?? "uncategorized"
             counts[folder, default: 0] += 1
+
+            if prompt.lastUsedAt != nil {
+                recent += 1
+            }
+            if prompt.isFavorite {
+                favorites += 1
+            }
         }
-        return counts
+
+        categoryCounts = counts
+        recentCount = recent
+        favoritesCount = favorites
+    }
+
+    func categoryCount(for folderName: String) -> Int {
+        categoryCounts[folderName, default: 0]
     }
     
     func movePrompt(id: String, to folderName: String?, promptService: PromptService, batchService: BatchOperationsService, preferences: PreferencesManager) {
