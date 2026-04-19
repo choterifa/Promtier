@@ -8,19 +8,38 @@
 import SwiftUI
 import AppKit
 
+struct OmniSearchResultItem {
+    let id: UUID
+    let prompt: Prompt
+    let title: String
+    let subtitle: String
+    let iconName: String
+    let categoryName: String?
+    let hasVariables: Bool
+    let hasNegative: Bool
+    let hasAlternatives: Bool
+    let categoryColor: Color
+    let isRecommended: Bool
+}
+
 struct OmniSearchView: View {
+    private struct SearchItemPayload {
+        let title: String
+        let subtitle: String
+        let iconName: String
+        let categoryName: String?
+        let hasVariables: Bool
+        let hasNegative: Bool
+        let hasAlternatives: Bool
+    }
+
     private struct SearchIndexEntry {
         let prompt: Prompt
         let titleLower: String
         let contentLower: String
         let descLower: String
         let folderLower: String
-    }
-
-    private struct SearchResultItem {
-        let prompt: Prompt
-        let categoryColor: Color
-        let isRecommended: Bool
+        let payload: SearchItemPayload
     }
 
     @EnvironmentObject var manager: OmniSearchManager
@@ -30,9 +49,10 @@ struct OmniSearchView: View {
     @State private var query: String = ""
     @State private var selectedIndex: Int = 0
     @State private var indexedPrompts: [SearchIndexEntry] = []
-    @State private var filteredResults: [SearchResultItem] = []
+    @State private var filteredResults: [OmniSearchResultItem] = []
     @State private var debouncedSearchTask: Task<Void, Never>? = nil
     @State private var visibleResultIndices: Set<Int> = []
+    @State private var folderColorByNameCache: [String: Color] = [:]
     @FocusState private var isFocused: Bool
     
     var body: some View {
@@ -101,9 +121,7 @@ struct OmniSearchView: View {
                         LazyVStack(spacing: 6) {
                             ForEach(Array(filteredResults.enumerated()), id: \.element.prompt.id) { index, result in
                                 OmniSearchRow(
-                                    prompt: result.prompt,
-                                    categoryColor: result.categoryColor,
-                                    isRecommended: result.isRecommended,
+                                    item: result,
                                     isSelected: selectedIndex == index,
                                     onSelect: {
                                         selectedIndex = index
@@ -189,6 +207,7 @@ struct OmniSearchView: View {
             }
         )
         .onAppear {
+            rebuildFolderColorCache(from: promptService.folders)
             rebuildSearchIndex(from: promptService.prompts)
             runSearch()
 
@@ -201,42 +220,42 @@ struct OmniSearchView: View {
             rebuildSearchIndex(from: prompts)
             runSearch()
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchOpened"))) { _ in
-            query = ""
-            selectedIndex = 0
+        .onReceive(promptService.$folders) { folders in
+            rebuildFolderColorCache(from: folders)
             runSearch()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                isFocused = true
-            }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchMove"))) { notification in
-            guard let direction = notification.object as? String else { return }
-            
-            DispatchQueue.main.async {
+        .onReceive(manager.$commandEvent) { event in
+            guard let event else { return }
+
+            switch event.command {
+            case .opened:
+                query = ""
+                selectedIndex = 0
+                runSearch()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    isFocused = true
+                }
+
+            case .moveDown:
                 let count = filteredResults.count
                 guard count > 0 else { return }
-                
-                if direction == "down" {
-                    if selectedIndex < count - 1 {
-                        selectedIndex += 1
-                        HapticService.shared.playLight()
-                    }
-                } else if direction == "up" {
-                    if selectedIndex > 0 {
-                        selectedIndex -= 1
-                        HapticService.shared.playLight()
-                    }
+                if selectedIndex < count - 1 {
+                    selectedIndex += 1
+                    HapticService.shared.playLight()
                 }
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchSubmit"))) { _ in
-            if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
-                copyAndClose(filteredResults[selectedIndex].prompt)
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchCopy"))) { _ in
-            if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
-                copyAndClose(filteredResults[selectedIndex].prompt)
+
+            case .moveUp:
+                let count = filteredResults.count
+                guard count > 0 else { return }
+                if selectedIndex > 0 {
+                    selectedIndex -= 1
+                    HapticService.shared.playLight()
+                }
+
+            case .submit, .copy:
+                if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
+                    copyAndClose(filteredResults[selectedIndex].prompt)
+                }
             }
         }
         .onDisappear {
@@ -257,25 +276,47 @@ struct OmniSearchView: View {
 
     private func rebuildSearchIndex(from prompts: [Prompt]) {
         indexedPrompts = prompts.map { prompt in
-            SearchIndexEntry(
+            let subtitle: String
+            if let desc = prompt.promptDescription, !desc.isEmpty {
+                subtitle = desc
+            } else {
+                subtitle = prompt.content
+            }
+
+            let payload = SearchItemPayload(
+                title: prompt.title,
+                subtitle: subtitle,
+                iconName: prompt.icon ?? "doc.text.fill",
+                categoryName: prompt.folder,
+                hasVariables: prompt.hasTemplateVariables(),
+                hasNegative: !(prompt.negativePrompt?.isEmpty ?? true),
+                hasAlternatives: !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true)
+            )
+
+            return SearchIndexEntry(
                 prompt: prompt,
                 titleLower: prompt.title.lowercased(),
                 contentLower: prompt.content.lowercased(),
                 descLower: (prompt.promptDescription ?? "").lowercased(),
-                folderLower: (prompt.folder ?? "").lowercased()
+                folderLower: (prompt.folder ?? "").lowercased(),
+                payload: payload
             )
         }
+    }
+
+    private func rebuildFolderColorCache(from folders: [Folder]) {
+        folderColorByNameCache = Dictionary(uniqueKeysWithValues: folders.map { folder in
+            (folder.name, Color(hex: folder.displayColor))
+        })
     }
 
     private func runSearch() {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let activeApp = PromptService.shared.activeAppBundleID
-        let folderColorByName = Dictionary(uniqueKeysWithValues: promptService.folders.map { folder in
-            (folder.name, Color(hex: folder.displayColor))
-        })
+        let folderColorByName = folderColorByNameCache
 
         if trimmedQuery.isEmpty {
-            let prompts = Array(
+            let entries = Array(
                 indexedPrompts
                     .sorted(by: { lhs, rhs in
                         let lhsRecommended = activeApp != nil && lhs.prompt.targetAppBundleIDs.contains(activeApp!)
@@ -287,11 +328,10 @@ struct OmniSearchView: View {
                         return lhs.prompt.createdAt > rhs.prompt.createdAt
                     })
                     .prefix(12)
-                    .map(\.prompt)
             )
 
-            filteredResults = prompts.map { prompt in
-                makeSearchResultItem(prompt: prompt, activeApp: activeApp, folderColorByName: folderColorByName)
+            filteredResults = entries.map { entry in
+                makeSearchResultItem(entry: entry, activeApp: activeApp, folderColorByName: folderColorByName)
             }
         } else {
             let searchTerms = trimmedQuery
@@ -299,7 +339,7 @@ struct OmniSearchView: View {
                 .components(separatedBy: .whitespacesAndNewlines)
                 .filter { !$0.isEmpty }
 
-            let scored = indexedPrompts.compactMap { entry -> (Prompt, Int)? in
+            let scored = indexedPrompts.compactMap { entry -> (SearchIndexEntry, Int)? in
                 var score = 0
 
                 for term in searchTerms {
@@ -322,18 +362,17 @@ struct OmniSearchView: View {
                     score += 5
                 }
 
-                return (entry.prompt, score)
+                return (entry, score)
             }
 
-            let prompts = Array(
+            let entries = Array(
                 scored
                     .sorted(by: { $0.1 > $1.1 })
                     .prefix(12)
-                    .map { $0.0 }
             )
 
-            filteredResults = prompts.map { prompt in
-                makeSearchResultItem(prompt: prompt, activeApp: activeApp, folderColorByName: folderColorByName)
+            filteredResults = entries.map { entry, _ in
+                makeSearchResultItem(entry: entry, activeApp: activeApp, folderColorByName: folderColorByName)
             }
         }
 
@@ -348,22 +387,34 @@ struct OmniSearchView: View {
     }
 
     private func makeSearchResultItem(
-        prompt: Prompt,
+        entry: SearchIndexEntry,
         activeApp: String?,
         folderColorByName: [String: Color]
-    ) -> SearchResultItem {
+    ) -> OmniSearchResultItem {
         let color: Color
-        if let folderName = prompt.folder, let mapped = folderColorByName[folderName] {
+        if let folderName = entry.payload.categoryName, let mapped = folderColorByName[folderName] {
             color = mapped
-        } else if let folderName = prompt.folder {
+        } else if let folderName = entry.payload.categoryName {
             color = PredefinedCategory.fromString(folderName)?.color ?? .blue
         } else {
             color = .blue
         }
 
-        let isRecommended = activeApp != nil && prompt.targetAppBundleIDs.contains(activeApp!)
+        let isRecommended = activeApp != nil && entry.prompt.targetAppBundleIDs.contains(activeApp!)
 
-        return SearchResultItem(prompt: prompt, categoryColor: color, isRecommended: isRecommended)
+        return OmniSearchResultItem(
+            id: entry.prompt.id,
+            prompt: entry.prompt,
+            title: entry.payload.title,
+            subtitle: entry.payload.subtitle,
+            iconName: entry.payload.iconName,
+            categoryName: entry.payload.categoryName,
+            hasVariables: entry.payload.hasVariables,
+            hasNegative: entry.payload.hasNegative,
+            hasAlternatives: entry.payload.hasAlternatives,
+            categoryColor: color,
+            isRecommended: isRecommended
+        )
     }
     
     private func copyAndClose(_ prompt: Prompt) {
@@ -378,9 +429,7 @@ struct OmniSearchView: View {
 
 // MARK: - OmniSearchRow
 struct OmniSearchRow: View {
-    let prompt: Prompt
-    let categoryColor: Color
-    let isRecommended: Bool
+    let item: OmniSearchResultItem
     let isSelected: Bool
     let onSelect: () -> Void
     let onCopy: () -> Void
@@ -395,38 +444,38 @@ struct OmniSearchRow: View {
                 // Icono del Prompt con color dinámico
                 ZStack {
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(categoryColor.opacity(0.12))
+                        .fill(item.categoryColor.opacity(0.12))
                         .frame(width: 46, height: 46)
                     
-                    Image(systemName: prompt.icon ?? "doc.text.fill")
+                    Image(systemName: item.iconName)
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(categoryColor)
+                        .foregroundColor(item.categoryColor)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(prompt.title)
+                        Text(item.title)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.primary)
                             .lineLimit(1)
                         
                         // Indicadores rápidos (Badges)
                         HStack(spacing: 5) {
-                            if prompt.hasTemplateVariables() {
+                            if item.hasVariables {
                                 Image(systemName: "curlybraces")
                                     .font(.system(size: 10, weight: .black))
                                     .foregroundColor(.blue.opacity(0.8))
                                     .help("Has variables")
                             }
                             
-                            if !(prompt.negativePrompt?.isEmpty ?? true) {
+                            if item.hasNegative {
                                 Circle()
                                     .fill(Color.red.opacity(0.7))
                                     .frame(width: 5, height: 5)
                                     .help("Has negative prompt")
                             }
                             
-                            if !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true) {
+                            if item.hasAlternatives {
                                 Circle()
                                     .fill(Color.green.opacity(0.6))
                                     .frame(width: 5, height: 5)
@@ -435,18 +484,18 @@ struct OmniSearchRow: View {
                         }
                         
                         // Badge de Categoría
-                        if let folder = prompt.folder, !folder.isEmpty {
+                        if let folder = item.categoryName, !folder.isEmpty {
                             Text(folder)
                                 .font(.system(size: 9, weight: .black))
-                                .foregroundColor(categoryColor)
+                                .foregroundColor(item.categoryColor)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(categoryColor.opacity(0.12))
+                                .background(item.categoryColor.opacity(0.12))
                                 .clipShape(Capsule())
                         }
                         
                         // Badge de Recomendación Inteligente (Contextual)
-                        if isRecommended {
+                        if item.isRecommended {
                             HStack(spacing: 3) {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 8, weight: .bold))
@@ -461,17 +510,10 @@ struct OmniSearchRow: View {
                         }
                     }
                     
-                    if let desc = prompt.promptDescription, !desc.isEmpty {
-                        Text(desc)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    } else {
-                        Text(prompt.content)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary.opacity(0.7))
-                            .lineLimit(1)
-                    }
+                    Text(item.subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .lineLimit(1)
                 }
                 
                 Spacer()
@@ -494,10 +536,10 @@ struct OmniSearchRow: View {
                 ZStack {
                     if isSelected {
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(categoryColor.opacity(0.06))
+                            .fill(item.categoryColor.opacity(0.06))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18)
-                                    .stroke(categoryColor.opacity(0.25), lineWidth: 1.2)
+                                    .stroke(item.categoryColor.opacity(0.25), lineWidth: 1.2)
                             )
                     } else if isHovered {
                         RoundedRectangle(cornerRadius: 18)

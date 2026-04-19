@@ -9,6 +9,19 @@ import SwiftUI
 import AppKit
 import Combine
 
+enum OmniSearchCommand {
+    case opened
+    case moveUp
+    case moveDown
+    case submit
+    case copy
+}
+
+struct OmniSearchCommandEvent {
+    let id = UUID()
+    let command: OmniSearchCommand
+}
+
 class OmniSearchPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
@@ -20,19 +33,19 @@ class OmniSearchPanel: NSPanel {
         let keyCode = event.keyCode
         
         if keyCode == 125 { // Down
-            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "down")
+            OmniSearchManager.shared.emit(.moveDown)
             return true
         } else if keyCode == 126 { // Up
-            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchMove"), object: "up")
+            OmniSearchManager.shared.emit(.moveUp)
             return true
         } else if keyCode == 36 || keyCode == 76 { // Enter / Return
-            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchSubmit"), object: nil)
+            OmniSearchManager.shared.emit(.submit)
             return true
         } else if keyCode == 53 { // Esc -> cerrar ventana
             DispatchQueue.main.async { OmniSearchManager.shared.hide() }
             return true
         } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 8 { // Cmd + C
-            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchCopy"), object: nil)
+            OmniSearchManager.shared.emit(.copy)
             return true
         }
         
@@ -48,9 +61,14 @@ class OmniSearchManager: NSObject, ObservableObject {
     private var previousApp: NSRunningApplication?
     
     @Published var isVisible: Bool = false
+    @Published private(set) var commandEvent: OmniSearchCommandEvent?
     
     private override init() {
         super.init()
+    }
+
+    func emit(_ command: OmniSearchCommand) {
+        commandEvent = OmniSearchCommandEvent(command: command)
     }
     
     func toggle() {
@@ -95,7 +113,7 @@ class OmniSearchManager: NSObject, ObservableObject {
             self.panel?.makeKey()
             NSApp.activate(ignoringOtherApps: true)
             self.isVisible = true
-            NotificationCenter.default.post(name: NSNotification.Name("OmniSearchOpened"), object: nil)
+            self.emit(.opened)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             // Segundo intento por si el sistema robó el foco durante la animación

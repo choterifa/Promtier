@@ -31,7 +31,9 @@ class FolderManagerViewModel: ObservableObject {
             let folder = prompt.folder ?? "uncategorized"
             counts[folder, default: 0] += 1
         }
-        categoryCounts = counts
+        if counts != categoryCounts {
+            categoryCounts = counts
+        }
     }
 
     func categoryCount(for folderName: String) -> Int {

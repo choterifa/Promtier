@@ -51,7 +51,9 @@ struct SearchViewSimple: View {
     @State private var prefetchedPreviewPaths: [String] = []
     @State private var prefetchedPreviewPromptId: UUID? = nil
     @State private var previewPathsCache: [UUID: [String]] = [:]
-    @State private var visiblePromptIds: Set<UUID> = []
+    @State private var previewCacheOrder: [UUID] = []
+    @State private var hoverPrewarmTask: Task<Void, Never>? = nil
+    @State private var hoverPrewarmPromptId: UUID? = nil
     
     @State private var dragStartedSidebarWidth: CGFloat = 0
     @State private var isSidebarDragging: Bool = false
@@ -345,16 +347,7 @@ struct SearchViewSimple: View {
             }
             
             delayedPrewarmTask?.cancel()
-            if let firstPrompt = promptService.filteredPrompts.first {
-                prewarmPreviewAssets(for: firstPrompt, force: true)
-            }
-            ensureValidSelection(autoselectFirst: true)
-
-            if let selectedPrompt,
-               let firstPrompt = promptService.filteredPrompts.first,
-               firstPrompt.id != selectedPrompt.id {
-                prewarmSecondaryImageAssets(for: firstPrompt, force: true)
-            }
+            coordinateSelectionAndPrewarm(forcePrimaryPrewarm: true)
         }
         .onDisappear {
             if let monitor = localEventMonitor {
@@ -365,6 +358,9 @@ struct SearchViewSimple: View {
             secondaryImagePrewarmTask?.cancel()
             previewPrefetchTask?.cancel()
             delayedPrewarmTask?.cancel()
+            hoverPrewarmTask?.cancel()
+            hoverPrewarmTask = nil
+            hoverPrewarmPromptId = nil
         }
         // Quitar el foco del buscador CADA VEZ que el popover se abre
         .onChange(of: menuBarManager.isPopoverShown) { _, isShown in
@@ -376,36 +372,31 @@ struct SearchViewSimple: View {
             }
         }
         .onChange(of: selectedPrompt?.id) { _, _ in
-            guard let selectedPrompt else { return }
-            prewarmPreviewAssets(for: selectedPrompt)
-
-            if let firstPrompt = promptService.filteredPrompts.first,
-               firstPrompt.id != selectedPrompt.id {
-                prewarmSecondaryImageAssets(for: firstPrompt)
-            }
+            handleSelectedPromptChanged()
         }
         .onChange(of: showingPreview) { _, isShown in
             if !isShown {
                 isFullScreenImageOpen = false
+                previewPrefetchTask?.cancel()
+                prewarmTask?.cancel()
+                secondaryImagePrewarmTask?.cancel()
             }
         }
         .onChange(of: promptService.filteredPrompts.map(\.id)) { _, _ in
-            pruneVisiblePromptIds()
-            ensureValidSelection(autoselectFirst: true)
+            coordinateSelectionAndPrewarm()
         }
         .onChange(of: promptService.filteredPrompts.first?.id) { _, newValue in
             guard let newValue,
                   let firstPrompt = promptService.filteredPrompts.first(where: { $0.id == newValue }) else { return }
 
-            if selectedPrompt == nil || selectedPrompt?.id == firstPrompt.id {
-                prewarmPreviewAssets(for: firstPrompt, force: true)
-            } else {
+            if selectedPrompt?.id != firstPrompt.id {
                 prewarmSecondaryImageAssets(for: firstPrompt, force: true)
             }
+            coordinateSelectionAndPrewarm(forcePrimaryPrewarm: true)
         }
         .onReceive(promptService.$prompts) { _ in
             refreshSelectedPromptFromStore()
-            ensureValidSelection(autoselectFirst: true)
+            coordinateSelectionAndPrewarm()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PromtierCustomShortcutPressed"))) { notification in
             guard let promptId = notification.object as? UUID,
@@ -721,16 +712,8 @@ struct SearchViewSimple: View {
                     isSearchFocused = false
                 }
                 .onChange(of: selectedPrompt?.id) { _, newId in
-                    guard let id = newId else { return }
-                    guard !visiblePromptIds.contains(id) else { return }
-
-                    if isNavigatingWithKeys {
-                        proxy.scrollTo(id, anchor: .center)
-                    } else {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            proxy.scrollTo(id, anchor: .center)
-                        }
-                    }
+                    guard let id = newId, isNavigatingWithKeys else { return }
+                    proxy.scrollTo(id, anchor: .center)
                 }
             }
         }
@@ -757,77 +740,126 @@ struct SearchViewSimple: View {
         return PredefinedCategory.fromString(folderName)?.icon ?? "folder.fill"
     }
 
-    private func markPromptVisible(_ id: UUID) {
-        if !visiblePromptIds.contains(id) {
-            visiblePromptIds.insert(id)
+    private func handlePromptHover(_ prompt: Prompt, isHovering: Bool) {
+        if isHovering {
+            if hoveredPrompt?.id != prompt.id {
+                hoveredPrompt = prompt
+            }
+            scheduleHoverPrewarm(for: prompt)
+            return
+        }
+
+        if hoveredPrompt?.id == prompt.id {
+            hoveredPrompt = nil
+        }
+        if hoverPrewarmPromptId == prompt.id {
+            hoverPrewarmTask?.cancel()
+            hoverPrewarmTask = nil
+            hoverPrewarmPromptId = nil
         }
     }
 
-    private func markPromptHidden(_ id: UUID) {
-        if visiblePromptIds.contains(id) {
-            visiblePromptIds.remove(id)
+    private func scheduleHoverPrewarm(for prompt: Prompt) {
+        hoverPrewarmTask?.cancel()
+        hoverPrewarmPromptId = prompt.id
+
+        hoverPrewarmTask = Task(priority: .utility) {
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard hoveredPrompt?.id == prompt.id else { return }
+                let latest = latestPrompt(for: prompt)
+                prewarmPreviewAssets(for: latest)
+            }
         }
     }
 
-    private func pruneVisiblePromptIds() {
-        let filteredIds = Set(promptService.filteredPrompts.map(\.id))
-        let pruned = visiblePromptIds.intersection(filteredIds)
-        if pruned != visiblePromptIds {
-            visiblePromptIds = pruned
+    private func selectedPreviewPopoverBinding(for promptId: UUID) -> Binding<Bool> {
+        Binding(
+            get: {
+                showingPreview && selectedPrompt?.id == promptId
+            },
+            set: { isPresented in
+                if !isPresented, selectedPrompt?.id == promptId {
+                    closePreviewImmediately(playSound: false)
+                }
+            }
+        )
+    }
+
+    private func closePreviewImmediately(playSound: Bool) {
+        guard showingPreview else { return }
+
+        previewPrefetchTask?.cancel()
+        prewarmTask?.cancel()
+        secondaryImagePrewarmTask?.cancel()
+        hoverPrewarmTask?.cancel()
+        hoverPrewarmTask = nil
+        hoverPrewarmPromptId = nil
+
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            showingPreview = false
+        }
+
+        isFullScreenImageOpen = false
+
+        if playSound, preferences.soundEnabled {
+            SoundService.shared.playPreviewSound()
+        }
+    }
+
+    @ViewBuilder
+    private func previewPopoverIfSelected<Content: View>(for prompt: Prompt, @ViewBuilder content: () -> Content) -> some View {
+        if showingPreview && selectedPrompt?.id == prompt.id {
+            content()
+                .popover(isPresented: selectedPreviewPopoverBinding(for: prompt.id), arrowEdge: .top) {
+                    PromptPreviewView(
+                        prompt: selectedPrompt ?? prompt,
+                        prefetchedShowcasePaths: (prefetchedPreviewPromptId == prompt.id) ? prefetchedPreviewPaths : nil,
+                        isFullScreenImageOpen: $isFullScreenImageOpen,
+                        onUse: { usePrompt(prompt) }
+                    )
+                }
+        } else {
+            content()
         }
     }
 
     @ViewBuilder
     private func promptGridCard(for prompt: Prompt) -> some View {
         let categoryColor = categoryColor(for: prompt)
-        PromptGridCard(
-            prompt: prompt,
-            precomputedCategoryColor: categoryColor,
-            isSelected: selectedPrompt?.id == prompt.id,
-            isHovered: hoveredPrompt?.id == prompt.id,
-            onTap: {
-                isSearchFocused = false
-                isNavigatingWithKeys = false
-                let latest = latestPrompt(for: prompt)
-                selectedPrompt = latest
-                prewarmPreviewAssets(for: latest)
-                if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
-                if showingPreview && preferences.soundEnabled {
-                    SoundService.shared.playInteractionSound()
+        previewPopoverIfSelected(for: prompt) {
+            PromptGridCard(
+                prompt: prompt,
+                precomputedCategoryColor: categoryColor,
+                isSelected: selectedPrompt?.id == prompt.id,
+                isHovered: hoveredPrompt?.id == prompt.id,
+                onTap: {
+                    isSearchFocused = false
+                    isNavigatingWithKeys = false
+                    let latest = latestPrompt(for: prompt)
+                    selectedPrompt = latest
+                    prewarmPreviewAssets(for: latest)
+                    if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
+                    if showingPreview && preferences.soundEnabled {
+                        SoundService.shared.playInteractionSound()
+                    }
+                    NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+                },
+                onDoubleTap: {
+                    isNavigatingWithKeys = false
+                    selectedPrompt = latestPrompt(for: prompt)
+                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                },
+                onCopy: { usePrompt(prompt) },
+                onHover: { isHovering in
+                    handlePromptHover(prompt, isHovering: isHovering)
                 }
-                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-            },
-            onDoubleTap: {
-                isNavigatingWithKeys = false
-                selectedPrompt = latestPrompt(for: prompt)
-                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-            },
-            onCopy: { usePrompt(prompt) },
-            onHover: { isHovering in
-                DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
-                if isHovering { prewarmPreviewAssets(for: prompt) }
-            }
-        )
-        .onAppear {
-            markPromptVisible(prompt.id)
-        }
-        .onDisappear {
-            markPromptHidden(prompt.id)
-        }
-        .contextMenu { promptContextMenu(for: prompt) }
-        .popover(
-            isPresented: Binding(
-                get: { showingPreview && selectedPrompt?.id == prompt.id },
-                set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
-            ),
-            arrowEdge: .top
-        ) {
-            PromptPreviewView(
-                prompt: selectedPrompt?.id == prompt.id ? (selectedPrompt ?? prompt) : prompt,
-                prefetchedShowcasePaths: (selectedPrompt?.id == prompt.id && prefetchedPreviewPromptId == prompt.id) ? prefetchedPreviewPaths : nil,
-                isFullScreenImageOpen: $isFullScreenImageOpen,
-                onUse: { usePrompt(prompt) }
             )
+            .contextMenu { promptContextMenu(for: prompt) }
         }
     }
 
@@ -835,56 +867,37 @@ struct SearchViewSimple: View {
     private func promptRow(for prompt: Prompt) -> some View {
         let categoryColor = categoryColor(for: prompt)
         let icon = resolvedIcon(for: prompt)
-        PromptCard(
-            prompt: prompt,
-            precomputedCategoryColor: categoryColor,
-            precomputedResolvedIcon: icon,
-            isSelected: selectedPrompt?.id == prompt.id,
-            isHovered: hoveredPrompt?.id == prompt.id,
-            onTap: {
-                isSearchFocused = false
-                isNavigatingWithKeys = false
-                let latest = latestPrompt(for: prompt)
-                selectedPrompt = latest
-                prewarmPreviewAssets(for: latest)
-                if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
-                if showingPreview && preferences.soundEnabled {
-                    SoundService.shared.playInteractionSound()
+        previewPopoverIfSelected(for: prompt) {
+            PromptCard(
+                prompt: prompt,
+                precomputedCategoryColor: categoryColor,
+                precomputedResolvedIcon: icon,
+                isSelected: selectedPrompt?.id == prompt.id,
+                isHovered: hoveredPrompt?.id == prompt.id,
+                onTap: {
+                    isSearchFocused = false
+                    isNavigatingWithKeys = false
+                    let latest = latestPrompt(for: prompt)
+                    selectedPrompt = latest
+                    prewarmPreviewAssets(for: latest)
+                    if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
+                    if showingPreview && preferences.soundEnabled {
+                        SoundService.shared.playInteractionSound()
+                    }
+                    NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+                },
+                onDoubleTap: {
+                    isNavigatingWithKeys = false
+                    selectedPrompt = latestPrompt(for: prompt)
+                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                },
+                onCopy: { usePrompt(prompt) },
+                onCopyPack: { copyPromptPack(prompt) },
+                onHover: { isHovering in
+                    handlePromptHover(prompt, isHovering: isHovering)
                 }
-                NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-            },
-            onDoubleTap: {
-                isNavigatingWithKeys = false
-                selectedPrompt = latestPrompt(for: prompt)
-                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-            },
-            onCopy: { usePrompt(prompt) },
-            onCopyPack: { copyPromptPack(prompt) },
-            onHover: { isHovering in
-                DispatchQueue.main.async { hoveredPrompt = isHovering ? prompt : nil }
-                if isHovering { prewarmPreviewAssets(for: prompt) }
-            }
-        )
-        .onAppear {
-            markPromptVisible(prompt.id)
-        }
-        .onDisappear {
-            markPromptHidden(prompt.id)
-        }
-        .contextMenu { promptContextMenu(for: prompt) }
-        .popover(
-            isPresented: Binding(
-                get: { showingPreview && selectedPrompt?.id == prompt.id },
-                set: { if !$0 && selectedPrompt?.id == prompt.id { showingPreview = false } }
-            ),
-            arrowEdge: .top
-        ) {
-            PromptPreviewView(
-                prompt: selectedPrompt?.id == prompt.id ? (selectedPrompt ?? prompt) : prompt,
-                prefetchedShowcasePaths: (selectedPrompt?.id == prompt.id && prefetchedPreviewPromptId == prompt.id) ? prefetchedPreviewPaths : nil,
-                isFullScreenImageOpen: $isFullScreenImageOpen,
-                onUse: { usePrompt(prompt) }
             )
+            .contextMenu { promptContextMenu(for: prompt) }
         }
     }
 
@@ -970,10 +983,7 @@ struct SearchViewSimple: View {
                 return nil
             }
             if showingPreview {
-                DispatchQueue.main.async {
-                    withAnimation(.spring(response: 0.3)) { showingPreview = false }
-                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-                }
+                closePreviewImmediately(playSound: true)
                 return nil
             }
             let currentState = menuBarManager.activeViewState
@@ -1029,13 +1039,12 @@ struct SearchViewSimple: View {
         if keyCode == 49 { // Space
             // Si el buscador tiene el foco, dejamos pasar el espacio para que el usuario pueda escribir
             if isSearchFocused { return event }
+            // Evita toggles en ráfaga cuando el usuario mantiene presionada la tecla.
+            if event.isARepeat { return nil }
             
             // Si hay un preview abierto, lo cerramos
             if showingPreview {
-                DispatchQueue.main.async {
-                    showingPreview = false
-                    if preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-                }
+                closePreviewImmediately(playSound: true)
                 return nil
             }
             
@@ -1053,11 +1062,9 @@ struct SearchViewSimple: View {
         }
         if keyCode == 14 { // 'e' key for edit
             if showingPreview, let _ = selectedPrompt {
-                DispatchQueue.main.async {
-                    showingPreview = false
-                    if preferences.soundEnabled { SoundService.shared.playMagicSound() }
-                    withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                }
+                closePreviewImmediately(playSound: false)
+                if preferences.soundEnabled { SoundService.shared.playMagicSound() }
+                withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 return nil
             }
         }
@@ -1083,23 +1090,17 @@ struct SearchViewSimple: View {
             guard !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
             isSearchFocused = false
-            DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
-                    let step = preferences.isGridView ? 2 : 1
-                    if currentIndex >= step {
-                        let nextPrompt = promptService.filteredPrompts[currentIndex - step]
-                        selectedPrompt = nextPrompt
-                        if showingPreview { refreshPreviewPrefetchIfNeeded(for: nextPrompt) }
-                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                        HapticService.shared.playLight()
-                    }
-                } else {
-                    let firstPrompt = promptService.filteredPrompts.first
-                    selectedPrompt = firstPrompt
-                    if showingPreview, let firstPrompt { refreshPreviewPrefetchIfNeeded(for: firstPrompt) }
-                    HapticService.shared.playLight()
+            let playFeedback = !event.isARepeat
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
+                let step = preferences.isGridView ? 2 : 1
+                if currentIndex >= step {
+                    let nextPrompt = promptService.filteredPrompts[currentIndex - step]
+                    applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
                 }
+            } else if let firstPrompt = promptService.filteredPrompts.first {
+                applyKeyboardSelectionChange(to: firstPrompt, playFeedback: playFeedback)
             }
             return nil
         }
@@ -1107,23 +1108,17 @@ struct SearchViewSimple: View {
             guard !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
             isSearchFocused = false
-            DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
-                    let step = preferences.isGridView ? 2 : 1
-                    if currentIndex <= promptService.filteredPrompts.count - (step + 1) {
-                        let nextPrompt = promptService.filteredPrompts[currentIndex + step]
-                        selectedPrompt = nextPrompt
-                        if showingPreview { refreshPreviewPrefetchIfNeeded(for: nextPrompt) }
-                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                        HapticService.shared.playLight()
-                    }
-                } else {
-                    let firstPrompt = promptService.filteredPrompts.first
-                    selectedPrompt = firstPrompt
-                    if showingPreview, let firstPrompt { refreshPreviewPrefetchIfNeeded(for: firstPrompt) }
-                    HapticService.shared.playLight()
+            let playFeedback = !event.isARepeat
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
+                // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
+                let step = preferences.isGridView ? 2 : 1
+                if currentIndex <= promptService.filteredPrompts.count - (step + 1) {
+                    let nextPrompt = promptService.filteredPrompts[currentIndex + step]
+                    applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
                 }
+            } else if let firstPrompt = promptService.filteredPrompts.first {
+                applyKeyboardSelectionChange(to: firstPrompt, playFeedback: playFeedback)
             }
             return nil
         }
@@ -1131,16 +1126,12 @@ struct SearchViewSimple: View {
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
             isSearchFocused = false
-            DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    if currentIndex > 0 {
-                        let nextPrompt = promptService.filteredPrompts[currentIndex - 1]
-                        selectedPrompt = nextPrompt
-                        if showingPreview { refreshPreviewPrefetchIfNeeded(for: nextPrompt) }
-                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                        HapticService.shared.playLight()
-                    }
-                }
+            let playFeedback = !event.isARepeat
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
+               currentIndex > 0 {
+                let nextPrompt = promptService.filteredPrompts[currentIndex - 1]
+                applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
             }
             return nil
         }
@@ -1148,16 +1139,12 @@ struct SearchViewSimple: View {
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             isNavigatingWithKeys = true
             isSearchFocused = false
-            DispatchQueue.main.async {
-                if let currentPrompt = selectedPrompt, let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
-                    if currentIndex < promptService.filteredPrompts.count - 1 {
-                        let nextPrompt = promptService.filteredPrompts[currentIndex + 1]
-                        selectedPrompt = nextPrompt
-                        if showingPreview { refreshPreviewPrefetchIfNeeded(for: nextPrompt) }
-                        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                        HapticService.shared.playLight()
-                    }
-                }
+            let playFeedback = !event.isARepeat
+            if let currentPrompt = selectedPrompt,
+               let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
+               currentIndex < promptService.filteredPrompts.count - 1 {
+                let nextPrompt = promptService.filteredPrompts[currentIndex + 1]
+                applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
             }
             return nil
         }
@@ -1413,6 +1400,37 @@ struct SearchViewSimple: View {
         }
     }
 
+    private func handleSelectedPromptChanged() {
+        guard let selectedPrompt else { return }
+        guard showingPreview else { return }
+        prewarmPreviewAssets(for: selectedPrompt)
+
+        if let firstPrompt = promptService.filteredPrompts.first,
+           firstPrompt.id != selectedPrompt.id {
+            prewarmSecondaryImageAssets(for: firstPrompt)
+        }
+    }
+
+    private func coordinateSelectionAndPrewarm(forcePrimaryPrewarm: Bool = false) {
+        ensureValidSelection(autoselectFirst: true)
+
+        let shouldPrewarm = showingPreview || forcePrimaryPrewarm
+        guard shouldPrewarm else { return }
+
+        guard let firstPrompt = promptService.filteredPrompts.first else { return }
+
+        if selectedPrompt == nil || selectedPrompt?.id == firstPrompt.id {
+            prewarmPreviewAssets(for: firstPrompt, force: forcePrimaryPrewarm)
+        } else {
+            prewarmSecondaryImageAssets(for: firstPrompt, force: forcePrimaryPrewarm)
+        }
+
+        if let selectedPrompt,
+           selectedPrompt.id != firstPrompt.id {
+            prewarmPreviewAssets(for: selectedPrompt)
+        }
+    }
+
     private enum PreviewOpenSound {
         case interaction
         case preview
@@ -1426,16 +1444,34 @@ struct SearchViewSimple: View {
     @MainActor
     private func storePreviewPathsInCache(_ paths: [String], for promptId: UUID) {
         guard !paths.isEmpty else { return }
+
+        if let existingIndex = previewCacheOrder.firstIndex(of: promptId) {
+            previewCacheOrder.remove(at: existingIndex)
+        }
+        previewCacheOrder.append(promptId)
+
         previewPathsCache[promptId] = paths
+
+        let maxCacheEntries = 160
+        if previewCacheOrder.count > maxCacheEntries {
+            let overflow = previewCacheOrder.count - maxCacheEntries
+            let evicted = previewCacheOrder.prefix(overflow)
+            for id in evicted {
+                previewPathsCache.removeValue(forKey: id)
+            }
+            previewCacheOrder.removeFirst(overflow)
+        }
     }
 
     private func loadPreviewPaths(for prompt: Prompt) async -> [String] {
         if !prompt.showcaseImagePaths.isEmpty {
-            await storePreviewPathsInCache(prompt.showcaseImagePaths, for: prompt.id)
+            await MainActor.run {
+                storePreviewPathsInCache(prompt.showcaseImagePaths, for: prompt.id)
+            }
             return prompt.showcaseImagePaths
         }
 
-        if let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+        if let cached = await MainActor.run(body: { cachedPreviewPaths(for: prompt.id) }), !cached.isEmpty {
             return cached
         }
 
@@ -1443,7 +1479,9 @@ struct SearchViewSimple: View {
 
         let fetched = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
         if !fetched.isEmpty {
-            await storePreviewPathsInCache(fetched, for: prompt.id)
+            await MainActor.run {
+                storePreviewPathsInCache(fetched, for: prompt.id)
+            }
         }
         return fetched
     }
@@ -1514,6 +1552,22 @@ struct SearchViewSimple: View {
         }
     }
 
+    private func applyKeyboardSelectionChange(to prompt: Prompt, playFeedback: Bool) {
+        let latest = latestPrompt(for: prompt)
+        selectedPrompt = latest
+
+        if showingPreview {
+            refreshPreviewPrefetchIfNeeded(for: latest)
+            if playFeedback && preferences.soundEnabled {
+                SoundService.shared.playInteractionSound()
+            }
+        }
+
+        if playFeedback {
+            HapticService.shared.playLight()
+        }
+    }
+
     private func prewarmPreviewAssets(for prompt: Prompt, force: Bool = false) {
         let previewKey = "\(prompt.id.uuidString):\(Int(preferences.fontSize.scale * 100)):\(prompt.modifiedAt.timeIntervalSince1970)"
         if !force && lastPrewarmedPreviewKey == previewKey { return }
@@ -1539,14 +1593,18 @@ struct SearchViewSimple: View {
 
             if prompt.showcaseImageCount > 0 {
                 var paths = prompt.showcaseImagePaths
-                if paths.isEmpty, let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+                if paths.isEmpty,
+                   let cached = await MainActor.run(body: { cachedPreviewPaths(for: prompt.id) }),
+                   !cached.isEmpty {
                     paths = cached
                 }
                 if paths.isEmpty {
                     paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
                 }
                 if !paths.isEmpty {
-                    await storePreviewPathsInCache(paths, for: prompt.id)
+                    await MainActor.run {
+                        storePreviewPathsInCache(paths, for: prompt.id)
+                    }
                 }
 
                 for (index, relativePath) in paths.prefix(2).enumerated() {
@@ -1571,7 +1629,9 @@ struct SearchViewSimple: View {
         secondaryImagePrewarmTask = Task(priority: .utility) {
             var paths = prompt.showcaseImagePaths
 
-            if paths.isEmpty, let cached = await cachedPreviewPaths(for: prompt.id), !cached.isEmpty {
+            if paths.isEmpty,
+               let cached = await MainActor.run(body: { cachedPreviewPaths(for: prompt.id) }),
+               !cached.isEmpty {
                 paths = cached
             }
 
@@ -1582,7 +1642,9 @@ struct SearchViewSimple: View {
             guard !Task.isCancelled else { return }
             guard !paths.isEmpty else { return }
 
-            await storePreviewPathsInCache(paths, for: prompt.id)
+            await MainActor.run {
+                storePreviewPathsInCache(paths, for: prompt.id)
+            }
 
             for (index, relativePath) in paths.prefix(2).enumerated() {
                 guard !Task.isCancelled else { return }

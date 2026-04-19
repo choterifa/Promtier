@@ -19,10 +19,9 @@ struct DownsampledImageView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.primary.opacity(0.06))
                     .overlay {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .scaleEffect(0.8)
-                            .opacity(0.85)
+                        Image(systemName: "photo")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.secondary.opacity(0.6))
                     }
             }
         }

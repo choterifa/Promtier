@@ -44,6 +44,8 @@ struct FloatingZenEditorView: View {
     @State private var hoverCloseBtn: Bool = false
     @State private var hoverSaveBtn: Bool = false
     @State private var folderColorByName: [String: Color] = [:]
+    @State private var didConfigureEditorScrollView: Bool = false
+    @State private var lastPulseTriggerAt: Date = .distantPast
     
     enum ZenField { case title, description, content }
     
@@ -139,13 +141,7 @@ struct FloatingZenEditorView: View {
                                 .scrollIndicators(.hidden)
                                 .disableNativeDrop()
                                 .onAppear {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        if let scrollView = findNSScrollView(view: NSApp.keyWindow?.contentView) {
-                                            scrollView.hasVerticalScroller = false
-                                            scrollView.verticalScroller?.alphaValue = 0
-                                            scrollView.drawsBackground = false
-                                        }
-                                    }
+                                    configureEditorScrollViewIfNeeded()
                                 }
                         }
                         .padding(14)
@@ -264,6 +260,10 @@ struct FloatingZenEditorView: View {
             
             // Animación "Hey úsame" (pulseMagic) al pegar contenido en el prompt
             if newValue.count - oldValue.count >= 5, isMagicAvailable {
+                let now = Date()
+                guard now.timeIntervalSince(lastPulseTriggerAt) >= 0.15 else { return }
+                lastPulseTriggerAt = now
+
                 pulseMagicResetWorkItem?.cancel()
 
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -297,6 +297,19 @@ struct FloatingZenEditorView: View {
             guard let hex = folder.color else { return nil }
             return (folder.name, Color(hex: hex))
         })
+    }
+
+    private func configureEditorScrollViewIfNeeded() {
+        guard !didConfigureEditorScrollView else { return }
+        didConfigureEditorScrollView = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let scrollView = findNSScrollView(view: NSApp.keyWindow?.contentView) {
+                scrollView.hasVerticalScroller = false
+                scrollView.verticalScroller?.alphaValue = 0
+                scrollView.drawsBackground = false
+            }
+        }
     }
     
     // MARK: - Premium Background
@@ -689,6 +702,8 @@ struct FloatingZenEditorView: View {
     // MARK: - Screen OCR (TextSniper Style)
     
     private func triggerScreenOCR() {
+        guard !screenOCRLoading else { return }
+
         screenOCRLoading = true
         HapticService.shared.playImpact()
         
@@ -735,7 +750,11 @@ struct FloatingZenEditorView: View {
     }
 
     func performOCR(imageData: Data) {
-        let requestHandler = VNImageRequestHandler(data: imageData, options: [:])
+        guard !isOCRing else { return }
+        isOCRing = true
+
+        let preparedData = preparedOCRInputData(from: imageData)
+        let requestHandler = VNImageRequestHandler(data: preparedData, options: [:])
         let request = VNRecognizeTextRequest { request, error in
             guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
             let extractedText = observations.compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
@@ -753,6 +772,8 @@ struct FloatingZenEditorView: View {
                 } else {
                     HapticService.shared.playError()
                 }
+
+                isOCRing = false
             }
         }
         request.recognitionLevel = .accurate
@@ -763,8 +784,36 @@ struct FloatingZenEditorView: View {
                 try requestHandler.perform([request])
             } catch {
                 print("Vision OCR Error: \(error)")
+                DispatchQueue.main.async {
+                    isOCRing = false
+                }
             }
         }
+    }
+
+    private func preparedOCRInputData(from data: Data) -> Data {
+        let maxDim: CGFloat = 1900
+        guard let image = NSImage(data: data) else { return data }
+
+        let size = image.size
+        guard size.width > 0, size.height > 0 else { return data }
+
+        let scale = min(maxDim / size.width, maxDim / size.height, 1.0)
+        guard scale < 1.0 else { return data }
+
+        let newSize = NSSize(width: size.width * scale, height: size.height * scale)
+        let newImage = NSImage(size: newSize)
+        newImage.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: newSize))
+        newImage.unlockFocus()
+
+        guard let tiffData = newImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let jpg = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
+            return data
+        }
+
+        return jpg
     }
     
     private func extractMagicPrompt(from data: Data) {

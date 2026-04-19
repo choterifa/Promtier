@@ -22,7 +22,9 @@ struct FloatingAIDraftView: View {
     @State private var toastIcon: String = "checkmark.circle.fill"
     @State private var toastTimer: Timer?
     @State private var typewriterTimer: Timer?
+    @State private var contentWordCountTask: Task<Void, Never>?
     @State private var lastToastShownAt: Date = .distantPast
+    @State private var isTypewriterAnimating: Bool = false
     @State private var contentWordCount: Int = 0
     @State private var responseWordCount: Int = 0
     
@@ -49,60 +51,7 @@ struct FloatingAIDraftView: View {
             Divider().opacity(0.12)
             
             HStack(spacing: 0) {
-                // ── COLUMNA IZQUIERDA: INPUT ─────────────────────────────────
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        HStack(spacing: 6) {
-                            Image(systemName: "text.justify.left")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("PROMPT ORIGINAL")
-                                .font(.system(size: 9, weight: .black))
-                                .tracking(1.2)
-                        }
-                        .foregroundColor(.secondary.opacity(0.6))
-                        Spacer()
-                    }
-                    .frame(height: 28) // Fixed height for alignment
-                    .padding(.top, 20)
-                    .padding(.leading, 24).padding(.trailing, 16)
-                    
-                    ZStack(alignment: .topLeading) {
-                        if manager.content.isEmpty {
-                            Text("Pega o escribe tu borrador aquí...")
-                                .foregroundColor(.secondary.opacity(0.4))
-                                .font(.system(size: 14 * preferences.fontSize.scale))
-                                .padding(.horizontal, 16).padding(.vertical, 12)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $manager.content)
-                            .font(.system(size: 14 * preferences.fontSize.scale))
-                            .lineSpacing(5)
-                            .scrollContentBackground(.hidden)
-                            .disableNativeDrop() // Disable AppKit stealing the drag
-                            .padding(12)
-                            .focused($isDraftFocused)
-                    }
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
-                    .padding(.leading, 24).padding(.trailing, 16)
-                    .padding(.top, 10)
-                    
-                    // Info Row (Input)
-                    HStack {
-                        HStack(spacing: 4) {
-                            Text("\(manager.content.count) carácteres")
-                            Text("•")
-                            Text("\(contentWordCount) palabras")
-                        }
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.5))
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 8)
-                    .padding(.bottom, 20)
-                }
-                .frame(width: 370)
+                inputColumnView
                 
                 // ── DIVISOR SUTIL ───────────────────────────────────────────
                 Rectangle()
@@ -110,176 +59,7 @@ struct FloatingAIDraftView: View {
                     .frame(width: 1)
                     .padding(.vertical, 40)
                 
-                // ── COLUMNA DERECHA: RESULTADO IA ──────────────────────────────
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "text.justify.left")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("RESULTADO IA")
-                                .font(.system(size: 9, weight: .black))
-                                .tracking(1.2)
-                        }
-                        .foregroundColor(.purple)
-                        
-                        if !manager.responseText.isEmpty && !manager.isGenerating {
-                            HStack(spacing: 6) {
-                                // Guardar como nuevo
-                                Button(action: { 
-                                    saveResultAsPrompt()
-                                }) {
-                                    Image(systemName: "square.and.arrow.down.fill")
-                                        .font(.system(size: 10, weight: .bold))
-                                }
-                                .buttonStyle(PlainHoverButtonStyle(color: .blue, padding: (8, 6)))
-                                .help("Guardar en galería")
-                                .fixedSize()
-                                
-                                // Comparar
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        manager.isDiffActive.toggle()
-                                    }
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: manager.isDiffActive ? "doc.plaintext.fill" : "rectangle.2.swap")
-                                        Text(manager.isDiffActive ? "Texto" : "Diff")
-                                            .lineLimit(1)
-                                    }
-                                    .font(.system(size: 10, weight: .bold))
-                                }
-                                .buttonStyle(PlainHoverButtonStyle(color: .purple, active: manager.isDiffActive, padding: (8, 6)))
-                                .help(manager.isDiffActive ? "Ver resultado final" : "Comparar cambios")
-                                .fixedSize()
-                                
-                                // Reemplazar original
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        manager.content = manager.responseText
-                                        manager.responseText = ""
-                                    }
-                                    HapticService.shared.playLight()
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "arrow.left.arrow.right.circle.fill")
-                                        Text("Refill")
-                                            .lineLimit(1)
-                                    }
-                                    .font(.system(size: 10, weight: .bold))
-                                }
-                                .buttonStyle(PlainHoverButtonStyle(color: .blue, padding: (8, 6)))
-                                .help("Mover resultado al editor original")
-                                .fixedSize()
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    .frame(height: 28) // Fixed height for alignment
-                    .padding(.top, 20)
-                    .padding(.leading, 16).padding(.trailing, 24)
-                    
-                    ZStack(alignment: .topLeading) {
-                        if manager.isGenerating {
-                            VStack(spacing: 12) {
-                                ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
-                                Text("IA trabajando...")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else if let error = manager.error {
-                            VStack(spacing: 16) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.red.opacity(0.8))
-                                
-                                VStack(spacing: 8) {
-                                    Text("Error de Conexión")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.primary)
-                                    
-                                    Text(error)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 16)
-                                }
-                                
-                                Button(action: {
-                                    if let lastReq = manager.history.last?.input {
-                                        runAI(instruction: lastReq)
-                                    } else {
-                                        manager.error = nil
-                                    }
-                                }) {
-                                    Text("Reintentar")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.red.opacity(0.8))
-                                        .cornerRadius(8)
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.top, 8)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.red.opacity(0.05)))
-                        } else if !manager.responseText.isEmpty {
-                            if manager.isDiffActive {
-                                ScrollView(showsIndicators: false) {
-                                    DiffTextView(oldText: manager.content, newText: manager.responseText)
-                                        .padding(12)
-                                }
-                                .background(RoundedRectangle(cornerRadius: 18).fill(Color.primary.opacity(0.02)))
-                            } else {
-                                ScrollView(showsIndicators: false) {
-                                    Text(manager.responseText)
-                                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                                        .lineSpacing(5)
-                                        .textSelection(.enabled)
-                                        .padding(12)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
-                        } else {
-                            // Estado vacío simétrico
-                            VStack(spacing: 12) {
-                                Image(systemName: "wand.and.stars")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.secondary.opacity(0.15))
-                                Text("Los resultados de la IA\naparecerán aquí")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.secondary.opacity(0.25))
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    }
-                    .padding(14)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
-                    .padding(.leading, 16).padding(.trailing, 24)
-                    .padding(.top, 10)
-                    
-                    // Info Row (Output)
-                    HStack {
-                        HStack(spacing: 4) {
-                            Text("\(manager.responseText.count) carácteres")
-                            Text("•")
-                            Text("\(responseWordCount) palabras")
-                        }
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.5))
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 8)
-                    .padding(.bottom, 20)
-                }
-                .frame(width: 370)
-                .background(Color.purple.opacity(0.015))
+                outputColumnView
                 
             }
             
@@ -317,12 +97,17 @@ struct FloatingAIDraftView: View {
             toastTimer = nil
             typewriterTimer?.invalidate()
             typewriterTimer = nil
+            contentWordCountTask?.cancel()
+            contentWordCountTask = nil
+            isTypewriterAnimating = false
         }
         .onChange(of: manager.content) { _, _ in
-            contentWordCount = countWords(in: manager.content)
+            scheduleContentWordCountRefresh()
         }
         .onChange(of: manager.responseText) { _, _ in
-            responseWordCount = countWords(in: manager.responseText)
+            if !isTypewriterAnimating {
+                responseWordCount = countWords(in: manager.responseText)
+            }
         }
         .onChange(of: manager.isVisible) { _, visible in
             if visible {
@@ -337,11 +122,236 @@ struct FloatingAIDraftView: View {
                 }
                 typewriterTimer?.invalidate()
                 typewriterTimer = nil
+                contentWordCountTask?.cancel()
+                contentWordCountTask = nil
+                isTypewriterAnimating = false
             }
         }
         .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
             generatePromptFromImage(data: data)
         }
+    }
+
+    private var inputColumnView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "text.justify.left")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("PROMPT ORIGINAL")
+                        .font(.system(size: 9, weight: .black))
+                        .tracking(1.2)
+                }
+                .foregroundColor(.secondary.opacity(0.6))
+                Spacer()
+            }
+            .frame(height: 28)
+            .padding(.top, 20)
+            .padding(.leading, 24).padding(.trailing, 16)
+
+            ZStack(alignment: .topLeading) {
+                if manager.content.isEmpty {
+                    Text("Pega o escribe tu borrador aquí...")
+                        .foregroundColor(.secondary.opacity(0.4))
+                        .font(.system(size: 14 * preferences.fontSize.scale))
+                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $manager.content)
+                    .font(.system(size: 14 * preferences.fontSize.scale))
+                    .lineSpacing(5)
+                    .scrollContentBackground(.hidden)
+                    .disableNativeDrop()
+                    .padding(12)
+                    .focused($isDraftFocused)
+            }
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
+            .padding(.leading, 24).padding(.trailing, 16)
+            .padding(.top, 10)
+
+            HStack {
+                HStack(spacing: 4) {
+                    Text("\(manager.content.count) carácteres")
+                    Text("•")
+                    Text("\(contentWordCount) palabras")
+                }
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+
+                Spacer()
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+        .frame(width: 370)
+    }
+
+    private var outputColumnView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "text.justify.left")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("RESULTADO IA")
+                        .font(.system(size: 9, weight: .black))
+                        .tracking(1.2)
+                }
+                .foregroundColor(.purple)
+
+                if !manager.responseText.isEmpty && !manager.isGenerating {
+                    HStack(spacing: 6) {
+                        Button(action: {
+                            saveResultAsPrompt()
+                        }) {
+                            Image(systemName: "square.and.arrow.down.fill")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .buttonStyle(PlainHoverButtonStyle(color: .blue, padding: (8, 6)))
+                        .help("Guardar en galería")
+                        .fixedSize()
+
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                manager.isDiffActive.toggle()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: manager.isDiffActive ? "doc.plaintext.fill" : "rectangle.2.swap")
+                                Text(manager.isDiffActive ? "Texto" : "Diff")
+                                    .lineLimit(1)
+                            }
+                            .font(.system(size: 10, weight: .bold))
+                        }
+                        .buttonStyle(PlainHoverButtonStyle(color: .purple, active: manager.isDiffActive, padding: (8, 6)))
+                        .help(manager.isDiffActive ? "Ver resultado final" : "Comparar cambios")
+                        .fixedSize()
+
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                manager.content = manager.responseText
+                                manager.responseText = ""
+                            }
+                            HapticService.shared.playLight()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                                Text("Refill")
+                                    .lineLimit(1)
+                            }
+                            .font(.system(size: 10, weight: .bold))
+                        }
+                        .buttonStyle(PlainHoverButtonStyle(color: .blue, padding: (8, 6)))
+                        .help("Mover resultado al editor original")
+                        .fixedSize()
+                    }
+                }
+
+                Spacer()
+            }
+            .frame(height: 28)
+            .padding(.top, 20)
+            .padding(.leading, 16).padding(.trailing, 24)
+
+            ZStack(alignment: .topLeading) {
+                if manager.isGenerating {
+                    VStack(spacing: 12) {
+                        ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
+                        Text("IA trabajando...")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = manager.error {
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(.red.opacity(0.8))
+
+                        VStack(spacing: 8) {
+                            Text("Error de Conexión")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.primary)
+
+                            Text(error)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 16)
+                        }
+
+                        Button(action: {
+                            if let lastReq = manager.history.last?.input {
+                                runAI(instruction: lastReq)
+                            } else {
+                                manager.error = nil
+                            }
+                        }) {
+                            Text("Reintentar")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.red.opacity(0.8))
+                                .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.red.opacity(0.05)))
+                } else if !manager.responseText.isEmpty {
+                    if manager.isDiffActive {
+                        ScrollView(showsIndicators: false) {
+                            DiffTextView(oldText: manager.content, newText: manager.responseText)
+                                .padding(12)
+                        }
+                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.primary.opacity(0.02)))
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            Text(manager.responseText)
+                                .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                                .lineSpacing(5)
+                                .textSelection(.enabled)
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 24))
+                            .foregroundColor(.secondary.opacity(0.15))
+                        Text("Los resultados de la IA\naparecerán aquí")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.25))
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
+            .padding(.leading, 16).padding(.trailing, 24)
+            .padding(.top, 10)
+
+            HStack {
+                HStack(spacing: 4) {
+                    Text("\(manager.responseText.count) carácteres")
+                    Text("•")
+                    Text("\(responseWordCount) palabras")
+                }
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+
+                Spacer()
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+        .frame(width: 370)
+        .background(Color.purple.opacity(0.015))
     }
 
     private func countWords(in text: String) -> Int {
@@ -351,6 +361,16 @@ struct FloatingAIDraftView: View {
     private func refreshWordCounts() {
         contentWordCount = countWords(in: manager.content)
         responseWordCount = countWords(in: manager.responseText)
+    }
+
+    private func scheduleContentWordCountRefresh() {
+        let snapshot = manager.content
+        contentWordCountTask?.cancel()
+        contentWordCountTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            guard !Task.isCancelled else { return }
+            contentWordCount = countWords(in: snapshot)
+        }
     }
 
     private func setupKeyboardMonitor() {
@@ -784,75 +804,45 @@ struct FloatingAIDraftView: View {
         typewriterTimer = nil
         manager.responseText = ""
         responseWordCount = 0
-        manager.isGenerating = true
         if imageData != nil { isMagicImageProcessing = true }
-        manager.error = nil
         customCommand = ""
         HapticService.shared.playImpact()
-        
-        let systemPrompt = composeSystemPrompt(instruction: instruction, content: content, imageData: imageData)
-        
-        Task {
-            do {
-                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: imageData)
-                
-                await MainActor.run {
-                    manager.isGenerating = false
-                    isMagicImageProcessing = false
-                    typewriterAnimation(response)
-                    manager.addToHistory(input: content, output: response)
-                    if preferences.autoCopyDraft {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(response, forType: .string)
-                    }
-                    HapticService.shared.playSuccess()
-                }
-            } catch {
-                await MainActor.run {
-                    manager.error = error.localizedDescription
-                    manager.isGenerating = false
-                    isMagicImageProcessing = false
-                }
+        manager.executeDraftTransformation(
+            instruction: instruction,
+            content: content,
+            imageData: imageData,
+            autoCopy: preferences.autoCopyDraft,
+            onSuccess: { response in
+                isMagicImageProcessing = false
+                typewriterAnimation(response)
+                manager.addToHistory(input: content, output: response)
+                HapticService.shared.playSuccess()
+            },
+            onFailure: { _ in
+                isMagicImageProcessing = false
             }
-        }
-    }
-    
-    private func composeSystemPrompt(instruction: String, content: String, imageData: Data? = nil) -> String {
-        if imageData != nil {
-            return """
-            You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
-            
-            # INSTRUCTION FOR YOU:
-            \(instruction)
-            
-            # IMPORTANT:
-            Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
-            """
-        }
-        
-        return """
-        You are an elite Prompt Engineer assistant. Your task is to apply a specific transformation to an existing AI prompt.
-        
-        # INSTRUCTION FOR YOU:
-        \(instruction)
-        
-        # ORIGINAL PROMPT TO EDIT:
-        \(content)
-        
-        # IMPORTANT:
-        Respond ONLY with the final transformed prompt. Do not add quotes around it. Do not include introductory text like "Here is the improved prompt:". Just the raw result.
-        """
+        )
     }
     
     private func typewriterAnimation(_ fullText: String) {
         typewriterTimer?.invalidate()
         typewriterTimer = nil
+        isTypewriterAnimating = false
 
         manager.responseText = ""
         responseWordCount = 0
 
         let words = fullText.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         let totalWords = words.count
+
+        // Evita cientos de ticks para respuestas muy largas y mantiene UI fluida.
+        if totalWords > 360 {
+            manager.responseText = fullText
+            responseWordCount = totalWords
+            return
+        }
+
+        isTypewriterAnimating = true
         let wordsPerTick: Int
 
         if totalWords <= 40 {
@@ -878,6 +868,7 @@ struct FloatingAIDraftView: View {
             } else {
                 timer.invalidate()
                 typewriterTimer = nil
+                isTypewriterAnimating = false
             }
         }
     }

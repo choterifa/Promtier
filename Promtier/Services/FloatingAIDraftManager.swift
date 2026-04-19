@@ -11,6 +11,13 @@ import Combine
 
 class FloatingAIDraftManager: NSObject, ObservableObject {
     static let shared = FloatingAIDraftManager()
+
+    enum ExecutionPhase {
+        case idle
+        case generating
+        case completed
+        case failed
+    }
     
     private var panel: NSPanel?
     
@@ -23,6 +30,7 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     @Published var isGenerating: Bool = false
     @Published var error: String?
     @Published var isDiffActive: Bool = false
+    @Published private(set) var executionPhase: ExecutionPhase = .idle
     
     // Historial de la sesión (solo para la instancia actual, no se persiste)
     struct AIDraftHistoryItem: Identifiable, Equatable {
@@ -35,6 +43,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     @Published var history: [AIDraftHistoryItem] = []
     private var lastHistoryMutationAt: Date = .distantPast
     private let minHistoryMutationInterval: TimeInterval = 0.35
+    private var executionTask: Task<Void, Never>?
+    private var activeExecutionToken: UUID?
     
     func addToHistory(input: String, output: String) {
         // Evitar duplicados consecutivos exactos
@@ -97,6 +107,100 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         panel?.orderOut(nil)
         isVisible = false
         // No guardamos nada, esto es "sin entrar"
+    }
+
+    @MainActor
+    func executeDraftTransformation(
+        instruction: String,
+        content: String,
+        imageData: Data? = nil,
+        autoCopy: Bool,
+        onSuccess: @escaping @MainActor (_ response: String) -> Void,
+        onFailure: @escaping @MainActor (_ message: String) -> Void
+    ) {
+        executionTask?.cancel()
+
+        let token = UUID()
+        activeExecutionToken = token
+        isGenerating = true
+        error = nil
+        executionPhase = .generating
+
+        let systemPrompt = composeSystemPrompt(
+            instruction: instruction,
+            content: content,
+            imageData: imageData
+        )
+
+        executionTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: imageData)
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    guard self.activeExecutionToken == token else { return }
+                    self.isGenerating = false
+                    self.executionPhase = .completed
+                    self.executionTask = nil
+                    if autoCopy {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(response, forType: .string)
+                    }
+                    onSuccess(response)
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard self.activeExecutionToken == token else { return }
+                    let message = error.localizedDescription
+                    self.error = message
+                    self.isGenerating = false
+                    self.executionPhase = .failed
+                    self.executionTask = nil
+                    onFailure(message)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    func cancelExecution() {
+        executionTask?.cancel()
+        executionTask = nil
+        activeExecutionToken = nil
+        if isGenerating {
+            isGenerating = false
+        }
+        executionPhase = .idle
+    }
+
+    private func composeSystemPrompt(instruction: String, content: String, imageData: Data?) -> String {
+        if imageData != nil {
+            return """
+            You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
+
+            # INSTRUCTION FOR YOU:
+            \(instruction)
+
+            # IMPORTANT:
+            Respond ONLY with the final transformed or generated prompt based on the image visually speaking. Do not add quotes around it. Do not include introductory text like "Here is the prompt:". Just the raw result.
+            """
+        }
+
+        return """
+        You are an elite Prompt Engineer assistant. Your task is to apply a specific transformation to an existing AI prompt.
+
+        # INSTRUCTION FOR YOU:
+        \(instruction)
+
+        # ORIGINAL PROMPT TO EDIT:
+        \(content)
+
+        # IMPORTANT:
+        Respond ONLY with the final transformed prompt. Do not add quotes around it. Do not include introductory text like "Here is the improved prompt:". Just the raw result.
+        """
     }
     
     private func createPanel() {

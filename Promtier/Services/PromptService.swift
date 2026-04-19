@@ -14,6 +14,11 @@ import SwiftUI
 // SERVICIO PRINCIPAL: Gestión completa de prompts
 class PromptService: ObservableObject {
     static let shared = PromptService()
+
+    private enum ShowcaseImageLoadPolicy {
+        static let runtimeMaxImages = 3
+        static let runtimeMaxTotalBytes = 24 * 1024 * 1024
+    }
     
     private let dataController = DataController.shared
     private let clipboardService = ClipboardService.shared
@@ -406,6 +411,30 @@ class PromptService: ObservableObject {
         searchIndex.removeValue(forKey: id)
     }
 
+    private func loadShowcaseImages(
+        from paths: [String],
+        maxImages: Int = ShowcaseImageLoadPolicy.runtimeMaxImages,
+        maxTotalBytes: Int? = nil
+    ) -> [Data] {
+        guard !paths.isEmpty else { return [] }
+
+        var loaded: [Data] = []
+        loaded.reserveCapacity(min(paths.count, maxImages))
+
+        var totalBytes = 0
+        for relativePath in paths.prefix(maxImages) {
+            guard let data = ImageStore.shared.loadData(relativePath: relativePath) else { continue }
+
+            if let maxTotalBytes, totalBytes + data.count > maxTotalBytes {
+                break
+            }
+
+            totalBytes += data.count
+            loaded.append(data)
+        }
+        return loaded
+    }
+
     func promptSnapshot(byId id: UUID) -> Prompt? {
         promptLookup[id]
     }
@@ -555,8 +584,12 @@ class PromptService: ObservableObject {
 
                         if includeImages {
                             if !p.showcaseImagePaths.isEmpty {
-                                p.showcaseImages = p.showcaseImagePaths.compactMap { ImageStore.shared.loadData(relativePath: $0) }
-                                p.showcaseImageCount = p.showcaseImages.count
+                                p.showcaseImages = self.loadShowcaseImages(
+                                    from: p.showcaseImagePaths,
+                                    maxImages: ShowcaseImageLoadPolicy.runtimeMaxImages,
+                                    maxTotalBytes: ShowcaseImageLoadPolicy.runtimeMaxTotalBytes
+                                )
+                                p.showcaseImageCount = max(Int(entity.showcaseImageCount), p.showcaseImages.count)
                             } else {
                                 // Fallback legacy (antes de migración a disco)
                                 let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
@@ -1482,7 +1515,10 @@ class PromptService: ObservableObject {
                         var p = entity.toPrompt()
                         // Incluir imágenes completas (para que el JSON sea auto-contenido).
                         if !p.showcaseImagePaths.isEmpty {
-                            p.showcaseImages = p.showcaseImagePaths.compactMap { ImageStore.shared.loadData(relativePath: $0) }
+                            p.showcaseImages = self.loadShowcaseImages(
+                                from: p.showcaseImagePaths,
+                                maxImages: ShowcaseImageLoadPolicy.runtimeMaxImages
+                            )
                             p.showcaseImageCount = p.showcaseImages.count
                         } else {
                             let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
