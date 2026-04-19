@@ -84,10 +84,6 @@ struct NewPromptView: View {
         get { viewModel.tags }
         nonmutating set { viewModel.tags = newValue }
     }
-    var newTag: String {
-        get { viewModel.newTag }
-        nonmutating set { viewModel.newTag = newValue }
-    }
     var targetAppBundleIDs: [String] {
         get { viewModel.targetAppBundleIDs }
         nonmutating set { viewModel.targetAppBundleIDs = newValue }
@@ -177,7 +173,6 @@ struct NewPromptView: View {
     @State private var showingIconPicker = false
     @State private var mediaState = PromptMediaState()
 
-    @State private var showingTagEditor: Bool = false
     @State private var showingCloseAlert: Bool = false
 
     @State private var insertionRequest: String? = nil
@@ -516,14 +511,6 @@ struct NewPromptView: View {
                             )
                     )
                 }
-
-                PromptTagsEditorView(
-                    tags: vmBinding(\.tags),
-                    newTag: vmBinding(\.newTag),
-                    showingTagEditor: $showingTagEditor,
-                    preferences: preferences,
-                    themeColor: themeColor
-                )
 
                 // Contextual Awareness (App Association)
                 PromptAppTargetsView(
