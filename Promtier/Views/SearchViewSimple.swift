@@ -92,6 +92,9 @@ struct SearchViewSimple: View {
 
     private enum InteractionThrottle {
         static let keyboardRepeatMinInterval: CFTimeInterval = 0.012
+        static let keyboardPreviewOpenMinInterval: CFTimeInterval = 0.03
+        static let keyboardNavigationIdleDelayNanos: UInt64 = 130_000_000
+        static let keyboardPreviewRefreshDebounceNanos: UInt64 = 95_000_000
     }
 
     private struct FolderPresentation {
@@ -139,6 +142,8 @@ struct SearchViewSimple: View {
     @State private var previewPathsCache: [UUID: [String]] = [:]
     @State private var previewCacheOrder: [UUID] = []
     @State private var lastKeyboardNavigationTimestamp: CFTimeInterval = 0
+    @State private var keyboardNavigationIdleTask: Task<Void, Never>? = nil
+    @State private var keyboardPreviewRefreshTask: Task<Void, Never>? = nil
     
     @State private var dragStartedSidebarWidth: CGFloat = 0
     @State private var isSidebarDragging: Bool = false
@@ -444,6 +449,8 @@ struct SearchViewSimple: View {
             previewPrefetchTask?.cancel()
             delayedPrewarmTask?.cancel()
             hoverPrewarmCoordinator.cancelAll()
+            keyboardNavigationIdleTask?.cancel()
+            keyboardPreviewRefreshTask?.cancel()
         }
         // Quitar el foco del buscador CADA VEZ que el popover se abre
         .onChange(of: menuBarManager.isPopoverShown) { _, isShown in
@@ -463,6 +470,9 @@ struct SearchViewSimple: View {
                 previewPrefetchTask?.cancel()
                 prewarmTask?.cancel()
                 secondaryImagePrewarmTask?.cancel()
+                keyboardPreviewRefreshTask?.cancel()
+                keyboardNavigationIdleTask?.cancel()
+                isNavigatingWithKeys = false
             }
         }
         .onChange(of: promptService.filteredPrompts.map(\.id)) { _, _ in
@@ -858,6 +868,7 @@ struct SearchViewSimple: View {
         prewarmTask?.cancel()
         secondaryImagePrewarmTask?.cancel()
         hoverPrewarmCoordinator.cancelAll()
+        keyboardPreviewRefreshTask?.cancel()
 
         var transaction = Transaction()
         transaction.disablesAnimations = true
@@ -906,15 +917,56 @@ struct SearchViewSimple: View {
     }
 
     private func shouldThrottleKeyboardNavigation(for event: NSEvent) -> Bool {
-        guard event.isARepeat else { return false }
+        let minInterval: CFTimeInterval
+        if showingPreview {
+            minInterval = InteractionThrottle.keyboardPreviewOpenMinInterval
+        } else if event.isARepeat {
+            minInterval = InteractionThrottle.keyboardRepeatMinInterval
+        } else {
+            minInterval = 0
+        }
 
         let now = CFAbsoluteTimeGetCurrent()
-        if now - lastKeyboardNavigationTimestamp < InteractionThrottle.keyboardRepeatMinInterval {
+        if minInterval > 0,
+           now - lastKeyboardNavigationTimestamp < minInterval {
             return true
         }
 
         lastKeyboardNavigationTimestamp = now
         return false
+    }
+
+    private func markKeyboardNavigationActivity() {
+        isNavigatingWithKeys = true
+        keyboardNavigationIdleTask?.cancel()
+        keyboardNavigationIdleTask = Task(priority: .utility) {
+            try? await Task.sleep(nanoseconds: InteractionThrottle.keyboardNavigationIdleDelayNanos)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                isNavigatingWithKeys = false
+            }
+        }
+    }
+
+    private func scheduleKeyboardPreviewRefresh(for prompt: Prompt) {
+        guard showingPreview else { return }
+
+        keyboardPreviewRefreshTask?.cancel()
+        let expectedPromptId = prompt.id
+
+        keyboardPreviewRefreshTask = Task(priority: .utility) {
+            try? await Task.sleep(nanoseconds: InteractionThrottle.keyboardPreviewRefreshDebounceNanos)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard showingPreview,
+                      selectedPrompt?.id == expectedPromptId else { return }
+
+                let latest = latestPrompt(for: prompt)
+                refreshPreviewPrefetchIfNeeded(for: latest)
+                prewarmPreviewAssets(for: latest)
+            }
+        }
     }
 
     @ViewBuilder
@@ -1186,7 +1238,7 @@ struct SearchViewSimple: View {
         if keyCode == 126 { // Up
             guard !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            isNavigatingWithKeys = true
+            markKeyboardNavigationActivity()
             isSearchFocused = false
             let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
@@ -1205,7 +1257,7 @@ struct SearchViewSimple: View {
         if keyCode == 125 { // Down
             guard !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            isNavigatingWithKeys = true
+            markKeyboardNavigationActivity()
             isSearchFocused = false
             let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
@@ -1224,7 +1276,7 @@ struct SearchViewSimple: View {
         if keyCode == 123 { // Left
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            isNavigatingWithKeys = true
+            markKeyboardNavigationActivity()
             isSearchFocused = false
             let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
@@ -1238,7 +1290,7 @@ struct SearchViewSimple: View {
         if keyCode == 124 { // Right
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            isNavigatingWithKeys = true
+            markKeyboardNavigationActivity()
             isSearchFocused = false
             let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
@@ -1504,6 +1556,12 @@ struct SearchViewSimple: View {
     private func handleSelectedPromptChanged() {
         guard let selectedPrompt else { return }
         guard showingPreview else { return }
+
+        if isNavigatingWithKeys {
+            scheduleKeyboardPreviewRefresh(for: selectedPrompt)
+            return
+        }
+
         prewarmPreviewAssets(for: selectedPrompt)
 
         if let firstPrompt = promptService.filteredPrompts.first,
@@ -1658,10 +1716,7 @@ struct SearchViewSimple: View {
         selectedPrompt = latest
 
         if showingPreview {
-            refreshPreviewPrefetchIfNeeded(for: latest)
-            if playFeedback && preferences.soundEnabled {
-                SoundService.shared.playInteractionSound()
-            }
+            scheduleKeyboardPreviewRefresh(for: latest)
         }
 
         if playFeedback {
