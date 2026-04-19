@@ -2261,8 +2261,8 @@ struct NewPromptView: View {
             : "If the title is empty or generic, generate a catchy, short title (max 1 line)."
 
         let contentInstruction = isContentProvided
-            ? "If the content provided is a short instruction or idea (e.g. 'prompt for bananas'), EXPAND it into a full, high-quality detailed prompt. If it already looks like a complete prompt, improve its structure and clarity. Keep existing variables {{...}}."
-            : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}} but do NOT add new ones unless essential."
+            ? "The content is already provided by the user. DO NOT modify it, do not expand it, and do not improve it. Return it EXACTLY as it is."
+            : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}}. If you must create new variables, use a MAXIMUM of 3. New variables MUST use exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
 
         systemPrompt = """
         You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.

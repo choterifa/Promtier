@@ -47,9 +47,19 @@ struct VariableFillView: View {
     
     private var variables: [TemplateVariable] {
         let rawVars = prompt.extractAllVariables(availablePrompts: promptService.prompts)
-        var vars: [TemplateVariable] = []
+        var uniqueRawVars: [String] = []
+        var seenRawVars = Set<String>()
         
         for raw in rawVars {
+            if !seenRawVars.contains(raw) {
+                seenRawVars.insert(raw)
+                uniqueRawVars.append(raw)
+            }
+        }
+        
+        var vars: [TemplateVariable] = []
+        
+        for raw in uniqueRawVars {
             if !preferences.isPremiumActive {
                 vars.append(TemplateVariable(id: raw, name: raw, type: .text))
                 continue
