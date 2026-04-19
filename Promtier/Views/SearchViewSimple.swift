@@ -2,10 +2,96 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+@MainActor
+private final class HoverPrewarmCoordinator {
+    private enum Throttle {
+        static let hoverBurstInterval: CFTimeInterval = 0.055
+        static let hoverBurstThreshold = 4
+        static let hoverSuppressionWindow: CFTimeInterval = 0.28
+    }
+
+    private var hoverPrewarmTask: Task<Void, Never>? = nil
+    private var pendingPromptId: UUID? = nil
+    private var hoveredPromptId: UUID? = nil
+    private var lastHoverEventTimestamp: CFTimeInterval = 0
+    private var hoverBurstCount: Int = 0
+    private var suppressHoverPrewarmUntil: CFTimeInterval = 0
+
+    func handleHover(
+        prompt: Prompt,
+        isHovering: Bool,
+        prewarmAction: @escaping (Prompt) -> Void
+    ) {
+        if isHovering {
+            let now = CFAbsoluteTimeGetCurrent()
+            if now - lastHoverEventTimestamp < Throttle.hoverBurstInterval {
+                hoverBurstCount += 1
+            } else {
+                hoverBurstCount = 0
+            }
+            lastHoverEventTimestamp = now
+
+            if hoverBurstCount >= Throttle.hoverBurstThreshold {
+                suppressHoverPrewarmUntil = now + Throttle.hoverSuppressionWindow
+            }
+
+            if now < suppressHoverPrewarmUntil {
+                if hoveredPromptId == prompt.id {
+                    hoveredPromptId = nil
+                }
+                cancelPendingPrewarmIfNeeded(for: prompt.id)
+                return
+            }
+
+            hoveredPromptId = prompt.id
+            schedulePrewarm(for: prompt, action: prewarmAction)
+            return
+        }
+
+        if hoveredPromptId == prompt.id {
+            hoveredPromptId = nil
+        }
+        cancelPendingPrewarmIfNeeded(for: prompt.id)
+    }
+
+    func cancelAll() {
+        hoverPrewarmTask?.cancel()
+        hoverPrewarmTask = nil
+        pendingPromptId = nil
+        hoveredPromptId = nil
+    }
+
+    private func cancelPendingPrewarmIfNeeded(for promptId: UUID) {
+        guard pendingPromptId == promptId else { return }
+        hoverPrewarmTask?.cancel()
+        hoverPrewarmTask = nil
+        pendingPromptId = nil
+    }
+
+    private func schedulePrewarm(for prompt: Prompt, action: @escaping (Prompt) -> Void) {
+        hoverPrewarmTask?.cancel()
+        pendingPromptId = prompt.id
+
+        hoverPrewarmTask = Task(priority: .utility) {
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard hoveredPromptId == prompt.id else { return }
+                action(prompt)
+            }
+        }
+    }
+}
+
 // VISTA PRINCIPAL SIMPLIFICADA: Búsqueda básica con resultados
 struct SearchViewSimple: View {
     private enum PreviewPrewarmProfile {
         static let maxPixelSize = 1120
+    }
+
+    private enum InteractionThrottle {
+        static let keyboardRepeatMinInterval: CFTimeInterval = 0.012
     }
 
     private struct FolderPresentation {
@@ -27,10 +113,10 @@ struct SearchViewSimple: View {
     @Environment(\.colorScheme) private var colorScheme
     
     @FocusState private var isSearchFocused: Bool
+    @State private var hoverPrewarmCoordinator = HoverPrewarmCoordinator()
     @State private var localEventMonitor: Any?
     @State private var selectedPrompt: Prompt?
     @State private var showingPreview = false
-    @State private var hoveredPrompt: Prompt?
     @State private var fillingVariablesFor: Prompt?
     @State private var isNavigatingWithKeys: Bool = false
     @State private var showParticles: Bool = false
@@ -52,8 +138,7 @@ struct SearchViewSimple: View {
     @State private var prefetchedPreviewPromptId: UUID? = nil
     @State private var previewPathsCache: [UUID: [String]] = [:]
     @State private var previewCacheOrder: [UUID] = []
-    @State private var hoverPrewarmTask: Task<Void, Never>? = nil
-    @State private var hoverPrewarmPromptId: UUID? = nil
+    @State private var lastKeyboardNavigationTimestamp: CFTimeInterval = 0
     
     @State private var dragStartedSidebarWidth: CGFloat = 0
     @State private var isSidebarDragging: Bool = false
@@ -358,9 +443,7 @@ struct SearchViewSimple: View {
             secondaryImagePrewarmTask?.cancel()
             previewPrefetchTask?.cancel()
             delayedPrewarmTask?.cancel()
-            hoverPrewarmTask?.cancel()
-            hoverPrewarmTask = nil
-            hoverPrewarmPromptId = nil
+            hoverPrewarmCoordinator.cancelAll()
         }
         // Quitar el foco del buscador CADA VEZ que el popover se abre
         .onChange(of: menuBarManager.isPopoverShown) { _, isShown in
@@ -741,37 +824,9 @@ struct SearchViewSimple: View {
     }
 
     private func handlePromptHover(_ prompt: Prompt, isHovering: Bool) {
-        if isHovering {
-            if hoveredPrompt?.id != prompt.id {
-                hoveredPrompt = prompt
-            }
-            scheduleHoverPrewarm(for: prompt)
-            return
-        }
-
-        if hoveredPrompt?.id == prompt.id {
-            hoveredPrompt = nil
-        }
-        if hoverPrewarmPromptId == prompt.id {
-            hoverPrewarmTask?.cancel()
-            hoverPrewarmTask = nil
-            hoverPrewarmPromptId = nil
-        }
-    }
-
-    private func scheduleHoverPrewarm(for prompt: Prompt) {
-        hoverPrewarmTask?.cancel()
-        hoverPrewarmPromptId = prompt.id
-
-        hoverPrewarmTask = Task(priority: .utility) {
-            try? await Task.sleep(nanoseconds: 140_000_000)
-            guard !Task.isCancelled else { return }
-
-            await MainActor.run {
-                guard hoveredPrompt?.id == prompt.id else { return }
-                let latest = latestPrompt(for: prompt)
-                prewarmPreviewAssets(for: latest)
-            }
+        hoverPrewarmCoordinator.handleHover(prompt: prompt, isHovering: isHovering) { hoveredPrompt in
+            let latest = latestPrompt(for: hoveredPrompt)
+            prewarmPreviewAssets(for: latest)
         }
     }
 
@@ -794,9 +849,7 @@ struct SearchViewSimple: View {
         previewPrefetchTask?.cancel()
         prewarmTask?.cancel()
         secondaryImagePrewarmTask?.cancel()
-        hoverPrewarmTask?.cancel()
-        hoverPrewarmTask = nil
-        hoverPrewarmPromptId = nil
+        hoverPrewarmCoordinator.cancelAll()
 
         var transaction = Transaction()
         transaction.disablesAnimations = true
@@ -809,6 +862,51 @@ struct SearchViewSimple: View {
         if playSound, preferences.soundEnabled {
             SoundService.shared.playPreviewSound()
         }
+    }
+
+    private func openEditorForSelection() {
+        guard selectedPrompt != nil else { return }
+        withAnimation(.spring()) {
+            menuBarManager.activeViewState = .newPrompt
+        }
+    }
+
+    private func openFolderManagerForSelectedCategory() {
+        guard let categoryName = promptService.selectedCategory,
+              let folder = promptService.folders.first(where: { $0.name == categoryName }) else { return }
+
+        menuBarManager.folderToEdit = folder
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            menuBarManager.activeViewState = .folderManager
+        }
+        HapticService.shared.playLight()
+    }
+
+    private func toggleSidebarShortcut() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            preferences.showSidebar.toggle()
+        }
+    }
+
+    private func toggleGridShortcut() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            preferences.isGridView.toggle()
+            if preferences.autoHideSidebarInGallery {
+                preferences.showSidebar = !preferences.isGridView
+            }
+        }
+    }
+
+    private func shouldThrottleKeyboardNavigation(for event: NSEvent) -> Bool {
+        guard event.isARepeat else { return false }
+
+        let now = CFAbsoluteTimeGetCurrent()
+        if now - lastKeyboardNavigationTimestamp < InteractionThrottle.keyboardRepeatMinInterval {
+            return true
+        }
+
+        lastKeyboardNavigationTimestamp = now
+        return false
     }
 
     @ViewBuilder
@@ -836,7 +934,7 @@ struct SearchViewSimple: View {
                 prompt: prompt,
                 precomputedCategoryColor: categoryColor,
                 isSelected: selectedPrompt?.id == prompt.id,
-                isHovered: hoveredPrompt?.id == prompt.id,
+                isHovered: false,
                 onTap: {
                     isSearchFocused = false
                     isNavigatingWithKeys = false
@@ -873,7 +971,7 @@ struct SearchViewSimple: View {
                 precomputedCategoryColor: categoryColor,
                 precomputedResolvedIcon: icon,
                 isSelected: selectedPrompt?.id == prompt.id,
-                isHovered: hoveredPrompt?.id == prompt.id,
+                isHovered: false,
                 onTap: {
                     isSearchFocused = false
                     isNavigatingWithKeys = false
@@ -979,7 +1077,9 @@ struct SearchViewSimple: View {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if keyCode == 53 && modifiers.isEmpty {
             if fillingVariablesFor != nil {
-                DispatchQueue.main.async { withAnimation { fillingVariablesFor = nil } }
+                withAnimation {
+                    fillingVariablesFor = nil
+                }
                 return nil
             }
             if showingPreview {
@@ -993,15 +1093,13 @@ struct SearchViewSimple: View {
                 return event
             }
             if currentState != .main {
-                DispatchQueue.main.async {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        menuBarManager.activeViewState = .main
-                        // No limpiar selectedPrompt al volver a .main:
-                        // Si lo limpiamos, las flechas y Space dejan de funcionar
-                        // porque no hay selección activa en la lista.
-                        menuBarManager.folderToEdit = nil
-                        menuBarManager.isModalActive = false
-                    }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    menuBarManager.activeViewState = .main
+                    // No limpiar selectedPrompt al volver a .main:
+                    // Si lo limpiamos, las flechas y Space dejan de funcionar
+                    // porque no hay selección activa en la lista.
+                    menuBarManager.folderToEdit = nil
+                    menuBarManager.isModalActive = false
                 }
                 return nil
             }
@@ -1009,31 +1107,20 @@ struct SearchViewSimple: View {
         guard case .main = menuBarManager.activeViewState, fillingVariablesFor == nil, !isFullScreenImageOpen, !menuBarManager.isModalActive else { return event }
         if keyCode == 36 {
             if selectedPrompt != nil {
-                DispatchQueue.main.async { withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt } }
+                openEditorForSelection()
                 return nil
-            } else if let categoryName = promptService.selectedCategory, let folder = promptService.folders.first(where: { $0.name == categoryName }) {
-                DispatchQueue.main.async {
-                    menuBarManager.folderToEdit = folder
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { menuBarManager.activeViewState = .folderManager }
-                }
-                HapticService.shared.playLight()
+            } else if promptService.selectedCategory != nil {
+                openFolderManagerForSelectedCategory()
                 return nil
             }
         }
         if modifiers == .command && keyCode == 11 {
-            DispatchQueue.main.async { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { preferences.showSidebar.toggle() } }
+            toggleSidebarShortcut()
             return nil
         }
         // Cmd + G: Alternar modo Galería
         if modifiers == .command && keyCode == 5 {
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    preferences.isGridView.toggle()
-                    if preferences.autoHideSidebarInGallery {
-                        preferences.showSidebar = !preferences.isGridView
-                    }
-                }
-            }
+            toggleGridShortcut()
             return nil
         }
         if keyCode == 49 { // Space
@@ -1075,19 +1162,20 @@ struct SearchViewSimple: View {
                 return event
             }
             if let prompt = selectedPrompt {
-                DispatchQueue.main.async { usePrompt(prompt) }
+                usePrompt(prompt)
                 return nil
             }
         }
         if modifiers == .command && keyCode == 51 { // Cmd + Backspace
             if isSearchFocused { return event }
             if let prompt = selectedPrompt {
-                DispatchQueue.main.async { deletePrompt(prompt) }
+                deletePrompt(prompt)
                 return nil
             }
         }
         if keyCode == 126 { // Up
             guard !promptService.filteredPrompts.isEmpty else { return event }
+            if shouldThrottleKeyboardNavigation(for: event) { return nil }
             isNavigatingWithKeys = true
             isSearchFocused = false
             let playFeedback = !event.isARepeat
@@ -1106,6 +1194,7 @@ struct SearchViewSimple: View {
         }
         if keyCode == 125 { // Down
             guard !promptService.filteredPrompts.isEmpty else { return event }
+            if shouldThrottleKeyboardNavigation(for: event) { return nil }
             isNavigatingWithKeys = true
             isSearchFocused = false
             let playFeedback = !event.isARepeat
@@ -1124,6 +1213,7 @@ struct SearchViewSimple: View {
         }
         if keyCode == 123 { // Left
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
+            if shouldThrottleKeyboardNavigation(for: event) { return nil }
             isNavigatingWithKeys = true
             isSearchFocused = false
             let playFeedback = !event.isARepeat
@@ -1137,6 +1227,7 @@ struct SearchViewSimple: View {
         }
         if keyCode == 124 { // Right
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
+            if shouldThrottleKeyboardNavigation(for: event) { return nil }
             isNavigatingWithKeys = true
             isSearchFocused = false
             let playFeedback = !event.isARepeat
@@ -1150,7 +1241,7 @@ struct SearchViewSimple: View {
         }
         if keyCode == 36 || keyCode == 76 { // Enter / Numpad Enter
             if let prompt = selectedPrompt {
-                DispatchQueue.main.async { usePrompt(prompt) }
+                usePrompt(prompt)
                 return nil
             }
         }
@@ -1163,7 +1254,7 @@ struct SearchViewSimple: View {
                 let resolvedContent = PlaceholderResolver.shared.resolveAll(in: prompt.content)
                 self.promptService.usePrompt(prompt, contentOverride: resolvedContent)
             } else {
-                if self.showingPreview { self.showingPreview = false }
+                closePreviewImmediately(playSound: false)
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { fillingVariablesFor = prompt }
                 return
             }
@@ -1176,7 +1267,7 @@ struct SearchViewSimple: View {
             self.showParticles = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { self.showParticles = true }
         }
-        if self.showingPreview { self.showingPreview = false }
+        closePreviewImmediately(playSound: false)
         if self.preferences.closeOnCopy {
             if self.preferences.isPremiumActive && self.preferences.visualEffectsEnabled {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.menuBarManager.closePopover() }
@@ -1225,7 +1316,7 @@ struct SearchViewSimple: View {
             showParticles = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { showParticles = true }
         }
-        if showingPreview { showingPreview = false }
+        closePreviewImmediately(playSound: false)
         if preferences.closeOnCopy {
             if preferences.isPremiumActive && preferences.visualEffectsEnabled {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { menuBarManager.closePopover() }
@@ -1278,7 +1369,7 @@ struct SearchViewSimple: View {
     }
 
     private func forkPrompt(_ prompt: Prompt) {
-        showingPreview = false
+        closePreviewImmediately(playSound: false)
         menuBarManager.showWithState(.newPrompt)
         
         var forkedPrompt = prompt

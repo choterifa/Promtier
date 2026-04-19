@@ -27,16 +27,26 @@ struct PromptGridCard: View {
     @State private var isTargetedForDrop = false
     @State private var fallbackShowcasePath: String? = nil
     @State private var isGlowAnimating = false
+    @State private var isLocallyHovered = false
     @State private var isAspectFit = false
     @State private var currentImageIndex = 0
     @State private var carouselScrollAccumulator: CGFloat = 0
     @State private var carouselDirection: Int = 1 // 1 = forward (right), -1 = backward (left)
+    @State private var highlightedContentCache: AttributedString = AttributedString("")
+    @State private var highlightedContentCacheKey: String = ""
     
     @Environment(\.colorScheme) private var colorScheme
     
-    private var highlightedContent: AttributedString {
+    private func refreshHighlightedContentCacheIfNeeded() {
         let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
         let categoryNSColor = NSColor(currentCategoryColor)
+        let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
+            "\(interfaceStyle == .dark ? "d" : "l"):" +
+            "\(categoryNSColor.hexString)"
+
+        guard highlightedContentCacheKey != key else { return }
+        highlightedContentCacheKey = key
+
         let cached = PromptCardTextCache.shared.highlightedSnippet(
             for: prompt,
             maxCharacters: 250,
@@ -44,13 +54,25 @@ struct PromptGridCard: View {
             scale: preferences.fontSize.scale,
             interfaceStyle: interfaceStyle
         )
-        return AttributedString(cached)
+        highlightedContentCache = AttributedString(cached)
+    }
+
+    private var highlightedContentRefreshToken: String {
+        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
+        let categoryNSColor = NSColor(currentCategoryColor)
+        return "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
+            "\(interfaceStyle == .dark ? "d" : "l"):" +
+            "\(categoryNSColor.hexString)"
     }
     
     private var variableCount: Int { PromptCardTextCache.shared.variableCount(for: prompt) }
     
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+
+    private var effectiveHover: Bool {
+        isHovered || isLocallyHovered
     }
     
     private var isRecommended: Bool {
@@ -235,7 +257,7 @@ struct PromptGridCard: View {
                             )
                         
                         // Fit/Fill Control
-                        if isHovered {
+                        if effectiveHover {
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                     isAspectFit.toggle()
@@ -278,7 +300,7 @@ struct PromptGridCard: View {
             
             // Content Snippet
             VStack(alignment: .leading, spacing: 6) {
-                Text(highlightedContent)
+                Text(highlightedContentCache)
                     .font(.system(size: 13 * preferences.fontSize.scale))
                     .foregroundColor(.secondary.opacity(0.9))
                     .lineLimit(hasPreviewImage ? 2 : 4)
@@ -353,24 +375,28 @@ struct PromptGridCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || isHovered ? themeColor.opacity(0.06) : Color.clear))
-                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && isHovered ? 12 : 0))
+                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || effectiveHover ? themeColor.opacity(0.06) : Color.clear))
+                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && effectiveHover ? 12 : 0))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
                 )
         )
-        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(isHovered ? 0.06 : 0.02), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.06 : 0.02), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .clipped()
         .contentShape(Rectangle())
         .onAppear {
+            refreshHighlightedContentCacheIfNeeded()
             if isRecommended {
                 withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
                     isGlowAnimating = true
                 }
             }
+        }
+        .task(id: highlightedContentRefreshToken) {
+            refreshHighlightedContentCacheIfNeeded()
         }
         .onTapGesture {
             if batchService.isSelectionModeActive {
@@ -388,6 +414,7 @@ struct PromptGridCard: View {
             }
         )
         .onHover { hovering in
+            isLocallyHovered = hovering
             onHover(hovering)
         }
         .task {
@@ -445,13 +472,13 @@ struct PromptGridCard: View {
         let isBatchSelected = batchService.selectedPromptIds.contains(prompt.id)
         if isBatchSelected { return Color.blue.opacity(0.12) }
         else if isSelected { return Color.blue.opacity(0.05) }
-        else if isHovered { return Color.primary.opacity(0.04) }
+        else if effectiveHover { return Color.primary.opacity(0.04) }
         else { return Color.primary.opacity(0.02) }
     }
     
     private var cardBorderColor: Color {
         if isSelected { return themeColor.opacity(0.5) }
-        else if isHovered { return themeColor.opacity(0.2) }
+        else if effectiveHover { return themeColor.opacity(0.2) }
         else { return Color.primary.opacity(0.06) }
     }
     

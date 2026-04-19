@@ -56,12 +56,22 @@ struct PromptCard: View {
     
     @State private var isTargetedForDrop = false
     @State private var isGlowAnimating = false
+    @State private var isLocallyHovered = false
+    @State private var highlightedContentCache: AttributedString = AttributedString("")
+    @State private var highlightedContentCacheKey: String = ""
     
     @Environment(\.colorScheme) private var colorScheme
     
-    private var highlightedContent: AttributedString {
+    private func refreshHighlightedContentCacheIfNeeded() {
         let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
         let categoryNSColor = NSColor(currentCategoryColor)
+        let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
+            "\(interfaceStyle == .dark ? "d" : "l"):" +
+            "\(categoryNSColor.hexString)"
+
+        guard highlightedContentCacheKey != key else { return }
+        highlightedContentCacheKey = key
+
         let cached = PromptCardTextCache.shared.highlightedSnippet(
             for: prompt,
             maxCharacters: 500,
@@ -69,7 +79,15 @@ struct PromptCard: View {
             scale: preferences.fontSize.scale,
             interfaceStyle: interfaceStyle
         )
-        return AttributedString(cached)
+        highlightedContentCache = AttributedString(cached)
+    }
+
+    private var highlightedContentRefreshToken: String {
+        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
+        let categoryNSColor = NSColor(currentCategoryColor)
+        return "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
+            "\(interfaceStyle == .dark ? "d" : "l"):" +
+            "\(categoryNSColor.hexString)"
     }
     
     // EXTENSIÓN: Contador de variables
@@ -117,6 +135,10 @@ struct PromptCard: View {
     
     private var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
+    }
+
+    private var effectiveHover: Bool {
+        isHovered || isLocallyHovered
     }
     
     private var isRecommended: Bool {
@@ -234,14 +256,14 @@ struct PromptCard: View {
                             .lineLimit(desc.count < 55 ? 1 : 2)
                         
                         if desc.count < 55 {
-                            Text(highlightedContent)
+                            Text(highlightedContentCache)
                                 .font(.system(size: 13 * preferences.fontSize.scale))
                                 .foregroundColor(.secondary.opacity(0.8))
                                 .lineLimit(1)
                         }
                     }
                 } else {
-                    Text(highlightedContent)
+                    Text(highlightedContentCache)
                         .font(.system(size: 13 * preferences.fontSize.scale))
                         .foregroundColor(.secondary.opacity(0.8))
                         .lineLimit(3)
@@ -318,7 +340,7 @@ struct PromptCard: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.primary.opacity(0.15))
-                    .opacity(isHovered || isSelected ? 1 : 0)
+                    .opacity(effectiveHover || isSelected ? 1 : 0)
             }
         }
         .padding(.leading, 18)
@@ -330,8 +352,8 @@ struct PromptCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || isHovered ? themeColor.opacity(0.08) : Color.clear))
-                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && isHovered ? 12 : 0))
+                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || effectiveHover ? themeColor.opacity(0.08) : Color.clear))
+                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && effectiveHover ? 12 : 0))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
@@ -339,14 +361,18 @@ struct PromptCard: View {
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(isHovered ? 0.05 : 0.0), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.05 : 0.0), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
         .contentShape(Rectangle())
         .onAppear {
+            refreshHighlightedContentCacheIfNeeded()
             if isRecommended {
                 withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
                     isGlowAnimating = true
                 }
             }
+        }
+        .task(id: highlightedContentRefreshToken) {
+            refreshHighlightedContentCacheIfNeeded()
         }
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
@@ -366,6 +392,7 @@ struct PromptCard: View {
             }
         )
         .onHover { hovering in
+            isLocallyHovered = hovering
             onHover(hovering)
         }
         // SOPORTE DRAG AND DROP AVANZADO
@@ -479,7 +506,7 @@ struct PromptCard: View {
             return Color.blue.opacity(0.12)
         } else if isSelected {
             return Color.blue.opacity(0.05)
-        } else if isHovered {
+        } else if effectiveHover {
             return Color.primary.opacity(0.04)
         } else {
             return Color.primary.opacity(0.02)
@@ -489,7 +516,7 @@ struct PromptCard: View {
     private var cardBorderColor: Color {
         if isSelected {
             return themeColor.opacity(0.5)
-        } else if isHovered {
+        } else if effectiveHover {
             return themeColor.opacity(0.2)
         } else {
             return Color.primary.opacity(0.06)
