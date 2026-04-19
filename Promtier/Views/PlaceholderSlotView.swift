@@ -8,6 +8,7 @@ struct PlaceholderSlotView: View {
     let slotHeight: CGFloat
     let onSelect: () -> Void
     let onDrop: ([NSItemProvider]) -> Void
+    var displayTextKey: String = "add_prompt_results"
     var tintColor: Color = .blue
     
     @State private var isTargeted = false
@@ -18,12 +19,15 @@ struct PlaceholderSlotView: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
-                .font(.system(size: 24))
-                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.85 : 0.45))
 
-            Text("add_prompt_results".localized(for: preferences.language))
+            Text(displayTextKey.localized(for: preferences.language))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.center)
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.85 : 0.45))
         }
         .animation(.easeInOut(duration: 0.15), value: isHovering)
         .frame(width: slotWidth, height: slotHeight)

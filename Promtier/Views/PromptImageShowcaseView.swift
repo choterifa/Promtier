@@ -4,22 +4,21 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 import AppKit
+import UniformTypeIdentifiers
 
 struct PromptImageShowcaseView: View {
     @Binding var showcaseImages: [Data]
-    @Binding var draggedImageIndex: Int?
-    @Binding var showingFullScreenImage: Data?
-    @Binding var selectedImageIndex: Int
+    @Binding var mediaState: PromptMediaState
     @Binding var branchMessage: String?
     
     let preferences: PreferencesManager
     let themeColor: Color
     
-    private enum ImageImportPolicy {
-        static let maxInputBytes = 64 * 1024 * 1024
-        static let maxSlots = 3
+    private enum ShowcaseLayout {
+        static let slotWidth: CGFloat = 112
+        static let slotHeight: CGFloat = 76
+        static let rowHeight: CGFloat = 104
     }
     
     var body: some View {
@@ -33,7 +32,7 @@ struct PromptImageShowcaseView: View {
                     .foregroundColor(.secondary)
                     .tracking(1)
                 
-                if showcaseImages.count < ImageImportPolicy.maxSlots {
+                if showcaseImages.count < PromptMediaImportPipeline.maxSlots {
                     Button(action: importImagesDirectly) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 14))
@@ -48,15 +47,16 @@ struct PromptImageShowcaseView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {
-                    ForEach(0..<ImageImportPolicy.maxSlots, id: \.self) { index in
+                    ForEach(0..<PromptMediaImportPipeline.maxSlots, id: \.self) { index in
                         if index < showcaseImages.count {
                             imageSlot(index: index)
                         } else {
                             PlaceholderSlotView(
-                                slotWidth: 100, // Ajustado dinámicamente o por pref
-                                slotHeight: 66,
+                                slotWidth: ShowcaseLayout.slotWidth,
+                                slotHeight: ShowcaseLayout.slotHeight,
                                 onSelect: importImagesDirectly,
                                 onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
+                                displayTextKey: "add_image",
                                 tintColor: themeColor
                             )
                         }
@@ -65,7 +65,7 @@ struct PromptImageShowcaseView: View {
                 .padding(.vertical, 12)
                 .padding(.horizontal, 12)
             }
-            .frame(height: 90) 
+            .frame(height: ShowcaseLayout.rowHeight)
         }
         .padding(.top, 16)
         .onPasteCommand(of: [.image]) { providers in
@@ -75,64 +75,52 @@ struct PromptImageShowcaseView: View {
     
     @ViewBuilder
     private func imageSlot(index: Int) -> some View {
-        let slotWidth: CGFloat = 100
-        let slotHeight: CGFloat = 66
-        
         ImageSlotView(
             imageData: showcaseImages[index],
-            slotWidth: slotWidth,
-            slotHeight: slotHeight,
-            isSelected: selectedImageIndex == index,
+            slotWidth: ShowcaseLayout.slotWidth,
+            slotHeight: ShowcaseLayout.slotHeight,
+            isSelected: mediaState.selectedImageIndex == index,
             tintColor: themeColor,
             onRemove: { 
                 showcaseImages.remove(at: index)
-                if selectedImageIndex >= showcaseImages.count {
-                    selectedImageIndex = max(0, showcaseImages.count - 1)
-                }
+                mediaState.clampSelection(for: showcaseImages)
             },
             onPreview: { 
-                selectedImageIndex = index
-                showingFullScreenImage = showcaseImages[index] 
+                mediaState.selectedImageIndex = index
+                mediaState.fullScreenImageData = showcaseImages[index]
             },
             onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-            onDragStart: { self.draggedImageIndex = index }
+            onDragStart: { self.mediaState.draggedImageIndex = index }
         )
     }
 
     private func handleGalleryDrop(providers: [NSItemProvider], at index: Int? = nil) {
-        if let sourceIndex = draggedImageIndex {
+        if let sourceIndex = mediaState.draggedImageIndex {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 let item = showcaseImages.remove(at: sourceIndex)
                 let targetIndex = min(index ?? showcaseImages.count, showcaseImages.count)
                 showcaseImages.insert(item, at: targetIndex)
+                mediaState.selectedImageIndex = targetIndex
+                mediaState.clampSelection(for: showcaseImages)
                 HapticService.shared.playLight()
             }
-            draggedImageIndex = nil
+            mediaState.draggedImageIndex = nil
             return
         }
 
-        let remainingSlots = max(0, ImageImportPolicy.maxSlots - showcaseImages.count)
+        let remainingSlots = max(0, PromptMediaImportPipeline.maxSlots - showcaseImages.count)
         guard remainingSlots > 0 else {
-            showImageImportWarning("image_import_slots_full".localized(for: preferences.language))
+            showImageImportWarning(.slotsFull)
             return
         }
 
         for provider in providers.prefix(remainingSlots) {
-            if provider.canLoadObject(ofClass: NSImage.self) {
-                _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let nsImage = image as? NSImage {
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            guard let tiffData = nsImage.tiffRepresentation else { return }
-                            self.appendOptimizedImageData(tiffData, at: index)
-                        }
-                    }
+            PromptMediaImportPipeline.loadRawData(from: provider) { rawData in
+                guard let rawData else {
+                    showImageImportWarning(.unsupported)
+                    return
                 }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data {
-                        self.appendOptimizedImageData(data, at: index)
-                    }
-                }
+                enqueueImportedImageData(rawData, at: index)
             }
         }
     }
@@ -146,43 +134,60 @@ struct PromptImageShowcaseView: View {
         
         guard panel.runModal() == .OK else { return }
         
-        let remainingSlots = max(0, ImageImportPolicy.maxSlots - self.showcaseImages.count)
+        let remainingSlots = max(0, PromptMediaImportPipeline.maxSlots - self.showcaseImages.count)
         guard remainingSlots > 0 else {
-            self.showImageImportWarning("image_import_slots_full".localized(for: preferences.language))
+            self.showImageImportWarning(.slotsFull)
             return
         }
 
         let urls = Array(panel.urls.prefix(remainingSlots))
         for url in urls {
             if let data = try? Data(contentsOf: url) {
-                self.appendOptimizedImageData(data, at: nil)
+                self.enqueueImportedImageData(data, at: nil)
             }
         }
     }
-    
-    private func appendOptimizedImageData(_ rawData: Data, at index: Int?) {
-        if let optimized = ImageOptimizer.shared.optimize(imageData: rawData) {
-            DispatchQueue.main.async {
-                withAnimation(.spring()) {
-                    if let target = index, target < showcaseImages.count {
-                        showcaseImages.insert(optimized, at: target)
-                    } else if showcaseImages.count < ImageImportPolicy.maxSlots {
-                        showcaseImages.append(optimized)
+
+    private func enqueueImportedImageData(_ rawData: Data, at index: Int?) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = PromptMediaImportPipeline.optimizeImageData(rawData)
+            switch result {
+            case .failure(let failure):
+                self.showImageImportWarning(failure)
+            case .success(let optimized):
+                DispatchQueue.main.async {
+                    withAnimation(.spring()) {
+                        guard self.showcaseImages.count < PromptMediaImportPipeline.maxSlots else {
+                            self.showImageImportWarning(.slotsFull)
+                            return
+                        }
+
+                        if let target = index, target < self.showcaseImages.count {
+                            self.showcaseImages.insert(optimized, at: target)
+                            self.mediaState.selectedImageIndex = target
+                        } else {
+                            self.showcaseImages.append(optimized)
+                            self.mediaState.selectedImageIndex = self.showcaseImages.count - 1
+                        }
+                        self.mediaState.clampSelection(for: self.showcaseImages)
                     }
+                    HapticService.shared.playSuccess()
                 }
-                HapticService.shared.playSuccess()
             }
         }
     }
-    
-    private func showImageImportWarning(_ message: String) {
-        HapticService.shared.playError()
-        withAnimation {
-            branchMessage = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+
+    private func showImageImportWarning(_ failure: PromptMediaImportFailure) {
+        let message = PromptMediaImportPipeline.localizedMessage(for: failure, language: preferences.language)
+        DispatchQueue.main.async {
+            HapticService.shared.playError()
             withAnimation {
-                if branchMessage == message { branchMessage = nil }
+                branchMessage = message
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                withAnimation {
+                    if branchMessage == message { branchMessage = nil }
+                }
             }
         }
     }

@@ -5,6 +5,19 @@ import Combine
 
 
 struct EditorCard: View {
+    private enum Layout {
+        static let headerSpacing: CGFloat = 14
+        static let headerInnerSpacing: CGFloat = 6
+        static let titleFontSize: CGFloat = 22
+        static let subtitleFontSize: CGFloat = 13
+        static let editorCornerRadius: CGFloat = 16
+        static let editorToolbarVerticalPadding: CGFloat = 8
+        static let editorToolbarTrailingPadding: CGFloat = 4
+        static let editorTopPadding: CGFloat = 14
+        static let editorIdleBorderWidth: CGFloat = 1.5
+        static let editorActiveBorderWidth: CGFloat = 2
+    }
+
     @Binding var title: String
     @Binding var content: String
     @Binding var promptDescription: String
@@ -123,12 +136,20 @@ struct EditorCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Layout.headerSpacing) {
+                VStack(alignment: .leading, spacing: Layout.headerInnerSpacing) {
                     HStack(alignment: .firstTextBaseline) {
+                        PromptIconPickerButton(
+                            selectedIcon: $selectedIcon,
+                            showingIconPicker: $showingIconPicker,
+                            fallbackIconName: fallbackIconName,
+                            themeColor: themeColor,
+                            currentCategoryColor: currentCategoryColor
+                        )
+
                         TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
+                            .font(.system(size: Layout.titleFontSize * preferences.fontSize.scale, weight: .bold))
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
@@ -218,7 +239,7 @@ struct EditorCard: View {
 
                     TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
+                        .font(.system(size: Layout.subtitleFontSize * preferences.fontSize.scale, weight: .medium))
                         .foregroundColor(.secondary.opacity(0.8))
                         .lineLimit(2)
                         .frame(minHeight: 28, alignment: .topLeading)
@@ -322,19 +343,19 @@ struct EditorCard: View {
                         isAIGenerating = false
                     }
                 )
-                .padding(.vertical, 8)
-                .padding(.trailing, 4) // Ajustado para dar más espacio al texto
+                .padding(.vertical, Layout.editorToolbarVerticalPadding)
+                .padding(.trailing, Layout.editorToolbarTrailingPadding) // Ajustado para dar más espacio al texto
             }
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: Layout.editorCornerRadius)
                     .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? 2 : 1.5)
+                        RoundedRectangle(cornerRadius: Layout.editorCornerRadius)
+                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? Layout.editorActiveBorderWidth : Layout.editorIdleBorderWidth)
                             .shadow(color: preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
-            .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
+            .padding(.top, Layout.editorTopPadding) // Espacio EXTERNO entre descripción y caja del editor
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
@@ -355,8 +376,10 @@ struct EditorCard: View {
                 showingIconPicker: $showingIconPicker,
                 fallbackIconName: fallbackIconName,
                 themeColor: themeColor,
-                currentCategoryColor: currentCategoryColor
+                currentCategoryColor: currentCategoryColor,
+                showsIconButton: false
             )
+
         }
         .alert("Execute Command", isPresented: $showingInstructionAlert) {
             TextField("Instruction (e.g. Translate to French)", text: $instructionInput)
