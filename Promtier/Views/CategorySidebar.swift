@@ -314,6 +314,12 @@ struct CategorySidebar: View {
         }
     }
     
+    private let presetColors: [(name: String, color: Color)] = [
+        ("Azul", .blue), ("Morado", .purple), ("Rosa", .pink), ("Rojo", .red), 
+        ("Naranja", .orange), ("Amarillo", .yellow), ("Verde", .green), 
+        ("Menta", .mint), ("Cian", .cyan), ("Gris", .gray)
+    ]
+    
     @ViewBuilder
     private func pinnedFolderRow(_ folder: Folder) -> some View {
         let count: Int = categoryCounts[folder.name] ?? 0
@@ -356,7 +362,29 @@ struct CategorySidebar: View {
             } label: {
                 Label("Quitar pin", systemImage: "pin.slash")
             }
+            
             Divider()
+            
+            Menu {
+                ForEach(presetColors, id: \.name) { item in
+                    Button {
+                        var updated = folder
+                        updated.color = "#" + NSColor(item.color).hexString
+                        _ = promptService.updateFolder(updated)
+                        HapticService.shared.playLight()
+                    } label: {
+                        HStack {
+                            Image(systemName: "circle.fill").foregroundColor(item.color)
+                            Text(item.name)
+                        }
+                    }
+                }
+            } label: {
+                Label("Color", systemImage: "paintpalette")
+            }
+            
+            Divider()
+            
             Button {
                 menuBarManager.folderToEdit = folder
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -428,6 +456,26 @@ struct CategorySidebar: View {
                 }
                 Divider()
             }
+            
+            Menu {
+                ForEach(presetColors, id: \.name) { item in
+                    Button {
+                        var updated = folder
+                        updated.color = "#" + NSColor(item.color).hexString
+                        _ = promptService.updateFolder(updated)
+                        HapticService.shared.playLight()
+                    } label: {
+                        HStack {
+                            Image(systemName: "circle.fill").foregroundColor(item.color)
+                            Text(item.name)
+                        }
+                    }
+                }
+            } label: {
+                Label("Color", systemImage: "paintpalette")
+            }
+            
+            Divider()
             
             Button {
                 menuBarManager.folderToEdit = folder

@@ -15,6 +15,7 @@ struct IconPickerView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isCategorizing = false
     @State private var isHoveringMagic = false
+    @State private var searchText = ""
     
     // MARK: - Categorías de Iconos
     
@@ -107,6 +108,44 @@ struct IconPickerView: View {
         categories.flatMap { $0.icons }
     }
     
+    var filteredCategories: [IconCategory] {
+        if searchText.isEmpty {
+            return Self.categories
+        }
+        
+        let lowerSearch = searchText.lowercased()
+        
+        // Diccionario ligero para relacionar búsquedas comunes en español con los SFSymbols
+        let spanishKeywords: [String: [String]] = [
+            "cerebro": ["brain"], "ia": ["sparkle", "brain", "bolt"], "magia": ["sparkle", "wand"],
+            "codigo": ["terminal", "curlybraces", "chevron"], "terminal": ["terminal", "command"],
+            "herramienta": ["hammer", "wrench"], "ajustes": ["gear", "slider"], "configuracion": ["gear", "slider"],
+            "archivo": ["doc", "folder", "archivebox"], "nota": ["note", "pencil", "signature"], "texto": ["doc.text", "paragraph", "quote"],
+            "dinero": ["dollar", "banknote", "creditcard", "wallet"], "compras": ["cart", "bag", "tag"], "negocio": ["briefcase", "chart"],
+            "persona": ["person"], "usuario": ["person"], "mensaje": ["bubble", "message", "envelope", "paperplane"], "correo": ["envelope", "at"],
+            "foto": ["photo", "camera"], "imagen": ["photo", "camera"], "video": ["film", "video", "play"], "musica": ["music", "headphones", "speaker"],
+            "juego": ["gamecontroller"], "trofeo": ["trophy", "medal"], "premio": ["gift"],
+            "casa": ["house"], "mundo": ["globe", "map"], "ubicacion": ["location", "map"],
+            "estrella": ["star"], "favorito": ["star", "heart"], "basura": ["trash"], "eliminar": ["trash", "xmark"],
+            "reloj": ["clock", "timer", "stopwatch"], "calendario": ["calendar"], "tiempo": ["clock", "timer"],
+            "alerta": ["exclamationmark", "bell"], "seguridad": ["lock", "shield", "key"],
+            "computadora": ["laptop", "desktop"], "mac": ["macwindow", "laptop"]
+        ]
+        
+        // Extraemos todas las equivalencias en inglés si el usuario busca una palabra en español
+        let mappedKeywords = spanishKeywords.filter { $0.key.contains(lowerSearch) }.flatMap { $0.value }
+        
+        return Self.categories.compactMap { category in
+            let filteredIcons = category.icons.filter { icon in
+                // Comprueba si el nombre original del icono coincide o si coincide con alguna traducción
+                icon.localizedCaseInsensitiveContains(lowerSearch) || 
+                mappedKeywords.contains(where: { icon.localizedCaseInsensitiveContains($0) })
+            }
+            if filteredIcons.isEmpty { return nil }
+            return IconCategory(name: category.name, systemImage: category.systemImage, icons: filteredIcons)
+        }
+    }
+    
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -144,31 +183,60 @@ struct IconPickerView: View {
             }
             .padding(.horizontal, 4)
             
-            // Opción por defecto (Carpeta)
-            Button(action: {
-                withAnimation(.spring()) { selectedIcon = nil }
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(selectedIcon == nil ? color : .secondary)
-                    Text("use_category_icon_help".localized(for: preferences.language))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(selectedIcon == nil ? color : .secondary)
+            // Buscador
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.secondary)
+                TextField("search".localized(for: preferences.language) + "...", text: $searchText)
+                    .textFieldStyle(.plain)
+                
+                if !searchText.isEmpty {
+                    Button(action: { searchText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(selectedIcon == nil ? color.opacity(0.12) : Color.primary.opacity(0.03)))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(selectedIcon == nil ? color.opacity(0.3) : Color.clear, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .padding(8)
+            .background(Color.primary.opacity(0.04))
+            .cornerRadius(8)
+            .padding(.horizontal, 4)
+            
+            // Opción por defecto (Carpeta)
+            if searchText.isEmpty {
+                Button(action: {
+                    withAnimation(.spring()) { selectedIcon = nil }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(selectedIcon == nil ? color : .secondary)
+                        Text("use_category_icon_help".localized(for: preferences.language))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(selectedIcon == nil ? color : .secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(selectedIcon == nil ? color.opacity(0.12) : Color.primary.opacity(0.03)))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(selectedIcon == nil ? color.opacity(0.3) : Color.clear, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
             
             // Categorías con iconos
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Self.categories) { category in
-                        VStack(alignment: .leading, spacing: 6) {
+                    if filteredCategories.isEmpty {
+                        Text("No se encontraron iconos")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 20)
+                    } else {
+                        ForEach(filteredCategories) { category in
+                            VStack(alignment: .leading, spacing: 6) {
                             // Título de categoría
                             HStack(spacing: 4) {
                                 Image(systemName: category.systemImage)
@@ -198,9 +266,11 @@ struct IconPickerView: View {
                                         }
                                     }
                                     .buttonStyle(.plain)
+                                    .help(icon)
                                 }
                             }
                         }
+                    }
                     }
                 }
                 .padding(.horizontal, 2)

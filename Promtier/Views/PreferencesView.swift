@@ -632,16 +632,6 @@ struct BehaviorTab: View {
                     Toggle("", isOn: $preferences.launchAtLogin)
                         .toggleStyle(.switch)
                 }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("updates", subtitle: "updates_subtitle", icon: "arrow.clockwise.circle", iconColor: .blue) {
-                    Button("check_now") {
-                        UpdateProvider.shared.checkForUpdates()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
             }
             
             SettingsSection(title: "premium", icon: "crown.fill") {

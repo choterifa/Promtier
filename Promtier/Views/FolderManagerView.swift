@@ -404,27 +404,64 @@ struct FolderManagerView: View {
         let isAIAvailable = (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
                             (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)
                             
-        // Auto-Magic Icon para nueva categoria si dejó el icono por defecto
-        if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable && !isCreatingWithAI {
-            isCreatingWithAI = true
-            let prompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
-            Task {
-                var finalIcon = "folder.fill"
+        // Auto-Magic Icon/Color para nueva categoria si dejó los valores por defecto
+        if editingFolder == nil && selectedIcon == "folder.fill" && selectedColor == .blue && isAIAvailable {
+            // Guardar inmediatamente para no bloquear al usuario
+            finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill")
+            
+            // Tarea en segundo plano para actualizar el icono y color mágicamente
+            Task.detached {
+                struct MagicResponse: Codable {
+                    let icon: String
+                    let color: String
+                }
+                
+                let prompt = AIServiceManager.generateCategoryIconAndColorPrompt(categoryName: sanitizedName)
                 do {
                     let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt)
-                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if IconPickerView.allIconNames.contains(result) {
-                        finalIcon = result
+                    
+                    let cleanResponse = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .replacingOccurrences(of: "```json", with: "")
+                        .replacingOccurrences(of: "```", with: "")
+                    
+                    guard let data = cleanResponse.data(using: .utf8),
+                          let decoded = try? JSONDecoder().decode(MagicResponse.self, from: data) else { return }
+                    
+                    let finalIcon = IconPickerView.allIconNames.contains(decoded.icon) ? decoded.icon : "folder.fill"
+                    let finalColor = decoded.color.hasPrefix("#") ? decoded.color : "#" + decoded.color
+                    
+                    await MainActor.run {
+                        if let folder = self.promptService.folders.first(where: { $0.name == sanitizedName }) {
+                            var updated = folder
+                            updated.icon = finalIcon
+                            updated.color = finalColor
+                            _ = self.promptService.updateFolder(updated, oldName: sanitizedName)
+                        }
                     }
                 } catch {
-                    // silent discard, it will create with default
-                }
-                let iconToUse = finalIcon
-                await MainActor.run {
-                    self.finishSavingFolder(sanitizedName: sanitizedName, iconParam: iconToUse)
-                    self.isCreatingWithAI = false
+                    // Fallo silencioso
                 }
             }
+        } else if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable {
+             // Solo Icono (si el usuario eligió un color pero no icono)
+             finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill")
+             Task.detached {
+                 let prompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
+                 do {
+                     let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt)
+                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                     
+                     if IconPickerView.allIconNames.contains(result) {
+                         await MainActor.run {
+                             if let folder = self.promptService.folders.first(where: { $0.name == sanitizedName }) {
+                                 var updated = folder
+                                 updated.icon = result
+                                 _ = self.promptService.updateFolder(updated, oldName: sanitizedName)
+                             }
+                         }
+                     }
+                 } catch { }
+             }
         } else {
             finishSavingFolder(sanitizedName: sanitizedName, iconParam: selectedIcon)
         }
@@ -538,32 +575,27 @@ struct FolderManagerView: View {
                 saveFolder()
             } label: {
                 HStack {
-                    if isCreatingWithAI {
-                        ProgressView().controlSize(.small)
-                        Text("Generando IA...")
-                    } else {
-                        Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
-                        Image(systemName: "checkmark")
-                    }
+                    Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
+                    Image(systemName: "checkmark")
                 }
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
                 .background(
-                    (newFolderName.isEmpty || isCreatingWithAI) ? 
+                    newFolderName.isEmpty ? 
                         AnyShapeStyle(Color.gray.opacity(0.3)) : 
                         (preferences.isHaloEffectEnabled ? 
                             AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
                             AnyShapeStyle(Color.blue))
                 )
                 .cornerRadius(12)
-                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty && !isCreatingWithAI) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
-                .scaleEffect((isCreateHovered && !newFolderName.isEmpty && !isCreatingWithAI) ? 1.015 : 1.0)
+                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
+                .scaleEffect((isCreateHovered && !newFolderName.isEmpty) ? 1.015 : 1.0)
                 .keyboardShortcut(.return, modifiers: .command)
             }
             .buttonStyle(.plain)
-            .disabled(newFolderName.isEmpty || isCreatingWithAI)
+            .disabled(newFolderName.isEmpty)
             .onHover { h in withAnimation(.spring(response: 0.3)) { isCreateHovered = h } }
         }
         .padding(.top, 8)

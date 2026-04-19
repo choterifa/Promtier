@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		EDE275D92F69376200162293 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = EDE275D82F69376200162293 /* Sparkle */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		ED3FA0A22F6753F800F7DC00 /* Promtier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Promtier.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -27,7 +23,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EDE275D92F69376200162293 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,7 +73,6 @@
 			);
 			name = Promtier;
 			packageProductDependencies = (
-				EDE275D82F69376200162293 /* Sparkle */,
 			);
 			productName = Promtier;
 			productReference = ED3FA0A22F6753F800F7DC00 /* Promtier.app */;
@@ -110,7 +104,6 @@
 			mainGroup = ED3FA0992F6753F800F7DC00;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				EDE275D72F69376200162293 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ED3FA0A32F6753F800F7DC00 /* Products */;
@@ -403,25 +396,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		EDE275D72F69376200162293 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		EDE275D82F69376200162293 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = EDE275D72F69376200162293 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = ED3FA09A2F6753F800F7DC00 /* Project object */;
 }
