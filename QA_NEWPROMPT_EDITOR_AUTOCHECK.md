@@ -3,6 +3,7 @@
 Fecha: 2026-04-19
 
 ## Resultado rapido
+
 - Build: PASS
 - Errores de compilacion: 0
 - Cobertura automatica: validacion estatica de wiring y flujo en codigo
@@ -10,10 +11,12 @@ Fecha: 2026-04-19
 ## Evidencia automatica (PASS)
 
 ### Flujo Base
+
 - Version history solo en cambios core premium: PASS
   - Evidencia: appendVersionSnapshotIfNeeded y deteccion de coreChanges en save flow.
 
 ### Draft
+
 - Carga de draft al abrir editor: PASS
   - Evidencia: setupOnAppear + DraftService.shared.loadDraft.
 - Auto-guardado de draft por cambios: PASS
@@ -22,6 +25,7 @@ Fecha: 2026-04-19
   - Evidencia: DraftService.shared.clearDraft en savePrompt(closeAfter: true) y discardChanges.
 
 ### Teclado
+
 - Cmd+S: PASS
   - Evidencia: handleSaveShortcut.
 - Cmd+C sin seleccion: PASS
@@ -36,12 +40,14 @@ Fecha: 2026-04-19
   - Evidencia: handleImageGalleryArrowShortcut + handleSpacePreviewShortcut.
 
 ### Galeria e importacion
+
 - Pipeline unificado con validaciones: PASS
   - Evidencia: PromptMediaImportPipeline en PromptImageShowcaseView y NewPromptView.
 - Mensajes de error por slots/tipo/tamano: PASS
   - Evidencia: localizedMessage(for:) + showImageImportWarning.
 
 ### Overlays
+
 - Toast transitorio: PASS
   - Evidencia: NewPromptBranchMessageOverlay + showTransientBranchMessage.
 - Modal Magic encapsulado: PASS
@@ -50,6 +56,7 @@ Fecha: 2026-04-19
   - Evidencia: snippetsOverlayLayer y variablesOverlayLayer.
 
 ## Pendiente (manual en UI)
+
 - Abrir/cerrar editor nuevo y existente, incluyendo guardado sin cambios.
 - Confirmar comportamiento visual (parpadeos/saltos).
 - Validar interaccion real de teclado con foco en distintos controles.
@@ -57,4 +64,5 @@ Fecha: 2026-04-19
 - Confirmar comportamiento premium/no premium en overlays.
 
 ## Notas
+
 Este reporte no reemplaza pruebas manuales de UI; verifica wiring, reglas de flujo y compilacion.

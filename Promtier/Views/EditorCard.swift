@@ -5,19 +5,6 @@ import Combine
 
 
 struct EditorCard: View {
-    private enum Layout {
-        static let headerSpacing: CGFloat = 14
-        static let headerInnerSpacing: CGFloat = 6
-        static let titleFontSize: CGFloat = 22
-        static let subtitleFontSize: CGFloat = 13
-        static let editorCornerRadius: CGFloat = 16
-        static let editorToolbarVerticalPadding: CGFloat = 8
-        static let editorToolbarTrailingPadding: CGFloat = 4
-        static let editorTopPadding: CGFloat = 14
-        static let editorIdleBorderWidth: CGFloat = 1.5
-        static let editorActiveBorderWidth: CGFloat = 2
-    }
-
     @Binding var title: String
     @Binding var content: String
     @Binding var promptDescription: String
@@ -136,119 +123,130 @@ struct EditorCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: Layout.headerSpacing) {
-                VStack(alignment: .leading, spacing: Layout.headerInnerSpacing) {
-                    HStack(alignment: .firstTextBaseline) {
-                        PromptIconPickerButton(
-                            selectedIcon: $selectedIcon,
-                            showingIconPicker: $showingIconPicker,
-                            fallbackIconName: fallbackIconName,
-                            themeColor: themeColor,
-                            currentCategoryColor: currentCategoryColor
-                        )
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
+                    Button(action: { showingIconPicker.toggle() }) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(themeColor.opacity(0.1))
+                                .frame(width: 42, height: 42)
 
-                        TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: Layout.titleFontSize * preferences.fontSize.scale, weight: .bold))
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        // ✨ Botón Mágico: Autocompletar Título
-                        if editorID == "main" {
-                            MagicImageDropZone(isDraggingImage: $isDraggingMagicImage) { data in
-                                extractMagicPrompt(from: data)
-                            }
-                            .scaleEffect(0.65)
-                            .frame(width: 26, height: 26)
-                            .padding(.trailing, 2)
-                            
-                            Button(action: {
-                                withAnimation { isMagicPulsing = false }
-                                onMagicAutocomplete?()
-                            }) {
-                                HStack(spacing: 4) {
-                                    if isAutocompleting {
-                                        ProgressView()
-                                            .progressViewStyle(.circular)
-                                            .scaleEffect(0.4)
-                                            .frame(width: 8, height: 8)
-                                    } else {
-                                        Image(systemName: "wand.and.stars")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .frame(width: 12, height: 12)
-                                    }
-                                    
-                                    Text(isAutocompleting ? "STOP" : "MAGIC")
-                                        .font(.system(size: 10.5, weight: .heavy))
-                                        .frame(width: 42, alignment: .center)
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(
-                                    Capsule()
-                                        .fill(preferences.isHaloEffectEnabled
-                                            ? AnyShapeStyle(LinearGradient(
-                                                colors: [currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22), currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ))
-                                            : AnyShapeStyle(themeColor.opacity(isMagicHovered ? 0.15 : 0.08)))
-                                        .opacity(isMagicPulsing ? 0.5 : 1.0)
-                                        .shadow(color: (preferences.isHaloEffectEnabled && isMagicPulsing) ? currentCategoryColor.opacity(0.7) : (preferences.isHaloEffectEnabled && isMagicHovered ? currentCategoryColor.opacity(0.6) : .clear),
-                                               radius: isMagicPulsing ? 8 : (isMagicHovered ? 14 : 0))
-                                )
-                                .foregroundColor(isMagicHovered ? themeColor : themeColor.opacity(0.9))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(
-                                            preferences.isHaloEffectEnabled
-                                                ? AnyShapeStyle(AngularGradient(
-                                                    colors: [currentCategoryColor, currentCategoryColor.opacity(0.1), currentCategoryColor],
-                                                    center: .center,
-                                                    startAngle: .degrees(magicRotationPhase),
-                                                    endAngle: .degrees(magicRotationPhase + 360)
-                                                ))
-                                                : AnyShapeStyle(themeColor.opacity(0.8)),
-                                            lineWidth: isMagicPulsing ? 1.4 : (isMagicHovered ? 1.2 : 0.8)
-                                        )
-                                        .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 1.0 : 0.5))
-                                )
-                                .scaleEffect(isMagicHovered ? 1.02 : 1.0)
-                            }
-                            .buttonStyle(.plain)
-                            .onAppear {
-                                withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
-                                    magicRotationPhase = 360
-                                }
-                            }
-                            .onHover { hovering in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    isMagicHovered = hovering
-                                }
-                            }
-                            .animation(
-                                isMagicPulsing
-                                    ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
-                                    : .spring(response: 0.3, dampingFraction: 0.7),
-                                value: isMagicPulsing
-                            )
-                            .help("Autocomplete content based on title (Cmd+J)")
-                            .padding(.top, 2)
+                            Image(systemName: selectedIcon ?? fallbackIconName)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(themeColor)
                         }
                     }
+                    .buttonStyle(.plain)
+                    .help("Change icon")
+                    .popover(isPresented: $showingIconPicker, arrowEdge: .trailing) {
+                        IconPickerView(selectedIcon: $selectedIcon, color: currentCategoryColor)
+                    }
 
-                    TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: Layout.subtitleFontSize * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.8))
-                        .lineLimit(2)
-                        .frame(minHeight: 28, alignment: .topLeading)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .firstTextBaseline) {
+                            TextField("prompt_title_placeholder".localized(for: preferences.language), text: $title, axis: .vertical)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 22 * preferences.fontSize.scale, weight: .bold))
+                                .lineLimit(2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            // ✨ Botón Mágico: Autocompletar Título
+                            if editorID == "main" {
+                                MagicImageDropZone(isDraggingImage: $isDraggingMagicImage) { data in
+                                    extractMagicPrompt(from: data)
+                                }
+                                .scaleEffect(0.65)
+                                .frame(width: 26, height: 26)
+                                .padding(.trailing, 2)
+                                
+                                Button(action: {
+                                    withAnimation { isMagicPulsing = false }
+                                    onMagicAutocomplete?()
+                                }) {
+                                    HStack(spacing: 4) {
+                                        if isAutocompleting {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .scaleEffect(0.4)
+                                                .frame(width: 8, height: 8)
+                                        } else {
+                                            Image(systemName: "wand.and.stars")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .frame(width: 12, height: 12)
+                                        }
+                                        
+                                        Text(isAutocompleting ? "STOP" : "MAGIC")
+                                            .font(.system(size: 10.5, weight: .heavy))
+                                            .frame(width: 42, alignment: .center)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        Capsule()
+                                            .fill(preferences.isHaloEffectEnabled
+                                                ? AnyShapeStyle(LinearGradient(
+                                                    colors: [currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22), currentCategoryColor.opacity(isMagicHovered ? 0.35 : 0.22)],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                ))
+                                                : AnyShapeStyle(themeColor.opacity(isMagicHovered ? 0.15 : 0.08)))
+                                            .opacity(isMagicPulsing ? 0.5 : 1.0)
+                                            .shadow(color: (preferences.isHaloEffectEnabled && isMagicPulsing) ? currentCategoryColor.opacity(0.7) : (preferences.isHaloEffectEnabled && isMagicHovered ? currentCategoryColor.opacity(0.6) : .clear),
+                                                   radius: isMagicPulsing ? 8 : (isMagicHovered ? 14 : 0))
+                                    )
+                                    .foregroundColor(isMagicHovered ? themeColor : themeColor.opacity(0.9))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(
+                                                preferences.isHaloEffectEnabled
+                                                    ? AnyShapeStyle(AngularGradient(
+                                                        colors: [currentCategoryColor, currentCategoryColor.opacity(0.1), currentCategoryColor],
+                                                        center: .center,
+                                                        startAngle: .degrees(magicRotationPhase),
+                                                        endAngle: .degrees(magicRotationPhase + 360)
+                                                    ))
+                                                    : AnyShapeStyle(themeColor.opacity(0.8)),
+                                                lineWidth: isMagicPulsing ? 1.4 : (isMagicHovered ? 1.2 : 0.8)
+                                            )
+                                            .opacity(isMagicPulsing ? 0.8 : (isMagicHovered ? 1.0 : 0.5))
+                                    )
+                                    .scaleEffect(isMagicHovered ? 1.02 : 1.0)
+                                }
+                                .buttonStyle(.plain)
+                                .onAppear {
+                                    withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
+                                        magicRotationPhase = 360
+                                    }
+                                }
+                                .onHover { hovering in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        isMagicHovered = hovering
+                                    }
+                                }
+                                .animation(
+                                    isMagicPulsing
+                                        ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
+                                        : .spring(response: 0.3, dampingFraction: 0.7),
+                                    value: isMagicPulsing
+                                )
+                                .help("Autocomplete content based on title (Cmd+J)")
+                                .padding(.top, 2)
+                            }
+                        }
+
+                        TextField("short_desc_placeholder".localized(for: preferences.language), text: $promptDescription, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.8))
+                            .lineLimit(2)
+                            .frame(minHeight: 28, alignment: .topLeading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             } // Cierre de la cabecera (VStack en 1695)
 
-            // ✅ Editor Principal con Herramientas Inteligentes (Sidebar Layout)
-            HStack(alignment: .top, spacing: 0) {
+                // ✅ Editor Principal con Herramientas Inteligentes (Sidebar Layout)
+                HStack(alignment: .top, spacing: 0) {
                 // El Editor
                 HighlightedEditor(
                     text: $content,
@@ -343,19 +341,19 @@ struct EditorCard: View {
                         isAIGenerating = false
                     }
                 )
-                .padding(.vertical, Layout.editorToolbarVerticalPadding)
-                .padding(.trailing, Layout.editorToolbarTrailingPadding) // Ajustado para dar más espacio al texto
+                .padding(.vertical, 8)
+                .padding(.trailing, 4) // Ajustado para dar más espacio al texto
             }
             .background(
-                RoundedRectangle(cornerRadius: Layout.editorCornerRadius)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
-                        RoundedRectangle(cornerRadius: Layout.editorCornerRadius)
-                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? Layout.editorActiveBorderWidth : Layout.editorIdleBorderWidth)
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? 2 : 1.5)
                             .shadow(color: preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
-            .padding(.top, Layout.editorTopPadding) // Espacio EXTERNO entre descripción y caja del editor
+            .padding(.top, 14) // Espacio EXTERNO entre descripción y caja del editor
             .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
             .animation(.easeInOut(duration: 0.2), value: isHovering)
             .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
@@ -369,18 +367,15 @@ struct EditorCard: View {
                 }
             }
 
-            PromptMetadataSettingsView(
-                selectedFolder: $selectedFolder,
-                isFavorite: $isFavorite,
-                selectedIcon: $selectedIcon,
-                showingIconPicker: $showingIconPicker,
-                fallbackIconName: fallbackIconName,
-                themeColor: themeColor,
-                currentCategoryColor: currentCategoryColor,
-                showsIconButton: false
-            )
+            // ✅ Selector de Categoría (Restaurado aquí)
+            HStack(spacing: 8) {
+                CategoryPillPicker(selectedCategory: $selectedFolder, isFavorite: $isFavorite, showLabel: false)
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
 
-        }
+        } // Cierre del VStack principal body
         .alert("Execute Command", isPresented: $showingInstructionAlert) {
             TextField("Instruction (e.g. Translate to French)", text: $instructionInput)
             Button("Cancel", role: .cancel) { }

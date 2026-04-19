@@ -19,15 +19,15 @@ struct PlaceholderSlotView: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.doc.fill" : "photo.badge.plus")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.85 : 0.45))
+                .font(.system(size: 24))
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
 
             Text(displayTextKey.localized(for: preferences.language))
                 .font(.system(size: 11, weight: .medium))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.center)
-                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.85 : 0.45))
+                .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 0.8 : 0.4))
         }
         .animation(.easeInOut(duration: 0.15), value: isHovering)
         .frame(width: slotWidth, height: slotHeight)

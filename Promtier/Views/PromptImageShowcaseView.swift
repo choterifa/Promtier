@@ -14,11 +14,25 @@ struct PromptImageShowcaseView: View {
     
     let preferences: PreferencesManager
     let themeColor: Color
+    @State private var containerWidth: CGFloat = 0
     
     private enum ShowcaseLayout {
-        static let slotWidth: CGFloat = 112
-        static let slotHeight: CGFloat = 76
-        static let rowHeight: CGFloat = 104
+        static let minSlotWidth: CGFloat = 112
+        static let slotAspectRatio: CGFloat = 0.66
+    }
+
+    private var slotWidth: CGFloat {
+        let maxSlots = CGFloat(PromptMediaImportPipeline.maxSlots)
+        let dynamicWidth = (max(containerWidth, 0) - 52) / maxSlots
+        return max(ShowcaseLayout.minSlotWidth, dynamicWidth)
+    }
+
+    private var slotHeight: CGFloat {
+        slotWidth * ShowcaseLayout.slotAspectRatio
+    }
+
+    private var rowHeight: CGFloat {
+        slotHeight + 24
     }
     
     var body: some View {
@@ -52,11 +66,10 @@ struct PromptImageShowcaseView: View {
                             imageSlot(index: index)
                         } else {
                             PlaceholderSlotView(
-                                slotWidth: ShowcaseLayout.slotWidth,
-                                slotHeight: ShowcaseLayout.slotHeight,
+                                slotWidth: slotWidth,
+                                slotHeight: slotHeight,
                                 onSelect: importImagesDirectly,
                                 onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-                                displayTextKey: "add_image",
                                 tintColor: themeColor
                             )
                         }
@@ -65,9 +78,20 @@ struct PromptImageShowcaseView: View {
                 .padding(.vertical, 12)
                 .padding(.horizontal, 12)
             }
-            .frame(height: ShowcaseLayout.rowHeight)
+            .frame(height: rowHeight)
         }
         .padding(.top, 16)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        containerWidth = proxy.size.width
+                    }
+                    .onChange(of: proxy.size.width) { newValue in
+                        containerWidth = newValue
+                    }
+            }
+        )
         .onPasteCommand(of: [.image]) { providers in
             handleGalleryDrop(providers: providers)
         }
@@ -77,8 +101,8 @@ struct PromptImageShowcaseView: View {
     private func imageSlot(index: Int) -> some View {
         ImageSlotView(
             imageData: showcaseImages[index],
-            slotWidth: ShowcaseLayout.slotWidth,
-            slotHeight: ShowcaseLayout.slotHeight,
+            slotWidth: slotWidth,
+            slotHeight: slotHeight,
             isSelected: mediaState.selectedImageIndex == index,
             tintColor: themeColor,
             onRemove: { 

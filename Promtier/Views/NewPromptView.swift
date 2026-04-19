@@ -521,7 +521,8 @@ struct NewPromptView: View {
                     tags: vmBinding(\.tags),
                     newTag: vmBinding(\.newTag),
                     showingTagEditor: $showingTagEditor,
-                    preferences: preferences
+                    preferences: preferences,
+                    themeColor: themeColor
                 )
 
                 // Contextual Awareness (App Association)

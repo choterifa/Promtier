@@ -11,13 +11,14 @@ struct PromptTagsEditorView: View {
     @Binding var showingTagEditor: Bool
     
     let preferences: PreferencesManager
+    let themeColor: Color
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "tag.fill")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(themeColor)
                 Text("tags".localized(for: preferences.language).uppercased())
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
@@ -32,7 +33,7 @@ struct PromptTagsEditorView: View {
                 }) {
                     Image(systemName: showingTagEditor ? "minus.circle.fill" : "plus.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(showingTagEditor ? .red.opacity(0.8) : .blue.opacity(0.8))
+                        .foregroundColor(showingTagEditor ? .red.opacity(0.8) : themeColor.opacity(0.85))
                 }
                 .buttonStyle(.plain)
             }
@@ -83,8 +84,8 @@ struct PromptTagsEditorView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
+                                .background(themeColor.opacity(0.12))
+                                .foregroundColor(themeColor)
                                 .cornerRadius(6)
                             }
                         }
