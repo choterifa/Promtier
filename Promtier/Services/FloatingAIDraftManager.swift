@@ -33,6 +33,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     }
     
     @Published var history: [AIDraftHistoryItem] = []
+    private var lastHistoryMutationAt: Date = .distantPast
+    private let minHistoryMutationInterval: TimeInterval = 0.35
     
     func addToHistory(input: String, output: String) {
         // Evitar duplicados consecutivos exactos
@@ -42,11 +44,24 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         
         let newItem = AIDraftHistoryItem(input: input, output: output)
         DispatchQueue.main.async {
+            let now = Date()
+
+            // Throttle de mutaciones frecuentes: si llega muy seguido y el input coincide,
+            // actualizamos el último item en vez de apilar otro.
+            if now.timeIntervalSince(self.lastHistoryMutationAt) < self.minHistoryMutationInterval,
+               let lastIndex = self.history.indices.last,
+               self.history[lastIndex].input == input {
+                self.history[lastIndex] = newItem
+                self.lastHistoryMutationAt = now
+                return
+            }
+
             self.history.append(newItem)
             // Límite de 15 items para no saturar
             if self.history.count > 15 {
                 self.history.removeFirst()
             }
+            self.lastHistoryMutationAt = now
         }
     }
     

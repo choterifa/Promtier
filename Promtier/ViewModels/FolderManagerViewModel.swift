@@ -23,6 +23,20 @@ class FolderManagerViewModel: ObservableObject {
     @Published var showingDeleteAlert = false
     @Published var showingDuplicateAlert = false
     @Published var showingReservedNameAlert = false
+    @Published private(set) var categoryCounts: [String: Int] = [:]
+
+    func refreshCounters(with prompts: [Prompt]) {
+        var counts: [String: Int] = [:]
+        for prompt in prompts {
+            let folder = prompt.folder ?? "uncategorized"
+            counts[folder, default: 0] += 1
+        }
+        categoryCounts = counts
+    }
+
+    func categoryCount(for folderName: String) -> Int {
+        categoryCounts[folderName, default: 0]
+    }
     
     func startEditing(_ folder: Folder) {
         withAnimation(.spring()) {
@@ -52,8 +66,8 @@ class FolderManagerViewModel: ObservableObject {
         }
     }
     
-    func requestDelete(folder: Folder, categoryCounts: [String: Int]) {
-        let count = categoryCounts[folder.name] ?? 0
+    func requestDelete(folder: Folder) {
+        let count = categoryCount(for: folder.name)
         if count > 0 {
             folderToDelete = folder
             showingDeleteAlert = true

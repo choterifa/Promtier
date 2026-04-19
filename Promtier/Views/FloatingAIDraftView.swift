@@ -21,6 +21,10 @@ struct FloatingAIDraftView: View {
     @State private var toastMsg: String = ""
     @State private var toastIcon: String = "checkmark.circle.fill"
     @State private var toastTimer: Timer?
+    @State private var typewriterTimer: Timer?
+    @State private var lastToastShownAt: Date = .distantPast
+    @State private var contentWordCount: Int = 0
+    @State private var responseWordCount: Int = 0
     
     // Preset Editor State
     @State private var showPresetEditor: Bool = false
@@ -87,7 +91,7 @@ struct FloatingAIDraftView: View {
                         HStack(spacing: 4) {
                             Text("\(manager.content.count) carácteres")
                             Text("•")
-                            Text("\(manager.content.split(separator: " ").count) palabras")
+                            Text("\(contentWordCount) palabras")
                         }
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.secondary.opacity(0.5))
@@ -263,7 +267,7 @@ struct FloatingAIDraftView: View {
                         HStack(spacing: 4) {
                             Text("\(manager.responseText.count) carácteres")
                             Text("•")
-                            Text("\(manager.responseText.split(separator: " ").count) palabras")
+                            Text("\(responseWordCount) palabras")
                         }
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.secondary.opacity(0.5))
@@ -300,6 +304,7 @@ struct FloatingAIDraftView: View {
         .shadow(color: .black.opacity(0.2), radius: 25, y: 12)
         .onAppear {
             isDraftFocused = true
+            refreshWordCounts()
             checkAutoImprove()
             setupKeyboardMonitor()
         }
@@ -308,10 +313,21 @@ struct FloatingAIDraftView: View {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
             }
+            toastTimer?.invalidate()
+            toastTimer = nil
+            typewriterTimer?.invalidate()
+            typewriterTimer = nil
+        }
+        .onChange(of: manager.content) { _, _ in
+            contentWordCount = countWords(in: manager.content)
+        }
+        .onChange(of: manager.responseText) { _, _ in
+            responseWordCount = countWords(in: manager.responseText)
         }
         .onChange(of: manager.isVisible) { _, visible in
             if visible {
                 isDraftFocused = true
+                refreshWordCounts()
                 checkAutoImprove()
                 setupKeyboardMonitor()
             } else {
@@ -319,11 +335,22 @@ struct FloatingAIDraftView: View {
                     NSEvent.removeMonitor(monitor)
                     localMonitor = nil
                 }
+                typewriterTimer?.invalidate()
+                typewriterTimer = nil
             }
         }
         .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
             generatePromptFromImage(data: data)
         }
+    }
+
+    private func countWords(in text: String) -> Int {
+        text.split(whereSeparator: { $0.isWhitespace }).count
+    }
+
+    private func refreshWordCounts() {
+        contentWordCount = countWords(in: manager.content)
+        responseWordCount = countWords(in: manager.responseText)
     }
 
     private func setupKeyboardMonitor() {
@@ -344,15 +371,13 @@ struct FloatingAIDraftView: View {
                 if !textToCopy.isEmpty {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(textToCopy, forType: .string)
-                    
-                    self.toastMsg = "¡Copiado!"
-                    self.toastIcon = "doc.on.clipboard.fill"
-                    withAnimation(.spring()) { showSavedToast = true }
-                    
-                    toastTimer?.invalidate()
-                    toastTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { _ in
-                        withAnimation { showSavedToast = false }
-                    }
+
+                    showToast(
+                        message: "¡Copiado!",
+                        icon: "doc.on.clipboard.fill",
+                        hideAfter: 1.5,
+                        minInterval: 0.35
+                    )
                     HapticService.shared.playSuccess()
                     return nil
                 }
@@ -422,10 +447,14 @@ struct FloatingAIDraftView: View {
     private func saveResultAsPrompt() {
         let contentToSave = manager.responseText.isEmpty ? manager.content : manager.responseText
         guard !contentToSave.isEmpty else { return }
-        
-        self.toastMsg = "Analizando y guardando..."
-        self.toastIcon = "sparkles"
-        withAnimation(.spring()) { showSavedToast = true }
+
+        showToast(
+            message: "Analizando y guardando...",
+            icon: "sparkles",
+            hideAfter: 0,
+            minInterval: 0,
+            force: true
+        )
         
         Task {
             do {
@@ -442,15 +471,15 @@ struct FloatingAIDraftView: View {
                 
                 await MainActor.run {
                     _ = PromptService.shared.createPrompt(newPrompt)
-                    
-                    self.toastMsg = "¡Guardado en Galería!"
-                    self.toastIcon = "square.and.arrow.down.fill"
+
+                    showToast(
+                        message: "¡Guardado en Galería!",
+                        icon: "square.and.arrow.down.fill",
+                        hideAfter: 2.0,
+                        minInterval: 0.2,
+                        force: true
+                    )
                     HapticService.shared.playSuccess()
-                    
-                    self.toastTimer?.invalidate()
-                    self.toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-                        withAnimation { self.showSavedToast = false }
-                    }
                 }
             } catch {
                 // Fallback de guardado rápido si falla la IA
@@ -462,15 +491,15 @@ struct FloatingAIDraftView: View {
                         icon: "sparkles"
                     )
                     _ = PromptService.shared.createPrompt(newPrompt)
-                    
-                    self.toastMsg = "Guardado (Sin Metadata)"
-                    self.toastIcon = "exclamationmark.triangle.fill"
+
+                    showToast(
+                        message: "Guardado (Sin Metadata)",
+                        icon: "exclamationmark.triangle.fill",
+                        hideAfter: 2.0,
+                        minInterval: 0.2,
+                        force: true
+                    )
                     HapticService.shared.playSuccess()
-                    
-                    self.toastTimer?.invalidate()
-                    self.toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
-                        withAnimation { self.showSavedToast = false }
-                    }
                 }
             }
         }
@@ -751,7 +780,10 @@ struct FloatingAIDraftView: View {
     }
     
     private func runSingleAI(instruction: String, content: String, imageData: Data? = nil) {
+        typewriterTimer?.invalidate()
+        typewriterTimer = nil
         manager.responseText = ""
+        responseWordCount = 0
         manager.isGenerating = true
         if imageData != nil { isMagicImageProcessing = true }
         manager.error = nil
@@ -813,17 +845,69 @@ struct FloatingAIDraftView: View {
     }
     
     private func typewriterAnimation(_ fullText: String) {
+        typewriterTimer?.invalidate()
+        typewriterTimer = nil
+
         manager.responseText = ""
-        let words = fullText.split(separator: " ", omittingEmptySubsequences: false).map { String($0) }
+        responseWordCount = 0
+
+        let words = fullText.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        let totalWords = words.count
+        let wordsPerTick: Int
+
+        if totalWords <= 40 {
+            wordsPerTick = 1
+        } else if totalWords <= 120 {
+            wordsPerTick = 2
+        } else if totalWords <= 240 {
+            wordsPerTick = 4
+        } else {
+            wordsPerTick = 6
+        }
+
+        let tickInterval: TimeInterval = totalWords > 180 ? 0.012 : 0.015
         var index = 0
-        
-        Timer.scheduledTimer(withTimeInterval: 0.015, repeats: true) { timer in
+
+        typewriterTimer = Timer.scheduledTimer(withTimeInterval: tickInterval, repeats: true) { timer in
             if index < words.count {
-                let word = words[index]
-                manager.responseText += (index == 0 ? "" : " ") + word
-                index += 1
+                let nextIndex = min(index + wordsPerTick, words.count)
+                let chunk = words[index..<nextIndex].joined(separator: " ")
+                manager.responseText += (index == 0 ? "" : " ") + chunk
+                index = nextIndex
+                responseWordCount = index
             } else {
                 timer.invalidate()
+                typewriterTimer = nil
+            }
+        }
+    }
+
+    private func showToast(
+        message: String,
+        icon: String,
+        hideAfter: TimeInterval,
+        minInterval: TimeInterval,
+        force: Bool = false
+    ) {
+        let now = Date()
+        if !force && now.timeIntervalSince(lastToastShownAt) < minInterval {
+            return
+        }
+
+        lastToastShownAt = now
+        toastTimer?.invalidate()
+        toastMsg = message
+        toastIcon = icon
+
+        withAnimation(.spring()) {
+            showSavedToast = true
+        }
+
+        guard hideAfter > 0 else { return }
+
+        toastTimer = Timer.scheduledTimer(withTimeInterval: hideAfter, repeats: false) { _ in
+            withAnimation {
+                showSavedToast = false
             }
         }
     }

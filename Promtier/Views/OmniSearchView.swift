@@ -9,79 +9,31 @@ import SwiftUI
 import AppKit
 
 struct OmniSearchView: View {
+    private struct SearchIndexEntry {
+        let prompt: Prompt
+        let titleLower: String
+        let contentLower: String
+        let descLower: String
+        let folderLower: String
+    }
+
+    private struct SearchResultItem {
+        let prompt: Prompt
+        let categoryColor: Color
+        let isRecommended: Bool
+    }
+
     @EnvironmentObject var manager: OmniSearchManager
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     
     @State private var query: String = ""
     @State private var selectedIndex: Int = 0
+    @State private var indexedPrompts: [SearchIndexEntry] = []
+    @State private var filteredResults: [SearchResultItem] = []
+    @State private var debouncedSearchTask: Task<Void, Never>? = nil
+    @State private var visibleResultIndices: Set<Int> = []
     @FocusState private var isFocused: Bool
-    
-    private var filteredPrompts: [Prompt] {
-        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let activeApp = PromptService.shared.activeAppBundleID
-        
-        if trimmedQuery.isEmpty {
-            // Mostrar últimos creados y dar prioridad a los recomendados
-            return Array(promptService.prompts
-                .sorted(by: { p1, p2 in
-                    let p1IsRecommended = activeApp != nil && p1.targetAppBundleIDs.contains(activeApp!)
-                    let p2IsRecommended = activeApp != nil && p2.targetAppBundleIDs.contains(activeApp!)
-                    
-                    if p1IsRecommended && !p2IsRecommended { return true }
-                    if !p1IsRecommended && p2IsRecommended { return false }
-                    
-                    return p1.createdAt > p2.createdAt
-                })
-                .prefix(12))
-        } else {
-            let searchTerms = trimmedQuery.lowercased().components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-            
-            let scored = promptService.prompts.compactMap { prompt -> (Prompt, Int)? in
-                var score = 0
-                let title = prompt.title.lowercased()
-                let content = prompt.content.lowercased()
-                let desc = (prompt.promptDescription ?? "").lowercased()
-                let folder = (prompt.folder ?? "").lowercased()
-                
-                for term in searchTerms {
-                    // PRIORIDAD ALTA: Título
-                    if title.contains(term) {
-                        score += 500 // Subimos mucho la prioridad del título
-                        if title.hasPrefix(term) { score += 100 }
-                    }
-                    
-                    // PRIORIDAD MEDIA: Descripción y Contenido
-                    if desc.contains(term) { score += 40 }
-                    if content.contains(term) { score += 20 }
-                    
-                    // PRIORIDAD BAJA: Carpeta/Categoría
-                    if folder.contains(term) {
-                        score += 10 // Puntuación mínima para que aparezcan al final
-                    }
-                }
-                
-                guard score > 0 else { return nil }
-                
-                // Dar prioridad enorme a los recomendados si coinciden con la búsqueda
-                if let active = activeApp, prompt.targetAppBundleIDs.contains(active) {
-                    score += 1000
-                }
-                
-                // Bonus por reciencia de creación
-                if prompt.createdAt > Date().addingTimeInterval(-86400 * 7) {
-                    score += 5 // Bonus pequeño
-                }
-                
-                return (prompt, score)
-            }
-            
-            return Array(scored
-                .sorted(by: { $0.1 > $1.1 })
-                .map { $0.0 }
-                .prefix(12))
-        }
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -101,10 +53,11 @@ struct OmniSearchView: View {
                     }
                     .onChange(of: query) { _, _ in
                         selectedIndex = 0
+                        scheduleSearch()
                     }
                     .onSubmit {
-                        if !filteredPrompts.isEmpty {
-                            copyAndClose(filteredPrompts[selectedIndex])
+                        if !filteredResults.isEmpty {
+                            copyAndClose(filteredResults[selectedIndex].prompt)
                         }
                     }
                 
@@ -139,23 +92,32 @@ struct OmniSearchView: View {
             .padding(.vertical, 18)
             .background(Color(NSColor.controlBackgroundColor))
             
-            if !filteredPrompts.isEmpty {
+            if !filteredResults.isEmpty {
                 Divider().opacity(0.1)
                 
                 // Lista de Resultados
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(spacing: 6) {
-                            ForEach(Array(filteredPrompts.enumerated()), id: \.element.id) { index, prompt in
+                        LazyVStack(spacing: 6) {
+                            ForEach(Array(filteredResults.enumerated()), id: \.element.prompt.id) { index, result in
                                 OmniSearchRow(
-                                    prompt: prompt,
+                                    prompt: result.prompt,
+                                    categoryColor: result.categoryColor,
+                                    isRecommended: result.isRecommended,
                                     isSelected: selectedIndex == index,
                                     onSelect: {
                                         selectedIndex = index
                                         isFocused = false
                                     },
                                     onCopy: {
-                                        copyAndClose(prompt)
+                                        copyAndClose(result.prompt)
+                                    },
+                                    onVisibilityChange: { isVisible in
+                                        if isVisible {
+                                            visibleResultIndices.insert(index)
+                                        } else {
+                                            visibleResultIndices.remove(index)
+                                        }
                                     }
                                 )
                                 .id(index)
@@ -167,6 +129,8 @@ struct OmniSearchView: View {
                     .frame(maxHeight: 380)
                     .onChange(of: selectedIndex) { _, newValue in
                         DispatchQueue.main.async {
+                            guard !visibleResultIndices.contains(newValue) else { return }
+
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 proxy.scrollTo(newValue, anchor: .center)
                             }
@@ -225,14 +189,22 @@ struct OmniSearchView: View {
             }
         )
         .onAppear {
+            rebuildSearchIndex(from: promptService.prompts)
+            runSearch()
+
             // Delay extra para asegurar que la ventana es KEY antes de enfocar el TextField
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isFocused = true
             }
         }
+        .onReceive(promptService.$prompts) { prompts in
+            rebuildSearchIndex(from: prompts)
+            runSearch()
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchOpened"))) { _ in
             query = ""
             selectedIndex = 0
+            runSearch()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isFocused = true
             }
@@ -241,7 +213,7 @@ struct OmniSearchView: View {
             guard let direction = notification.object as? String else { return }
             
             DispatchQueue.main.async {
-                let count = filteredPrompts.count
+                let count = filteredResults.count
                 guard count > 0 else { return }
                 
                 if direction == "down" {
@@ -258,15 +230,140 @@ struct OmniSearchView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchSubmit"))) { _ in
-            if !filteredPrompts.isEmpty && selectedIndex < filteredPrompts.count {
-                copyAndClose(filteredPrompts[selectedIndex])
+            if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
+                copyAndClose(filteredResults[selectedIndex].prompt)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OmniSearchCopy"))) { _ in
-            if !filteredPrompts.isEmpty && selectedIndex < filteredPrompts.count {
-                copyAndClose(filteredPrompts[selectedIndex])
+            if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
+                copyAndClose(filteredResults[selectedIndex].prompt)
             }
         }
+        .onDisappear {
+            debouncedSearchTask?.cancel()
+        }
+    }
+
+    private func scheduleSearch() {
+        debouncedSearchTask?.cancel()
+        debouncedSearchTask = Task {
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                runSearch()
+            }
+        }
+    }
+
+    private func rebuildSearchIndex(from prompts: [Prompt]) {
+        indexedPrompts = prompts.map { prompt in
+            SearchIndexEntry(
+                prompt: prompt,
+                titleLower: prompt.title.lowercased(),
+                contentLower: prompt.content.lowercased(),
+                descLower: (prompt.promptDescription ?? "").lowercased(),
+                folderLower: (prompt.folder ?? "").lowercased()
+            )
+        }
+    }
+
+    private func runSearch() {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let activeApp = PromptService.shared.activeAppBundleID
+        let folderColorByName = Dictionary(uniqueKeysWithValues: promptService.folders.map { folder in
+            (folder.name, Color(hex: folder.displayColor))
+        })
+
+        if trimmedQuery.isEmpty {
+            let prompts = Array(
+                indexedPrompts
+                    .sorted(by: { lhs, rhs in
+                        let lhsRecommended = activeApp != nil && lhs.prompt.targetAppBundleIDs.contains(activeApp!)
+                        let rhsRecommended = activeApp != nil && rhs.prompt.targetAppBundleIDs.contains(activeApp!)
+
+                        if lhsRecommended && !rhsRecommended { return true }
+                        if !lhsRecommended && rhsRecommended { return false }
+
+                        return lhs.prompt.createdAt > rhs.prompt.createdAt
+                    })
+                    .prefix(12)
+                    .map(\.prompt)
+            )
+
+            filteredResults = prompts.map { prompt in
+                makeSearchResultItem(prompt: prompt, activeApp: activeApp, folderColorByName: folderColorByName)
+            }
+        } else {
+            let searchTerms = trimmedQuery
+                .lowercased()
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+
+            let scored = indexedPrompts.compactMap { entry -> (Prompt, Int)? in
+                var score = 0
+
+                for term in searchTerms {
+                    if entry.titleLower.contains(term) {
+                        score += 500
+                        if entry.titleLower.hasPrefix(term) { score += 100 }
+                    }
+                    if entry.descLower.contains(term) { score += 40 }
+                    if entry.contentLower.contains(term) { score += 20 }
+                    if entry.folderLower.contains(term) { score += 10 }
+                }
+
+                guard score > 0 else { return nil }
+
+                if let activeApp, entry.prompt.targetAppBundleIDs.contains(activeApp) {
+                    score += 1000
+                }
+
+                if entry.prompt.createdAt > Date().addingTimeInterval(-86400 * 7) {
+                    score += 5
+                }
+
+                return (entry.prompt, score)
+            }
+
+            let prompts = Array(
+                scored
+                    .sorted(by: { $0.1 > $1.1 })
+                    .prefix(12)
+                    .map { $0.0 }
+            )
+
+            filteredResults = prompts.map { prompt in
+                makeSearchResultItem(prompt: prompt, activeApp: activeApp, folderColorByName: folderColorByName)
+            }
+        }
+
+        let currentValidIndices = Set(filteredResults.indices)
+        visibleResultIndices = visibleResultIndices.intersection(currentValidIndices)
+
+        if filteredResults.isEmpty {
+            selectedIndex = 0
+        } else if selectedIndex >= filteredResults.count {
+            selectedIndex = max(0, filteredResults.count - 1)
+        }
+    }
+
+    private func makeSearchResultItem(
+        prompt: Prompt,
+        activeApp: String?,
+        folderColorByName: [String: Color]
+    ) -> SearchResultItem {
+        let color: Color
+        if let folderName = prompt.folder, let mapped = folderColorByName[folderName] {
+            color = mapped
+        } else if let folderName = prompt.folder {
+            color = PredefinedCategory.fromString(folderName)?.color ?? .blue
+        } else {
+            color = .blue
+        }
+
+        let isRecommended = activeApp != nil && prompt.targetAppBundleIDs.contains(activeApp!)
+
+        return SearchResultItem(prompt: prompt, categoryColor: color, isRecommended: isRecommended)
     }
     
     private func copyAndClose(_ prompt: Prompt) {
@@ -282,19 +379,15 @@ struct OmniSearchView: View {
 // MARK: - OmniSearchRow
 struct OmniSearchRow: View {
     let prompt: Prompt
+    let categoryColor: Color
+    let isRecommended: Bool
     let isSelected: Bool
     let onSelect: () -> Void
     let onCopy: () -> Void
+    let onVisibilityChange: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
-    
-    private var categoryColor: Color {
-        guard let folderName = prompt.folder else { return .blue }
-        // Intentar obtener el color de la carpeta del servicio si está disponible (vía environment o singleton)
-        // Por ahora usamos el fallback de color predefinido o azul
-        return PredefinedCategory.fromString(folderName)?.color ?? .blue
-    }
     
     var body: some View {
         Button(action: onSelect) {
@@ -353,7 +446,7 @@ struct OmniSearchRow: View {
                         }
                         
                         // Badge de Recomendación Inteligente (Contextual)
-                        if let activeApp = PromptService.shared.activeAppBundleID, prompt.targetAppBundleIDs.contains(activeApp) {
+                        if isRecommended {
                             HStack(spacing: 3) {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 8, weight: .bold))
@@ -423,6 +516,12 @@ struct OmniSearchRow: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
+        }
+        .onAppear {
+            onVisibilityChange(true)
+        }
+        .onDisappear {
+            onVisibilityChange(false)
         }
     }
 }

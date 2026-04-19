@@ -33,15 +33,6 @@ struct FolderManagerView: View {
     @State private var isClearHovered = false
     @State private var isCreateHovered = false
     
-    private var categoryCounts: [String: Int] {
-        var counts: [String: Int] = [:]
-        for prompt in promptService.prompts {
-            let folder = prompt.folder ?? "uncategorized"
-            counts[folder, default: 0] += 1
-        }
-        return counts
-    }
-    
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
     
     var body: some View {
@@ -79,7 +70,7 @@ struct FolderManagerView: View {
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
         } message: { folder in
-            let count = categoryCounts[folder.name] ?? 0
+            let count = viewModel.categoryCount(for: folder.name)
             Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
         }
         .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDuplicateAlert) {
@@ -93,6 +84,8 @@ struct FolderManagerView: View {
             Text("reserved_name_msg".localized(for: preferences.language))
         }
         .onAppear {
+            viewModel.refreshCounters(with: promptService.prompts)
+
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 preferences.showSidebar = true
             }
@@ -104,6 +97,9 @@ struct FolderManagerView: View {
                 isNameFocused = true
                 viewModel.animateColors = true
             }
+        }
+        .onReceive(promptService.$prompts) { prompts in
+            viewModel.refreshCounters(with: prompts)
         }
     }
     
@@ -186,7 +182,7 @@ struct FolderManagerView: View {
     private var sidebarListView: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
-                VStack(spacing: 2) {
+                LazyVStack(spacing: 2) {
                     ForEach(promptService.folders) { folder in
                         CategoryRow(
                             folder: folder,
@@ -194,7 +190,7 @@ struct FolderManagerView: View {
                             isDropTarget: dropTargetFolder?.id == folder.id,
                             onEdit: { viewModel.startEditing(folder) },
                             onDelete: {
-                                viewModel.requestDelete(folder: folder, categoryCounts: categoryCounts)
+                                viewModel.requestDelete(folder: folder)
                                 if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                         _ = promptService.deleteFolder(folder)

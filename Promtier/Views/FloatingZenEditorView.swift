@@ -31,6 +31,7 @@ struct FloatingZenEditorView: View {
     @State private var isHoveringCollapse: Bool = false
     @State private var isHoveringMagic: Bool = false
     @State private var pulseMagic: Bool = false
+    @State private var pulseMagicResetWorkItem: DispatchWorkItem?
     @State private var isCompressingImage: Bool = false
     @State private var isOCRing: Bool = false
     @State private var isGhostMode: Bool = false
@@ -42,6 +43,7 @@ struct FloatingZenEditorView: View {
     @State private var hoverEye: Bool = false
     @State private var hoverCloseBtn: Bool = false
     @State private var hoverSaveBtn: Bool = false
+    @State private var folderColorByName: [String: Color] = [:]
     
     enum ZenField { case title, description, content }
     
@@ -55,12 +57,8 @@ struct FloatingZenEditorView: View {
     }
     
     private var categoryColor: Color? {
-        guard let folderName = manager.selectedFolder,
-              let folder = PromptService.shared.folders.first(where: { $0.name == folderName }),
-              let hex = folder.color else {
-            return nil
-        }
-        return Color(hex: hex)
+        guard let folderName = manager.selectedFolder else { return nil }
+        return folderColorByName[folderName]
     }
     
     var body: some View {
@@ -256,20 +254,29 @@ struct FloatingZenEditorView: View {
         }
         .onAppear {
             focusedField = .title
+            rebuildFolderColorMap(from: promptService.folders)
+        }
+        .onReceive(promptService.$folders) { folders in
+            rebuildFolderColorMap(from: folders)
         }
         .onChange(of: manager.content) { oldValue, newValue in
             // Scroll logic simplified
             
             // Animación "Hey úsame" (pulseMagic) al pegar contenido en el prompt
             if newValue.count - oldValue.count >= 5, isMagicAvailable {
+                pulseMagicResetWorkItem?.cancel()
+
                 withAnimation(.easeInOut(duration: 0.2)) {
                     pulseMagic = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+
+                let resetWorkItem = DispatchWorkItem {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         pulseMagic = false
                     }
                 }
+                pulseMagicResetWorkItem = resetWorkItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: resetWorkItem)
             }
         }
         .alert("¿Descartar cambios?", isPresented: $showDiscardAlert) {
@@ -283,6 +290,13 @@ struct FloatingZenEditorView: View {
         .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
             extractMagicPrompt(from: data)
         }
+    }
+
+    private func rebuildFolderColorMap(from folders: [Folder]) {
+        folderColorByName = Dictionary(uniqueKeysWithValues: folders.compactMap { folder in
+            guard let hex = folder.color else { return nil }
+            return (folder.name, Color(hex: hex))
+        })
     }
     
     // MARK: - Premium Background
@@ -811,8 +825,12 @@ struct FloatingZenImageThumb: View {
     @State private var isHovering = false
     let animatedPhase: CGFloat
 
+    private var cachedImage: NSImage? {
+        FastAddImageCache.shared.image(for: data)
+    }
+
     var body: some View {
-        if let nsImg = NSImage(data: data) {
+        if let nsImg = cachedImage {
             ZStack(alignment: .topTrailing) {
                 Color.clear
                     .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 80)
@@ -879,6 +897,27 @@ struct FloatingZenImageThumb: View {
                 .alignmentGuide(.bottom) { _ in 0 }
             }
         }
+    }
+}
+
+private final class FastAddImageCache {
+    static let shared = FastAddImageCache()
+
+    private let cache = NSCache<NSData, NSImage>()
+
+    private init() {
+        cache.countLimit = 48
+    }
+
+    func image(for data: Data) -> NSImage? {
+        let key = data as NSData
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+
+        guard let image = NSImage(data: data) else { return nil }
+        cache.setObject(image, forKey: key)
+        return image
     }
 }
 
