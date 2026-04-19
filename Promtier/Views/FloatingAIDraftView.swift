@@ -285,7 +285,13 @@ struct FloatingAIDraftView: View {
         }
         .frame(width: 740, height: 570)
         .background(Color(NSColor.windowBackgroundColor))
-        .overlay(notificationToast, alignment: .top)
+        .promtierToast(
+            isPresented: $showSavedToast,
+            icon: toastIcon,
+            message: toastMsg,
+            iconColor: toastIcon == "sparkles" ? .purple : (toastIcon == "exclamationmark.triangle.fill" ? .orange : .green),
+            autoHide: false
+        )
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
@@ -404,29 +410,6 @@ struct FloatingAIDraftView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 runAI(instruction: "Mejora la redacción y claridad de este prompt, manteniendo su intención original pero haciéndolo más efectivo para IAs.")
                 manager.shouldAutoImprove = false
-            }
-        }
-    }
-    
-    private var notificationToast: some View {
-        Group {
-            if showSavedToast {
-                HStack(spacing: 8) {
-                    Image(systemName: toastIcon)
-                        .foregroundColor(.green)
-                    Text(toastMsg)
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(Color.primary.opacity(0.95))
-                        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-                )
-                .foregroundColor(.white)
-                .padding(.top, 42)
-                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }

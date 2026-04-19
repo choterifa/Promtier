@@ -14,28 +14,14 @@ struct FolderManagerView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
     
+    @StateObject private var viewModel = FolderManagerViewModel()
+    
     var folderToEdit: Folder? = nil
     var onClose: () -> Void
-    
-    @State private var folders: [Folder] = []
-    @State private var newFolderName = ""
-    @State private var selectedColor: Color = .blue
-    @State private var selectedIcon: String? = "folder.fill"
-    @State private var showingIconPicker = false
-    @State private var editingFolder: Folder?
-    @State private var animateColors = false
-    
-    @State private var isCreatingWithAI = false
     
     // Reordenado
     @State private var draggedFolder: Folder? = nil
     @State private var dropTargetFolder: Folder? = nil
-    
-    // Alerta de eliminación
-    @State private var folderToDelete: Folder? = nil
-    @State private var showingDeleteAlert = false
-    @State private var showingDuplicateAlert = false
-    @State private var showingReservedNameAlert = false
     
     @FocusState private var isNameFocused: Bool
     
@@ -84,27 +70,24 @@ struct FolderManagerView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingIconPicker) {
-            IconPickerView(selectedIcon: $selectedIcon, color: selectedColor, categoryName: newFolderName)
+        .sheet(isPresented: $viewModel.showingIconPicker) {
+            IconPickerView(selectedIcon: $viewModel.selectedIcon, color: viewModel.selectedColor, categoryName: viewModel.newFolderName)
         }
-        .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDeleteAlert, presenting: viewModel.folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    _ = promptService.deleteFolder(folder)
-                }
-                HapticService.shared.playSuccess()
+                viewModel.confirmDelete(promptService: promptService)
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
         } message: { folder in
             let count = categoryCounts[folder.name] ?? 0
             Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
         }
-        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $showingDuplicateAlert) {
+        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDuplicateAlert) {
             Button("done".localized(for: preferences.language), role: .cancel) { }
         } message: {
             Text("duplicate_category_msg".localized(for: preferences.language))
         }
-        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $showingReservedNameAlert) {
+        .alert("duplicate_category_title".localized(for: preferences.language), isPresented: $viewModel.showingReservedNameAlert) {
             Button("done".localized(for: preferences.language), role: .cancel) { }
         } message: {
             Text("reserved_name_msg".localized(for: preferences.language))
@@ -114,12 +97,12 @@ struct FolderManagerView: View {
                 preferences.showSidebar = true
             }
             if let initialFolder = folderToEdit {
-                startEditing(initialFolder)
+                viewModel.startEditing(initialFolder)
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 isNameFocused = true
-                animateColors = true
+                viewModel.animateColors = true
             }
         }
     }
@@ -133,7 +116,7 @@ struct FolderManagerView: View {
             if preferences.isHaloEffectEnabled {
                 // Círculos decorativos para efecto mesh
                 Circle()
-                    .fill(selectedColor.opacity(0.04))
+                    .fill(viewModel.selectedColor.opacity(0.04))
                     .frame(width: 400, height: 400)
                     .blur(radius: 60)
                     .offset(x: 200, y: -150)
@@ -207,15 +190,12 @@ struct FolderManagerView: View {
                     ForEach(promptService.folders) { folder in
                         CategoryRow(
                             folder: folder,
-                            isEditing: editingFolder?.id == folder.id,
+                            isEditing: viewModel.editingFolder?.id == folder.id,
                             isDropTarget: dropTargetFolder?.id == folder.id,
-                            onEdit: { startEditing(folder) },
+                            onEdit: { viewModel.startEditing(folder) },
                             onDelete: {
-                                let count = categoryCounts[folder.name] ?? 0
-                                if count > 0 {
-                                    folderToDelete = folder
-                                    showingDeleteAlert = true
-                                } else {
+                                viewModel.requestDelete(folder: folder, categoryCounts: categoryCounts)
+                                if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                         _ = promptService.deleteFolder(folder)
                                     }
@@ -249,12 +229,12 @@ struct FolderManagerView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Título de sección dinámica
                 HStack(spacing: 12) {
-                    Image(systemName: editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                    Image(systemName: viewModel.editingFolder == nil ? "plus.circle.fill" : "pencil.circle.fill")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(selectedColor)
-                        .symbolEffect(.bounce, value: editingFolder != nil)
+                        .foregroundColor(viewModel.selectedColor)
+                        .symbolEffect(.bounce, value: viewModel.editingFolder != nil)
                     
-                    Text(editingFolder == nil ? "new_category".localized(for: preferences.language) : "edit_category".localized(for: preferences.language))
+                    Text(viewModel.editingFolder == nil ? "new_category".localized(for: preferences.language) : "edit_category".localized(for: preferences.language))
                         .font(.system(size: 18, weight: .bold))
                 }
                 .padding(.top, 4)
@@ -268,7 +248,7 @@ struct FolderManagerView: View {
                             .foregroundColor(.secondary.opacity(0.6))
                             .tracking(1)
                         
-                        TextField("name_placeholder".localized(for: preferences.language), text: $newFolderName)
+                        TextField("name_placeholder".localized(for: preferences.language), text: $viewModel.newFolderName)
                             .textFieldStyle(.plain)
                             .focused($isNameFocused)
                             .font(.system(size: 15))
@@ -279,14 +259,16 @@ struct FolderManagerView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.primary.opacity(0.07), lineWidth: 1)
                             )
-                            .onChange(of: newFolderName) { _, newValue in
+                            .onChange(of: viewModel.newFolderName) { _, newValue in
                                 if newValue.count > 30 {
-                                    newFolderName = String(newValue.prefix(30))
+                                    viewModel.newFolderName = String(newValue.prefix(30))
                                 }
                             }
                             .onSubmit {
-                                if !newFolderName.isEmpty {
-                                    saveFolder()
+                                if !viewModel.newFolderName.isEmpty {
+                                    viewModel.saveFolder(promptService: promptService, preferences: preferences) {
+                                        isNameFocused = true
+                                    }
                                 }
                             }
                     }
@@ -300,20 +282,20 @@ struct FolderManagerView: View {
                                 .tracking(1)
                             
                             Button {
-                                showingIconPicker = true
+                                viewModel.showingIconPicker = true
                             } label: {
-                                Image(systemName: selectedIcon ?? "folder.fill")
+                                Image(systemName: viewModel.selectedIcon ?? "folder.fill")
                                     .font(.system(size: 24))
                                     .frame(width: 58, height: 58)
                                     .background(
                                         ZStack {
-                                            selectedColor.opacity(0.12)
-                                            RoundedRectangle(cornerRadius: 16).stroke(selectedColor.opacity(0.2), lineWidth: 1)
+                                            viewModel.selectedColor.opacity(0.12)
+                                            RoundedRectangle(cornerRadius: 16).stroke(viewModel.selectedColor.opacity(0.2), lineWidth: 1)
                                         }
                                     )
-                                    .foregroundColor(selectedColor)
+                                    .foregroundColor(viewModel.selectedColor)
                                     .cornerRadius(16)
-                                    .shadow(color: preferences.isHaloEffectEnabled ? selectedColor.opacity(isIconHovered ? 0.2 : 0.1) : .clear, radius: isIconHovered ? 12 : 8, y: 4)
+                                    .shadow(color: preferences.isHaloEffectEnabled ? viewModel.selectedColor.opacity(isIconHovered ? 0.2 : 0.1) : .clear, radius: isIconHovered ? 12 : 8, y: 4)
                             }
                             .buttonStyle(.plain)
                             .onHover { h in withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isIconHovered = h } }
@@ -349,138 +331,6 @@ struct FolderManagerView: View {
         .frame(maxWidth: .infinity)
     }
     
-    private func startEditing(_ folder: Folder) {
-        withAnimation(.spring()) {
-            editingFolder = folder
-            newFolderName = folder.name
-            selectedIcon = folder.icon ?? "folder.fill"
-            selectedColor = Color(hex: folder.displayColor)
-        }
-    }
-    
-    private func resetForm() {
-        withAnimation(.spring()) {
-            editingFolder = nil
-            newFolderName = ""
-            selectedColor = .blue
-            selectedIcon = "folder.fill"
-            menuBarManager.folderToEdit = nil
-            isNameFocused = true
-        }
-    }
-    
-    private func revertChanges() {
-        guard let folder = editingFolder else { return }
-        withAnimation(.spring()) {
-            newFolderName = folder.name
-            selectedIcon = folder.icon ?? "folder.fill"
-            selectedColor = Color(hex: folder.displayColor)
-        }
-    }
-    
-    private func saveFolder() {
-        let sanitizedName = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // 1. Validar nombre reservado
-        let reservedNames = [
-            "uncategorized", "sin categoría", "uncategorized".localized(for: preferences.language).lowercased()
-        ]
-        if reservedNames.contains(sanitizedName.lowercased()) {
-            showingReservedNameAlert = true
-            return
-        }
-        
-        // 2. Validar duplicados
-        let isEditingThis = editingFolder?.name.lowercased() == sanitizedName.lowercased()
-        let nameExists = promptService.folders.contains { 
-            $0.name.lowercased() == sanitizedName.lowercased() 
-        }
-        
-        if nameExists && !isEditingThis {
-            showingDuplicateAlert = true
-            return
-        }
-        
-        let isAIAvailable = (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
-                            (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)
-                            
-        // Auto-Magic Icon/Color para nueva categoria si dejó los valores por defecto
-        if editingFolder == nil && selectedIcon == "folder.fill" && selectedColor == .blue && isAIAvailable {
-            // Guardar inmediatamente para no bloquear al usuario
-            finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill")
-            
-            // Tarea en segundo plano para actualizar el icono y color mágicamente
-            Task.detached {
-                struct MagicResponse: Codable {
-                    let icon: String
-                    let color: String
-                }
-                
-                let prompt = AIServiceManager.generateCategoryIconAndColorPrompt(categoryName: sanitizedName)
-                do {
-                    let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt)
-                    
-                    let cleanResponse = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        .replacingOccurrences(of: "```json", with: "")
-                        .replacingOccurrences(of: "```", with: "")
-                    
-                    guard let data = cleanResponse.data(using: .utf8),
-                          let decoded = try? JSONDecoder().decode(MagicResponse.self, from: data) else { return }
-                    
-                    let finalIcon = IconPickerView.allIconNames.contains(decoded.icon) ? decoded.icon : "folder.fill"
-                    let finalColor = decoded.color.hasPrefix("#") ? decoded.color : "#" + decoded.color
-                    
-                    await MainActor.run {
-                        if let folder = self.promptService.folders.first(where: { $0.name == sanitizedName }) {
-                            var updated = folder
-                            updated.icon = finalIcon
-                            updated.color = finalColor
-                            _ = self.promptService.updateFolder(updated, oldName: sanitizedName)
-                        }
-                    }
-                } catch {
-                    // Fallo silencioso
-                }
-            }
-        } else if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable {
-             // Solo Icono (si el usuario eligió un color pero no icono)
-             finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill")
-             Task.detached {
-                 let prompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
-                 do {
-                     let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt)
-                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                     
-                     if IconPickerView.allIconNames.contains(result) {
-                         await MainActor.run {
-                             if let folder = self.promptService.folders.first(where: { $0.name == sanitizedName }) {
-                                 var updated = folder
-                                 updated.icon = result
-                                 _ = self.promptService.updateFolder(updated, oldName: sanitizedName)
-                             }
-                         }
-                     }
-                 } catch { }
-             }
-        } else {
-            finishSavingFolder(sanitizedName: sanitizedName, iconParam: selectedIcon)
-        }
-    }
-    
-    private func finishSavingFolder(sanitizedName: String, iconParam: String?) {
-        // 3. Proceder a guardar
-        let hex = "#" + NSColor(selectedColor).hexString
-        
-        if let editing = editingFolder {
-            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: iconParam, createdAt: editing.createdAt, parentId: editing.parentId)
-            _ = promptService.updateFolder(updated, oldName: editing.name)
-        } else {
-            let new = Folder(name: sanitizedName, color: hex, icon: iconParam)
-            _ = promptService.createFolder(new)
-        }
-        resetForm()
-    }
-    
     private var colorPickerGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 14) {
             ForEach(Array(presetColors.enumerated()), id: \.offset) { index, color in
@@ -489,16 +339,16 @@ struct FolderManagerView: View {
                     .frame(width: 28, height: 28)
                     .overlay(
                         Circle()
-                            .stroke(Color.white, lineWidth: selectedColor == color ? 3 : 0)
+                            .stroke(Color.white, lineWidth: viewModel.selectedColor == color ? 3 : 0)
                             .shadow(color: .black.opacity(0.1), radius: 2)
                     )
-                    .scaleEffect(selectedColor == color ? 1.2 : (animateColors ? 1.0 : 0.4))
-                    .opacity(animateColors ? 1.0 : 0.0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(index) * 0.05), value: animateColors)
+                    .scaleEffect(viewModel.selectedColor == color ? 1.2 : (viewModel.animateColors ? 1.0 : 0.4))
+                    .opacity(viewModel.animateColors ? 1.0 : 0.0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(index) * 0.05), value: viewModel.animateColors)
                     .onTapGesture {
                         HapticService.shared.playLight()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedColor = color
+                            viewModel.selectedColor = color
                         }
                     }
             }
@@ -513,14 +363,14 @@ struct FolderManagerView: View {
                 .frame(width: 28, height: 28)
                 .overlay(
                     Circle()
-                        .stroke(Color.white, lineWidth: selectedColor != .gray ? 3 : 1)
+                        .stroke(Color.white, lineWidth: viewModel.selectedColor != .gray ? 3 : 1)
                         .shadow(color: .black.opacity(0.1), radius: 2)
                 )
-                .scaleEffect(animateColors ? 1.0 : 0.4)
-                .opacity(animateColors ? 1.0 : 0.0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(presetColors.count) * 0.05), value: animateColors)
+                .scaleEffect(viewModel.animateColors ? 1.0 : 0.4)
+                .opacity(viewModel.animateColors ? 1.0 : 0.0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(Double(presetColors.count) * 0.05), value: viewModel.animateColors)
 
-                ColorPicker("", selection: $selectedColor)
+                ColorPicker("", selection: $viewModel.selectedColor)
                     .labelsHidden()
                     .opacity(0.011)
                     .frame(width: 28, height: 28)
@@ -534,10 +384,11 @@ struct FolderManagerView: View {
     
     private var actionButtons: some View {
         HStack(spacing: 16) {
-                    if editingFolder != nil {
+                    if viewModel.editingFolder != nil {
                         // Botón de "Nuevo" para salir de edición
                         Button {
-                            resetForm()
+                            viewModel.resetForm(menuBarManager: menuBarManager)
+                            isNameFocused = true
                         } label: {
                             Image(systemName: "plus.circle")
                                 .font(.system(size: 13))
@@ -553,29 +404,32 @@ struct FolderManagerView: View {
                     }
                     
                     Button {
-                        if editingFolder == nil {
-                            resetForm()
+                        if viewModel.editingFolder == nil {
+                            viewModel.resetForm(menuBarManager: menuBarManager)
+                            isNameFocused = true
                         } else {
-                            revertChanges()
+                            viewModel.revertChanges()
                         }
                     } label: {
-                        Text(editingFolder == nil ? "clear_form".localized(for: preferences.language) : "cancel".localized(for: preferences.language))
+                        Text(viewModel.editingFolder == nil ? "clear_form".localized(for: preferences.language) : "cancel".localized(for: preferences.language))
                     }
                     .buttonStyle(.plain)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(editingFolder == nil ? .red.opacity(0.8) : .secondary)
+                    .foregroundColor(viewModel.editingFolder == nil ? .red.opacity(0.8) : .secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Capsule().fill(editingFolder == nil ? Color.red.opacity(isClearHovered ? 0.18 : 0.12) : Color.primary.opacity(isClearHovered ? 0.08 : 0.05)))
+                    .background(Capsule().fill(viewModel.editingFolder == nil ? Color.red.opacity(isClearHovered ? 0.18 : 0.12) : Color.primary.opacity(isClearHovered ? 0.08 : 0.05)))
                     .onHover { h in withAnimation(.spring(response: 0.3)) { isClearHovered = h } }
             
             Spacer()
             
             Button {
-                saveFolder()
+                viewModel.saveFolder(promptService: promptService, preferences: preferences) {
+                    isNameFocused = true
+                }
             } label: {
                 HStack {
-                    Text(editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
+                    Text(viewModel.editingFolder == nil ? "create".localized(for: preferences.language) : "save".localized(for: preferences.language))
                     Image(systemName: "checkmark")
                 }
                 .font(.system(size: 14, weight: .bold))
@@ -583,19 +437,19 @@ struct FolderManagerView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
                 .background(
-                    newFolderName.isEmpty ? 
+                    viewModel.newFolderName.isEmpty ? 
                         AnyShapeStyle(Color.gray.opacity(0.3)) : 
                         (preferences.isHaloEffectEnabled ? 
-                            AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [selectedColor, selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
+                            AnyShapeStyle(LinearGradient(gradient: Gradient(colors: [viewModel.selectedColor, viewModel.selectedColor.opacity(0.8)]), startPoint: .top, endPoint: .bottom)) :
                             AnyShapeStyle(Color.blue))
                 )
                 .cornerRadius(12)
-                .shadow(color: (preferences.isHaloEffectEnabled && !newFolderName.isEmpty) ? selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
-                .scaleEffect((isCreateHovered && !newFolderName.isEmpty) ? 1.015 : 1.0)
+                .shadow(color: (preferences.isHaloEffectEnabled && !viewModel.newFolderName.isEmpty) ? viewModel.selectedColor.opacity(isCreateHovered ? 0.4 : 0.25) : .clear, radius: isCreateHovered ? 12 : 8, y: 4)
+                .scaleEffect((isCreateHovered && !viewModel.newFolderName.isEmpty) ? 1.015 : 1.0)
                 .keyboardShortcut(.return, modifiers: .command)
             }
             .buttonStyle(.plain)
-            .disabled(newFolderName.isEmpty)
+            .disabled(viewModel.newFolderName.isEmpty)
             .onHover { h in withAnimation(.spring(response: 0.3)) { isCreateHovered = h } }
         }
         .padding(.top, 8)

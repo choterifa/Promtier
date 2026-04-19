@@ -21,36 +21,14 @@ struct CategorySidebar: View {
     @EnvironmentObject var batchService: BatchOperationsService
     @EnvironmentObject var menuBarManager: MenuBarManager
     
-    @State private var showingFolderManager = false
-    @State private var dropTargetFolderId: UUID? = nil
-    @State private var isTargetedFavoritos = false
-    @State private var isTargetedSinCategoria = false
-    
-    // Reordenado (Sidebar)
-    @State private var draggedFolder: Folder? = nil
-    
-    // Alerta de eliminación
-    @State private var folderToDelete: Folder? = nil
-    @State private var showingDeleteAlert = false
-    
-    // Header hover states
-    @State private var isAddFolderHovered = false
-    @State private var isSortMenuHovered = false
-    @State private var isHeaderHovered = false
-    @State private var isSystemSectionExpanded = true
-    
+    @StateObject private var viewModel = CategorySidebarViewModel()
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
     
     private var categoryCounts: [String: Int] {
-        var counts: [String: Int] = [:]
-        for prompt in promptService.prompts {
-            let folder = prompt.folder ?? "uncategorized"
-            counts[folder, default: 0] += 1
-        }
-        return counts
+        viewModel.categoryCounts(for: promptService.prompts)
     }
     
     var body: some View {
@@ -61,22 +39,22 @@ struct CategorySidebar: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.secondary)
-                        .rotationEffect(.degrees(isSystemSectionExpanded ? 90 : 0))
+                        .rotationEffect(.degrees(viewModel.isSystemSectionExpanded ? 90 : 0))
                     
                     Text("explore".localized(for: preferences.language))
                         .font(.system(size: (preferences.language == .spanish ? 10 : 11) * preferences.fontSize.scale, weight: .bold))
-                        .foregroundColor(isHeaderHovered ? .primary : .secondary)
+                        .foregroundColor(viewModel.isHeaderHovered ? .primary : .secondary)
                         .textCase(.uppercase)
                         .tracking((preferences.language == .spanish ? 0.8 : 1.2) * preferences.fontSize.scale)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        isSystemSectionExpanded.toggle()
+                        viewModel.isSystemSectionExpanded.toggle()
                     }
                     HapticService.shared.playLight()
                 }
-                .onHover { isHeaderHovered = $0 }
+                .onHover { viewModel.isHeaderHovered = $0 }
                 
                 Spacer()
                 
@@ -100,18 +78,18 @@ struct CategorySidebar: View {
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 7, weight: .bold))
                         }
-                        .foregroundColor(isSortMenuHovered ? .primary : .secondary)
+                        .foregroundColor(viewModel.isSortMenuHovered ? .primary : .secondary)
                         .frame(width: 32, height: 32)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.primary.opacity(isSortMenuHovered ? 0.06 : 0))
+                                .fill(Color.primary.opacity(viewModel.isSortMenuHovered ? 0.06 : 0))
                         )
                         .contentShape(Rectangle())
                     }
                     .menuStyle(.borderlessButton)
                     .fixedSize()
                     .help("sort_prompts_help".localized(for: preferences.language))
-                    .onHover { isSortMenuHovered = $0 }
+                    .onHover { viewModel.isSortMenuHovered = $0 }
                     
                     // Botón de Nueva Categoría
                     Button {
@@ -123,27 +101,27 @@ struct CategorySidebar: View {
                     } label: {
                         Image(systemName: "folder.badge.plus")
                             .font(.system(size: 11))
-                            .foregroundColor(isAddFolderHovered ? .blue : .secondary)
+                            .foregroundColor(viewModel.isAddFolderHovered ? .blue : .secondary)
                             .offset(y: -0.5) // Alineación visual perfecta
                             .frame(width: 32, height: 32)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.primary.opacity(isAddFolderHovered ? 0.06 : 0))
+                                    .fill(Color.primary.opacity(viewModel.isAddFolderHovered ? 0.06 : 0))
                             )
                             .contentShape(Rectangle())
-                            .scaleEffect(isAddFolderHovered ? 1.03 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isAddFolderHovered)
+                            .scaleEffect(viewModel.isAddFolderHovered ? 1.03 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: viewModel.isAddFolderHovered)
                     }
                     .buttonStyle(.plain)
                     .help("create_category".localized(for: preferences.language))
-                    .onHover { isAddFolderHovered = $0 }
+                    .onHover { viewModel.isAddFolderHovered = $0 }
                 }
             }
             .padding(.horizontal, 24)
             .padding(.top, 20)
             .padding(.bottom, 12)
             
-            if isSystemSectionExpanded {
+            if viewModel.isSystemSectionExpanded {
                 VStack(spacing: 4) {
                     // Botón "Todas"
                     SidebarItem(
@@ -174,16 +152,16 @@ struct CategorySidebar: View {
                         color: .yellow,
                         count: promptService.prompts.filter { $0.isFavorite }.count,
                         isSelected: promptService.selectedCategory == "favorites",
-                        isDropTarget: isTargetedFavoritos,
+                        isDropTarget: viewModel.isTargetedFavoritos,
                         action: {
                             promptService.selectedCategory = "favorites"
                         },
                         dropHandler: { promptId in
-                            markAsFavorite(id: promptId)
+                            viewModel.markAsFavorite(id: promptId, promptService: promptService, batchService: batchService, preferences: preferences)
                         }
                     )
-                    .onDrop(of: [.json, .plainText], isTargeted: $isTargetedFavoritos) { providers in
-                        handleQuickDrop(providers: providers, to: "favorites")
+                    .onDrop(of: [.json, .plainText], isTargeted: $viewModel.isTargetedFavoritos) { providers in
+                        viewModel.handleQuickDrop(providers: providers, to: "favorites", promptService: promptService, batchService: batchService, preferences: preferences)
                     }
                     
                     // Botón "Sin categoría"
@@ -193,16 +171,16 @@ struct CategorySidebar: View {
                         color: .gray,
                         count: categoryCounts["uncategorized"] ?? 0,
                         isSelected: promptService.selectedCategory == "uncategorized",
-                        isDropTarget: isTargetedSinCategoria,
+                        isDropTarget: viewModel.isTargetedSinCategoria,
                         action: {
                             promptService.selectedCategory = "uncategorized"
                         },
                         dropHandler: { promptId in
-                            movePrompt(id: promptId, to: nil)
+                            viewModel.movePrompt(id: promptId, to: nil, promptService: promptService, batchService: batchService, preferences: preferences)
                         }
                     )
-                    .onDrop(of: [.json, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
-                        handleQuickDrop(providers: providers, to: nil)
+                    .onDrop(of: [.json, .plainText], isTargeted: $viewModel.isTargetedSinCategoria) { providers in
+                        viewModel.handleQuickDrop(providers: providers, to: nil, promptService: promptService, batchService: batchService, preferences: preferences)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -230,12 +208,9 @@ struct CategorySidebar: View {
         .onHover { hovering in
             menuBarManager.setSidebarHovered(hovering)
         }
-        .alert("delete_category_title".localized(for: preferences.language), isPresented: $showingDeleteAlert, presenting: folderToDelete) { folder in
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDeleteAlert, presenting: viewModel.folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    _ = promptService.deleteFolder(folder)
-                }
-                HapticService.shared.playSuccess()
+                viewModel.confirmDelete(promptService: promptService)
             }
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
         } message: { folder in
@@ -379,8 +354,8 @@ struct CategorySidebar: View {
             color: Color(hex: folder.displayColor),
             count: count,
             isSelected: promptService.selectedCategory == folder.name,
-            isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
-            isReorderTarget: dropTargetFolderId == folder.id && draggedFolder != nil,
+            isDropTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder == nil,
+            isReorderTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder != nil,
             action: { promptService.selectedCategory = folder.name },
             isEditable: true,
             rawTitle: folder.name,
@@ -401,17 +376,17 @@ struct CategorySidebar: View {
         )
         .transition(.move(edge: .leading).combined(with: .opacity))
         .onDrag {
-            self.draggedFolder = folder
+            self.viewModel.draggedFolder = folder
             return NSItemProvider(object: folder.id.uuidString as NSString)
         }
         .onDrop(of: [.json, .plainText, .text], delegate: FolderSidebarDropDelegate(
             folder: folder,
             promptService: promptService,
             menuBarManager: menuBarManager,
-            dropTargetFolderId: $dropTargetFolderId,
-            draggedFolder: $draggedFolder,
+            dropTargetFolderId: $viewModel.dropTargetFolderId,
+            draggedFolder: $viewModel.draggedFolder,
             onPromptMove: { ids, folderName in
-                movePrompts(ids: ids, to: folderName)
+                viewModel.movePrompts(ids: ids, to: folderName, promptService: promptService, batchService: batchService, preferences: preferences)
             }
         ))
         .contextMenu {
@@ -441,11 +416,8 @@ struct CategorySidebar: View {
             }
             
             Button(role: .destructive) {
-                let count = categoryCounts[folder.name] ?? 0
-                if count > 0 {
-                    folderToDelete = folder
-                    showingDeleteAlert = true
-                } else {
+                viewModel.requestDelete(folder: folder, counts: categoryCounts)
+                if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         _ = promptService.deleteFolder(folder)
                     }
@@ -455,92 +427,6 @@ struct CategorySidebar: View {
                 Label("delete".localized(for: preferences.language), systemImage: "trash")
             }
         }
-    }
-    
-    // MARK: - Helpers de Drag & Drop
-    
-    private func movePrompt(id: String, to folderName: String?) {
-        guard let uuid = UUID(uuidString: id) else { return }
-        movePrompts(ids: [uuid.uuidString], to: folderName)
-    }
-
-    private func movePrompts(ids: [String], to folderName: String?) {
-        let uuids = ids.compactMap(UUID.init(uuidString:))
-        guard !uuids.isEmpty else { return }
-        
-        // Ejecutar sonido e haptic inmediatamente para feedback instantáneo
-        if preferences.soundEnabled { SoundService.shared.playMoveSound() }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-        
-        _ = promptService.movePrompts(withIds: uuids, toFolder: folderName)
-        if batchService.isSelectionModeActive, ids.count > 1 {
-            batchService.clearSelection()
-        }
-    }
-    
-    private func markAsFavorite(ids: [String]) {
-        let uuids = ids.compactMap(UUID.init(uuidString:))
-        guard !uuids.isEmpty else { return }
-        
-        if preferences.soundEnabled { SoundService.shared.playFavoriteSound() }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-        
-        _ = promptService.markPromptsFavorite(withIds: uuids)
-        if batchService.isSelectionModeActive, ids.count > 1 {
-            batchService.clearSelection()
-        }
-    }
-
-    private func markAsFavorite(id: String) {
-        markAsFavorite(ids: [id])
-    }
-
-    private func moveToTrash(ids: [String]) {
-        let uuids = ids.compactMap(UUID.init(uuidString:))
-        guard !uuids.isEmpty else { return }
-        
-        if preferences.soundEnabled { SoundService.shared.playDeleteSound() }
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-        
-        _ = promptService.deletePrompts(withIds: uuids)
-        if batchService.isSelectionModeActive, ids.count > 1 {
-            batchService.clearSelection()
-        }
-    }
-
-    private func decodeDraggedPromptIds(from provider: NSItemProvider, completion: @escaping ([String]) -> Void) -> Bool {
-        let jsonType = UTType.json.identifier
-        guard provider.hasItemConformingToTypeIdentifier(jsonType) else { return false }
-        _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
-            Task { @MainActor in
-                guard let data,
-                      let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
-                      payload.kind == "promtier.prompt.ids",
-                      let ids = payload.ids,
-                      !ids.isEmpty else { return }
-                completion(ids)
-            }
-        }
-        return true
-    }
-    
-    private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
-        for provider in providers {
-            if decodeDraggedPromptIds(from: provider, completion: { ids in
-                DispatchQueue.main.async {
-                    if category == "favorites" {
-                        markAsFavorite(ids: ids)
-                    } else if category == "trash" {
-                        moveToTrash(ids: ids)
-                    } else {
-                        movePrompts(ids: ids, to: category)
-                    }
-                }
-            }) {
-                return true
-            }
-        }
-        return false
     }
 }
 
@@ -642,6 +528,7 @@ struct SidebarItem: View {
     var rawTitle: String? = nil
     var onRename: ((String) -> Void)? = nil
     var onDoubleClickRow: (() -> Void)? = nil
+    var onDeleteSwipe: (() -> Void)? = nil
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
@@ -649,119 +536,183 @@ struct SidebarItem: View {
     @State private var editingName = ""
     @FocusState private var isFocused: Bool
     
+    // Swipe-to-delete states
+    @State private var dragOffset: CGFloat = 0
+    @State private var isSwiping: Bool = false
+    
     var body: some View {
-        VStack(spacing: 0) {
-            if isReorderTarget {
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(height: 2)
-                    .cornerRadius(1)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 2)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+        ZStack(alignment: .trailing) {
+            // Fondo rojo de eliminación (oculto en el espacio desplazado)
+            if onDeleteSwipe != nil && dragOffset < 0 {
+                ZStack(alignment: .trailing) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                            isSwiping = false
+                        }
+                        onDeleteSwipe?()
+                    } label: {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.red)
+                            .frame(width: 60)
+                            .overlay(
+                                Image(systemName: "trash.fill")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(width: -dragOffset)
+                .clipped()
             }
             
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                    .frame(width: 18 * preferences.fontSize.scale)
+            VStack(spacing: 0) {
+                if isReorderTarget {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(height: 2)
+                        .cornerRadius(1)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 2)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 
-                if isEditingName {
-                    TextField("", text: $editingName, onCommit: {
-                        isEditingName = false
-                        if !editingName.trimmingCharacters(in: .whitespaces).isEmpty, editingName != rawTitle {
-                            onRename?(editingName)
-                        }
-                    })
-                    .textFieldStyle(.plain)
-                    .focused($isFocused)
-                    .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
-                    .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                    .tint(.white)
-                    .colorScheme(isSelected ? .dark : .light)
-                    .onAppear {
-                        isFocused = true
-                    }
-                } else {
-                    Text(title)
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : color.opacity(0.8))
+                        .frame(width: 18 * preferences.fontSize.scale)
+                    
+                    if isEditingName {
+                        TextField("", text: $editingName, onCommit: {
+                            isEditingName = false
+                            if !editingName.trimmingCharacters(in: .whitespaces).isEmpty, editingName != rawTitle {
+                                onRename?(editingName)
+                            }
+                        })
+                        .textFieldStyle(.plain)
+                        .focused($isFocused)
                         .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
                         .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                        .lineLimit(1)
-                        .onTapGesture(count: 2) {
-                            if isEditable, let raw = rawTitle {
-                                editingName = raw
-                                isEditingName = true
-                            }
+                        .tint(.white)
+                        .colorScheme(isSelected ? .dark : .light)
+                        .onAppear {
+                            isFocused = true
                         }
-                        .onTapGesture(count: 1) {
-                            if !isEditingName {
-                                HapticService.shared.playLight()
-                                action()
+                    } else {
+                        Text(title)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                            .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                            .lineLimit(1)
+                            .onTapGesture(count: 2) {
+                                if isEditable, let raw = rawTitle {
+                                    editingName = raw
+                                    isEditingName = true
+                                }
                             }
-                        }
-                }
-                
-                Spacer()
-                
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                        .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
-                        )
-                }
-                
-                if isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(isSelected ? .white.opacity(0.7) : color.opacity(0.5))
-                        .rotationEffect(.degrees(45))
+                            .onTapGesture(count: 1) {
+                                if !isEditingName {
+                                    HapticService.shared.playLight()
+                                    action()
+                                }
+                            }
+                    }
+                    
+                    Spacer()
+                    
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                            .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+                            )
+                    }
+                    
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(isSelected ? .white.opacity(0.7) : color.opacity(0.5))
+                            .rotationEffect(.degrees(45))
+                    }
                 }
             }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
-                .shadow(color: preferences.isHaloEffectEnabled && isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
-                .overlay(
-                    Group {
-                        if isDropTarget {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .frame(width: 3)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .clipShape(
-                                    .rect(
-                                        topLeadingRadius: 10,
-                                        bottomLeadingRadius: 10,
-                                        bottomTrailingRadius: 0,
-                                        topTrailingRadius: 0
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+                    .shadow(color: preferences.isHaloEffectEnabled && isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+                    .overlay(
+                        Group {
+                            if isDropTarget {
+                                Rectangle()
+                                    .fill(Color.blue)
+                                    .frame(width: 3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .clipShape(
+                                        .rect(
+                                            topLeadingRadius: 10,
+                                            bottomLeadingRadius: 10,
+                                            bottomTrailingRadius: 0,
+                                            topTrailingRadius: 0
+                                        )
                                     )
-                                )
+                            }
+                        }
+                    )
+            )
+            .contentShape(Rectangle())
+            .offset(x: dragOffset)
+            .gesture(
+                DragGesture(minimumDistance: 15)
+                    .onChanged { value in
+                        guard onDeleteSwipe != nil else { return }
+                        if value.translation.width < 0 {
+                            dragOffset = max(-60, value.translation.width)
+                        } else if isSwiping && value.translation.width > 0 {
+                            dragOffset = min(0, -60 + value.translation.width)
                         }
                     }
-                )
-        )
-        .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            onDoubleClickRow?()
-        }
-        .onTapGesture(count: 1) {
-            if !isEditingName {
-                HapticService.shared.playLight()
-                action()
+                    .onEnded { value in
+                        guard onDeleteSwipe != nil else { return }
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            if value.translation.width < -30 {
+                                dragOffset = -60
+                                isSwiping = true
+                            } else {
+                                dragOffset = 0
+                                isSwiping = false
+                            }
+                        }
+                    }
+            )
+            .onTapGesture(count: 2) {
+                if !isSwiping {
+                    onDoubleClickRow?()
+                }
+            }
+            .onTapGesture(count: 1) {
+                if isSwiping {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        dragOffset = 0
+                        isSwiping = false
+                    }
+                } else if !isEditingName {
+                    HapticService.shared.playLight()
+                    action()
+                }
             }
         }
         .onHover { hovering in
-            isHovered = hovering
+            if !isSwiping {
+                isHovered = hovering
+            }
         }
     }
 }

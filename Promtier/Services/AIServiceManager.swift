@@ -14,7 +14,7 @@ struct PromptMetadataResponse {
     let negativePrompt: String?
 }
 
-class AIServiceManager {
+class AIServiceManager: AIServiceProtocol {
     static let shared = AIServiceManager()
     
     private init() {}
