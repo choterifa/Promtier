@@ -41,6 +41,7 @@ struct PromptCard: View {
     let prompt: Prompt
     let precomputedCategoryColor: Color
     let precomputedResolvedIcon: String
+    let isPerformanceMode: Bool
     let isSelected: Bool
     let isHovered: Bool
     let onTap: () -> Void
@@ -59,27 +60,31 @@ struct PromptCard: View {
     @State private var isLocallyHovered = false
     @State private var highlightedContentCache: AttributedString = AttributedString("")
     @State private var highlightedContentCacheKey: String = ""
+    @State private var plainSnippetCache: String = ""
     
     @Environment(\.colorScheme) private var colorScheme
     
     private func refreshHighlightedContentCacheIfNeeded() {
         let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
         let categoryNSColor = NSColor(currentCategoryColor)
+        let maxCharacters = isPerformanceMode ? 280 : 500
         let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
             "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString)"
+            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
 
         guard highlightedContentCacheKey != key else { return }
         highlightedContentCacheKey = key
 
         let cached = PromptCardTextCache.shared.highlightedSnippet(
             for: prompt,
-            maxCharacters: 500,
+            maxCharacters: maxCharacters,
             categoryColor: categoryNSColor,
             scale: preferences.fontSize.scale,
             interfaceStyle: interfaceStyle
         )
         highlightedContentCache = AttributedString(cached)
+
+        plainSnippetCache = String(prompt.content.prefix(maxCharacters))
     }
 
     private var highlightedContentRefreshToken: String {
@@ -87,7 +92,7 @@ struct PromptCard: View {
         let categoryNSColor = NSColor(currentCategoryColor)
         return "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
             "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString)"
+            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
     }
     
     // EXTENSIÓN: Contador de variables
@@ -137,8 +142,24 @@ struct PromptCard: View {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
     }
 
+    private var hoverEffectsEnabled: Bool {
+        !isPerformanceMode
+    }
+
     private var effectiveHover: Bool {
-        isHovered || isLocallyHovered
+        hoverEffectsEnabled && (isHovered || isLocallyHovered)
+    }
+
+    private var snippetView: some View {
+        Group {
+            if isPerformanceMode {
+                Text(plainSnippetCache)
+            } else {
+                Text(highlightedContentCache)
+            }
+        }
+        .font(.system(size: 13 * preferences.fontSize.scale))
+        .foregroundColor(.secondary.opacity(0.8))
     }
     
     private var isRecommended: Bool {
@@ -154,6 +175,7 @@ struct PromptCard: View {
         prompt: Prompt,
         precomputedCategoryColor: Color = .blue,
         precomputedResolvedIcon: String = "doc.text.fill",
+        isPerformanceMode: Bool = false,
         isSelected: Bool,
         isHovered: Bool,
         onTap: @escaping () -> Void,
@@ -163,6 +185,7 @@ struct PromptCard: View {
         onHover: @escaping (Bool) -> Void
     ) {
         self.prompt = prompt
+        self.isPerformanceMode = isPerformanceMode
         self.isSelected = isSelected
         self.isHovered = isHovered
         self.onTap = onTap
@@ -253,20 +276,16 @@ struct PromptCard: View {
                         Text(desc)
                             .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
                             .foregroundColor(.secondary.opacity(0.65))
-                            .lineLimit(desc.count < 55 ? 1 : 2)
+                            .lineLimit(isPerformanceMode ? 1 : (desc.count < 55 ? 1 : 2))
                         
-                        if desc.count < 55 {
-                            Text(highlightedContentCache)
-                                .font(.system(size: 13 * preferences.fontSize.scale))
-                                .foregroundColor(.secondary.opacity(0.8))
+                        if !isPerformanceMode && desc.count < 55 {
+                            snippetView
                                 .lineLimit(1)
                         }
                     }
                 } else {
-                    Text(highlightedContentCache)
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary.opacity(0.8))
-                        .lineLimit(3)
+                    snippetView
+                        .lineLimit(isPerformanceMode ? 2 : 3)
                 }
             }
             
@@ -361,7 +380,7 @@ struct PromptCard: View {
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.05 : 0.0), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.05 : (isPerformanceMode ? 0.01 : 0.0)), radius: isRecommended ? 8 : (isPerformanceMode ? 4 : 8), y: isRecommended ? 0 : (isPerformanceMode ? 2 : 4))
         .contentShape(Rectangle())
         .onAppear {
             refreshHighlightedContentCacheIfNeeded()
@@ -392,7 +411,9 @@ struct PromptCard: View {
             }
         )
         .onHover { hovering in
-            isLocallyHovered = hovering
+            if hoverEffectsEnabled {
+                isLocallyHovered = hovering
+            }
             onHover(hovering)
         }
         // SOPORTE DRAG AND DROP AVANZADO

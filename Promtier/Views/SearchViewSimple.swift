@@ -810,6 +810,14 @@ struct SearchViewSimple: View {
         return PredefinedCategory.fromString(folderName)?.color ?? .blue
     }
 
+    private var isPerformanceCardMode: Bool {
+        let count = promptService.filteredPrompts.count
+        if showingPreview {
+            return count >= 48
+        }
+        return count >= 72
+    }
+
     private func resolvedIcon(for prompt: Prompt) -> String {
         if let customIcon = prompt.icon, !customIcon.isEmpty {
             return customIcon
@@ -933,6 +941,7 @@ struct SearchViewSimple: View {
             PromptGridCard(
                 prompt: prompt,
                 precomputedCategoryColor: categoryColor,
+                isPerformanceMode: isPerformanceCardMode,
                 isSelected: selectedPrompt?.id == prompt.id,
                 isHovered: false,
                 onTap: {
@@ -970,6 +979,7 @@ struct SearchViewSimple: View {
                 prompt: prompt,
                 precomputedCategoryColor: categoryColor,
                 precomputedResolvedIcon: icon,
+                isPerformanceMode: isPerformanceCardMode,
                 isSelected: selectedPrompt?.id == prompt.id,
                 isHovered: false,
                 onTap: {

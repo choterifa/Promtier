@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 struct PromptGridCard: View {
     let prompt: Prompt
     let precomputedCategoryColor: Color
+    let isPerformanceMode: Bool
     let isSelected: Bool
     let isHovered: Bool
     let onTap: () -> Void
@@ -34,27 +35,30 @@ struct PromptGridCard: View {
     @State private var carouselDirection: Int = 1 // 1 = forward (right), -1 = backward (left)
     @State private var highlightedContentCache: AttributedString = AttributedString("")
     @State private var highlightedContentCacheKey: String = ""
+    @State private var plainSnippetCache: String = ""
     
     @Environment(\.colorScheme) private var colorScheme
     
     private func refreshHighlightedContentCacheIfNeeded() {
         let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
         let categoryNSColor = NSColor(currentCategoryColor)
+        let maxCharacters = isPerformanceMode ? 180 : 250
         let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
             "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString)"
+            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
 
         guard highlightedContentCacheKey != key else { return }
         highlightedContentCacheKey = key
 
         let cached = PromptCardTextCache.shared.highlightedSnippet(
             for: prompt,
-            maxCharacters: 250,
+            maxCharacters: maxCharacters,
             categoryColor: categoryNSColor,
             scale: preferences.fontSize.scale,
             interfaceStyle: interfaceStyle
         )
         highlightedContentCache = AttributedString(cached)
+        plainSnippetCache = String(prompt.content.prefix(maxCharacters))
     }
 
     private var highlightedContentRefreshToken: String {
@@ -62,7 +66,7 @@ struct PromptGridCard: View {
         let categoryNSColor = NSColor(currentCategoryColor)
         return "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
             "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString)"
+            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
     }
     
     private var variableCount: Int { PromptCardTextCache.shared.variableCount(for: prompt) }
@@ -71,8 +75,24 @@ struct PromptGridCard: View {
         preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
     }
 
+    private var hoverEffectsEnabled: Bool {
+        !isPerformanceMode
+    }
+
     private var effectiveHover: Bool {
-        isHovered || isLocallyHovered
+        hoverEffectsEnabled && (isHovered || isLocallyHovered)
+    }
+
+    private var snippetView: some View {
+        Group {
+            if isPerformanceMode {
+                Text(plainSnippetCache)
+            } else {
+                Text(highlightedContentCache)
+            }
+        }
+        .font(.system(size: 13 * preferences.fontSize.scale))
+        .foregroundColor(.secondary.opacity(0.9))
     }
     
     private var isRecommended: Bool {
@@ -123,6 +143,7 @@ struct PromptGridCard: View {
     init(
         prompt: Prompt,
         precomputedCategoryColor: Color = .blue,
+        isPerformanceMode: Bool = false,
         isSelected: Bool,
         isHovered: Bool,
         onTap: @escaping () -> Void,
@@ -132,6 +153,7 @@ struct PromptGridCard: View {
     ) {
         self.prompt = prompt
         self.precomputedCategoryColor = precomputedCategoryColor
+        self.isPerformanceMode = isPerformanceMode
         self.isSelected = isSelected
         self.isHovered = isHovered
         self.onTap = onTap
@@ -300,10 +322,8 @@ struct PromptGridCard: View {
             
             // Content Snippet
             VStack(alignment: .leading, spacing: 6) {
-                Text(highlightedContentCache)
-                    .font(.system(size: 13 * preferences.fontSize.scale))
-                    .foregroundColor(.secondary.opacity(0.9))
-                    .lineLimit(hasPreviewImage ? 2 : 4)
+                snippetView
+                    .lineLimit(isPerformanceMode ? (hasPreviewImage ? 1 : 2) : (hasPreviewImage ? 2 : 4))
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -383,7 +403,7 @@ struct PromptGridCard: View {
                         .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
                 )
         )
-        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.06 : 0.02), radius: isRecommended ? 8 : 8, y: isRecommended ? 0 : 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.06 : (isPerformanceMode ? 0.01 : 0.02)), radius: isRecommended ? 8 : (isPerformanceMode ? 4 : 8), y: isRecommended ? 0 : (isPerformanceMode ? 2 : 4))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .clipped()
         .contentShape(Rectangle())
@@ -414,7 +434,9 @@ struct PromptGridCard: View {
             }
         )
         .onHover { hovering in
-            isLocallyHovered = hovering
+            if hoverEffectsEnabled {
+                isLocallyHovered = hovering
+            }
             onHover(hovering)
         }
         .task {
