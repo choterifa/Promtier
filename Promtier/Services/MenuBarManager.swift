@@ -209,6 +209,8 @@ class MenuBarManager: NSObject, ObservableObject {
             
             let controller = NSHostingController(rootView: AnyView(contentView))
             controller.view.frame.size = size
+            controller.view.wantsLayer = true
+            controller.view.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
             popover?.contentViewController = controller
             popover?.contentViewController?.preferredContentSize = size
             
@@ -223,6 +225,8 @@ class MenuBarManager: NSObject, ObservableObject {
         
         // Asegurar foco inmediato para evitar el "doble click"
         if let window = popover?.contentViewController?.view.window {
+            window.backgroundColor = NSColor.windowBackgroundColor
+            window.isOpaque = true
             window.makeKey()
         }
         NSApp.activate(ignoringOtherApps: true)

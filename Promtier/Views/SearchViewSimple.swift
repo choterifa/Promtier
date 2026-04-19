@@ -333,6 +333,7 @@ struct SearchViewSimple: View {
             if let firstPrompt = promptService.filteredPrompts.first {
                 prewarmPreviewAssets(for: firstPrompt, force: true)
             }
+            ensureValidSelection(autoselectFirst: true)
         }
         .onDisappear {
             if let monitor = localEventMonitor {
@@ -356,6 +357,14 @@ struct SearchViewSimple: View {
             guard let selectedPrompt else { return }
             prewarmPreviewAssets(for: selectedPrompt)
         }
+        .onChange(of: showingPreview) { _, isShown in
+            if !isShown {
+                isFullScreenImageOpen = false
+            }
+        }
+        .onChange(of: promptService.filteredPrompts.map(\.id)) { _, _ in
+            ensureValidSelection(autoselectFirst: true)
+        }
         .onChange(of: promptService.filteredPrompts.first?.id) { _, newValue in
             guard selectedPrompt == nil,
                   let newValue,
@@ -364,6 +373,7 @@ struct SearchViewSimple: View {
         }
         .onReceive(promptService.$prompts) { _ in
             refreshSelectedPromptFromStore()
+            ensureValidSelection(autoselectFirst: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PromtierCustomShortcutPressed"))) { notification in
             guard let promptId = notification.object as? UUID,
@@ -933,6 +943,12 @@ struct SearchViewSimple: View {
                 openPreview(for: current, soundEffect: .preview)
                 return nil
             }
+
+            // Fallback: si se perdió la selección, usar el primer resultado visible.
+            if let first = promptService.filteredPrompts.first {
+                openPreview(for: first, soundEffect: .preview)
+                return nil
+            }
         }
         if keyCode == 14 { // 'e' key for edit
             if showingPreview, let _ = selectedPrompt {
@@ -1256,10 +1272,29 @@ struct SearchViewSimple: View {
         promptService.promptSnapshot(byId: prompt.id) ?? prompt
     }
 
+    private func ensureValidSelection(autoselectFirst: Bool) {
+        let visible = promptService.filteredPrompts
+        guard !visible.isEmpty else {
+            selectedPrompt = nil
+            showingPreview = false
+            return
+        }
+
+        if let current = selectedPrompt,
+           let matching = visible.first(where: { $0.id == current.id }) {
+            selectedPrompt = latestPrompt(for: matching)
+            return
+        }
+
+        if autoselectFirst, let first = visible.first {
+            selectedPrompt = latestPrompt(for: first)
+        }
+    }
+
     private func refreshSelectedPromptFromStore() {
         guard let current = selectedPrompt else { return }
         guard let latest = promptService.promptSnapshot(byId: current.id) else {
-            selectedPrompt = nil
+            selectedPrompt = promptService.filteredPrompts.first.map { latestPrompt(for: $0) }
             showingPreview = false
             return
         }

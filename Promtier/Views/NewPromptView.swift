@@ -78,7 +78,6 @@ struct NewPromptView: View {
     }
 
     @State private var showingIconPicker = false
-    @State private var isDragging = false
     @State private var draggedImageIndex: Int? = nil
     @State private var showingFullScreenImage: Data? = nil
 
@@ -92,13 +91,6 @@ struct NewPromptView: View {
     @State private var showingMagicOptions: Bool = false
     @State private var magicCommand: String = ""
     @State private var magicTarget: MagicTarget = .content
-
-    enum MagicTarget: String, CaseIterable, Identifiable {
-        case title = "Título"
-        case description = "Descripción"
-        case content = "Prompt"
-        var id: String { self.rawValue }
-    }
     
     @State private var isGeneratingAlternativeDirect: Bool = false
 
@@ -134,7 +126,6 @@ struct NewPromptView: View {
     @State private var focusAlternative: Bool = false
     @State private var targetAppBundleIDs: [String] = []
     @State private var showingShortcutHelp: Bool = false
-    @State private var showingSmartHelp: Bool = false
     @State private var localMonitor: Any? = nil
     struct DiffComparison: Identifiable {
         let id = UUID()
@@ -146,9 +137,7 @@ struct NewPromptView: View {
 
     @State private var diffComparison: DiffComparison? = nil
     @State private var branchMessage: String? = nil
-    @State private var showingAppPicker = false
 
-    @State private var cancellables = Set<AnyCancellable>()
     @State private var isAutocompleting: Bool = false
     @State private var isCategorizing: Bool = false
     @State private var aiTask: Task<Void, Never>? = nil
@@ -159,16 +148,6 @@ struct NewPromptView: View {
     /// Guard que impide que un auto-guardado pendiente se ejecute después de descartar
     @State private var isDiscarding: Bool = false
     
-    // Estados de Hover para la cabecera
-    @State private var isHoveringCancel = false
-    @State private var isHoveringHistory = false
-    @State private var isHoveringAddAlternative = false
-    @State private var isHoveringMagicVariant = false
-    @State private var isHoveringFavorite = false
-    @State private var isHoveringZen = false
-    @State private var isHoveringPin = false
-    @State private var isHoveringBranch = false
-    @State private var isHoveringSave = false
     @State private var isPinned = false
 
     private var zenBindingContent: Binding<String> {
@@ -216,15 +195,6 @@ struct NewPromptView: View {
         return useGemini || useOpenAI
     }
     
-    // Builds the language instruction to inject into AI prompts
-    private var aiLanguageInstruction: String {
-        switch preferences.aiResponseLanguage {
-        case "es": return "IMPORTANT: Respond ENTIRELY in Spanish. Do not use any other language."
-        case "en": return "IMPORTANT: Respond ENTIRELY in English. Do not use any other language."
-        default:   return ""  // auto: let the model detect from input
-        }
-    }
-
     private var zenBindingSelection: Binding<NSRange?> {
         Binding(
             get: {
@@ -360,195 +330,54 @@ struct NewPromptView: View {
 
             // SECTION 2: ADVANCED FIELDS
             if preferences.showAdvancedFields || !negativePrompt.isEmpty || alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(spacing: 24) {
-                        // 2.1: NEGATIVE PROMPT
-                        SecondaryEditorCard(
-                            title: "negative_prompt".localized(for: preferences.language),
-                            placeholder: "negative_prompt_placeholder".localized(for: preferences.language),
-                            text: $negativePrompt,
-                            icon: "hand.raised.fill",
-                            color: .red,
-                            focusRequest: $focusNegative,
-                            onZenMode: {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    zenTarget = .negative
-                                    showingZenEditor = true
-                                }
-                            },
-                            insertionRequest: $insertionRequest,
-                            replaceSnippetRequest: $replaceSnippetRequest,
-                            showSnippets: $showSnippets,
-                            snippetSearchQuery: $snippetSearchQuery,
-                            snippetSelectedIndex: $snippetSelectedIndex,
-                            triggerSnippetSelection: $triggerSnippetSelection,
-                            showVariables: $showVariables,
-                            variablesSelectedIndex: $variablesSelectedIndex,
-                            triggerVariablesSelection: $triggerVariablesSelection,
-                            triggerAIRequest: $triggerAIRequest,
-                            isAIActive: $isAIActive,
-                            isAIGenerating: Binding(
-                                get: { activeGeneratingID == "negative" },
-                                set: { val in activeGeneratingID = val ? "negative" : nil }
-                            ),
-                            selectedRange: $selectedNegativeRange,
-                            aiResult: $aiNegativeResult,
-                            showingPremiumFor: $showingPremiumFor,
-                            originalPrompt: originalPrompt,
-                            prompt: prompt,
-                            branchMessage: $branchMessage,
-                            editorID: "negative",
-                            currentCategoryColor: currentCategoryColor
-                        ) {
-                            HStack(spacing: 12) {
-                                if !negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                    // Action: Swap
-                                    Button(action: {
-                                        withAnimation {
-                                            let temp = content
-                                            content = negativePrompt
-                                            negativePrompt = temp
-                                            branchMessage = "Content swapped!"
-                                        }
-                                        HapticService.shared.playLight()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
-                                    }) {
-                                        Image(systemName: "arrow.up.arrow.down")
-                                            .font(.system(size: 11, weight: .semibold))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.red)
-                                    .help("Swap with main prompt")
-
-                                    // Action: Merge
-                                    Button(action: {
-                                        withAnimation {
-                                            if !content.isEmpty { content += "\n\n---\n\n" }
-                                            content += negativePrompt
-                                            negativePrompt = ""
-                                            branchMessage = "Merged into main!"
-                                        }
-                                        HapticService.shared.playLight()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { withAnimation { branchMessage = nil } }
-                                    }) {
-                                        Image(systemName: "arrow.down.to.line.compact")
-                                            .font(.system(size: 11, weight: .semibold))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.red)
-                                    .help("Merge into main prompt")
-
-                                    // Action: Compare
-                                    Button(action: {
-                                        diffComparison = DiffComparison(
-                                            text1: content,
-                                            text2: negativePrompt,
-                                            title1: "main_content".localized(for: preferences.language),
-                                            title2: "negative_prompt".localized(for: preferences.language)
-                                        )
-                                    }) {
-                                        Image(systemName: "arrow.left.and.right.text.vertical")
-                                            .font(.system(size: 11, weight: .semibold))
-                                    }
-                                    .buttonStyle(.plain)
-                                    .foregroundColor(.orange)
-                                    .help("Compare with main prompt")
-                                }
-                            }
+                PromptAdvancedFieldsView(
+                    negativePrompt: $negativePrompt,
+                    alternatives: $alternatives,
+                    content: contentBinding,
+                    branchMessage: $branchMessage,
+                    focusNegative: $focusNegative,
+                    insertionRequest: $insertionRequest,
+                    replaceSnippetRequest: $replaceSnippetRequest,
+                    showSnippets: $showSnippets,
+                    snippetSearchQuery: $snippetSearchQuery,
+                    snippetSelectedIndex: $snippetSelectedIndex,
+                    triggerSnippetSelection: $triggerSnippetSelection,
+                    showVariables: $showVariables,
+                    variablesSelectedIndex: $variablesSelectedIndex,
+                    triggerVariablesSelection: $triggerVariablesSelection,
+                    triggerAIRequest: $triggerAIRequest,
+                    isAIActive: $isAIActive,
+                    activeGeneratingID: $activeGeneratingID,
+                    selectedNegativeRange: $selectedNegativeRange,
+                    aiNegativeResult: $aiNegativeResult,
+                    showingPremiumFor: $showingPremiumFor,
+                    isGeneratingAlternativeDirect: $isGeneratingAlternativeDirect,
+                    themeColor: themeColor,
+                    currentCategoryColor: currentCategoryColor,
+                    preferences: preferences,
+                    isAIAvailable: isAIAvailable,
+                    canGenerateAlternative: !contentHoister.slowText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    originalPrompt: originalPrompt,
+                    prompt: prompt,
+                    onZenNegative: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            zenTarget = .negative
+                            showingZenEditor = true
                         }
-                        .id("negative_prompt_section")
-
-                        // 2.2: ALTERNATIVE PROMPTS
-                        VStack(alignment: .leading, spacing: 16) {
-                            if !alternatives.isEmpty {
-                                VStack(spacing: 16) {
-                                    ForEach(Array(alternatives.enumerated()), id: \.offset) { index, _ in
-                                        alternativeRow(index: index)
-                                            .transition(.opacity.combined(with: .move(edge: .top)))
-                                    }
-                                }
-                            }
-
-                            if alternatives.count < 10 {
-                                HStack(spacing: 12) {
-                                    // BOTOON AÑADIR VACIO
-                                    Button(action: {
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                            alternatives.append("")
-                                        }
-                                    }) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "plus.circle.fill")
-                                                .font(.system(size: 13, weight: .bold))
-                                            Text("add_alternative".localized(for: preferences.language))
-                                        }
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(themeColor)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 10)
-                                        .background(
-                                            ZStack {
-                                                if preferences.isHaloEffectEnabled {
-                                                    currentCategoryColor.opacity((preferences.isPremiumActive && isAIAvailable) ? 0.05 : 0.15)
-                                                        .blur(radius: 12)
-                                                }
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .fill(themeColor.opacity(isHoveringAddAlternative ? 0.25 : 0.15))
-                                            }
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14)
-                                                .stroke(themeColor.opacity(isHoveringAddAlternative ? 0.4 : 0.2), lineWidth: 1.5)
-                                        )
-                                        .onHover { hovering in
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                isHoveringAddAlternative = hovering
-                                            }
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    
-                                    // BOTON MAGICO (AUTOMATICO)
-                                    if preferences.isPremiumActive && isAIAvailable {
-                                        Button(action: generateAlternativeDirect) {
-                                            HStack(spacing: 8) {
-                                                if isGeneratingAlternativeDirect {
-                                                    ProgressView().controlSize(.small)
-                                                } else {
-                                                    Image(systemName: "wand.and.stars")
-                                                        .font(.system(size: 13, weight: .bold))
-                                                }
-                                                Text("magic_variant".localized(for: preferences.language))
-                                            }
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 10)
-                                            .background(
-                                                ZStack {
-                                                    Color.blue.opacity(isHoveringMagicVariant ? 0.8 : 1.0)
-                                                    if preferences.isHaloEffectEnabled {
-                                                        Color.blue.opacity(isHoveringMagicVariant ? 0.5 : 0.3).blur(radius: 8)
-                                                    }
-                                                }
-                                            )
-                                            .cornerRadius(14)
-                                            .onHover { hovering in
-                                                withAnimation(.easeInOut(duration: 0.2)) {
-                                                    isHoveringMagicVariant = hovering
-                                                }
-                                            }
-                                        }
-                                        .buttonStyle(.plain)
-                                        .disabled(contentHoister.slowText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isGeneratingAlternativeDirect)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
-                            }
-                        }
-                        .id("alternatives_section")
+                    },
+                    onCompareNegative: {
+                        diffComparison = DiffComparison(
+                            text1: content,
+                            text2: negativePrompt,
+                            title1: "main_content".localized(for: preferences.language),
+                            title2: "negative_prompt".localized(for: preferences.language)
+                        )
+                    },
+                    onGenerateAlternativeDirect: generateAlternativeDirect,
+                    onAlternativeRow: { index in
+                        AnyView(alternativeRow(index: index))
                     }
-                }
+                )
             }
 
             Spacer().frame(height: 20)
@@ -615,118 +444,32 @@ struct NewPromptView: View {
                     )
                 }
 
+                PromptTagsEditorView(
+                    tags: $tags,
+                    newTag: $newTag,
+                    showingTagEditor: $showingTagEditor,
+                    preferences: preferences
+                )
+
                 // Contextual Awareness (App Association)
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(themeColor)
-                        Text("smart_recommendation".localized(for: preferences.language).uppercased())
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .tracking(1)
-                        
-                        Button(action: { showingSmartHelp.toggle() }) {
-                            Image(systemName: "questionmark.circle")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary.opacity(0.6))
-                        }
-                        .buttonStyle(.plain)
-                        .popover(isPresented: $showingSmartHelp) {
-                            helpPopover(title: "smart_recommendation_help", content: "smart_recommendation_help_desc")
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 4)
+                PromptAppTargetsView(
+                    targetAppBundleIDs: $targetAppBundleIDs,
+                    themeColor: themeColor,
+                    currentCategoryColor: currentCategoryColor,
+                    preferences: preferences,
+                    promptService: promptService
+                )
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        if targetAppBundleIDs.isEmpty {
-                            Text("no_apps_assigned".localized(for: preferences.language))
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 4)
-                        } else {
-                            FlowLayout(spacing: 8) {
-                                ForEach(targetAppBundleIDs, id: \.self) { bundleID in
-                                    HStack(spacing: 6) {
-                                        if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)?.path {
-                                            let icon = NSWorkspace.shared.icon(forFile: path)
-                                            Image(nsImage: icon)
-                                                .resizable()
-                                                .frame(width: 16, height: 16)
-                                        }
-
-                                        Text(getAppName(bundleID))
-                                            .font(.system(size: 12, weight: .medium))
-
-                                        Button(action: {
-                                            withAnimation {
-                                                targetAppBundleIDs.removeAll { $0 == bundleID }
-                                            }
-                                        }) {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.secondary.opacity(0.5))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.primary.opacity(0.05))
-                                    .cornerRadius(8)
-                                }
-                            }
-                        }
-
-                        Button(action: { showingAppPicker = true }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("assign_app".localized(for: preferences.language))
-                            }
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(themeColor)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(themeColor.opacity(0.08))
-                            .cornerRadius(10)
-                        }
-                        .buttonStyle(.plain)
-                        .popover(isPresented: $showingAppPicker, arrowEdge: .bottom) {
-                                AppPickerPopover(
-                                    runningApps: getRunningApps(),
-                                    currentAppID: promptService.activeAppBundleID,
-                                    titleKey: "smart_recommendation",
-                                    onSelect: { bundleID in
-                                        if !targetAppBundleIDs.contains(bundleID) {
-                                            withAnimation {
-                                                targetAppBundleIDs.append(bundleID)
-                                            }
-                                        }
-                                        showingAppPicker = false
-                                    },
-                                    onBrowse: {
-                                        showingAppPicker = false
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            selectApplication()
-                                        }
-                                    }
-                                )
-                        }
-                    }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.01))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
-                            )
-                    )
-                }
-
-                // Prompt Results (Moved here per user request)
-                imageGallery(width: geometry.size.width * 0.9)
+                // Prompt Results (Extracted Component)
+                PromptImageShowcaseView(
+                    showcaseImages: $showcaseImages,
+                    draggedImageIndex: $draggedImageIndex,
+                    showingFullScreenImage: $showingFullScreenImage,
+                    selectedImageIndex: $selectedImageIndex,
+                    branchMessage: $branchMessage,
+                    preferences: preferences,
+                    themeColor: themeColor
+                )
                     .padding(.horizontal, 4)
             }
             .padding(.bottom, 20)
@@ -1129,6 +872,8 @@ struct NewPromptView: View {
             setupKeyboardMonitor()
         }
         .onDisappear {
+            aiTask?.cancel()
+            aiTask = nil
             if let monitor = localMonitor {
                 NSEvent.removeMonitor(monitor)
                 localMonitor = nil
@@ -1791,155 +1536,7 @@ struct NewPromptView: View {
         DraftService.shared.saveDraft(prompt: draftPrompt, isEditing: prompt != nil || originalPrompt != nil)
     }
 
-    // MARK: - Subviews
-
-
-                private func imageGallery(width: CGFloat) -> some View {
-                    let slotWidth = (width - 52) / 3
-                    let slotHeight = slotWidth * 0.66
-                    
-                    return VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "photo.stack.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(themeColor)
-                            Text("prompt_results".localized(for: preferences.language).uppercased())
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.secondary)
-                                .tracking(1)
-
-                            if showcaseImages.count < 3 {
-                                Button(action: selectImages) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(themeColor)
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                                .help("add_image".localized(for: preferences.language))
-                            }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 0)
-
-                        ScrollView(.horizontal, showsIndicators: false) {                
-                            LazyHStack(spacing: 12) {
-                                // Imágenes actuales
-                                ForEach(0..<showcaseImages.count, id: \.self) { index in
-                                    ImageSlotView(
-                                        imageData: showcaseImages[index],
-                                        slotWidth: slotWidth,
-                                        slotHeight: slotHeight,
-                                        isSelected: selectedImageIndex == index,
-                                        tintColor: themeColor,
-                                        onRemove: { 
-                                            showcaseImages.remove(at: index)
-                                            if selectedImageIndex >= showcaseImages.count {
-                                                selectedImageIndex = max(0, showcaseImages.count - 1)
-                                            }
-                                        },
-                                        onPreview: { 
-                                            selectedImageIndex = index
-                                            showingFullScreenImage = showcaseImages[index] 
-                                        },
-                                        onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-                                        onDragStart: { self.draggedImageIndex = index }
-                                    )
-                                }
-
-                                // Placeholders para completar hasta 3
-                                ForEach(showcaseImages.count..<3, id: \.self) { index in
-                                    PlaceholderSlotView(
-                                        slotWidth: slotWidth,
-                                        slotHeight: slotHeight,
-                                        onSelect: selectImages,
-                                        onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
-                                        tintColor: Color(hex: promptService.folders.first(where: { $0.name == selectedFolder })?.displayColor ?? "#007AFF")
-                                    )
-                                }
-                            }
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 12) // Añadido horizontal para evitar cortes al escalar
-                        }
-                        .frame(height: slotHeight + 24) // ✅ CRÍTICO: Previene infinite layout loops (beachball) en ScrollViews anidados
-                    }
-                    .padding(.top, 16)
-                    .contentShape(Rectangle())
-                    .onPasteCommand(of: [.image]) { providers in
-                        handleGalleryDrop(providers: providers)
-                    }
-                }
-
-    private func handleGalleryDrop(providers: [NSItemProvider], at index: Int? = nil) {
-        if let sourceIndex = draggedImageIndex {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                let item = showcaseImages.remove(at: sourceIndex)
-                let targetIndex = min(index ?? showcaseImages.count, showcaseImages.count)
-                showcaseImages.insert(item, at: targetIndex)
-                HapticService.shared.playLight()
-            }
-            draggedImageIndex = nil
-            return
-        }
-
-        let remainingSlots = max(0, ImageImportPolicy.maxSlots - showcaseImages.count)
-        guard remainingSlots > 0 else {
-            showImageImportWarning(imageSlotsFullMessage)
-            return
-        }
-
-        for provider in providers.prefix(remainingSlots) {
-            if provider.canLoadObject(ofClass: NSImage.self) {
-                _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                    if let nsImage = image as? NSImage {
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            guard let tiffData = nsImage.tiffRepresentation,
-                                  let bitmap = NSBitmapImageRep(data: tiffData),
-                                  let baseData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else { return }
-
-                            self.appendOptimizedImageData(baseData, at: index)
-                        }
-                    }
-                }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data {
-                        self.appendOptimizedImageData(data, at: index)
-                    }
-                }
-            } else if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url {
-                        if url.isFileURL {
-                            guard self.isAcceptableImageFile(url) else { return }
-                            if let data = try? Data(contentsOf: url, options: [.mappedIfSafe]) {
-                                self.appendOptimizedImageData(data, at: index)
-                            }
-                        } else {
-                            // Descargar imagen de web URL (Chrome/Safari drag)
-                            URLSession.shared.dataTask(with: url) { data, response, _ in
-                                if let expectedSize = response?.expectedContentLength, expectedSize > Int64(ImageImportPolicy.maxInputBytes) {
-                                    self.showImageImportWarning(self.imageTooLargeMessage)
-                                    return
-                                }
-                                guard let data else { return }
-                                self.appendOptimizedImageData(data, at: index)
-                            }.resume()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func isAcceptableImageFile(_ url: URL) -> Bool {
-        let values = try? url.resourceValues(forKeys: [.fileSizeKey])
-        if let bytes = values?.fileSize, bytes > ImageImportPolicy.maxInputBytes {
-            showImageImportWarning(imageTooLargeMessage)
-            return false
-        }
-        return true
-    }
+    // MARK: - Image Import Helpers
 
     private func appendOptimizedImageData(_ rawData: Data, at index: Int?) {
         DispatchQueue.global(qos: .userInitiated).async {
@@ -2188,556 +1785,100 @@ struct NewPromptView: View {
         }
     }
 
-    private func selectImages() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [.image]
-        
-        panel.begin { response in
-            guard response == .OK else { return }
+    // MARK: - AI Magic Features (ViewModel-backed)
 
-            let remainingSlots = max(0, ImageImportPolicy.maxSlots - self.showcaseImages.count)
-            guard remainingSlots > 0 else {
-                self.showImageImportWarning(self.imageSlotsFullMessage)
-                return
-            }
+    private func makeWorkingViewModel() -> NewPromptViewModel {
+        let vm = NewPromptViewModel(prompt: originalPrompt ?? prompt)
+        vm.title = title
+        vm.content = content
+        vm.negativePrompt = negativePrompt
+        vm.alternatives = alternatives
+        vm.promptDescription = promptDescription
+        vm.selectedFolder = selectedFolder
+        vm.isFavorite = isFavorite
+        vm.selectedIcon = selectedIcon
+        vm.showcaseImages = showcaseImages
+        vm.tags = tags
+        vm.targetAppBundleIDs = targetAppBundleIDs
+        vm.customShortcut = customShortcut
+        vm.showingPremiumFor = showingPremiumFor
+        vm.showingMagicOptions = showingMagicOptions
+        vm.branchMessage = branchMessage
+        vm.isAutocompleting = isAutocompleting
+        vm.isCategorizing = isCategorizing
+        vm.showNegativeField = showNegativeField
+        vm.showAlternativeField = showAlternativeField
+        vm.magicCommand = magicCommand
+        vm.magicTarget = magicTarget
+        vm.isGeneratingAlternativeDirect = isGeneratingAlternativeDirect
+        return vm
+    }
 
-            let urls = Array(panel.urls.prefix(remainingSlots))
-            DispatchQueue.global(qos: .userInitiated).async {
-                for url in urls {
-                    guard self.isAcceptableImageFile(url) else { continue }
-                    if let data = try? Data(contentsOf: url, options: [.mappedIfSafe]) {
-                        self.appendOptimizedImageData(data, at: nil)
-                    }
+    private func applyViewModelState(_ vm: NewPromptViewModel) {
+        title = vm.title
+        content = vm.content
+        negativePrompt = vm.negativePrompt
+        alternatives = vm.alternatives
+        promptDescription = vm.promptDescription
+        selectedFolder = vm.selectedFolder
+        isFavorite = vm.isFavorite
+        selectedIcon = vm.selectedIcon
+        showcaseImages = vm.showcaseImages
+        tags = vm.tags
+        targetAppBundleIDs = vm.targetAppBundleIDs
+        customShortcut = vm.customShortcut
+        showingPremiumFor = vm.showingPremiumFor
+        showingMagicOptions = vm.showingMagicOptions
+        branchMessage = vm.branchMessage
+        isAutocompleting = vm.isAutocompleting
+        isCategorizing = vm.isCategorizing
+        showNegativeField = vm.showNegativeField
+        showAlternativeField = vm.showAlternativeField
+        magicCommand = vm.magicCommand
+        magicTarget = vm.magicTarget
+        isGeneratingAlternativeDirect = vm.isGeneratingAlternativeDirect
+    }
+
+    private func startViewModelSync(_ vm: NewPromptViewModel) {
+        aiTask?.cancel()
+        aiTask = Task {
+            while !Task.isCancelled {
+                var shouldStop = false
+                await MainActor.run {
+                    applyViewModelState(vm)
+                    shouldStop = !vm.isAutocompleting && !vm.isCategorizing && !vm.isGeneratingAlternativeDirect
                 }
+                if shouldStop { break }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            await MainActor.run {
+                applyViewModelState(vm)
             }
         }
     }
-
-    // MARK: - AI Magic Features
 
     private func autocompletePromptContent() {
-        guard preferences.isPremiumActive else {
-            showingPremiumFor = "ai_magic"
-            return
-        }
-        
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard !trimmedTitle.isEmpty || !trimmedContent.isEmpty else {
-            // Animación de error sutil si ambos están vacíos
-            HapticService.shared.playError()
-            return
-        }
-        
-        if !trimmedTitle.isEmpty && !trimmedContent.isEmpty {
-            // Si ya está lleno, preguntamos qué quiere hacer y qué modificar
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                showingMagicOptions = true
-            }
-            return
-        }
-        
-        isAutocompleting = true
-        HapticService.shared.playImpact()
-        
-        // ✨ Mostrar aviso de que se está ejecutando la magia
-        withAnimation {
-            branchMessage = "ai_thinking".localized(for: preferences.language)
-        }
-        
-        let systemPrompt: String
-        let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
-        let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
-        
-        let isContentProvided = !trimmedContent.isEmpty
-        let isTitleProvided = !trimmedTitle.isEmpty
-        
-        let titleInstruction = isTitleProvided
-            ? "The title is already provided. DO NOT modify it in any way. Return it EXACTLY as it is."
-            : "If the title is empty or generic, generate a catchy, short title (max 1 line)."
-
-        let contentInstruction = isContentProvided
-            ? "The content is already provided by the user. DO NOT modify it, do not expand it, and do not improve it. Return it EXACTLY as it is."
-            : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}}. If you must create new variables, use a MAXIMUM of 3. New variables MUST use exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
-
-        systemPrompt = """
-        You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.
-        
-        INPUTS:
-        - Title: \(currentTitle)
-        - Content: \(currentContent)
-        
-        INSTRUCTIONS:
-        1. TITLE: \(titleInstruction)
-        2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
-        3. CONTENT: \(contentInstruction)
-        4. NEGATIVE PROMPT: Generate a list of practical things to AVOID for this prompt (e.g. "no formatting errors, no generic tone", etc).
-        
-        CRITICAL LANGUAGE RULE:
-        - Detect the PRIMARY language of the user's input (title and content).
-        - You MUST respond ENTIRELY in that SAME language. Every word of your response — title, description, content, negative prompt, variable names — must be in the input's language.
-        - If input is Spanish → respond in Spanish. If English → respond in English. Never mix languages.
-        
-        RESPONSE FORMAT:
-        Respond ONLY with the following format, using the pipe symbol (|) as separator:
-        GeneratedTitle|GeneratedDescription|GeneratedContent|GeneratedNegativePrompt
-        
-        DO NOT include any other text, labels, or explanations. Just the FOUR parts separated by |.
-        """
-        
-        Task {
-            do {
-                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                
-                await MainActor.run {
-                    self.isAutocompleting = false
-                    withAnimation { self.branchMessage = nil }
-                    HapticService.shared.playSuccess()
-                    
-                    if !fullResponse.isEmpty {
-                        let parts = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
-                        if parts.count >= 4 {
-                            withAnimation(.spring()) {
-                                self.title = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                                self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                                self.content = parts[2].trimmingCharacters(in: .whitespacesAndNewlines)
-                                
-                                let nPrompt = parts[3].trimmingCharacters(in: .whitespacesAndNewlines)
-                                if !nPrompt.isEmpty {
-                                    self.negativePrompt = nPrompt
-                                    self.showNegativeField = true
-                                }
-                            }
-                            
-                            if self.selectedFolder == nil {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    self.autoCategorizePrompt()
-                                }
-                            }
-                        } else if parts.count >= 3 {
-                            withAnimation(.spring()) {
-                                self.title = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                                self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                                self.content = parts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespacesAndNewlines)
-                            }
-                            
-            // 🪄 Auto-Categorizar automáticamente después de generar el contenido
-                            // Solo si NO hay una categoría ya seleccionada por el usuario
-                            if self.selectedFolder == nil {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    self.autoCategorizePrompt()
-                                }
-                            }
-                        } else if !fullResponse.contains("|") {
-                            // Fallback if AI didn't follow format strictly but gave content
-                            withAnimation(.spring()) {
-                                self.content = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                            }
-                        }
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isAutocompleting = false
-                    withAnimation { self.branchMessage = nil }
-                    print("❌ Autocomplete Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
-                    }
-                }
-            }
-        }
+        let vm = makeWorkingViewModel()
+        vm.autocompletePromptContent(preferences: preferences, promptService: promptService)
+        startViewModelSync(vm)
     }
 
-        private func executeMagicWithCommand() {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                showingMagicOptions = false
-            }
-    
-            guard preferences.isPremiumActive else {            showingPremiumFor = "ai_magic"
-            return
-        }
-        
-        isAutocompleting = true
-        HapticService.shared.playImpact()
-        
-        withAnimation {
-            branchMessage = "ai_thinking".localized(for: preferences.language)
-        }
-        
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        let _ = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        let command = magicCommand.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        var targetContext = ""
-        var systemInstruction = ""
-        
-        switch magicTarget {
-        case .title:
-            targetContext = "Current Prompt Content: \(trimmedContent)"
-            systemInstruction = command.isEmpty ? "Generate a catchy, short title (max 1 line) for the prompt content. Maintain the language. Respond ONLY with the new title." : "Modify ONLY the title based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new title."
-        case .description:
-            targetContext = "Current Prompt Content: \(trimmedContent)\nCurrent Title: \(trimmedTitle)"
-            systemInstruction = command.isEmpty ? "Generate a concise description (max 2 lines) for the prompt content. Maintain the language. Respond ONLY with the new description." : "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
-        case .content:
-            targetContext = "Current Content: \(trimmedContent)"
-            systemInstruction = "Modify ONLY the prompt content based on this instruction: '\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
-        }
-        
-        let systemPrompt = """
-        You are an expert prompt engineer. Your goal is to modify a specific part of an AI prompt.
-        
-        \(targetContext)
-        
-        INSTRUCTION:
-        \(systemInstruction)
-        
-        CRITICAL RULE:
-        - Respond ONLY with the final requested text.
-        - Do NOT add quotes, labels, or conversational filler like "Here is the modified text".
-        """
-        
-        Task {
-            do {
-                if magicTarget == .content {
-                    let negativeSystemPrompt = """
-                    You are an expert AI prompt engineer. Your task is to generate a highly effective and targeted NEGATIVE PROMPT (behaviors or clichés the AI should AVOID) based on the user's topic: '\(command)'.
-                    
-                    The original content is:
-                    '\(trimmedContent)'
-                    
-                    INSTRUCTION:
-                    1. Analyze the context and command to anticipate the common mistakes, clichés, or lazy habits an AI might naturally fall into when executing this request.
-                    2. Create a concise, advanced negative prompt that explicitly forbids those bad output habits.
-                    3. Do not use generic filler like "bad grammar, spelling errors". Be hyper-specific to the domain (e.g. "no corporate jargon, no poetic conclusions, avoid predictable analogies").
-                    4. Format it as a single punchy directive or a short comma-separated list of forbidden behaviors. Do not exceed 25 words.
-                    5. Write the negative prompt in the EXACT SAME LANGUAGE as the original content.
-                    
-                    CRITICAL RULE:
-                    - Respond ONLY with the raw negative prompt text. No quotes, no introductions, no labels.
-                    """
-                    
-                    let alternativeSystemPrompt = """
-                    You are an expert prompt engineer. Your goal is to generate an ALTERNATIVE PROMPT variation.
-                    
-                    INSTRUCTION:
-                    Based on the instruction '\(command)' and context '\(targetContext)', generate ONE alternative version.
-                    Maintain the EXACT SAME LANGUAGE as the prompt content.
-                    Maintain ALL variables {{...}} exactly as they are.
-                    
-                    CRITICAL RULE:
-                    - Respond ONLY with the final alternative prompt text.
-                    - Do NOT add quotes, labels, or conversational filler.
-                    """
-                    
-                    async let mainResponseTask = AIServiceManager.shared.generate(prompt: systemPrompt)
-                    async let negativeResponseTask = AIServiceManager.shared.generate(prompt: negativeSystemPrompt)
-                    async let alternativeResponseTask = AIServiceManager.shared.generate(prompt: alternativeSystemPrompt)
-                    
-                    let fullResponse = try await mainResponseTask
-                    let negativeResponseRaw = try await negativeResponseTask
-                    let alternativeResponseRaw = try await alternativeResponseTask
-                    
-                    let negativeResponse = negativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let alternativeResponse = alternativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
-                    
-                    await MainActor.run {
-                        self.isAutocompleting = false
-                        withAnimation { self.branchMessage = nil }
-                        HapticService.shared.playSuccess()
-                        
-                        let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !result.isEmpty {
-                            withAnimation(.spring()) {
-                                self.content = result
-                                if !negativeResponse.isEmpty {
-                                    self.negativePrompt = negativeResponse
-                                    self.showNegativeField = true
-                                }
-                                if !alternativeResponse.isEmpty {
-                                    if !self.alternatives.contains(alternativeResponse) {
-                                        self.alternatives.append(alternativeResponse)
-                                    }
-                                    self.showAlternativeField = true
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                    
-                    await MainActor.run {
-                        self.isAutocompleting = false
-                        withAnimation { self.branchMessage = nil }
-                        HapticService.shared.playSuccess()
-                        
-                        let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !result.isEmpty {
-                            withAnimation(.spring()) {
-                                switch magicTarget {
-                                case .title:
-                                    self.title = result
-                                case .description:
-                                    self.promptDescription = result
-                                case .content:
-                                    self.content = result
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isAutocompleting = false
-                    withAnimation { self.branchMessage = nil }
-                    print("❌ Magic Command Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
-                    }
-                }
-            }
-        }
+    private func executeMagicWithCommand() {
+        let vm = makeWorkingViewModel()
+        vm.executeMagicWithCommand(preferences: preferences)
+        startViewModelSync(vm)
     }
 
     private func autoCategorizePrompt() {
-        guard preferences.isPremiumActive else {
-            showingPremiumFor = "ai_magic"
-            return
-        }
-        
-        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            HapticService.shared.playError()
-            return
-        }
-        
-        // Si ya hay categoría seleccionada, solo buscar el icono
-        let skipCategory = (selectedFolder != nil)
-        
-        isCategorizing = true
-        HapticService.shared.playImpact()
-        
-        let folderNames = promptService.folders.map { $0.name }.joined(separator: ", ")
-        
-        // Construir lista de iconos válidos (solo un subconjunto representativo para no exceder tokens)
-        let validIcons = [
-            "brain.fill", "sparkles", "bolt.fill", "lightbulb.fill", "cpu.fill", "network", "wand.and.stars", "atom",
-            "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces", "command.circle.fill",
-            "gearshape.fill", "wrench.fill", "hammer.fill", "puzzlepiece.fill", "shippingbox.fill",
-            "doc.text.fill", "pencil.and.outline", "text.quote", "book.closed.fill", "square.and.pencil",
-            "note.text", "doc.richtext.fill", "list.bullet.indent", "character.bubble.fill",
-            "chart.line.uptrend.xyaxis", "chart.bar.fill", "target", "briefcase.fill", "dollarsign.circle.fill",
-            "tag.fill", "bookmark.fill", "link",
-            "bubble.left.and.bubble.right.fill", "paperplane.fill", "megaphone.fill", "person.fill",
-            "envelope.fill", "heart.fill", "message.fill",
-            "photo.fill", "camera.fill", "paintpalette.fill", "film.fill", "mic.fill", "headphones",
-            "video.fill", "scissors", "eye.fill", "music.note", "play.circle.fill",
-            "star.fill", "flame.fill", "flag.fill", "bell.fill", "lock.fill", "key.fill",
-            "calendar", "map.fill", "gift.fill", "gamecontroller.fill", "trophy.fill",
-            "globe", "leaf.fill", "house.fill", "graduationcap.fill",
-            "sun.max.fill", "moon.fill", "cloud.fill"
-        ]
-        let iconListString = validIcons.joined(separator: ", ")
-        
-        let categoryInstruction = skipCategory
-            ? "The category is already set. Do NOT return a category. Respond ONLY with the icon name."
-            : "Select the best category from this list: [\(folderNames)]."
-        
-        let formatInstruction = skipCategory
-            ? "Respond ONLY with the SF Symbol name (e.g. terminal.fill). Nothing else."
-            : "Format your response EXACTLY as: CategoryName|SymbolName\nRespond ONLY with this format, nothing else."
-        
-        let systemPrompt = """
-        Based on the title '\(title)' and content '\(content)', \(categoryInstruction)
-        Also suggest the most appropriate SF Symbol icon from ONLY this exact list: [\(iconListString)].
-        You MUST choose from this list. Do NOT invent icon names.
-        \(formatInstruction)
-        """
-        
-        Task {
-            do {
-                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                
-                await MainActor.run {
-                    self.isCategorizing = false
-                    HapticService.shared.playSuccess()
-                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-                    
-                    if skipCategory {
-                        // Solo icono
-                        let iconName = result.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if IconPickerView.allIconNames.contains(iconName) {
-                            withAnimation(.spring()) { self.selectedIcon = iconName }
-                        }
-                    } else {
-                        // Categoría|Icono
-                        let parts = result.components(separatedBy: "|")
-                        if parts.count == 2 {
-                            let iconName = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                            withAnimation(.spring()) {
-                                self.selectedFolder = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                                if IconPickerView.allIconNames.contains(iconName) {
-                                    self.selectedIcon = iconName
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isCategorizing = false
-                    print("❌ Categorization Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
-                    }
-                }
-            }
-        }
+        let vm = makeWorkingViewModel()
+        vm.autoCategorizePrompt(preferences: preferences, promptService: promptService)
+        startViewModelSync(vm)
     }
 
-    private func userFacingAIErrorToast(for error: Error) -> String {
-        let nsError = error as NSError
-
-        let baseKey: String = {
-            if let openAIError = error as? OpenAIAPIError {
-                switch openAIError.kind {
-                case .invalidAPIKey: return "ai_error_invalid_api_key"
-                case .modelNotFound: return "ai_error_model_not_found"
-                case .rateLimited: return "ai_error_rate_limited"
-                case .serverBusy: return "ai_error_server_busy"
-                case .badRequest: return "ai_error_bad_request"
-                case .emptyResponse: return "ai_error_empty_response"
-                case .unknown: return "ai_error_unknown"
-                }
-            }
-
-            if nsError.domain == NSURLErrorDomain {
-                return "ai_error_network"
-            }
-
-            if nsError.domain == "GeminiAPI" {
-                switch nsError.code {
-                case 400: return "ai_error_bad_request"
-                case 401, 403: return "ai_error_invalid_api_key"
-                case 404: return "ai_error_model_not_found"
-                case 429: return "ai_error_rate_limited"
-                case 500, 502, 503, 504: return "ai_error_server_busy"
-                default: return "ai_error_unknown"
-                }
-            }
-
-            let lower = nsError.localizedDescription.lowercased()
-            if lower.contains("model") && (lower.contains("not found") || lower.contains("does not exist")) {
-                return "ai_error_model_not_found"
-            }
-            if lower.contains("rate limit") || lower.contains("too many requests") || lower.contains("429") {
-                return "ai_error_rate_limited"
-            }
-            if lower.contains("invalid api key") || (lower.contains("api key") && lower.contains("invalid")) || lower.contains("401") {
-                return "ai_error_invalid_api_key"
-            }
-            if lower.contains("overloaded") || lower.contains("server busy") || lower.contains("503") {
-                return "ai_error_server_busy"
-            }
-
-            return "ai_error_unknown"
-        }()
-
-        let base = baseKey.localized(for: preferences.language)
-        let detail = compactErrorDetail(from: error)
-        if detail.isEmpty {
-            return "❌ \(base)"
-        }
-        // Mensaje compacto: cabecera corta + primera línea del detalle (si existe)
-        if let firstLine = detail.split(separator: ".").first, !firstLine.isEmpty {
-            return "❌ \(base): \(firstLine.trimmingCharacters(in: .whitespaces))"
-        }
-        return "❌ \(base)"
-    }
-
-    private func compactErrorDetail(from error: Error) -> String {
-        let raw: String = {
-            if let openAIError = error as? OpenAIAPIError {
-                return openAIError.message
-            }
-            return (error as NSError).localizedDescription
-        }()
-
-        let cleaned = raw
-            .replacingOccurrences(of: "\n", with: " ")
-            .replacingOccurrences(of: "\t", with: " ")
-            .replacingOccurrences(of: "  ", with: " ")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if cleaned.isEmpty { return "" }
-        if cleaned.count <= 180 { return cleaned }
-        let idx = cleaned.index(cleaned.startIndex, offsetBy: 180)
-        return String(cleaned[..<idx]) + "…"
-    }
-
-    // MARK: - App Association Helpers
-
-    private func getRunningApps() -> [RunningApp] {
-        return NSWorkspace.shared.getRelevantRunningApps()
-    }
-
-    private func getAppName(_ bundleID: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            return url.deletingPathExtension().lastPathComponent
-        }
-        return bundleID
-    }
-
-    private func selectApplication() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowedContentTypes = [.application, .aliasFile]
-        panel.allowsMultipleSelection = true
-        panel.message = "select_app_title".localized(for: preferences.language)
-
-        // Nivel de panel modal para que NO salga por detrás de la ventana de NewPromptView
-        panel.level = .modalPanel
-
-        if panel.runModal() == .OK {
-            for url in panel.urls {
-                if let bundleID = Bundle(url: url)?.bundleIdentifier {
-                    if !targetAppBundleIDs.contains(bundleID) {
-                        withAnimation {
-                            targetAppBundleIDs.append(bundleID)
-                        }
-                    }
-                } else {
-                    // Intento manual vía plist si Bundle falla (apps externas raras)
-                    let infoPath = url.appendingPathComponent("Contents/Info.plist")
-                    if let infoDict = NSDictionary(contentsOf: infoPath),
-                       let bundleID = infoDict["CFBundleIdentifier"] as? String {
-                        if !targetAppBundleIDs.contains(bundleID) {
-                            withAnimation {
-                                targetAppBundleIDs.append(bundleID)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    private func generateAlternativeDirect() {
+        let vm = makeWorkingViewModel()
+        vm.generateAlternativeDirect(preferences: preferences)
+        startViewModelSync(vm)
     }
 
     private var snippetOverlay: some View {
@@ -2855,52 +1996,6 @@ extension NewPromptView {
             return false
         }
         return true
-    }
-    
-    private func generateAlternativeDirect() {
-        let cleanContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanContent.isEmpty else { return }
-        
-        isGeneratingAlternativeDirect = true
-        HapticService.shared.playImpact()
-        
-        let systemPrompt = """
-        Eres un ingeniero de prompts experto y creativo. Genera una versión ALTERNATIVA o variada del siguiente prompt. 
-        MANTÉN EL MISMO IDIOMA EXACTO DEL PROMPT ORIGINAL.
-        MANTEN TODAS Y CADA UNA de las variables entre llaves (ejemplo: {{ejemplo}}) exactamente intactas.
-        Tu respuesta debe ser EXCLUSIVAMENTE el texto de la alternativa, sin títulos, explicaciones, comillas ni comentarios extra. Dámelo plano.
-        
-        PROMPT ORIGINAL:
-        \(cleanContent)
-        """
-        
-        Task {
-            do {
-                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                let cleanedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                await MainActor.run {
-                    self.isGeneratingAlternativeDirect = false
-                    if !cleanedResponse.isEmpty {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            self.alternatives.append(cleanedResponse)
-                        }
-                        HapticService.shared.playSuccess()
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isGeneratingAlternativeDirect = false
-                    print("❌ Alternative Error: \(error.localizedDescription)")
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { self.branchMessage = nil }
-                    }
-                }
-            }
-        }
     }
 }
 

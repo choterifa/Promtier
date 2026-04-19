@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import QuartzCore
 
 class FloatingOnboardingManager: NSObject, ObservableObject {
     static let shared = FloatingOnboardingManager()
@@ -30,8 +31,15 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
         
         // Centrar en pantalla
         panel?.center()
+        panel?.alphaValue = 0
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.14
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel?.animator().alphaValue = 1
+        }
         isVisible = true
     }
     
@@ -64,8 +72,8 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
         newPanel.isFloatingPanel = true
         newPanel.level = .floating
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        newPanel.isOpaque = false
-        newPanel.backgroundColor = .clear
+        newPanel.isOpaque = true
+        newPanel.backgroundColor = NSColor.windowBackgroundColor
         newPanel.hasShadow = true
         
         // Efecto de esquina
@@ -76,8 +84,14 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
         let view = OnboardingView()
             .environmentObject(self)
             .environmentObject(PreferencesManager.shared)
-        
-        newPanel.contentView = NSHostingView(rootView: view)
+
+        let hostingView = NSHostingView(rootView: view)
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        hostingView.layer?.cornerRadius = 24
+        hostingView.layer?.masksToBounds = true
+
+        newPanel.contentView = hostingView
         self.panel = newPanel
     }
 }

@@ -103,16 +103,18 @@ class FolderManagerViewModel: ObservableObject {
         // Auto-Magic Icon/Color
         if editingFolder == nil && selectedIcon == "folder.fill" && selectedColor == .blue && isAIAvailable {
             finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", promptService: promptService, onSuccess: onSuccess)
+
+            let magicPrompt = AIServiceManager.generateCategoryIconAndColorPrompt(categoryName: sanitizedName)
+            let allowedIcons = Set(Theme.Icons.allIconNames)
             
             Task.detached {
                 struct MagicResponse: Codable {
                     let icon: String
                     let color: String
                 }
-                
-                let prompt = AIServiceManager.generateCategoryIconAndColorPrompt(categoryName: sanitizedName)
+
                 do {
-                    let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt, imageData: nil, useFallback: true)
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: magicPrompt, imageData: nil, useFallback: true)
                     
                     let cleanResponse = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                         .replacingOccurrences(of: "```json", with: "")
@@ -121,7 +123,7 @@ class FolderManagerViewModel: ObservableObject {
                     guard let data = cleanResponse.data(using: .utf8),
                           let decoded = try? JSONDecoder().decode(MagicResponse.self, from: data) else { return }
                     
-                    let finalIcon = Theme.Icons.allIconNames.contains(decoded.icon) ? decoded.icon : "folder.fill"
+                    let finalIcon = allowedIcons.contains(decoded.icon) ? decoded.icon : "folder.fill"
                     let finalColor = decoded.color.hasPrefix("#") ? decoded.color : "#" + decoded.color
                     
                     await MainActor.run {
@@ -136,13 +138,16 @@ class FolderManagerViewModel: ObservableObject {
             }
         } else if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable {
              finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", promptService: promptService, onSuccess: onSuccess)
+
+             let iconPrompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
+             let allowedIcons = Set(Theme.Icons.allIconNames)
+
              Task.detached {
-                 let prompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
                  do {
-                     let fullResponse = try await AIServiceManager.shared.generate(prompt: prompt, imageData: nil, useFallback: true)
+                     let fullResponse = try await AIServiceManager.shared.generate(prompt: iconPrompt, imageData: nil, useFallback: true)
                      let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                      
-                     if Theme.Icons.allIconNames.contains(result) {
+                     if allowedIcons.contains(result) {
                          await MainActor.run {
                              if let folder = promptService.folders.first(where: { $0.name == sanitizedName }) {
                                  var updated = folder

@@ -188,7 +188,16 @@ struct PromptPreviewView: View {
         }
         .onDisappear {
             isVisible = false
+            isFullScreenImageOpen = false
+            showingFullScreenImageURL = nil
+            showingFullScreenImageData = nil
             cachedContentTask?.cancel()
+        }
+        .onChange(of: showingFullScreenImageURL) { _, newValue in
+            isFullScreenImageOpen = (newValue != nil) || (showingFullScreenImageData != nil)
+        }
+        .onChange(of: showingFullScreenImageData) { _, newValue in
+            isFullScreenImageOpen = (newValue != nil) || (showingFullScreenImageURL != nil)
         }
         .onChange(of: prompt.id) { _, _ in
             updateCachedContent()

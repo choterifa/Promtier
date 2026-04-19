@@ -1,36 +1,19 @@
+import re
 
+path = "/Users/valencia/Downloads/Apps Menu Bar/Promtier/Promtier/ViewModels/NewPromptViewModel.swift"
+with open(path, "r") as f:
+    content = f.read()
+
+enum_def = """
 enum MagicTarget: String, CaseIterable, Identifiable {
     case title = "Título"
     case description = "Descripción"
     case content = "Prompt"
     var id: String { self.rawValue }
 }
+"""
 
-import SwiftUI
-import Combine
-
-@MainActor
-final class NewPromptViewModel: ObservableObject {
-    @Published var title = ""
-    @Published var content = ""
-    @Published var negativePrompt = ""
-    @Published var alternatives: [String] = []
-    @Published var promptDescription = ""
-    @Published var selectedFolder: String?
-    @Published var isFavorite = false
-    @Published var selectedIcon: String?
-    @Published var showcaseImages: [Data] = []
-    @Published var isSaving = false
-    
-    @Published var tags: [String] = []
-    @Published var newTag: String = ""
-    
-    @Published var targetAppBundleIDs: [String] = []
-    @Published var customShortcut: String? = nil
-    
-    @Published var originalPrompt: Prompt?
-    
-    
+new_states = """
     // AI & Magic States
     @Published var showingPremiumFor: String? = nil
     @Published var showingMagicOptions: Bool = false
@@ -42,37 +25,9 @@ final class NewPromptViewModel: ObservableObject {
     @Published var magicCommand: String = ""
     @Published var magicTarget: MagicTarget = .content
     @Published var isGeneratingAlternativeDirect: Bool = false
+"""
 
-    private var draftHash: Int = 0
-    
-    var promptId: UUID? {
-        originalPrompt?.id
-    }
-    
-    init(prompt: Prompt? = nil, initialFolder: String? = nil) {
-        self.originalPrompt = prompt
-        
-        if let prompt = prompt {
-            self.title = prompt.title
-            self.content = prompt.content
-            self.negativePrompt = prompt.negativePrompt ?? ""
-            self.alternatives = prompt.alternatives
-            self.promptDescription = prompt.promptDescription ?? ""
-            self.selectedFolder = prompt.folder
-            self.tags = prompt.tags
-            self.isFavorite = prompt.isFavorite
-            self.selectedIcon = prompt.icon
-            self.showcaseImages = prompt.showcaseImages
-            self.targetAppBundleIDs = prompt.targetAppBundleIDs
-            self.customShortcut = prompt.customShortcut
-        } else if let folder = initialFolder {
-            self.selectedFolder = folder
-        }
-        
-        updateDraftHash()
-    }
-    
-    
+new_methods = """
     // MARK: - AI Magic Features
     
     func userFacingAIErrorToast(for error: Error, language: AppLanguage) -> String {
@@ -144,17 +99,17 @@ final class NewPromptViewModel: ObservableObject {
             ? "The content is already provided by the user. DO NOT modify it, do not expand it, and do not improve it. Return it EXACTLY as it is."
             : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}}. If you must create new variables, use a MAXIMUM of 3. New variables MUST use exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
 
-        systemPrompt = """
+        systemPrompt = \"\"\"
         You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.
         
         INPUTS:
-        - Title: \(currentTitle)
-        - Content: \(currentContent)
+        - Title: \\(currentTitle)
+        - Content: \\(currentContent)
         
         INSTRUCTIONS:
-        1. TITLE: \(titleInstruction)
+        1. TITLE: \\(titleInstruction)
         2. DESCRIPTION: Generate a concise description of what this prompt does (max 2 lines).
-        3. CONTENT: \(contentInstruction)
+        3. CONTENT: \\(contentInstruction)
         4. NEGATIVE PROMPT: Generate a list of practical things to AVOID for this prompt (e.g. "no formatting errors, no generic tone", etc).
         
         CRITICAL LANGUAGE RULE:
@@ -167,7 +122,7 @@ final class NewPromptViewModel: ObservableObject {
         GeneratedTitle|GeneratedDescription|GeneratedContent|GeneratedNegativePrompt
         
         DO NOT include any other text, labels, or explanations. Just the FOUR parts separated by |.
-        """
+        \"\"\"
         
         Task {
             do {
@@ -259,51 +214,51 @@ final class NewPromptViewModel: ObservableObject {
         
         switch magicTarget {
         case .title:
-            targetContext = "Current Prompt Content: \(trimmedContent)"
-            systemInstruction = command.isEmpty ? "Generate a catchy, short title (max 1 line) for the prompt content. Maintain the language. Respond ONLY with the new title." : "Modify ONLY the title based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new title."
+            targetContext = "Current Prompt Content: \\(trimmedContent)"
+            systemInstruction = command.isEmpty ? "Generate a catchy, short title (max 1 line) for the prompt content. Maintain the language. Respond ONLY with the new title." : "Modify ONLY the title based on this instruction: '\\(command)'. Maintain the language. Respond ONLY with the new title."
         case .description:
-            targetContext = "Current Prompt Content: \(trimmedContent)\nCurrent Title: \(trimmedTitle)"
-            systemInstruction = command.isEmpty ? "Generate a concise description (max 2 lines) for the prompt content. Maintain the language. Respond ONLY with the new description." : "Modify ONLY the description based on this instruction: '\(command)'. Maintain the language. Respond ONLY with the new description."
+            targetContext = "Current Prompt Content: \\(trimmedContent)\\nCurrent Title: \\(trimmedTitle)"
+            systemInstruction = command.isEmpty ? "Generate a concise description (max 2 lines) for the prompt content. Maintain the language. Respond ONLY with the new description." : "Modify ONLY the description based on this instruction: '\\(command)'. Maintain the language. Respond ONLY with the new description."
         case .content:
-            targetContext = "Current Content: \(trimmedContent)"
-            systemInstruction = "Modify ONLY the prompt content based on this instruction: '\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
+            targetContext = "Current Content: \\(trimmedContent)"
+            systemInstruction = "Modify ONLY the prompt content based on this instruction: '\\(command)'. Maintain ANY variables {{...}} exactly as they are. Maintain the language. Respond ONLY with the newly modified content text."
         }
         
-        let systemPrompt = """
+        let systemPrompt = \"\"\"
         You are an expert prompt engineer. Your goal is to modify a specific part of an AI prompt.
         
-        \(targetContext)
+        \\(targetContext)
         
         INSTRUCTION:
-        \(systemInstruction)
+        \\(systemInstruction)
         
         CRITICAL RULE:
         - Respond ONLY with the raw new text. No quotes, no markdown, no introductory phrases. Just the exact replacement text.
-        """
+        \"\"\"
         
         Task {
             do {
-                if magicTarget == .content {
-                    let negativeSystemPrompt = """
-                    You are an expert AI prompt engineer. Your task is to generate a highly effective and targeted NEGATIVE PROMPT (behaviors or clichés the AI should AVOID) based on the user's topic: '\(command)'.
+                if magicTarget == .content && command.isEmpty {
+                    let negativeSystemPrompt = \"\"\"
+                    You are an expert AI prompt engineer. Your task is to generate a highly effective and targeted NEGATIVE PROMPT (behaviors or clichés the AI should AVOID) based on the user's topic: '\\(command)'.
                     Maintain the EXACT SAME LANGUAGE as the original topic.
                     
                     CRITICAL RULE:
                     - Respond ONLY with the raw negative prompt text. No quotes, no introductions, no labels.
-                    """
+                    \"\"\"
                     
-                    let alternativeSystemPrompt = """
+                    let alternativeSystemPrompt = \"\"\"
                     You are an expert prompt engineer. Your goal is to generate an ALTERNATIVE PROMPT variation.
                     
                     INSTRUCTION:
-                    Based on the instruction '\(command)' and context '\(targetContext)', generate ONE alternative version.
+                    Based on the instruction '\\(command)' and context '\\(targetContext)', generate ONE alternative version.
                     Maintain the EXACT SAME LANGUAGE as the prompt content.
                     Maintain ALL variables {{...}} exactly as they are.
                     
                     CRITICAL RULE:
                     - Respond ONLY with the final alternative prompt text.
                     - Do NOT add quotes, labels, or conversational filler.
-                    """
+                    \"\"\"
                     
                     async let mainResponseTask = AIServiceManager.shared.generate(prompt: systemPrompt)
                     async let negativeResponseTask = AIServiceManager.shared.generate(prompt: negativeSystemPrompt)
@@ -330,8 +285,10 @@ final class NewPromptViewModel: ObservableObject {
                                     self.showNegativeField = true
                                 }
                                 if !alternativeResponse.isEmpty {
-                                    if !self.alternatives.contains(alternativeResponse) {
+                                    if self.alternatives.isEmpty {
                                         self.alternatives.append(alternativeResponse)
+                                    } else {
+                                        self.alternatives[0] = alternativeResponse
                                     }
                                     self.showAlternativeField = true
                                 }
@@ -374,58 +331,6 @@ final class NewPromptViewModel: ObservableObject {
         }
     }
 
-
-    func generateAlternativeDirect(preferences: PreferencesManager) {
-        let cleanContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanContent.isEmpty else { return }
-
-        isGeneratingAlternativeDirect = true
-        HapticService.shared.playImpact()
-
-        let systemPrompt = """
-        Eres un ingeniero de prompts experto y creativo. Genera una versión ALTERNATIVA o variada del siguiente prompt.
-        MANTÉN EL MISMO IDIOMA EXACTO DEL PROMPT ORIGINAL.
-        MANTEN TODAS Y CADA UNA de las variables entre llaves (ejemplo: {{ejemplo}}) exactamente intactas.
-        Tu respuesta debe ser EXCLUSIVAMENTE el texto de la alternativa, sin títulos, explicaciones, comillas ni comentarios extra. Dámelo plano.
-
-        PROMPT ORIGINAL:
-        \(cleanContent)
-        """
-
-        Task {
-            do {
-                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                let cleanedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                await MainActor.run {
-                    self.isGeneratingAlternativeDirect = false
-                    if !cleanedResponse.isEmpty {
-                        withAnimation(.spring()) {
-                            if self.alternatives.isEmpty {
-                                self.alternatives.append(cleanedResponse)
-                            } else {
-                                self.alternatives.append(cleanedResponse)
-                            }
-                            self.showAlternativeField = true
-                        }
-                        HapticService.shared.playSuccess()
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isGeneratingAlternativeDirect = false
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error, language: preferences.language)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { self.branchMessage = nil }
-                    }
-                }
-            }
-        }
-    }
-
     func autoCategorizePrompt(preferences: PreferencesManager, promptService: PromptService) {
         guard preferences.isPremiumActive else {
             showingPremiumFor = "ai_magic"
@@ -435,8 +340,6 @@ final class NewPromptViewModel: ObservableObject {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty || !trimmedContent.isEmpty else { return }
-
-        let skipCategory = (selectedFolder != nil)
         
         isCategorizing = true
         
@@ -447,39 +350,16 @@ final class NewPromptViewModel: ObservableObject {
         }
         
         let categoriesStr = availableFolders.joined(separator: ", ")
-        let validIcons = [
-            "brain.fill", "sparkles", "bolt.fill", "lightbulb.fill", "cpu.fill", "network", "wand.and.stars", "atom",
-            "terminal.fill", "chevron.left.forwardslash.chevron.right", "curlybraces", "command.circle.fill",
-            "gearshape.fill", "wrench.fill", "hammer.fill", "puzzlepiece.fill", "shippingbox.fill",
-            "doc.text.fill", "pencil.and.outline", "text.quote", "book.closed.fill", "square.and.pencil",
-            "note.text", "doc.richtext.fill", "list.bullet.indent", "character.bubble.fill",
-            "chart.line.uptrend.xyaxis", "chart.bar.fill", "target", "briefcase.fill", "dollarsign.circle.fill",
-            "tag.fill", "bookmark.fill", "link",
-            "bubble.left.and.bubble.right.fill", "paperplane.fill", "megaphone.fill", "person.fill",
-            "envelope.fill", "heart.fill", "message.fill",
-            "photo.fill", "camera.fill", "paintpalette.fill", "film.fill", "mic.fill", "headphones",
-            "video.fill", "scissors", "eye.fill", "music.note", "play.circle.fill",
-            "star.fill", "flame.fill", "flag.fill", "bell.fill", "lock.fill", "key.fill",
-            "calendar", "map.fill", "gift.fill", "gamecontroller.fill", "trophy.fill",
-            "globe", "leaf.fill", "house.fill", "graduationcap.fill",
-            "sun.max.fill", "moon.fill", "cloud.fill"
-        ]
-        let iconListString = validIcons.joined(separator: ", ")
-
-        let categoryInstruction = skipCategory
-            ? "The category is already set. Do NOT return a category. Respond ONLY with the icon name."
-            : "Select the best category from this list: [\(categoriesStr)]."
-
-        let formatInstruction = skipCategory
-            ? "Respond ONLY with the SF Symbol name (e.g. terminal.fill). Nothing else."
-            : "Format your response EXACTLY as: CategoryName|SymbolName. Respond ONLY with this format, nothing else."
-
-        let systemPrompt = """
-        Based on the title '\(trimmedTitle)' and content '\(trimmedContent)', \(categoryInstruction)
-        Also suggest the most appropriate SF Symbol icon from ONLY this exact list: [\(iconListString)].
-        You MUST choose from this list. Do NOT invent icon names.
-        \(formatInstruction)
-        """
+        let systemPrompt = \"\"\"
+        You are an AI assistant. I have the following prompt:
+        TITLE: \\(trimmedTitle)
+        CONTENT: \\(trimmedContent)
+        
+        And I have these existing categories: [\\(categoriesStr)]
+        
+        Which of those categories BEST fits the prompt?
+        Reply ONLY with the exact category name. If none fit well, reply with "NONE". Do not include any other text.
+        \"\"\"
         
         Task {
             do {
@@ -487,28 +367,12 @@ final class NewPromptViewModel: ObservableObject {
                 await MainActor.run {
                     self.isCategorizing = false
                     let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    if skipCategory {
-                        if IconPickerView.allIconNames.contains(result) {
-                            withAnimation(.spring()) {
-                                self.selectedIcon = result
-                            }
+                    
+                    if result != "NONE" && availableFolders.contains(result) {
+                        withAnimation(.spring()) {
+                            self.selectedFolder = result
                         }
-                    } else {
-                        let parts = result.components(separatedBy: "|")
-                        if parts.count == 2 {
-                            let folder = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                            let iconName = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                            withAnimation(.spring()) {
-                                if availableFolders.contains(folder) {
-                                    self.selectedFolder = folder
-                                }
-                                if IconPickerView.allIconNames.contains(iconName) {
-                                    self.selectedIcon = iconName
-                                }
-                            }
-                            HapticService.shared.playSuccess()
-                        }
+                        HapticService.shared.playSuccess()
                     }
                 }
             } catch {
@@ -525,74 +389,11 @@ final class NewPromptViewModel: ObservableObject {
             }
         }
     }
+"""
 
-    func updateDraftHash() {
-        var hasher = Hasher()
-        hasher.combine(title)
-        hasher.combine(content)
-        hasher.combine(negativePrompt)
-        hasher.combine(alternatives)
-        hasher.combine(promptDescription)
-        hasher.combine(selectedFolder)
-        draftHash = hasher.finalize()
-    }
-    
-    func hasUnsavedChanges() -> Bool {
-        var hasher = Hasher()
-        hasher.combine(title)
-        hasher.combine(content)
-        hasher.combine(negativePrompt)
-        hasher.combine(alternatives)
-        hasher.combine(promptDescription)
-        hasher.combine(selectedFolder)
-        return draftHash != hasher.finalize()
-    }
-    
-    func savePrompt(promptService: PromptService, onClose: (() -> Void)? = nil) {
-        guard !title.isEmpty, !content.isEmpty else { return }
-        
-        // Setup updated object
-        let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
-        
-        let existingPrompt = originalPrompt
-        if existingPrompt != nil {
-            var updated = existingPrompt!
-            updated.title = title
-            updated.content = content
-            updated.promptDescription = promptDescription.isEmpty ? nil : promptDescription
-            updated.folder = selectedFolder
-            updated.isFavorite = isFavorite
-            updated.icon = selectedIcon
-            updated.showcaseImages = showcaseImages
-            updated.tags = tags
-            updated.negativePrompt = newNegativePrompt
-            updated.alternatives = alternatives
-            updated.targetAppBundleIDs = targetAppBundleIDs
-            updated.customShortcut = customShortcut
-            updated.modifiedAt = Date()
-            
-            _ = promptService.updatePrompt(updated)
-            self.originalPrompt = updated
-        } else {
-            var new = Prompt(
-                title: title,
-                content: content,
-                promptDescription: promptDescription.isEmpty ? nil : promptDescription,
-                folder: selectedFolder,
-                icon: selectedIcon,
-                showcaseImages: showcaseImages,
-                tags: tags,
-                targetAppBundleIDs: targetAppBundleIDs,
-                negativePrompt: newNegativePrompt,
-                alternatives: alternatives,
-                customShortcut: customShortcut
-            )
-            new.isFavorite = isFavorite
-            _ = promptService.createPrompt(new)
-            self.originalPrompt = new
-        }
-        
-        DraftService.shared.clearDraft()
-        onClose?()
-    }
-}
+content = content.replace("private var draftHash: Int = 0", new_states + "\n    private var draftHash: Int = 0")
+content = content.replace("func updateDraftHash()", new_methods + "\n    func updateDraftHash()")
+content = enum_def + "\n" + content
+
+with open(path, "w") as f:
+    f.write(content)

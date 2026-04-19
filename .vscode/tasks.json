@@ -4,7 +4,7 @@
 		{
 			"label": "checkBuild",
 			"type": "shell",
-			"command": "xcodebuild -project Promtier.xcodeproj -scheme Promtier build | grep \"error:\" || echo \"Build ok\"",
+			"command": "xcodebuild -project Promtier.xcodeproj -scheme Promtier -destination 'platform=macOS,arch=arm64' build | grep \"error:\" || echo \"Build ok\"",
 			"isBackground": false,
 			"problemMatcher": [
 				"$tsc"
