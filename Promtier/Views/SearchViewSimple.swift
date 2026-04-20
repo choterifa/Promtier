@@ -589,12 +589,13 @@ struct SearchViewSimple: View {
                         resolvedIcon: resolvedIcon(for:),
                         onSelect: { prompt in 
                             isSearchFocused = false
-                            isNavigatingWithKeys = false
+                            isNavigatingWithKeys = true
+                            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                             let latest = latestPrompt(for: prompt)
                             selectedPrompt = latest
                             prewarmPreviewAssets(for: latest)
                             if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
-                            if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+                            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
                             NSApp.keyWindow?.makeKeyAndOrderFront(nil)
                         },
                         onDoubleTap: { prompt in 
@@ -882,17 +883,16 @@ struct SearchViewSimple: View {
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
             markKeyboardNavigationActivity()
             isSearchFocused = false
-            let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                 // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
                 let step = preferences.isGridView ? 2 : 1
                 if currentIndex >= step {
                     let nextPrompt = promptService.filteredPrompts[currentIndex - step]
-                    applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
+                    applyKeyboardSelectionChange(to: nextPrompt)
                 }
             } else if let firstPrompt = promptService.filteredPrompts.first {
-                applyKeyboardSelectionChange(to: firstPrompt, playFeedback: playFeedback)
+                applyKeyboardSelectionChange(to: firstPrompt)
             }
             return nil
         }
@@ -901,17 +901,16 @@ struct SearchViewSimple: View {
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
             markKeyboardNavigationActivity()
             isSearchFocused = false
-            let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
                 // En Grid saltamos de 2 en 2 (filas), en Lista de 1 en 1
                 let step = preferences.isGridView ? 2 : 1
                 if currentIndex <= promptService.filteredPrompts.count - (step + 1) {
                     let nextPrompt = promptService.filteredPrompts[currentIndex + step]
-                    applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
+                    applyKeyboardSelectionChange(to: nextPrompt)
                 }
             } else if let firstPrompt = promptService.filteredPrompts.first {
-                applyKeyboardSelectionChange(to: firstPrompt, playFeedback: playFeedback)
+                applyKeyboardSelectionChange(to: firstPrompt)
             }
             return nil
         }
@@ -920,12 +919,11 @@ struct SearchViewSimple: View {
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
             markKeyboardNavigationActivity()
             isSearchFocused = false
-            let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
                currentIndex > 0 {
                 let nextPrompt = promptService.filteredPrompts[currentIndex - 1]
-                applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
+                applyKeyboardSelectionChange(to: nextPrompt)
             }
             return nil
         }
@@ -934,12 +932,11 @@ struct SearchViewSimple: View {
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
             markKeyboardNavigationActivity()
             isSearchFocused = false
-            let playFeedback = !event.isARepeat
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
                currentIndex < promptService.filteredPrompts.count - 1 {
                 let nextPrompt = promptService.filteredPrompts[currentIndex + 1]
-                applyKeyboardSelectionChange(to: nextPrompt, playFeedback: playFeedback)
+                applyKeyboardSelectionChange(to: nextPrompt)
             }
             return nil
         }
@@ -1114,17 +1111,18 @@ struct SearchViewSimple: View {
         }
     }
 
-    func applyKeyboardSelectionChange(to prompt: Prompt, playFeedback: Bool) {
+    func applyKeyboardSelectionChange(to prompt: Prompt) {
         let latest = latestPrompt(for: prompt)
         selectedPrompt = latest
 
         if showingPreview {
             scheduleKeyboardPreviewRefresh(for: latest)
+            if preferences.soundEnabled {
+                SoundService.shared.playPreviewSound()
+            }
         }
 
-        if playFeedback {
-            HapticService.shared.playLight()
-        }
+        HapticService.shared.playLight()
     }
 
 

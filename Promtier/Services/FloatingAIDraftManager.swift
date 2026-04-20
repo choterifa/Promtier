@@ -85,8 +85,8 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         }
         self.shouldAutoImprove = autoImprove
         
-        if panel == nil { 
-            createPanel() 
+        if panel == nil {
+            createPanel()
             // Solo centrar la primera vez
             if let screen = NSScreen.main {
                 let visibleFrame = screen.visibleFrame
@@ -97,7 +97,10 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
                 panel?.setFrame(NSRect(x: x, y: y, width: panelWidth, height: panelHeight), display: true)
             }
         }
-        
+
+        // Cerrar popover principal para evitar solapamiento
+        MenuBarManager.shared.closePopover()
+
         panel?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         isVisible = true

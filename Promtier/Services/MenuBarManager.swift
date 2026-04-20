@@ -142,11 +142,10 @@ class MenuBarManager: NSObject, ObservableObject {
                 activeViewState = .main
             }
             
-            closeEmptyFastAddWindows()
-            
+            closeFloatingWindows()
+
             // Sugerir desde el portapapeles si está habilitado y estamos en la vista principal
-            if activeViewState == .main {
-                // CAPTURAR APP ACTIVA PARA CONTEXTO
+            if activeViewState == .main {                // CAPTURAR APP ACTIVA PARA CONTEXTO
                 if let frontApp = NSWorkspace.shared.frontmostApplication,
                    frontApp.bundleIdentifier != Bundle.main.bundleIdentifier {
                     promptService.activeAppBundleID = frontApp.bundleIdentifier
@@ -167,29 +166,27 @@ class MenuBarManager: NSObject, ObservableObject {
             self.activeViewState = state
             self.isModalActive = (state == .folderManager)
         }
-        
-        closeEmptyFastAddWindows()
-        
-        showPopover(relativeTo: button.bounds, of: button)
-        
+
+        closeFloatingWindows()
+
+        showPopover(relativeTo: button.bounds, of: button)        
         // Si es búsqueda, asegurar que el query esté limpio o enfocado (esto se manejará en la vista)
         if state == .main {
             // Podríamos limpiar la búsqueda aquí si quisiéramos
         }
     }
     
-    private func closeEmptyFastAddWindows() {
-        let shared = FloatingZenManager.shared
-        let secondary = FloatingZenManager.secondary
-        
-        if shared.isVisible && !shared.hasUnsavedChanges {
-            shared.hide()
-        }
-        if secondary.isVisible && !secondary.hasUnsavedChanges {
-            secondary.hide()
-        }
-    }
-    
+    func closeFloatingWindows() {
+        let sharedZen = FloatingZenManager.shared
+        let secondaryZen = FloatingZenManager.secondary
+        let sharedDraft = FloatingAIDraftManager.shared
+        let sharedOmni = OmniSearchManager.shared
+
+        if sharedZen.isVisible { sharedZen.hide() }
+        if secondaryZen.isVisible { secondaryZen.hide() }
+        if sharedDraft.isVisible { sharedDraft.hide() }
+        if sharedOmni.isVisible { sharedOmni.hide() }
+    }    
     /// Muestra el popover anclado
     private func showPopover(relativeTo rect: NSRect, of view: NSView) {
         if popover == nil {

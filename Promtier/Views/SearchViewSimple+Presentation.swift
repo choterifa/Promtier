@@ -152,7 +152,7 @@ extension SearchViewSimple {
         selectedPrompt = latest
         prewarmPreviewAssets(for: latest)
         if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
-        if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+        if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
         NSApp.keyWindow?.makeKeyAndOrderFront(nil)
     }
 

@@ -115,6 +115,25 @@ class OpenAIService: ObservableObject {
     }
     
     /// Genera una respuesta basada en un prompt de forma asíncrona
+    func testConnection(apiKey: String, isOpenRouter: Bool = false) async throws -> Bool {
+        guard !apiKey.isEmpty else { return false }
+        // Para OpenRouter o OpenAI, la simple lista de modelos valida la API Key
+        let urlString = isOpenRouter ? "https://openrouter.ai/api/v1/models" : "https://api.openai.com/v1/models"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+
+        var request = URLRequest(url: url)
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if isOpenRouter {
+            request.addValue("Promtier App", forHTTPHeaderField: "HTTP-Referer")
+        }
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+            return true
+        }
+        return false
+    }
+
     func generate(prompt: String, model: String, apiKey: String, isOpenRouter: Bool = false, imageData: Data? = nil) async throws -> String {
         let endpoint = isOpenRouter ? "https://openrouter.ai/api/v1/chat/completions" : "https://api.openai.com/v1/chat/completions"
         guard let url = URL(string: endpoint) else {

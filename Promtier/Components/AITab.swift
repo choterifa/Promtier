@@ -1,11 +1,48 @@
 import SwiftUI
 import AppKit
 
+enum ConnectionStatus: Equatable {
+    case idle
+    case testing
+    case success
+    case failure(String)
+}
+
+struct TestConnectionButton: View {
+    let status: ConnectionStatus
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                if status == .testing {
+                    ProgressView().progressViewStyle(.circular).scaleEffect(0.5)
+                } else if status == .success {
+                    Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                } else if case .failure = status {
+                    Image(systemName: "xmark.circle.fill").foregroundColor(.red)
+                } else {
+                    Image(systemName: "network").foregroundColor(.blue)
+                }
+            }
+            .frame(width: 24, height: 24)
+            .background(Color.primary.opacity(0.05))
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .help("Probar Conexión")
+    }
+}
+
 struct AITab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var openAIAvailableModels: [String] = []
     @State private var isRefreshingOpenAIModels = false
     @State private var openAIModelsError: String?
+    
+    @State private var openAITestStatus: ConnectionStatus = .idle
+    @State private var geminiTestStatus: ConnectionStatus = .idle
+    @State private var openRouterTestStatus: ConnectionStatus = .idle
 
     var body: some View {
         VStack(spacing: 32) {
@@ -52,6 +89,10 @@ struct AITab: View {
                             }
                             .buttonStyle(.plain)
                             .help("paste".localized(for: preferences.language))
+                            
+                            TestConnectionButton(status: openAITestStatus) {
+                                testOpenAIConnection()
+                            }
                         }
                     }
 
@@ -166,6 +207,10 @@ struct AITab: View {
                                 }
                                 .buttonStyle(.plain)
                                 .help("paste".localized(for: preferences.language))
+                                
+                                TestConnectionButton(status: geminiTestStatus) {
+                                    testGeminiConnection()
+                                }
                             }
                         }
 
@@ -251,6 +296,10 @@ struct AITab: View {
                             }
                             .buttonStyle(.plain)
                             .help("paste".localized(for: preferences.language))
+                            
+                            TestConnectionButton(status: openRouterTestStatus) {
+                                testOpenRouterConnection()
+                            }
                         }
                     }
 
@@ -313,5 +362,44 @@ struct AITab: View {
             return
         }
         await refreshOpenAIModels()
+    }
+    
+    private func testOpenAIConnection() {
+        guard !preferences.openAIApiKey.isEmpty else { return }
+        openAITestStatus = .testing
+        Task {
+            do {
+                let success = try await OpenAIService.shared.testConnection(apiKey: preferences.openAIApiKey)
+                await MainActor.run { openAITestStatus = success ? .success : .failure("Invalid Key") }
+            } catch {
+                await MainActor.run { openAITestStatus = .failure(error.localizedDescription) }
+            }
+        }
+    }
+    
+    private func testGeminiConnection() {
+        guard !preferences.geminiAPIKey.isEmpty else { return }
+        geminiTestStatus = .testing
+        Task {
+            do {
+                let success = try await GeminiService.shared.testConnection(apiKey: preferences.geminiAPIKey)
+                await MainActor.run { geminiTestStatus = success ? .success : .failure("Invalid Key") }
+            } catch {
+                await MainActor.run { geminiTestStatus = .failure(error.localizedDescription) }
+            }
+        }
+    }
+    
+    private func testOpenRouterConnection() {
+        guard !preferences.openRouterAPIKey.isEmpty else { return }
+        openRouterTestStatus = .testing
+        Task {
+            do {
+                let success = try await OpenAIService.shared.testConnection(apiKey: preferences.openRouterAPIKey, isOpenRouter: true)
+                await MainActor.run { openRouterTestStatus = success ? .success : .failure("Invalid Key") }
+            } catch {
+                await MainActor.run { openRouterTestStatus = .failure(error.localizedDescription) }
+            }
+        }
     }
 }

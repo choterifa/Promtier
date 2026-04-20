@@ -47,6 +47,28 @@ class GeminiService: ObservableObject {
     
     private init() {}
     
+    struct GeminiModelsResponse: Codable, Sendable {
+        struct Model: Codable, Sendable {
+            let name: String
+        }
+        let models: [Model]
+    }
+
+    /// Verifica la conexión listando los modelos disponibles
+    func testConnection(apiKey: String) async throws -> Bool {
+        guard !apiKey.isEmpty else { return false }
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models?key=\(apiKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+            _ = try JSONDecoder().decode(GeminiModelsResponse.self, from: data)
+            return true
+        }
+        return false
+    }
+
     /// Genera una respuesta basada en un prompt usando Google Gemini
     func generate(prompt: String, model: String, imageData: Data? = nil) async throws -> String {
         let apiKey = PreferencesManager.shared.geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)

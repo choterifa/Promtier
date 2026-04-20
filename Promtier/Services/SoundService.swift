@@ -67,7 +67,7 @@ class SoundService {
     // MARK: - Interacción / selección con teclado
     // "Purr" queda bien para nav de lista (imperceptible si el usuario va rápido)
     func playInteractionSound() {
-        playSystem("Pop", volume: 0.15)
+        playSystem("Pop", volume: 0.35)
     }
     
     // MARK: - Error
