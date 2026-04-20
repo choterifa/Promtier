@@ -257,21 +257,82 @@ struct CategorySidebar: View {
                     .padding(.bottom, 2)
                     
                     ForEach(pinnedFolders, id: \.id) { folder in
-                        pinnedFolderRow(folder)
+                        PinnedFolderRow(
+                            folder: folder,
+                            count: viewModel.categoryCount(for: folder.name),
+                            isSelected: promptService.selectedCategory == folder.name,
+                            onSelect: { promptService.selectedCategory = folder.name },
+                            onRename: { newName in
+                                var updated = folder
+                                updated.name = newName
+                                _ = promptService.updateFolder(updated)
+                                if promptService.selectedCategory == folder.name {
+                                    promptService.selectedCategory = newName
+                                }
+                                if preferences.isPinned(folder.name) {
+                                    preferences.togglePin(folder.name)
+                                    preferences.togglePin(newName)
+                                }
+                            },
+                            onEdit: {
+                                menuBarManager.folderToEdit = folder
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .folderManager
+                                }
+                            },
+                            onUnpin: { preferences.togglePin(folder.name) }
+                        )
                     }
-                    
+
                     Divider()
                         .padding(.horizontal, 4)
                         .padding(.vertical, 6)
                 }
-                
+
                 // ── Remaining folders ────────────────────────────
                 let unpinnedFolders = promptService.folders.filter {
                     !preferences.pinnedFolderNames.contains($0.name)
                 }
-                
+
                 ForEach(unpinnedFolders, id: \.id) { folder in
-                    folderRow(folder)
+                    FolderRow(
+                        folder: folder,
+                        count: viewModel.categoryCount(for: folder.name),
+                        isSelected: promptService.selectedCategory == folder.name,
+                        isDropTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder == nil,
+                        isReorderTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder != nil,
+                        onSelect: { promptService.selectedCategory = folder.name },
+                        onRename: { newName in
+                            var updated = folder
+                            updated.name = newName
+                            _ = promptService.updateFolder(updated)
+                            if promptService.selectedCategory == folder.name {
+                                promptService.selectedCategory = newName
+                            }
+                        },
+                        onEdit: {
+                            menuBarManager.folderToEdit = folder
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                menuBarManager.activeViewState = .folderManager
+                            }
+                        },
+                        onTogglePin: { preferences.togglePin(folder.name) },
+                        onDelete: {
+                            viewModel.requestDelete(folder: folder, counts: viewModel.categoryCounts)
+                            if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    _ = promptService.deleteFolder(folder)
+                                }
+                                HapticService.shared.playSuccess()
+                            }
+                        },
+                        onDragStarted: { viewModel.draggedFolder = folder },
+                        onPromptMove: { ids, folderName in
+                            viewModel.movePrompts(ids: ids, to: folderName, promptService: promptService, batchService: batchService, preferences: preferences)
+                        },
+                        dropTargetFolderId: $viewModel.dropTargetFolderId,
+                        draggedFolder: $viewModel.draggedFolder
+                    )
                 }
             }
             .frame(maxWidth: .infinity)
@@ -287,146 +348,6 @@ struct CategorySidebar: View {
                 HapticService.shared.playLight()
             } label: {
                 Label("create_category".localized(for: preferences.language), systemImage: "folder.badge.plus")
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func pinnedFolderRow(_ folder: Folder) -> some View {
-        let count = viewModel.categoryCount(for: folder.name)
-        SidebarItem(
-            title: LocalizedStringKey(folder.name),
-            icon: folder.icon ?? "folder.fill",
-            color: Color(hex: folder.displayColor),
-            count: count,
-            isSelected: promptService.selectedCategory == folder.name,
-            isPinned: true,
-            action: { promptService.selectedCategory = folder.name },
-            isEditable: true,
-            rawTitle: folder.name,
-            onRename: { newName in
-                var updated = folder
-                updated.name = newName
-                _ = promptService.updateFolder(updated)
-                if promptService.selectedCategory == folder.name {
-                    promptService.selectedCategory = newName
-                }
-                if preferences.isPinned(folder.name) {
-                    preferences.togglePin(folder.name)
-                    preferences.togglePin(newName)
-                }
-            },
-            onDoubleClickRow: {
-                menuBarManager.folderToEdit = folder
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .folderManager
-                }
-            }
-        )
-        .transition(.move(edge: .leading).combined(with: .opacity))
-        .contextMenu {
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                    preferences.togglePin(folder.name)
-                }
-                HapticService.shared.playLight()
-            } label: {
-                Label("Quitar pin", systemImage: "pin.slash")
-            }
-            
-            Divider()
-            
-            Button {
-                menuBarManager.folderToEdit = folder
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .folderManager
-                }
-            } label: {
-                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func folderRow(_ folder: Folder) -> some View {
-        let count = viewModel.categoryCount(for: folder.name)
-        SidebarItem(
-            title: LocalizedStringKey(folder.name),
-            icon: folder.icon ?? "folder.fill",
-            color: Color(hex: folder.displayColor),
-            count: count,
-            isSelected: promptService.selectedCategory == folder.name,
-            isDropTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder == nil,
-            isReorderTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder != nil,
-            action: { promptService.selectedCategory = folder.name },
-            isEditable: true,
-            rawTitle: folder.name,
-            onRename: { newName in
-                var updated = folder
-                updated.name = newName
-                _ = promptService.updateFolder(updated)
-                if promptService.selectedCategory == folder.name {
-                    promptService.selectedCategory = newName
-                }
-            },
-            onDoubleClickRow: {
-                menuBarManager.folderToEdit = folder
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .folderManager
-                }
-            }
-        )
-        .transition(.move(edge: .leading).combined(with: .opacity))
-        .onDrag {
-            self.viewModel.draggedFolder = folder
-            return NSItemProvider(object: folder.id.uuidString as NSString)
-        }
-        .onDrop(of: [.json, .plainText, .text], delegate: FolderSidebarDropDelegate(
-            folder: folder,
-            promptService: promptService,
-            menuBarManager: menuBarManager,
-            dropTargetFolderId: $viewModel.dropTargetFolderId,
-            draggedFolder: $viewModel.draggedFolder,
-            onPromptMove: { ids, folderName in
-                viewModel.movePrompts(ids: ids, to: folderName, promptService: promptService, batchService: batchService, preferences: preferences)
-            }
-        ))
-        .contextMenu {
-            // Pin
-            if preferences.pinnedFolderNames.count < 3 || preferences.isPinned(folder.name) {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                        preferences.togglePin(folder.name)
-                    }
-                    HapticService.shared.playLight()
-                } label: {
-                    Label(
-                        preferences.isPinned(folder.name) ? "Quitar pin" : "Pinear categoría",
-                        systemImage: preferences.isPinned(folder.name) ? "pin.slash" : "pin.fill"
-                    )
-                }
-                Divider()
-            }
-            
-            Button {
-                menuBarManager.folderToEdit = folder
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    menuBarManager.activeViewState = .folderManager
-                }
-            } label: {
-                Label("edit".localized(for: preferences.language), systemImage: "square.and.pencil")
-            }
-            
-            Button(role: .destructive) {
-                viewModel.requestDelete(folder: folder, counts: viewModel.categoryCounts)
-                if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        _ = promptService.deleteFolder(folder)
-                    }
-                    HapticService.shared.playSuccess()
-                }
-            } label: {
-                Label("delete".localized(for: preferences.language), systemImage: "trash")
             }
         }
     }

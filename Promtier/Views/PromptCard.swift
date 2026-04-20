@@ -48,85 +48,7 @@ struct PromptCard: View {
     let onDoubleTap: () -> Void
     let onCopy: (() -> Void)?
     let onCopyPack: (() -> Void)?
-    let onHover: (Bool) -> Void
-    
-    @EnvironmentObject var preferences: PreferencesManager
-    @EnvironmentObject var promptService: PromptService
-    @EnvironmentObject var menuBarManager: MenuBarManager
-    @EnvironmentObject var batchService: BatchOperationsService
-    
-    @State private var isTargetedForDrop = false
-    @State private var isGlowAnimating = false
-    @State private var isLocallyHovered = false
-    @State private var highlightedContentCache: AttributedString = AttributedString("")
-    @State private var highlightedContentCacheKey: String = ""
-    @State private var plainSnippetCache: String = ""
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
-    private func refreshHighlightedContentCacheIfNeeded() {
-        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
-        let categoryNSColor = NSColor(currentCategoryColor)
-        let maxCharacters = isPerformanceMode ? 280 : 500
-        let key = "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
-            "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
-
-        guard highlightedContentCacheKey != key else { return }
-        highlightedContentCacheKey = key
-
-        let cached = PromptCardTextCache.shared.highlightedSnippet(
-            for: prompt,
-            maxCharacters: maxCharacters,
-            categoryColor: categoryNSColor,
-            scale: preferences.fontSize.scale,
-            interfaceStyle: interfaceStyle
-        )
-        highlightedContentCache = AttributedString(cached)
-
-        plainSnippetCache = String(prompt.content.prefix(maxCharacters))
-    }
-
-    private var highlightedContentRefreshToken: String {
-        let interfaceStyle: PromptPreviewInterfaceStyle = colorScheme == .dark ? .dark : .light
-        let categoryNSColor = NSColor(currentCategoryColor)
-        return "\(prompt.id.uuidString):\(prompt.modifiedAt.timeIntervalSince1970):\(Int(preferences.fontSize.scale * 100)):" +
-            "\(interfaceStyle == .dark ? "d" : "l"):" +
-            "\(categoryNSColor.hexString):\(isPerformanceMode ? "p" : "n")"
-    }
-    
-    // EXTENSIÓN: Contador de variables
-    private var variableCount: Int {
-        PromptCardTextCache.shared.variableCount(for: prompt)
-    }
-
-    private var variableCountText: String {
-        "\(variableCount)"
-    }
-    
-    private var shortcutDisplay: String? {
-        guard let shortcutStr = prompt.customShortcut else { return nil }
-        let parts = shortcutStr.split(separator: ":")
-        guard parts.count == 2,
-              let kc = UInt32(parts[0]),
-              let mods = UInt(parts[1]) else { return nil }
-        
-        var display = ""
-        let flags = NSEvent.ModifierFlags(rawValue: mods)
-        if flags.contains(.control) { display += "⌃" }
-        if flags.contains(.option) { display += "⌥" }
-        if flags.contains(.shift) { display += "⇧" }
-        if flags.contains(.command) { display += "⌘" }
-        
-        if let char = keyMap[Int(kc)] {
-            display += char
-        } else {
-            display += "?"
-        }
-        
-        return display
-    }
-    
+    let onHover: (Bool) -> Void            
     private let keyMap: [Int: String] = [
         0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X", 8: "C", 9: "V",
         11: "B", 12: "Q", 13: "W", 14: "E", 15: "R", 16: "Y", 17: "T", 18: "1", 19: "2",
@@ -136,41 +58,7 @@ struct PromptCard: View {
         50: "`", 65: ".", 67: "*", 69: "+", 71: "Clear", 75: "/", 76: "Enter", 78: "-",
         81: "=", 82: "0", 83: "1", 84: "2", 85: "3", 86: "4", 87: "5", 88: "6", 89: "7",
         91: "8", 92: "9", 123: "←", 124: "→", 125: "↓", 126: "↑"
-    ]
-    
-    private var themeColor: Color {
-        preferences.isHaloEffectEnabled ? currentCategoryColor : Color.blue
-    }
-
-    private var hoverEffectsEnabled: Bool {
-        !isPerformanceMode
-    }
-
-    private var effectiveHover: Bool {
-        hoverEffectsEnabled && (isHovered || isLocallyHovered)
-    }
-
-    private var snippetView: some View {
-        Group {
-            if isPerformanceMode {
-                Text(plainSnippetCache)
-            } else {
-                Text(highlightedContentCache)
-            }
-        }
-        .font(.system(size: 13 * preferences.fontSize.scale))
-        .foregroundColor(.secondary.opacity(0.8))
-    }
-    
-    private var isRecommended: Bool {
-        guard let activeApp = promptService.activeAppBundleID else { return false }
-        return prompt.targetAppBundleIDs.contains(activeApp)
-    }
-    
-    private var currentCategoryColor: Color {
-        precomputedCategoryColor
-    }
-
+    ]        
     init(
         prompt: Prompt,
         precomputedCategoryColor: Color = .blue,
@@ -197,6 +85,20 @@ struct PromptCard: View {
         self.precomputedCategoryColor = precomputedCategoryColor
         self.precomputedResolvedIcon = precomputedResolvedIcon
     }
+
+    @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var menuBarManager: MenuBarManager
+    @EnvironmentObject var batchService: BatchOperationsService
+
+    @State var isTargetedForDrop = false
+    @State var isGlowAnimating = false
+    @State var isLocallyHovered = false
+    @State var highlightedContentCache: AttributedString = AttributedString("")
+    @State var highlightedContentCacheKey: String = ""
+    @State var plainSnippetCache: String = ""
+
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 16) {
@@ -462,88 +364,7 @@ struct PromptCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.blue, lineWidth: isTargetedForDrop ? 2 : 0)
         )
-    }
-    
-    private func handleImageDrop(providers: [NSItemProvider]) {
-        Task(priority: .userInitiated) {
-            let existing = await promptService.fetchShowcaseImages(byId: prompt.id)
-            if existing.count >= 3 { return }
-
-            var optimizedToAdd: [Data] = []
-            let available = max(0, 3 - existing.count)
-
-            for provider in providers {
-                guard optimizedToAdd.count < available else { break }
-                guard let raw = await loadImageData(from: provider) else { continue }
-                let optimized = await Task.detached(priority: .userInitiated) {
-                    ImageOptimizer.shared.optimize(imageData: raw)
-                }.value
-                guard let optimized else { continue }
-                optimizedToAdd.append(optimized)
-            }
-
-            guard !optimizedToAdd.isEmpty else { return }
-            let final = Array((existing + optimizedToAdd).prefix(3))
-            let ok = await promptService.updateShowcaseImages(promptId: prompt.id, images: final)
-            if ok {
-                await MainActor.run {
-                    NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                }
-            }
-        }
-    }
-
-    private func loadImageData(from provider: NSItemProvider) async -> Data? {
-        if provider.canLoadObject(ofClass: URL.self) {
-            return await withCheckedContinuation { continuation in
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    guard let url = url else {
-                        continuation.resume(returning: nil)
-                        return
-                    }
-                    // Intentar leer archivo en background
-                    let data = try? Data(contentsOf: url)
-                    continuation.resume(returning: data)
-                }
-            }
-        }
-
-        if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-            return await withCheckedContinuation { continuation in
-                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    continuation.resume(returning: data)
-                }
-            }
-        }
-
-        return nil
-    }
-    
-    // Colores dinámicos Premium
-    private var cardBackgroundColor: Color {
-        let isBatchSelected = batchService.selectedPromptIds.contains(prompt.id)
-        
-        if isBatchSelected {
-            return Color.blue.opacity(0.12)
-        } else if isSelected {
-            return Color.blue.opacity(0.05)
-        } else if effectiveHover {
-            return Color.primary.opacity(0.04)
-        } else {
-            return Color.primary.opacity(0.02)
-        }
-    }
-    
-    private var cardBorderColor: Color {
-        if isSelected {
-            return themeColor.opacity(0.5)
-        } else if effectiveHover {
-            return themeColor.opacity(0.2)
-        } else {
-            return Color.primary.opacity(0.06)
-        }
-    }
-}
+    }        }
 
 #Preview {
     VStack(spacing: 12) {
