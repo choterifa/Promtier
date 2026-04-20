@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 struct FloatingAIDraftView: View {
     @EnvironmentObject var manager: FloatingAIDraftManager
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     
     @State private var customCommand: String = ""
     // El estado ahora vive en el Manager para que se persista al cerrar
@@ -490,7 +491,7 @@ struct FloatingAIDraftView: View {
                 )
                 
                 await MainActor.run {
-                    _ = PromptService.shared.createPrompt(newPrompt)
+                    _ = promptService.createPrompt(newPrompt)
 
                     showToast(
                         message: "¡Guardado en Galería!",
@@ -510,7 +511,7 @@ struct FloatingAIDraftView: View {
                         folder: "Sin clasificar",
                         icon: "sparkles"
                     )
-                    _ = PromptService.shared.createPrompt(newPrompt)
+                    _ = promptService.createPrompt(newPrompt)
 
                     showToast(
                         message: "Guardado (Sin Metadata)",

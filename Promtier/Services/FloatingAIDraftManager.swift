@@ -233,6 +233,7 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         let view = FloatingAIDraftView()
             .environmentObject(self)
             .environmentObject(PreferencesManager.shared)
+            .environmentObject(PromptService.shared)
         
         newPanel.contentView = NSHostingView(rootView: view)
         self.panel = newPanel

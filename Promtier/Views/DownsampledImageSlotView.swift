@@ -3,6 +3,7 @@ import AppKit
 import UniformTypeIdentifiers
 
 struct DownsampledImageSlotView: View {
+    @EnvironmentObject var preferences: PreferencesManager
     let imageData: Data
     let slotWidth: CGFloat
     let slotHeight: CGFloat
@@ -59,7 +60,7 @@ struct DownsampledImageSlotView: View {
             }
             .buttonStyle(.plain)
             .offset(x: 4, y: -4)
-            .help("remove_image".localized(for: PreferencesManager.shared.language))
+            .help("remove_image".localized(for: preferences.language))
         }
         .task(id: imageData) {
             await loadDownsampled()

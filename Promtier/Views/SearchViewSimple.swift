@@ -113,6 +113,7 @@ struct SearchViewSimple: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
     @EnvironmentObject var batchService: BatchOperationsService
+    @EnvironmentObject var imageStore: ImageStore
     @Environment(\.colorScheme) var colorScheme
     
     @FocusState var isSearchFocused: Bool

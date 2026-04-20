@@ -28,6 +28,7 @@ struct PromptPreviewView: View {
     @Environment(\.colorScheme) private var colorScheme 
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var imageStore: ImageStore
     /// Binding para notificar al padre cuando una hoja secundaria está abierta
     @Binding var isFullScreenImageOpen: Bool
     
@@ -61,7 +62,7 @@ struct PromptPreviewView: View {
                 ShowcaseEntry(
                     id: "\(prompt.id.uuidString)-\(index)-\(path ?? "thumb-only")",
                     index: index,
-                    url: path.map { ImageStore.shared.url(forRelativePath: $0) },
+                    url: path.map { imageStore.url(forRelativePath: $0) },
                     relativePath: path,
                     thumbnailData: thumb
                 )
@@ -511,7 +512,7 @@ struct PromptPreviewView: View {
                                 relativePath: relativePath,
                                 thumbnailData: entry.thumbnailData
                             ) {
-                                if ImageStore.shared.fileExists(relativePath: relativePath) {
+                                if imageStore.fileExists(relativePath: relativePath) {
                                     showingFullScreenImageURL = url
                                     return
                                 }
@@ -527,7 +528,7 @@ struct PromptPreviewView: View {
                                             showcaseImagePaths = resolvedPaths
                                         }
                                         if resolvedPaths.indices.contains(entry.index) {
-                                            let resolvedURL = ImageStore.shared.url(forRelativePath: resolvedPaths[entry.index])
+                                            let resolvedURL = imageStore.url(forRelativePath: resolvedPaths[entry.index])
                                             showingFullScreenImageURL = resolvedURL
                                         }
                                     }
@@ -546,7 +547,7 @@ struct PromptPreviewView: View {
                                             showcaseImagePaths = resolvedPaths
                                         }
                                         if resolvedPaths.indices.contains(entry.index) {
-                                            let resolvedURL = ImageStore.shared.url(forRelativePath: resolvedPaths[entry.index])
+                                            let resolvedURL = imageStore.url(forRelativePath: resolvedPaths[entry.index])
                                             showingFullScreenImageURL = resolvedURL
                                         } else {
                                             // Fallback de seguridad (solo si aún no hay path en disco).

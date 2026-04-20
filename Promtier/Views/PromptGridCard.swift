@@ -22,6 +22,7 @@ struct PromptGridCard: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var imageStore: ImageStore
     @EnvironmentObject var menuBarManager: MenuBarManager
     @EnvironmentObject var batchService: BatchOperationsService
     
@@ -235,7 +236,7 @@ struct PromptGridCard: View {
                                         )
                                     } else if currentImageIndex < allPaths.count {
                                         let path = allPaths[currentImageIndex]
-                                        let url = ImageStore.shared.url(forRelativePath: path)
+                                        let url = imageStore.url(forRelativePath: path)
                                         DownsampledImageURLView(
                                             imageURL: url,
                                             cacheKey: "\(prompt.id.uuidString):grid:\(currentImageIndex):360:\(path)",
@@ -250,7 +251,7 @@ struct PromptGridCard: View {
                                             contentMode: isAspectFit ? .fit : .fill
                                         )
                                     } else if let firstPath = previewRelativePath {
-                                        let url = ImageStore.shared.url(forRelativePath: firstPath)
+                                        let url = imageStore.url(forRelativePath: firstPath)
                                         DownsampledImageURLView(
                                             imageURL: url,
                                             cacheKey: "\(prompt.id.uuidString):grid:0:360:\(firstPath)",

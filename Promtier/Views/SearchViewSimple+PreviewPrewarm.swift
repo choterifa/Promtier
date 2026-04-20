@@ -83,7 +83,7 @@ extension SearchViewSimple {
 
             for (index, relativePath) in paths.prefix(2).enumerated() {
                 guard !Task.isCancelled else { return }
-                let url = ImageStore.shared.url(forRelativePath: relativePath)
+                let url = imageStore.url(forRelativePath: relativePath)
                 let cacheKey = "\(prompt.id.uuidString):preview:\(index):\(PreviewPrewarmProfile.maxPixelSize):\(relativePath)"
                 await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey,
                                                    maxPixelSize: PreviewPrewarmProfile.maxPixelSize)
@@ -116,7 +116,7 @@ extension SearchViewSimple {
 
             for (index, relativePath) in paths.prefix(2).enumerated() {
                 guard !Task.isCancelled else { return }
-                let url = ImageStore.shared.url(forRelativePath: relativePath)
+                let url = imageStore.url(forRelativePath: relativePath)
                 let cacheKey = "\(prompt.id.uuidString):preview:\(index):\(PreviewPrewarmProfile.maxPixelSize):\(relativePath)"
                 await ImageDecodeThrottler.prewarm(url: url, cacheKey: cacheKey,
                                                    maxPixelSize: PreviewPrewarmProfile.maxPixelSize)

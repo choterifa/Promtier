@@ -631,5 +631,6 @@ struct PopoverContainerView: View {
     var body: some View {
         SearchViewSimple()
             .environment(\.locale, Locale(identifier: preferencesManager.language.rawValue))
+            .environmentObject(ImageStore.shared)
     }
 }

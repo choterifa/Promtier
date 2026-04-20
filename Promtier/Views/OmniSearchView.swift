@@ -312,7 +312,7 @@ struct OmniSearchView: View {
 
     private func runSearch() {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let activeApp = PromptService.shared.activeAppBundleID
+        let activeApp = promptService.activeAppBundleID
         let folderColorByName = folderColorByNameCache
 
         if trimmedQuery.isEmpty {
@@ -420,7 +420,7 @@ struct OmniSearchView: View {
     private func copyAndClose(_ prompt: Prompt) {
         ClipboardService.shared.copyToClipboard(prompt.content)
         HapticService.shared.playSuccess()
-        if PreferencesManager.shared.soundEnabled {
+        if preferences.soundEnabled {
             SoundService.shared.playMagicSound()
         }
         manager.hide()

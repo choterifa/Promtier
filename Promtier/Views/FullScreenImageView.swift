@@ -8,7 +8,7 @@ struct FullScreenImageView: View {
 
     let source: ImageSource
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var preferences = PreferencesManager.shared
+    @EnvironmentObject var preferences: PreferencesManager
 
     @State private var decodedImage: NSImage? = nil
     @State private var isEntering: Bool = false

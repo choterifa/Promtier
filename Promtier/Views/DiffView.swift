@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DiffView: View {
+    @EnvironmentObject var preferences: PreferencesManager
     let text1: String
     let text2: String
     var title1: String = "Main Content"
@@ -61,6 +62,6 @@ struct DiffView: View {
                 .background(Color.green.opacity(0.03))
             }
         }
-        .frame(width: max(400, PreferencesManager.shared.windowWidth * 0.90), height: min(600, PreferencesManager.shared.windowHeight * 0.85))
+        .frame(width: max(400, preferences.windowWidth * 0.90), height: min(600, preferences.windowHeight * 0.85))
     }
 }

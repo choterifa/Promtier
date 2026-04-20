@@ -74,6 +74,7 @@ struct AppPickerPopover: View {
 
 /// Fila individual para una aplicación en el selector
 struct AppItemRow: View {
+    @EnvironmentObject var preferences: PreferencesManager
     let app: RunningApp
     let isCurrent: Bool
     let onSelect: (String) -> Void
@@ -91,7 +92,7 @@ struct AppItemRow: View {
                     Text(app.name)
                         .font(.system(size: 12, weight: .medium))
                     if isCurrent {
-                        Text("current_app".localized(for: PreferencesManager.shared.language))
+                        Text("current_app".localized(for: preferences.language))
                             .font(.system(size: 10))
                             .foregroundColor(.purple)
                     }

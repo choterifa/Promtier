@@ -54,7 +54,7 @@ struct FloatingZenEditorView: View {
     }
     
     private var isMagicAvailable: Bool {
-        let prefs = PreferencesManager.shared
+        let prefs = preferences
         return (!prefs.openAIApiKey.isEmpty && prefs.openAIEnabled) || (!prefs.geminiAPIKey.isEmpty && prefs.geminiEnabled)
     }
     

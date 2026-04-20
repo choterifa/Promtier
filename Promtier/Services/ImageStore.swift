@@ -1,4 +1,6 @@
 import Foundation
+import Combine
+import SwiftUI
 
 // MARK: - ImageStore
 // Responsabilidad única: gestionar el ciclo de vida de imágenes en disco.
@@ -6,7 +8,7 @@ import Foundation
 // - Caché LRU en memoria para evitar lecturas repetidas del disco.
 // - Purga imágenes huérfanas (no referenciadas por ningún prompt activo).
 
-final class ImageStore: @unchecked Sendable {
+final class ImageStore: ObservableObject, @unchecked Sendable {
     nonisolated static let shared = ImageStore()
 
     // MARK: - LRU Cache
