@@ -1,7 +1,5 @@
 import SwiftUI
 import AppKit
-import UniformTypeIdentifiers
-import Combine
 
 
 struct EditorCard: View {
@@ -67,6 +65,7 @@ struct EditorCard: View {
     }
 
     @EnvironmentObject var preferences: PreferencesManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     init(title: Binding<String>, content: Binding<String>, promptDescription: Binding<String>, 
          isFavorite: Binding<Bool>, selectedFolder: Binding<String?>, selectedIcon: Binding<String?>, 
@@ -123,6 +122,30 @@ struct EditorCard: View {
     private var isAIAvailable: Bool {
         EditorAIUtilities.isAIAvailable(for: preferences)
     }
+
+    private var cardFocusAnimation: Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.3)
+    }
+
+    private var cardHoverAnimation: Animation? {
+        if reduceMotion || isTyping { return nil }
+        return .easeInOut(duration: 0.2)
+    }
+
+    private var cardTypingAnimation: Animation? {
+        guard !reduceMotion else { return nil }
+        return isTyping
+            ? .spring(response: 0.35, dampingFraction: 0.7)
+            : .easeOut(duration: 1.5)
+    }
+
+    private var magicPulseAnimation: Animation? {
+        guard !reduceMotion else { return nil }
+        return isMagicPulsing
+            ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
+            : .spring(response: 0.3, dampingFraction: 0.7)
+    }
+
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
     @State private var isTyping: Bool = false
@@ -130,7 +153,6 @@ struct EditorCard: View {
     @State private var isMagicPulsing = false
     @State private var isMagicHovered = false
     @State private var magicRotationPhase: Double = 0
-    @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
     @State private var aiTask: Task<Void, Never>? = nil
     @State private var showingInstructionAlert = false
@@ -186,7 +208,11 @@ struct EditorCard: View {
                             .padding(.trailing, 2)
 
                             Button(action: {
-                                withAnimation { isMagicPulsing = false }
+                                if reduceMotion {
+                                    isMagicPulsing = false
+                                } else {
+                                    withAnimation { isMagicPulsing = false }
+                                }
                                 onMagicAutocomplete?()
                             }) {
                                 HStack(spacing: 4) {
@@ -240,21 +266,22 @@ struct EditorCard: View {
                             }
                             .buttonStyle(.plain)
                             .onAppear {
+                                guard !reduceMotion else { return }
                                 withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
                                     magicRotationPhase = 360
                                 }
                             }
                             .onHover { hovering in
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                guard isMagicHovered != hovering else { return }
+                                if reduceMotion {
                                     isMagicHovered = hovering
+                                } else {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        isMagicHovered = hovering
+                                    }
                                 }
                             }
-                            .animation(
-                                isMagicPulsing
-                                    ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
-                                    : .spring(response: 0.3, dampingFraction: 0.7),
-                                value: isMagicPulsing
-                            )
+                            .animation(magicPulseAnimation, value: isMagicPulsing)
                             .help("Autocomplete content based on title (Cmd+J)")
                             .padding(.top, 2)
                         }
@@ -298,12 +325,20 @@ struct EditorCard: View {
                 isHaloEffectEnabled: preferences.isHaloEffectEnabled,
                 isTyping: $isTyping,
                 onPaste: {
-                    withAnimation(.spring()) {
+                    if reduceMotion {
                         isMagicPulsing = true
+                    } else {
+                        withAnimation(.spring()) {
+                            isMagicPulsing = true
+                        }
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
-                        withAnimation(.easeInOut) {
+                        if reduceMotion {
                             isMagicPulsing = false
+                        } else {
+                            withAnimation(.easeInOut) {
+                                isMagicPulsing = false
+                            }
                         }
                     }
                 }
@@ -378,16 +413,21 @@ struct EditorCard: View {
                 )
         )
         .padding(.top, Theme.Layout.EditorCard.sectionTopPadding)
-        .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
-        .animation(.easeInOut(duration: 0.2), value: isHovering)
-        .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
+        .animation(cardFocusAnimation, value: isEditorFocused)
+        .animation(cardHoverAnimation, value: isHovering)
+        .animation(cardTypingAnimation, value: isTyping)
         .contentShape(Rectangle())
         .onHover { hovering in
+            guard isHovering != hovering else { return }
             isHovering = hovering
         }
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            if reduceMotion {
                 isEditorFocused = true
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isEditorFocused = true
+                }
             }
         }
     }
@@ -454,19 +494,13 @@ struct EditorCard: View {
                 switch executionResult {
                 case .noProcessableText:
                     return
-                case let .success(result, responseLength):
+                case let .success(result, _):
                     EditorAIUtilities.applySuccessUI(
                         result: result,
                         setBranchMessage: { self.branchMessage = $0 },
                         setAIResult: { self.aiResult = $0 }
                     )
-                    if let result {
-                        print("✅ AI Generation Success: \(responseLength) characters")
-                    } else {
-                        print("⚠️ AI Generation Finished with empty response")
-                    }
-                case let .failure(toastMessage, debugMessage):
-                    print("❌ AI Generation Error: \(debugMessage)")
+                case let .failure(toastMessage, _):
                     EditorAIUtilities.applyFailureUI(
                         toastMessage: toastMessage,
                         setBranchMessage: { self.branchMessage = $0 },

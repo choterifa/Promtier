@@ -19,16 +19,21 @@ struct PromptImageShowcaseView: View {
     private enum ShowcaseLayout {
         static let minSlotWidth: CGFloat = 112
         static let slotAspectRatio: CGFloat = 0.66
+        static let slotWidthUpdateThreshold: CGFloat = 0.5
     }
 
-    private var slotWidth: CGFloat {
+    private func slotWidth(for width: CGFloat) -> CGFloat {
         let maxSlots = CGFloat(PromptMediaImportPipeline.maxSlots)
-        let dynamicWidth = (max(containerWidth, 0) - 52) / maxSlots
+        let dynamicWidth = (max(width, 0) - 52) / maxSlots
         return max(ShowcaseLayout.minSlotWidth, dynamicWidth)
     }
 
+    private var currentSlotWidth: CGFloat {
+        slotWidth(for: containerWidth)
+    }
+
     private var slotHeight: CGFloat {
-        slotWidth * ShowcaseLayout.slotAspectRatio
+        currentSlotWidth * ShowcaseLayout.slotAspectRatio
     }
 
     private var rowHeight: CGFloat {
@@ -60,7 +65,7 @@ struct PromptImageShowcaseView: View {
                             imageSlot(index: index)
                         } else {
                             PlaceholderSlotView(
-                                slotWidth: slotWidth,
+                                slotWidth: currentSlotWidth,
                                 slotHeight: slotHeight,
                                 onSelect: importImagesDirectly,
                                 onDrop: { providers in handleGalleryDrop(providers: providers, at: index) },
@@ -79,10 +84,10 @@ struct PromptImageShowcaseView: View {
             GeometryReader { proxy in
                 Color.clear
                     .onAppear {
-                        containerWidth = proxy.size.width
+                        updateContainerWidth(proxy.size.width)
                     }
                     .onChange(of: proxy.size.width) { newValue in
-                        containerWidth = newValue
+                        updateContainerWidth(newValue)
                     }
             }
         )
@@ -95,7 +100,7 @@ struct PromptImageShowcaseView: View {
     private func imageSlot(index: Int) -> some View {
         ImageSlotView(
             imageData: showcaseImages[index],
-            slotWidth: slotWidth,
+            slotWidth: currentSlotWidth,
             slotHeight: slotHeight,
             isSelected: mediaState.selectedImageIndex == index,
             tintColor: themeColor,
@@ -175,24 +180,32 @@ struct PromptImageShowcaseView: View {
             case .success(let optimized):
                 DispatchQueue.main.async {
                     withAnimation(.spring()) {
-                        guard self.showcaseImages.count < PromptMediaImportPipeline.maxSlots else {
+                        guard PromptMediaImportPipeline.insertImage(
+                            optimized,
+                            at: index,
+                            into: &self.showcaseImages,
+                            mediaState: &self.mediaState
+                        ) else {
                             self.showImageImportWarning(.slotsFull)
                             return
                         }
-
-                        if let target = index, target < self.showcaseImages.count {
-                            self.showcaseImages.insert(optimized, at: target)
-                            self.mediaState.selectedImageIndex = target
-                        } else {
-                            self.showcaseImages.append(optimized)
-                            self.mediaState.selectedImageIndex = self.showcaseImages.count - 1
-                        }
-                        self.mediaState.clampSelection(for: self.showcaseImages)
                     }
                     HapticService.shared.playSuccess()
                 }
             }
         }
+    }
+
+    private func updateContainerWidth(_ newValue: CGFloat) {
+        let clamped = max(newValue, 0)
+        let oldSlot = slotWidth(for: containerWidth)
+        let newSlot = slotWidth(for: clamped)
+
+        guard abs(newSlot - oldSlot) >= ShowcaseLayout.slotWidthUpdateThreshold else {
+            return
+        }
+
+        containerWidth = clamped
     }
 
     private func showImageImportWarning(_ failure: PromptMediaImportFailure) {

@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import Combine
 
 struct SecondaryEditorCard<Actions: View>: View {
     let title: String
@@ -38,11 +37,13 @@ struct SecondaryEditorCard<Actions: View>: View {
     let currentCategoryColor: Color
 
     let actions: Actions
+    private let hasCustomActions: Bool
 
     var isAutocompleting: Bool = false
     var onMagicAutocomplete: (() -> Void)? = nil
 
     @EnvironmentObject var preferences: PreferencesManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
@@ -88,17 +89,33 @@ struct SecondaryEditorCard<Actions: View>: View {
         self.editorID = editorID
         self.currentCategoryColor = currentCategoryColor
         self.actions = actions()
+        self.hasCustomActions = Actions.self != EmptyView.self
     }
 
     private var isAIAvailable: Bool {
         EditorAIUtilities.isAIAvailable(for: preferences)
     }
 
+    private var cardFocusAnimation: Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.3)
+    }
+
+    private var cardHoverAnimation: Animation? {
+        if reduceMotion || isTyping { return nil }
+        return .easeInOut(duration: 0.2)
+    }
+
+    private var cardTypingAnimation: Animation? {
+        guard !reduceMotion else { return nil }
+        return isTyping
+            ? .spring(response: 0.35, dampingFraction: 0.7)
+            : .easeOut(duration: 1.5)
+    }
+
     @State private var isEditorFocused: Bool = false
     @State private var isHovering: Bool = false
     @State private var isTyping: Bool = false
     @State private var showingPromptChainPicker: Bool = false
-    @State private var cancellables = Set<AnyCancellable>()
     @State private var plainTextContent: String = ""
     @State private var aiTask: Task<Void, Never>? = nil
     @State private var showingInstructionAlert = false
@@ -120,7 +137,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .foregroundColor(.secondary)
                     .tracking(1)
 
-                if String(describing: actions) != "EmptyView" {
+                if hasCustomActions {
                     actions
                         .padding(.leading, 4)
                 }
@@ -231,24 +248,32 @@ struct SecondaryEditorCard<Actions: View>: View {
                 .padding(.trailing, 4)
             }
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: Theme.Layout.EditorCard.cornerRadius)
                     .fill(Color(NSColor.textBackgroundColor))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)), lineWidth: isTyping ? 2 : 1.5)
+                        RoundedRectangle(cornerRadius: Theme.Layout.EditorCard.cornerRadius)
+                            .stroke(
+                                themeColor.opacity(isTyping ? 0.8 : (isHovering ? 0.5 : 0.3)),
+                                lineWidth: isTyping ? Theme.Layout.EditorCard.activeBorderWidth : Theme.Layout.EditorCard.idleBorderWidth
+                            )
                             .shadow(color: preferences.isHaloEffectEnabled ? themeColor.opacity(isTyping ? 0.4 : (isHovering ? 0.2 : 0.1)) : .clear, radius: isTyping ? 10 : (isHovering ? 6 : 4))
                     )
             )
-            .animation(.easeInOut(duration: 0.3), value: isEditorFocused)
-            .animation(.easeInOut(duration: 0.2), value: isHovering)
-            .animation(isTyping ? .spring(response: 0.35, dampingFraction: 0.7) : .easeOut(duration: 1.5), value: isTyping)
+            .animation(cardFocusAnimation, value: isEditorFocused)
+            .animation(cardHoverAnimation, value: isHovering)
+            .animation(cardTypingAnimation, value: isTyping)
             .contentShape(Rectangle())
             .onHover { hovering in
+                guard isHovering != hovering else { return }
                 isHovering = hovering
             }
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                if reduceMotion {
                     isEditorFocused = true
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isEditorFocused = true
+                    }
                 }
             }
         }

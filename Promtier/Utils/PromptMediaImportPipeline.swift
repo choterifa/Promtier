@@ -58,4 +58,27 @@ enum PromptMediaImportPipeline {
 
         completion(nil)
     }
+
+    @MainActor
+    @discardableResult
+    static func insertImage(
+        _ data: Data,
+        at index: Int?,
+        into showcaseImages: inout [Data],
+        mediaState: inout PromptMediaState
+    ) -> Bool {
+        guard showcaseImages.count < maxSlots else {
+            return false
+        }
+
+        if let targetIndex = index, targetIndex < showcaseImages.count {
+            showcaseImages.insert(data, at: targetIndex)
+            mediaState.selectedImageIndex = targetIndex
+        } else {
+            showcaseImages.append(data)
+            mediaState.selectedImageIndex = showcaseImages.count - 1
+        }
+        mediaState.clampSelection(for: showcaseImages)
+        return true
+    }
 }

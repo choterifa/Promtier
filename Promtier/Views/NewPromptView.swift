@@ -1529,15 +1529,7 @@ struct NewPromptView: View {
     }
 
     private func insertImage(_ data: Data, at index: Int?) {
-        if showcaseImages.count < PromptMediaImportPipeline.maxSlots {
-            if let targetIndex = index, targetIndex < showcaseImages.count {
-                showcaseImages.insert(data, at: targetIndex)
-                mediaState.selectedImageIndex = targetIndex
-            } else {
-                showcaseImages.append(data)
-                mediaState.selectedImageIndex = showcaseImages.count - 1
-            }
-            mediaState.clampSelection(for: showcaseImages)
+        if PromptMediaImportPipeline.insertImage(data, at: index, into: &showcaseImages, mediaState: &mediaState) {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
     }
