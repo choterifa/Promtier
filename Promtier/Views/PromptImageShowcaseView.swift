@@ -86,7 +86,7 @@ struct PromptImageShowcaseView: View {
                     .onAppear {
                         updateContainerWidth(proxy.size.width)
                     }
-                    .onChange(of: proxy.size.width) { newValue in
+                    .onChange(of: proxy.size.width) { _, newValue in
                         updateContainerWidth(newValue)
                     }
             }

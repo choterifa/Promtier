@@ -83,7 +83,7 @@ final class PromptSearchEngine {
             )
         }
         
-        filterTask = Task.detached(priority: .userInitiated) { [weak self] in
+        filterTask = Task.detached(priority: .userInitiated) {
             if Task.isCancelled { return }
             var filtered = safePrompts
             

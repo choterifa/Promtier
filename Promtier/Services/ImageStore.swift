@@ -13,7 +13,7 @@ final class ImageStore: ObservableObject, @unchecked Sendable {
 
     // MARK: - LRU Cache
 
-    private let cache = NSCache<NSString, NSData>()
+    nonisolated(unsafe) private let cache = NSCache<NSString, NSData>()
     private let cacheQueue = DispatchQueue(label: "com.promtier.imagestore.cache", attributes: .concurrent)
 
     private init() {
@@ -155,7 +155,7 @@ final class ImageStore: ObservableObject, @unchecked Sendable {
 
     // MARK: - Cache Helpers
 
-    private func invalidateCache(for relativePath: String) {
+    nonisolated private func invalidateCache(for relativePath: String) {
         cache.removeObject(forKey: relativePath as NSString)
     }
 }

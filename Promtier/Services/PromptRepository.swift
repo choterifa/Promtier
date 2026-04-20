@@ -343,7 +343,7 @@ final class PromptRepository {
                     }
                 }
 
-                if ok, let updatedPrompt {
+                if ok, let _ = updatedPrompt {
                     self.onDataChanged?()
                 }
                 continuation.resume(returning: ok)
@@ -621,8 +621,8 @@ final class PromptRepository {
         let promptRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
         let folderRequest: NSFetchRequest<NSFetchRequestResult> = FolderEntity.fetchRequest()
 
-        try? context.execute(NSBatchDeleteRequest(fetchRequest: promptRequest))
-        try? context.execute(NSBatchDeleteRequest(fetchRequest: folderRequest))
+        _ = try? context.execute(NSBatchDeleteRequest(fetchRequest: promptRequest))
+        _ = try? context.execute(NSBatchDeleteRequest(fetchRequest: folderRequest))
 
         ["hasSeededDefaultsV28", "hasSeededInitialPromptsV28",
          "hasMigratedShowcaseImagesToDiskV1", "hasMigratedShowcaseImageCountV1"].forEach {
