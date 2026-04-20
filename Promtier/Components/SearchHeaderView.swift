@@ -6,7 +6,7 @@ struct SearchHeaderView: View {
     @EnvironmentObject var menuBarManager: MenuBarManager
     @EnvironmentObject var batchService: BatchOperationsService
     
-    @Binding var isSearchFocused: Bool
+    var isSearchFocused: FocusState<Bool>.Binding
     @State private var isPlusHovered = false
     @State private var isBatchHovered = false
     @State private var isSettingsHovered = false
@@ -52,6 +52,10 @@ struct SearchHeaderView: View {
 
                     TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
                         .textFieldStyle(.plain)
+                        .focused(isSearchFocused)
+                        .onExitCommand {
+                            isSearchFocused.wrappedValue = false
+                        }
                         .font(.system(size: 15 * preferences.fontSize.scale))
                         .disableAutocorrection(true)
                         .onChange(of: promptService.searchQuery) { _, newValue in
@@ -135,5 +139,8 @@ struct SearchHeaderView: View {
             .padding(.vertical, 20)
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .onTapGesture {
+            isSearchFocused.wrappedValue = false
+        }
     }
 }

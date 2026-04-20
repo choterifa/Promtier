@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct AITab: View {
     @EnvironmentObject var preferences: PreferencesManager

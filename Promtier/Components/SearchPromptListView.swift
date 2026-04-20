@@ -6,7 +6,7 @@ struct SearchPromptListView: View {
     
     @Binding var selectedPrompt: Prompt?
     @Binding var showingPreview: Bool
-    @Binding var isSearchFocused: Bool
+    var isSearchFocused: FocusState<Bool>.Binding
     @Binding var isNavigatingWithKeys: Bool
     
     var isPerformanceCardMode: Bool
@@ -108,7 +108,7 @@ struct SearchPromptListView: View {
                 .scrollIndicators(.hidden)
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    isSearchFocused = false
+                    isSearchFocused.wrappedValue = false
                 }
                 .onChange(of: selectedPrompt?.id) { _, newId in
                     guard let id = newId, isNavigatingWithKeys else { return }

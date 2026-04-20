@@ -11,7 +11,7 @@ import Foundation
 import Combine
 
 struct NewPromptView: View {
-    private enum ShortcutKeyCode {
+    enum ShortcutKeyCode {
         static let upArrow: UInt16 = 126
         static let downArrow: UInt16 = 125
         static let leftArrow: UInt16 = 123
@@ -33,13 +33,13 @@ struct NewPromptView: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
-    @StateObject private var viewModel: NewPromptViewModel
-    @StateObject private var keyboardCoordinator = NewPromptKeyboardCoordinator()
-    private let shortcutRouter = NewPromptShortcutRouter()
+    @StateObject var viewModel: NewPromptViewModel
+    @StateObject var keyboardCoordinator = NewPromptKeyboardCoordinator()
+    let shortcutRouter = NewPromptShortcutRouter()
 
-    @StateObject private var titleHoister = TextHoister()
-    @StateObject private var contentHoister = TextHoister()
-    @StateObject private var promptDescriptionHoister = TextHoister()
+    @StateObject var titleHoister = TextHoister()
+    @StateObject var contentHoister = TextHoister()
+    @StateObject var promptDescriptionHoister = TextHoister()
 
     var title: String {
         get { titleHoister.fastText }
@@ -139,16 +139,16 @@ struct NewPromptView: View {
         nonmutating set { viewModel.originalPrompt = newValue }
     }
 
-    private func vmBinding<T>(_ keyPath: ReferenceWritableKeyPath<NewPromptViewModel, T>) -> Binding<T> {
+    func vmBinding<T>(_ keyPath: ReferenceWritableKeyPath<NewPromptViewModel, T>) -> Binding<T> {
         Binding(
             get: { viewModel[keyPath: keyPath] },
             set: { viewModel[keyPath: keyPath] = $0 }
         )
     }
 
-    @State private var isSaving = false
-    @State private var showingZenEditor = false
-    @State private var zenTarget: ZenEditorTarget? = nil
+    @State var isSaving = false
+    @State var showingZenEditor = false
+    @State var zenTarget: ZenEditorTarget? = nil
 
     enum ZenEditorTarget: Identifiable, Equatable {
         case main
@@ -172,36 +172,36 @@ struct NewPromptView: View {
         }
     }
 
-    @State private var showingIconPicker = false
-    @State private var mediaState = PromptMediaState()
+    @State var showingIconPicker = false
+    @State var mediaState = PromptMediaState()
 
-    @State private var showingCloseAlert: Bool = false
+    @State var showingCloseAlert: Bool = false
 
-    @State private var insertionRequest: String? = nil
-    @State private var replaceSnippetRequest: String? = nil
-    @State private var showSnippets: Bool = false
-    @State private var snippetSearchQuery: String = ""
-    @State private var snippetSelectedIndex: Int = 0
-    @State private var triggerSnippetSelection: Bool = false
+    @State var insertionRequest: String? = nil
+    @State var replaceSnippetRequest: String? = nil
+    @State var showSnippets: Bool = false
+    @State var snippetSearchQuery: String = ""
+    @State var snippetSelectedIndex: Int = 0
+    @State var triggerSnippetSelection: Bool = false
 
-    @State private var showVariables: Bool = false
-    @State private var variablesSelectedIndex: Int = 0
-    @State private var triggerVariablesSelection: Bool = false
+    @State var showVariables: Bool = false
+    @State var variablesSelectedIndex: Int = 0
+    @State var triggerVariablesSelection: Bool = false
 
-    @State private var triggerAIRequest: String? = nil
-    @State private var selectedRange: NSRange? = nil
-    @State private var selectedNegativeRange: NSRange? = nil
-    @State private var selectedAlternativeRanges: [NSRange?] = Array(repeating: nil, count: 10)
-    @State private var aiResult: AIResult? = nil
-    @State private var aiNegativeResult: AIResult? = nil
-    @State private var aiAlternativeResults: [AIResult?] = Array(repeating: nil, count: 10)
-    @State private var isAIActive: Bool = false
-    @State private var activeGeneratingID: String? = nil
-    @State private var showParticles: Bool = false
-    @State private var showingVersionHistory: Bool = false
-    @State private var focusNegative: Bool = false
-    @State private var focusAlternative: Bool = false
-    @State private var showingShortcutHelp: Bool = false
+    @State var triggerAIRequest: String? = nil
+    @State var selectedRange: NSRange? = nil
+    @State var selectedNegativeRange: NSRange? = nil
+    @State var selectedAlternativeRanges: [NSRange?] = Array(repeating: nil, count: 10)
+    @State var aiResult: AIResult? = nil
+    @State var aiNegativeResult: AIResult? = nil
+    @State var aiAlternativeResults: [AIResult?] = Array(repeating: nil, count: 10)
+    @State var isAIActive: Bool = false
+    @State var activeGeneratingID: String? = nil
+    @State var showParticles: Bool = false
+    @State var showingVersionHistory: Bool = false
+    @State var focusNegative: Bool = false
+    @State var focusAlternative: Bool = false
+    @State var showingShortcutHelp: Bool = false
     struct DiffComparison: Identifiable {
         let id = UUID()
         let text1: String
@@ -210,16 +210,16 @@ struct NewPromptView: View {
         let title2: String
     }
 
-    @State private var diffComparison: DiffComparison? = nil
+    @State var diffComparison: DiffComparison? = nil
 
     // Identificador para rastrear cambios y guardar borradores
-    @State private var isDraftRestored = false
+    @State var isDraftRestored = false
     /// Guard que impide que un auto-guardado pendiente se ejecute después de descartar
-    @State private var isDiscarding: Bool = false
+    @State var isDiscarding: Bool = false
     
-    @State private var isPinned = false
+    @State var isPinned = false
 
-    private var zenBindingContent: Binding<String> {
+    var zenBindingContent: Binding<String> {
         Binding(
             get: {
                 switch zenTarget {
@@ -240,7 +240,7 @@ struct NewPromptView: View {
         )
     }
 
-    private var zenBindingTitle: Binding<String> {
+    var zenBindingTitle: Binding<String> {
         Binding(
             get: {
                 switch zenTarget {
@@ -258,13 +258,13 @@ struct NewPromptView: View {
         )
     }
 
-    private var isAIAvailable: Bool {
+    var isAIAvailable: Bool {
         let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
         let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
         return useGemini || useOpenAI
     }
     
-    private var zenBindingSelection: Binding<NSRange?> {
+    var zenBindingSelection: Binding<NSRange?> {
         Binding(
             get: {
                 switch zenTarget {
@@ -285,12 +285,12 @@ struct NewPromptView: View {
         )
     }
 
-    private var zenTargetIndex: Int {
+    var zenTargetIndex: Int {
         if case .alternative(let i) = zenTarget { return i }
         return 0
     }
 
-    private var zenBindingAIResult: Binding<AIResult?> {
+    var zenBindingAIResult: Binding<AIResult?> {
         Binding(
             get: {
                 switch zenTarget {
@@ -311,11 +311,11 @@ struct NewPromptView: View {
         )
     }
 
-    private var themeColor: Color {
+    var themeColor: Color {
         preferences.isHaloEffectEnabled ? currentCategoryColor : (selectedFolder == nil ? .gray : Color.blue)
     }
 
-    private var currentCategoryColor: Color {
+    var currentCategoryColor: Color {
         if let folderName = selectedFolder {
             if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
                 return Color(hex: customFolder.displayColor)
@@ -326,7 +326,7 @@ struct NewPromptView: View {
     }
 
     // Propiedad calculada para saber si el prompt está vacío
-    private var isContentEmpty: Bool {
+    var isContentEmpty: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -342,7 +342,7 @@ struct NewPromptView: View {
     }
 
     @ViewBuilder
-    private func mainScrollViewContent(geometry: GeometryProxy) -> some View {
+    func mainScrollViewContent(geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             // Invisible button for Global Shortcuts
             Button("") {
@@ -538,7 +538,7 @@ struct NewPromptView: View {
     }
 
     @ViewBuilder
-    private func alternativeRow(index: Int) -> some View {
+    func alternativeRow(index: Int) -> some View {
         SecondaryEditorCard(
             title: "\("alternative".localized(for: preferences.language)) #\(index + 1)",
             placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
@@ -698,14 +698,14 @@ struct NewPromptView: View {
         }
     }
 
-    private var fullScreenImageSheetItem: Binding<IdentifiableData?> {
+    var fullScreenImageSheetItem: Binding<IdentifiableData?> {
         Binding(
             get: { mediaState.fullScreenImageData.map { IdentifiableData(value: $0) } },
             set: { mediaState.fullScreenImageData = $0?.value }
         )
     }
 
-    private var premiumSheetItem: Binding<IdentifiableString?> {
+    var premiumSheetItem: Binding<IdentifiableString?> {
         Binding(
             get: { showingPremiumFor.map { IdentifiableString(value: $0) } },
             set: { showingPremiumFor = $0?.value }
@@ -746,7 +746,7 @@ struct NewPromptView: View {
         )
     }
 
-    private var hasUnsavedChanges: Bool {
+    var hasUnsavedChanges: Bool {
         if let existingPrompt = originalPrompt ?? prompt {
             var existingAlts = existingPrompt.alternatives
             if existingAlts.isEmpty, let legacy = existingPrompt.alternativePrompt, !legacy.isEmpty {
@@ -784,31 +784,7 @@ struct NewPromptView: View {
         }
     }
 
-    private func saveAsDraft() {
-        // Solo cuando creamos un prompt nuevo: "draft" significa guardar como uncategorized ("Sin categoría").
-        // En modo edición, no queremos moverlo de su carpeta.
-        if originalPrompt == nil {
-            if title.isEmpty {
-                let prefix = "draft_prefix".localized(for: preferences.language)
-                let formatter = DateFormatter()
-                formatter.locale = Locale(identifier: preferences.language.rawValue)
-                formatter.dateStyle = .medium
-                formatter.timeStyle = .short
-                title = "\(prefix) - \(formatter.string(from: Date()))"
-            }
-            selectedFolder = nil
-        }
-        savePrompt(closeAfter: true)
-    }
 
-    private func discardChanges() {
-        // Cancelar inmediatamente cualquier auto-guardado pendiente para que no
-        // se ejecute después de que el usuario haya elegido Descartar.
-        isDiscarding = true
-        DraftService.shared.clearDraft()
-        MenuBarManager.shared.isModalActive = false
-        onClose()
-    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -955,29 +931,11 @@ struct NewPromptView: View {
         }
     }
 
-    private func dismissSnippetsOverlay() {
-        withAnimation { showSnippets = false }
-    }
 
-    private func dismissVariablesOverlay() {
-        withAnimation { showVariables = false }
-    }
 
-    private func showTransientBranchMessage(_ message: String, duration: TimeInterval = 2.0) {
-        withAnimation {
-            branchMessage = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            withAnimation {
-                if branchMessage == message {
-                    branchMessage = nil
-                }
-            }
-        }
-    }
 
     @ViewBuilder
-    private var overlays: some View {
+    var overlays: some View {
         Group {
             if let target = zenTarget {
                 ZenEditorView(
@@ -1030,7 +988,7 @@ struct NewPromptView: View {
         }
     }
 
-    private var snippetsOverlayLayer: some View {
+    var snippetsOverlayLayer: some View {
         ZStack {
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
@@ -1047,7 +1005,7 @@ struct NewPromptView: View {
         .zIndex(200)
     }
 
-    private var variablesOverlayLayer: some View {
+    var variablesOverlayLayer: some View {
         ZStack {
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
@@ -1064,7 +1022,7 @@ struct NewPromptView: View {
         .zIndex(201)
     }
 
-    private var magicOptionsOverlayLayer: some View {
+    var magicOptionsOverlayLayer: some View {
         NewPromptMagicOptionsOverlay(
             showingMagicOptions: vmBinding(\.showingMagicOptions),
             magicTarget: vmBinding(\.magicTarget),
@@ -1073,294 +1031,22 @@ struct NewPromptView: View {
         )
     }
 
-    private func setupKeyboardMonitor() {
-        keyboardCoordinator.start { event in
-            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-            return self.shortcutRouter.route(
-                event: event,
-                modifiers: modifiers,
-                overlayNavigation: { self.handleOverlayNavigationShortcut(event: $0) },
-                galleryNavigation: { self.handleImageGalleryArrowShortcut(event: $0) },
-                spacePreview: { self.handleSpacePreviewShortcut(event: $0) },
-                save: { self.handleSaveShortcut(modifiers: $0, event: $1) },
-                copy: { self.handleCopyShortcut(modifiers: $0, event: $1) },
-                pasteImage: { self.handlePasteImageShortcut(modifiers: $0, event: $1) },
-                escape: { self.handleEscapeShortcut(event: $0) },
-                quickFocus: { self.handleQuickFocusShortcut(modifiers: $0, event: $1) }
-            )
-        }
-    }
 
-    private func handleOverlayListNavigation(
-        event: NSEvent,
-        isVisible: Bool,
-        moveUp: @escaping () -> Void,
-        moveDown: @escaping () -> Void,
-        select: @escaping () -> Void
-    ) -> Bool {
-        guard isVisible else { return false }
 
-        switch event.keyCode {
-        case ShortcutKeyCode.upArrow:
-            DispatchQueue.main.async { moveUp() }
-            return true
-        case ShortcutKeyCode.downArrow:
-            DispatchQueue.main.async { moveDown() }
-            return true
-        case ShortcutKeyCode.returnKey, ShortcutKeyCode.enterKey:
-            DispatchQueue.main.async { select() }
-            return true
-        default:
-            return false
-        }
-    }
 
-    private func presentField(_ showAction: @escaping () -> Void, focusAction: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            withAnimation(.spring()) {
-                showAction()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                focusAction()
-            }
-        }
-    }
 
-    private func handleOptionVariableShortcut() {
-        DispatchQueue.main.async {
-            if self.preferences.isPremiumActive {
-                withAnimation {
-                    self.showVariables.toggle()
-                    self.variablesSelectedIndex = 0
-                }
-            } else {
-                self.showingPremiumFor = "dynamic_variables".localized(for: self.preferences.language)
-            }
-        }
-    }
 
-    private func handleOverlayNavigationShortcut(event: NSEvent) -> Bool {
-        if handleOverlayListNavigation(
-            event: event,
-            isVisible: showVariables,
-            moveUp: { self.variablesSelectedIndex = max(0, self.variablesSelectedIndex - 1) },
-            moveDown: { self.variablesSelectedIndex += 1 },
-            select: { self.triggerVariablesSelection = true }
-        ) {
-            return true
-        }
 
-        return handleOverlayListNavigation(
-            event: event,
-            isVisible: showSnippets,
-            moveUp: { self.snippetSelectedIndex = max(0, self.snippetSelectedIndex - 1) },
-            moveDown: { self.snippetSelectedIndex += 1 },
-            select: { self.triggerSnippetSelection = true }
-        )
-    }
 
-    private func handleImageGalleryArrowShortcut(event: NSEvent) -> Bool {
-        guard !showcaseImages.isEmpty, !isTextInputFocused else { return false }
 
-        if event.keyCode == ShortcutKeyCode.leftArrow {
-            DispatchQueue.main.async {
-                self.mediaState.selectedImageIndex = max(0, self.mediaState.selectedImageIndex - 1)
-                if self.mediaState.fullScreenImageData != nil {
-                    self.mediaState.fullScreenImageData = self.showcaseImages[self.mediaState.selectedImageIndex]
-                }
-            }
-            return true
-        }
 
-        if event.keyCode == ShortcutKeyCode.rightArrow {
-            DispatchQueue.main.async {
-                self.mediaState.selectedImageIndex = min(self.showcaseImages.count - 1, self.mediaState.selectedImageIndex + 1)
-                if self.mediaState.fullScreenImageData != nil {
-                    self.mediaState.fullScreenImageData = self.showcaseImages[self.mediaState.selectedImageIndex]
-                }
-            }
-            return true
-        }
 
-        return false
-    }
-
-    private func handleSpacePreviewShortcut(event: NSEvent) -> Bool {
-        guard event.keyCode == ShortcutKeyCode.space else { return false }
-        guard !isTextInputFocused || mediaState.fullScreenImageData != nil else { return false }
-
-        DispatchQueue.main.async {
-            if self.mediaState.fullScreenImageData != nil {
-                withAnimation(.spring(response: 0.3)) {
-                    self.mediaState.fullScreenImageData = nil
-                }
-            } else if !self.showcaseImages.isEmpty {
-                let idx = min(self.mediaState.selectedImageIndex, self.showcaseImages.count - 1)
-                self.mediaState.selectedImageIndex = idx
-                withAnimation(.spring(response: 0.35)) {
-                    self.mediaState.fullScreenImageData = self.showcaseImages[idx]
-                }
-                if self.preferences.soundEnabled { SoundService.shared.playPreviewSound() }
-            }
-        }
-        return true
-    }
-
-    private func handleSaveShortcut(modifiers: NSEvent.ModifierFlags, event: NSEvent) -> Bool {
-        guard modifiers.contains(.command), event.keyCode == ShortcutKeyCode.keyS else { return false }
-
-        DispatchQueue.main.async {
-            let trimmedTitle = self.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            let trimmedContent = self.content.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard !trimmedTitle.isEmpty && !trimmedContent.isEmpty else {
-                HapticService.shared.playError()
-                self.showTransientBranchMessage("required_fields".localized(for: self.preferences.language), duration: 3.0)
-                return
-            }
-
-            if self.showingZenEditor {
-                self.savePrompt(closeAfter: false)
-                withAnimation(.spring()) {
-                    self.zenTarget = nil
-                    self.showingZenEditor = false
-                }
-            } else {
-                self.savePrompt()
-            }
-        }
-        return true
-    }
-
-    private func handleCopyShortcut(modifiers: NSEvent.ModifierFlags, event: NSEvent) -> Bool {
-        guard modifiers == .command, event.keyCode == ShortcutKeyCode.keyC else { return false }
-        guard !isTextSelectedInEditor(), !content.isEmpty else { return false }
-
-        DispatchQueue.main.async {
-            ClipboardService.shared.copyToClipboard(content)
-            if preferences.soundEnabled { SoundService.shared.playCopySound() }
-            HapticService.shared.playLight()
-        }
-        return true
-    }
-
-    private func handlePasteImageShortcut(modifiers: NSEvent.ModifierFlags, event: NSEvent) -> Bool {
-        guard modifiers == .command, event.keyCode == ShortcutKeyCode.keyV else { return false }
-
-        guard showcaseImages.count < PromptMediaImportPipeline.maxSlots else {
-            showImageImportWarning(imageSlotsFullMessage)
-            return true
-        }
-
-        let pasteboard = NSPasteboard.general
-        guard let types = pasteboard.types,
-              types.contains(where: { $0.rawValue.starts(with: "public.image") || $0 == .png || $0 == .tiff }) else {
-            return false
-        }
-
-        if let pbData = pasteboard.data(forType: .png)
-            ?? pasteboard.data(forType: .tiff)
-            ?? pasteboard.data(forType: NSPasteboard.PasteboardType("public.jpeg")) {
-            appendOptimizedImageData(pbData, at: nil)
-            return true
-        }
-
-        if let image = pasteboard.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage {
-            DispatchQueue.global(qos: .userInitiated).async {
-                guard let tiffData = image.tiffRepresentation,
-                      let bitmap = NSBitmapImageRep(data: tiffData),
-                      let jpegData = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else { return }
-                self.appendOptimizedImageData(jpegData, at: nil)
-            }
-            return true
-        }
-
-        return false
-    }
-
-    private func handleEscapeShortcut(event: NSEvent) -> Bool {
-        guard event.keyCode == ShortcutKeyCode.escape else { return false }
-
-        if showingMagicOptions {
-            DispatchQueue.main.async { withAnimation { self.showingMagicOptions = false } }
-            return true
-        }
-
-        if showSnippets {
-            DispatchQueue.main.async { self.dismissSnippetsOverlay() }
-            return true
-        }
-
-        if showVariables {
-            DispatchQueue.main.async { self.dismissVariablesOverlay() }
-            return true
-        }
-
-        if zenTarget == nil && !showingIconPicker {
-            if let window = NSApp.keyWindow, let firstResponder = window.firstResponder {
-                let isEditingText = firstResponder is NSTextView || firstResponder.className.contains("TextEditor")
-                if isEditingText {
-                    DispatchQueue.main.async {
-                        _ = window.makeFirstResponder(nil)
-                    }
-                    return true
-                }
-            }
-
-            DispatchQueue.main.async {
-                if self.hasUnsavedChanges {
-                    self.showingCloseAlert = true
-                } else {
-                    self.discardChanges()
-                }
-            }
-            return true
-        }
-
-        if zenTarget != nil {
-            DispatchQueue.main.async {
-                withAnimation(.spring()) {
-                    self.zenTarget = nil
-                    self.showingZenEditor = false
-                }
-            }
-            return true
-        }
-
-        return false
-    }
-
-    private func handleQuickFocusShortcut(modifiers: NSEvent.ModifierFlags, event: NSEvent) -> Bool {
-        if modifiers == .option && event.keyCode == ShortcutKeyCode.keyN {
-            presentField(
-                { self.showNegativeField = true },
-                focusAction: { self.focusNegative = true }
-            )
-            return true
-        }
-
-        if modifiers == .option && event.keyCode == ShortcutKeyCode.keyA {
-            presentField(
-                { self.showAlternativeField = true },
-                focusAction: { self.focusAlternative = true }
-            )
-            return true
-        }
-
-        if modifiers == .option && event.keyCode == ShortcutKeyCode.keyV {
-            handleOptionVariableShortcut()
-            return true
-        }
-
-        return false
-    }
-
-    private var isTextInputFocused: Bool {
+    var isTextInputFocused: Bool {
         NSApp.keyWindow?.firstResponder is NSTextView || NSApp.keyWindow?.firstResponder is NSTextField
     }
 
-    private func normalizedAlternatives(from source: Prompt) -> [String] {
+    func normalizedAlternatives(from source: Prompt) -> [String] {
         var normalized = source.alternatives
         if normalized.isEmpty, let legacy = source.alternativePrompt, !legacy.isEmpty {
             normalized = [legacy]
@@ -1368,173 +1054,19 @@ struct NewPromptView: View {
         return normalized
     }
 
-    private func applyLoadedPromptState(from source: Prompt, markDraftRestored: Bool = false) {
-        title = source.title
-        content = source.content
-        negativePrompt = source.negativePrompt ?? ""
-        alternatives = normalizedAlternatives(from: source)
-        promptDescription = source.promptDescription ?? ""
-        selectedFolder = source.folder
-        isFavorite = source.isFavorite
-        selectedIcon = source.icon
-        showcaseImages = source.showcaseImages
-        mediaState.clampSelection(for: showcaseImages)
-        tags = source.tags
-        targetAppBundleIDs = source.targetAppBundleIDs
-        customShortcut = source.customShortcut
-        showNegativeField = !negativePrompt.isEmpty
-        showAlternativeField = !alternatives.isEmpty
-        isDraftRestored = markDraftRestored
-        syncHoistedFieldsToViewModel()
-    }
 
-    private func setupOnAppear() {
-        MenuBarManager.shared.isModalActive = false
 
-        let draft = DraftService.shared.loadDraft()
-
-        // Determinar si debemos cargar el draft en lugar del prompt original
-        var shouldLoadDraft = false
-        if let draft = draft {
-            if prompt == nil {
-                shouldLoadDraft = true // Draft de un nuevo prompt (asumimos que si no hay prompt activo en UI, queremos el draft)
-            } else if let prompt = prompt, draft.prompt.id == prompt.id {
-                shouldLoadDraft = true // Draft corresponde al prompt que estamos editando
-            } else if draft.isEditing {
-                // If it's a draft from editing, and we just got the notification, force load it
-                shouldLoadDraft = true
-            }
-        }
-
-        if shouldLoadDraft, let draft = draft {
-            let draftPrompt = draft.prompt
-
-            if draft.isEditing {
-                if let original = promptService.prompts.first(where: { $0.id == draftPrompt.id }) {
-                    originalPrompt = original
-                } else if let prompt {
-                    originalPrompt = prompt
-                }
-            }
-
-            DispatchQueue.main.async {
-                self.applyLoadedPromptState(from: draftPrompt, markDraftRestored: true)
-            }
-
-        } else if let prompt {
-            originalPrompt = prompt
-            applyLoadedPromptState(from: prompt)
-
-            // Lazy-load de imágenes
-            if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
-                Task(priority: .userInitiated) {
-                    if let full = await promptService.fetchPrompt(byId: prompt.id, includeImages: true) {
-                        await MainActor.run {
-                            self.originalPrompt = full
-                            if self.showcaseImages.isEmpty {
-                                self.showcaseImages = full.showcaseImages
-                                self.mediaState.clampSelection(for: self.showcaseImages)
-                            }
-                        }
-                    }
-                }
-            }
-        } else if let activeCategory = promptService.selectedCategory {
-            // Autoseleccionar la categoría activa al crear uno nuevo
-            selectedFolder = activeCategory
-        }
-    }
-
-    private func saveCurrentDraft() {
-        let isTitleEmpty = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let isContentTextEmpty = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
-        // No guardar draft de un nuevo prompt vacío (sin title ni contenido útil)
-        if originalPrompt == nil && isTitleEmpty && isContentTextEmpty {
-            return
-        }
-
-        // No guardar si el contenido es idéntico al original que estamos editando
-        if let original = originalPrompt {
-            let hasChanges = title != original.title ||
-                             content != original.content ||
-                             promptDescription != (original.promptDescription ?? "") ||
-                             selectedFolder != original.folder ||
-                             selectedIcon != original.icon ||
-                             showcaseImages != original.showcaseImages ||
-                             negativePrompt != (original.negativePrompt ?? "") ||
-                             alternatives != original.alternatives ||
-                             targetAppBundleIDs != original.targetAppBundleIDs ||
-                             customShortcut != original.customShortcut
-            if !hasChanges { return }
-        }
-
-        // Crear un objeto prompt temporal para el borrador
-        var draftPrompt = Prompt(
-            title: title,
-            content: content,
-            promptDescription: promptDescription.isEmpty ? nil : promptDescription,
-            folder: selectedFolder,
-            icon: selectedIcon,
-            showcaseImages: showcaseImages,
-            tags: tags,
-            targetAppBundleIDs: targetAppBundleIDs,
-            negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
-            alternatives: alternatives,
-            customShortcut: customShortcut
-        )
-
-        // Si estamos editando, mantenemos el ID original para poder actualizarlo al restaurar
-        if let original = originalPrompt {
-            draftPrompt.id = original.id
-        }
-
-        DraftService.shared.saveDraft(prompt: draftPrompt, isEditing: prompt != nil || originalPrompt != nil)
-    }
 
     // MARK: - Image Import Helpers
 
-    private func appendOptimizedImageData(_ rawData: Data, at index: Int?) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let result = PromptMediaImportPipeline.optimizeImageData(rawData)
-            switch result {
-            case .failure(let failure):
-                self.showImageImportWarning(PromptMediaImportPipeline.localizedMessage(for: failure, language: self.preferences.language))
-            case .success(let optimizedData):
-                DispatchQueue.main.async {
-                    self.insertImage(optimizedData, at: index)
-                }
-            }
-        }
-    }
 
-    private var imageSlotsFullMessage: String {
+    var imageSlotsFullMessage: String {
         PromptMediaImportPipeline.localizedMessage(for: .slotsFull, language: preferences.language)
     }
 
-    private func showImageImportWarning(_ message: String) {
-        DispatchQueue.main.async {
-            HapticService.shared.playError()
-            withAnimation {
-                branchMessage = message
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-                withAnimation {
-                    if branchMessage == message {
-                        branchMessage = nil
-                    }
-                }
-            }
-        }
-    }
 
-    private func insertImage(_ data: Data, at index: Int?) {
-        if PromptMediaImportPipeline.insertImage(data, at: index, into: &showcaseImages, mediaState: &mediaState) {
-            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-        }
-    }
 
-    private var backgroundView: some View {
+    var backgroundView: some View {
         ZStack {
             Color(NSColor.windowBackgroundColor)
 
@@ -1564,15 +1096,15 @@ struct NewPromptView: View {
         }
     }
 
-    private var normalizedPromptDescription: String? {
+    var normalizedPromptDescription: String? {
         promptDescription.isEmpty ? nil : promptDescription
     }
 
-    private var normalizedNegativePrompt: String? {
+    var normalizedNegativePrompt: String? {
         negativePrompt.isEmpty ? nil : negativePrompt
     }
 
-    private func hasBasicPromptChanges(comparedTo existingPrompt: Prompt, newNegativePrompt: String?) -> Bool {
+    func hasBasicPromptChanges(comparedTo existingPrompt: Prompt, newNegativePrompt: String?) -> Bool {
         existingPrompt.title != title ||
         existingPrompt.content != content ||
         existingPrompt.promptDescription != normalizedPromptDescription ||
@@ -1586,7 +1118,7 @@ struct NewPromptView: View {
         existingPrompt.customShortcut != customShortcut
     }
 
-    private func appendVersionSnapshotIfNeeded(to updatedPrompt: inout Prompt, from existingPrompt: Prompt, newNegativePrompt: String?) {
+    func appendVersionSnapshotIfNeeded(to updatedPrompt: inout Prompt, from existingPrompt: Prompt, newNegativePrompt: String?) {
         guard preferences.isPremiumActive else { return }
 
         let coreChanges = existingPrompt.title != title ||
@@ -1611,7 +1143,7 @@ struct NewPromptView: View {
         updatedPrompt.versionHistory = history
     }
 
-    private func applyEditableFields(to updatedPrompt: inout Prompt, newNegativePrompt: String?) {
+    func applyEditableFields(to updatedPrompt: inout Prompt, newNegativePrompt: String?) {
         updatedPrompt.title = title
         updatedPrompt.content = content
         updatedPrompt.promptDescription = normalizedPromptDescription
@@ -1627,162 +1159,19 @@ struct NewPromptView: View {
         updatedPrompt.modifiedAt = Date()
     }
 
-    private func closeAfterSuccessfulSave() {
-        if preferences.isPremiumActive && preferences.visualEffectsEnabled {
-            showParticles = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                onClose()
-            }
-            return
-        }
-        onClose()
-    }
-
-    private func savePrompt(closeAfter: Bool = true) {
-        isSaving = true
-
-        // Limpiar borrador al guardar con éxito (solo si cerramos o es explícito)
-        if closeAfter {
-            DraftService.shared.clearDraft()
-            MenuBarManager.shared.isModalActive = false
-        }
-
-        let newNegativePrompt = normalizedNegativePrompt
-
-        // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
-        if let existingPrompt = originalPrompt ?? prompt {
-            if !hasBasicPromptChanges(comparedTo: existingPrompt, newNegativePrompt: newNegativePrompt) {
-                if closeAfter { onClose() }
-                return
-            }
-
-            var updated = existingPrompt
-
-            appendVersionSnapshotIfNeeded(to: &updated, from: existingPrompt, newNegativePrompt: newNegativePrompt)
-            applyEditableFields(to: &updated, newNegativePrompt: newNegativePrompt)
-            _ = promptService.updatePrompt(updated)
-            
-            // ✅ Actualizar el prompt original para que la UI (botones de historial, etc.) reaccione al instante
-            DispatchQueue.main.async {
-                self.originalPrompt = updated
-            }
-        } else {
-            var new = Prompt(
-                title: title,
-                content: content,
-                promptDescription: normalizedPromptDescription,
-                folder: selectedFolder,
-                icon: selectedIcon,
-                showcaseImages: showcaseImages,
-                tags: tags,
-                targetAppBundleIDs: targetAppBundleIDs,
-                negativePrompt: newNegativePrompt,
-                alternatives: alternatives,
-                customShortcut: customShortcut
-            )
-            new.isFavorite = isFavorite
-            _ = promptService.createPrompt(new)
-        }
 
 
-        if closeAfter {
-            closeAfterSuccessfulSave()
-        }
-    }
 
-
-    private func branchPrompt() {
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        
-        // Asegurarnos de tener los datos actuales (usamos las variables de estado)
-        let branchTitle = "\("branch_label".localized(for: preferences.language)): \(title)"
-        let newContent = content
-        let currentParentID = (originalPrompt ?? prompt)?.id
-
-        var newBranch = Prompt(
-            title: branchTitle,
-            content: newContent,
-            promptDescription: promptDescription,
-            folder: selectedFolder,
-            icon: selectedIcon,
-            showcaseImages: showcaseImages,
-            tags: tags,
-            targetAppBundleIDs: targetAppBundleIDs,
-            negativePrompt: negativePrompt,
-            alternatives: Array(alternatives.prefix(10)),
-            customShortcut: nil // Las ramas no heredan el atajo para evitar conflictos
-        )
-
-        newBranch.parentID = currentParentID
-        newBranch.isFavorite = isFavorite
-
-        if promptService.createPrompt(newBranch) {
-            HapticService.shared.playSuccess()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                branchMessage = "branch_created_success".localized(for: preferences.language)
-            }
-            
-            // Esperar a que se lea la notificación y luego simular el "salir" a la lista
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                withAnimation { branchMessage = nil }
-                
-                DraftService.shared.clearDraft()
-                
-                // Navegar a la carpeta principal para mostrar la nueva rama
-                promptService.searchQuery = ""
-                if let folder = selectedFolder {
-                    promptService.selectedCategory = folder
-                } else {
-                    promptService.selectedCategory = nil
-                }
-                
-                MenuBarManager.shared.isModalActive = false
-                onClose() // Simular salir para ir a la lista de prompts
-            }
-        }
-    }
 
     // MARK: - AI Magic Features (ViewModel-backed)
 
-    private func syncHoistedFieldsToViewModel() {
-        viewModel.title = title
-        viewModel.content = content
-        viewModel.promptDescription = promptDescription
-    }
 
-    private func syncHoistedFieldsFromViewModel() {
-        if viewModel.title != title {
-            title = viewModel.title
-        }
-        if viewModel.content != content {
-            content = viewModel.content
-        }
-        if viewModel.promptDescription != promptDescription {
-            promptDescription = viewModel.promptDescription
-        }
-    }
 
-    private func autocompletePromptContent() {
-        syncHoistedFieldsToViewModel()
-        viewModel.autocompletePromptContent(preferences: preferences, promptService: promptService)
-    }
 
-    private func executeMagicWithCommand() {
-        syncHoistedFieldsToViewModel()
-        viewModel.executeMagicWithCommand(preferences: preferences)
-    }
 
-    private func autoCategorizePrompt() {
-        syncHoistedFieldsToViewModel()
-        viewModel.autoCategorizePrompt(preferences: preferences, promptService: promptService)
-    }
 
-    private func generateAlternativeDirect() {
-        syncHoistedFieldsToViewModel()
-        viewModel.generateAlternativeDirect(preferences: preferences)
-    }
 
-    private var snippetOverlay: some View {
+    var snippetOverlay: some View {
         VStack {
             Spacer()
             if !preferences.isPremiumActive {
@@ -1812,7 +1201,7 @@ struct NewPromptView: View {
         }
     }
 
-    private var variablesOverlay: some View {
+    var variablesOverlay: some View {
         VStack {
             Spacer()
             if !preferences.isPremiumActive {
@@ -1860,31 +1249,3 @@ struct NewPromptView: View {
         .environmentObject(PreferencesManager.shared)
 }
 
-// MARK: - AIGeneratingOverlay
-
-extension NewPromptView {
-    @ViewBuilder
-    private func helpPopover(title: String, content: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title.localized(for: preferences.language))
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.primary)
-            
-            Text(content.localized(for: preferences.language))
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
-                .lineSpacing(4)
-        }
-        .padding(16)
-        .frame(width: 250)
-    }
-    
-    private func isTextSelectedInEditor() -> Bool {
-        guard let window = NSApp.keyWindow,
-              let fieldEditor = window.firstResponder as? NSTextView,
-              fieldEditor.selectedRange().length > 0 else {
-            return false
-        }
-        return true
-    }
-}

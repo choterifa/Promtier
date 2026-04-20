@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 
 struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
