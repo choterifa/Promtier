@@ -14,8 +14,9 @@ import SwiftUI
 // SERVICIO PRINCIPAL: Gestión completa de prompts
 class PromptService: ObservableObject {
     static let shared = PromptService()
+    let searchEngine = PromptSearchEngine()
 
-    private enum ShowcaseImageLoadPolicy {
+    enum ShowcaseImageLoadPolicy {
         static let runtimeMaxImages = 3
         static let runtimeMaxTotalBytes = 24 * 1024 * 1024
     }
@@ -109,118 +110,16 @@ class PromptService: ObservableObject {
     
     /// Elimina duplicados que hayan sido generados accidentalmente por semillas anteriores
     private func removeDuplicatePrompts() {
-        let context = dataController.viewContext
-        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        
-        do {
-            let allEntities = try context.fetch(request)
-            var seenIds = Set<UUID>()
-            var deletedCount = 0
-            
-            for entity in allEntities {
-                if seenIds.contains(entity.id) {
-                    context.delete(entity)
-                    deletedCount += 1
-                } else {
-                    seenIds.insert(entity.id)
-                }
-            }
-            
-            if deletedCount > 0 {
-                try context.save()
-                print("🧹 Se eliminaron \(deletedCount) prompts duplicados de la base de datos.")
-            }
-        } catch {
-            print("Error limpiando duplicados: \(error)")
-        }
+        PromptRepository.shared.removeDuplicatePrompts()
     }
 
     private func migrateShowcaseImageCountIfNeeded() {
-        let key = "hasMigratedShowcaseImageCountV1"
-        if UserDefaults.standard.bool(forKey: key) { return }
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self = self else { return }
-            let context: NSManagedObjectContext = self.dataController.backgroundContext
-            var didUpdate = false
-
-            context.performAndWaitCompat {
-                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                request.predicate = NSPredicate(format: "showcaseImageCount == 0 AND (image1 != nil OR image2 != nil OR image3 != nil)")
-
-                do {
-                    let entities = try context.fetch(request)
-                    guard !entities.isEmpty else { return }
-
-                    for entity in entities {
-                        autoreleasepool {
-                            var count = 0
-                            if entity.image1 != nil { count += 1 }
-                            if entity.image2 != nil { count += 1 }
-                            if entity.image3 != nil { count += 1 }
-                            entity.showcaseImageCount = Int16(count)
-                        }
-                    }
-                    try context.save()
-                    didUpdate = true
-                } catch {
-                    print("Error migrando showcaseImageCount: \(error)")
-                }
-            }
-
-            UserDefaults.standard.set(true, forKey: key)
-            if didUpdate {
-                DispatchQueue.main.async { self.loadPrompts() }
-            }
-        }
+        PromptRepository.shared.onDataChanged = { [weak self] in DispatchQueue.main.async { self?.loadPrompts() } }
+        PromptRepository.shared.migrateShowcaseImageCountIfNeeded()
     }
 
     private func migrateShowcaseBlobsToDiskIfNeeded() {
-        let key = "hasMigratedShowcaseImagesToDiskV1"
-        if UserDefaults.standard.bool(forKey: key) { return }
-
-        // Ejecutar sin bloquear el arranque.
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1.2) { [weak self] in
-            guard let self = self else { return }
-            let context: NSManagedObjectContext = self.dataController.backgroundContext
-
-            context.performAndWaitCompat {
-                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                request.predicate = NSPredicate(format: "(image1 != nil OR image2 != nil OR image3 != nil) AND (image1Path == nil AND image2Path == nil AND image3Path == nil)")
-
-                do {
-                    let entities = try context.fetch(request)
-                    if entities.isEmpty {
-                        UserDefaults.standard.set(true, forKey: key)
-                        return
-                    }
-
-                    var processed = 0
-                    for entity in entities {
-                        autoreleasepool {
-                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
-                            if !legacy.isEmpty {
-                                self.applyShowcaseImages(legacy, to: entity, promptId: entity.id, clearExisting: true)
-                            }
-                            processed += 1
-                        }
-
-                        if processed % 25 == 0, context.hasChanges {
-                            try context.save()
-                        }
-                    }
-
-                    if context.hasChanges {
-                        try context.save()
-                    }
-
-                    print("🧳 Migración imágenes a disco completada. Items: \(entities.count)")
-                    UserDefaults.standard.set(true, forKey: key)
-                    DispatchQueue.main.async { self.loadPrompts() }
-                } catch {
-                    print("Error migrando imágenes a disco: \(error)")
-                }
-            }
-        }
+        PromptRepository.shared.migrateShowcaseBlobsToDiskIfNeeded()
     }
     
     /// Crea las carpetas por defecto si no han sido sembradas aún en esta versión
@@ -367,51 +266,7 @@ class PromptService: ObservableObject {
     
     // MARK: - Search Index Helpers
 
-    private func normalizeForSearch(_ text: String) -> String {
-        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-    }
-
-    private func buildSearchDocument(for prompt: Prompt) -> PromptSearchDocument {
-        let normalizedTitle = normalizeForSearch(prompt.title)
-        let normalizedContent = normalizeForSearch(String(prompt.content.prefix(1600)))
-        let normalizedFolder = normalizeForSearch(prompt.folder ?? "")
-        let titleWords = normalizedTitle.split(whereSeparator: \.isWhitespace).map(String.init)
-
-        return PromptSearchDocument(
-            normalizedTitle: normalizedTitle,
-            normalizedContent: normalizedContent,
-            normalizedFolder: normalizedFolder,
-            titleWords: titleWords
-        )
-    }
-
-    private func rebuildPromptIndices(with prompts: [Prompt]) {
-        var lookup: [UUID: Prompt] = [:]
-        lookup.reserveCapacity(prompts.count)
-
-        var documents: [UUID: PromptSearchDocument] = [:]
-        documents.reserveCapacity(prompts.count)
-
-        for prompt in prompts {
-            lookup[prompt.id] = prompt
-            documents[prompt.id] = buildSearchDocument(for: prompt)
-        }
-
-        promptLookup = lookup
-        searchIndex = documents
-    }
-
-    private func upsertPromptIndices(with prompt: Prompt) {
-        promptLookup[prompt.id] = prompt
-        searchIndex[prompt.id] = buildSearchDocument(for: prompt)
-    }
-
-    private func removePromptIndices(for id: UUID) {
-        promptLookup.removeValue(forKey: id)
-        searchIndex.removeValue(forKey: id)
-    }
-
-    private func loadShowcaseImages(
+    func loadShowcaseImages(
         from paths: [String],
         maxImages: Int = ShowcaseImageLoadPolicy.runtimeMaxImages,
         maxTotalBytes: Int? = nil
@@ -435,6 +290,21 @@ class PromptService: ObservableObject {
         return loaded
     }
 
+    private func rebuildPromptLookup(with prompts: [Prompt]) {
+        var lookup: [UUID: Prompt] = [:]
+        lookup.reserveCapacity(prompts.count)
+        for prompt in prompts { lookup[prompt.id] = prompt }
+        self.promptLookup = lookup
+    }
+    
+    private func upsertPromptLookup(with prompt: Prompt) {
+        promptLookup[prompt.id] = prompt
+    }
+    
+    private func removePromptLookup(for id: UUID) {
+        promptLookup.removeValue(forKey: id)
+    }
+
     func promptSnapshot(byId id: UUID) -> Prompt? {
         promptLookup[id]
     }
@@ -442,94 +312,11 @@ class PromptService: ObservableObject {
     // MARK: - Operaciones CRUD
 
     private func fetchPromptSummaries(trashDict: [String: Date]) -> Result<[Prompt], Error> {
-        let context: NSManagedObjectContext = dataController.backgroundContext
-        var prompts: [Prompt] = []
-        var fetchError: Error? = nil
-
-        context.performAndWaitCompat {
-            do {
-                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                request.sortDescriptors = [
-                    NSSortDescriptor(key: "useCount", ascending: false),
-                    NSSortDescriptor(key: "modifiedAt", ascending: false)
-                ]
-                request.returnsObjectsAsFaults = true
-                request.includesPropertyValues = true
-                request.fetchBatchSize = 200
-
-                let entities = try context.fetch(request)
-                prompts.reserveCapacity(entities.count)
-                for entity in entities {
-                    autoreleasepool {
-                        var prompt = entity.toPrompt()
-                        // Aplicar la fecha de eliminación desde el diccionario de la papelera
-                        if let trashDate = trashDict[entity.id.uuidString] {
-                            prompt.deletedAt = trashDate
-                        }
-                        prompts.append(prompt)
-                    }
-                }
-            } catch {
-                fetchError = error
-            }
-        }
-
-        if let fetchError = fetchError {
-            return .failure(fetchError)
-        }
-        return .success(prompts)
+        return PromptRepository.shared.fetchPromptSummaries(trashDict: trashDict)
     }
 
     private func repairMissingShowcaseReferencesIfNeeded() {
-        let key = "hasRepairedMissingShowcaseReferencesV1"
-        if UserDefaults.standard.bool(forKey: key) { return }
-
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self else { return }
-            let context: NSManagedObjectContext = self.dataController.backgroundContext
-            var didUpdate = false
-
-            context.performAndWaitCompat {
-                let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                request.predicate = NSPredicate(format: "image1Path != nil OR image2Path != nil OR image3Path != nil")
-
-                do {
-                    let entities = try context.fetch(request)
-                    for entity in entities {
-                        let existingPaths = [entity.image1Path, entity.image2Path, entity.image3Path]
-                        let validMask = existingPaths.map { path in
-                            guard let path else { return false }
-                            return ImageStore.shared.fileExists(relativePath: path)
-                        }
-
-                        guard validMask.contains(false) else { continue }
-
-                        entity.image1Path = validMask.indices.contains(0) && validMask[0] ? entity.image1Path : nil
-                        entity.image2Path = validMask.indices.contains(1) && validMask[1] ? entity.image2Path : nil
-                        entity.image3Path = validMask.indices.contains(2) && validMask[2] ? entity.image3Path : nil
-
-                        entity.thumb1 = validMask.indices.contains(0) && validMask[0] ? entity.thumb1 : nil
-                        entity.thumb2 = validMask.indices.contains(1) && validMask[1] ? entity.thumb2 : nil
-                        entity.thumb3 = validMask.indices.contains(2) && validMask[2] ? entity.thumb3 : nil
-
-                        let remaining = [entity.image1Path, entity.image2Path, entity.image3Path].compactMap { $0 }.count
-                        entity.showcaseImageCount = Int16(remaining)
-                        didUpdate = true
-                    }
-
-                    if context.hasChanges {
-                        try context.save()
-                    }
-                } catch {
-                    print("Error reparando referencias de imágenes inexistentes: \(error)")
-                }
-            }
-
-            UserDefaults.standard.set(true, forKey: key)
-            if didUpdate {
-                DispatchQueue.main.async { self.loadPrompts() }
-            }
-        }
+        PromptRepository.shared.repairMissingShowcaseReferencesIfNeeded()
     }
     
     /// Carga todos los prompts desde Core Data (excluye los de la papelera)
@@ -553,7 +340,7 @@ class PromptService: ObservableObject {
                     self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
                         ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
                     }
-                    self.rebuildPromptIndices(with: self.prompts)
+                    self.rebuildPromptLookup(with: self.prompts); self.searchEngine.rebuildPromptIndices(with: self.prompts)
                     self.filterPrompts(query: self.searchQuery)
                     ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
                     self.isLoading = false
@@ -564,77 +351,17 @@ class PromptService: ObservableObject {
 
     /// Obtiene un prompt desde Core Data (opcionalmente incluyendo imágenes).
     func fetchPrompt(byId id: UUID, includeImages: Bool) async -> Prompt? {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                let context: NSManagedObjectContext = self.dataController.backgroundContext
-                var result: Prompt? = nil
-
-                context.performAndWaitCompat {
-                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                    request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-                    request.fetchLimit = 1
-
-                    do {
-                        guard let entity = try context.fetch(request).first else { return }
-                        var p = entity.toPrompt()
-
-                        if includeImages {
-                            if !p.showcaseImagePaths.isEmpty {
-                                p.showcaseImages = self.loadShowcaseImages(
-                                    from: p.showcaseImagePaths,
-                                    maxImages: ShowcaseImageLoadPolicy.runtimeMaxImages,
-                                    maxTotalBytes: ShowcaseImageLoadPolicy.runtimeMaxTotalBytes
-                                )
-                                p.showcaseImageCount = max(Int(entity.showcaseImageCount), p.showcaseImages.count)
-                            } else {
-                                // Fallback legacy (antes de migración a disco)
-                                let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
-                                p.showcaseImages = legacy
-                                p.showcaseImageCount = legacy.count
-                            }
-                        } else {
-                            p.showcaseImages = []
-                            p.showcaseImageCount = Int(entity.showcaseImageCount)
-                        }
-                        result = p
-                    } catch {
-                        print("Error obteniendo prompt: \(error)")
-                    }
-                }
-
-                continuation.resume(returning: result)
-            }
-        }
+        return await PromptRepository.shared.fetchPrompt(byId: id, includeImages: includeImages)
     }
 
     /// Carga únicamente las imágenes de resultados para un prompt.
     func fetchShowcaseImages(byId id: UUID) async -> [Data] {
-        let full = await fetchPrompt(byId: id, includeImages: true)
-        return full?.showcaseImages ?? []
+        return await PromptRepository.shared.fetchShowcaseImages(byId: id)
     }
 
     /// Carga únicamente los paths relativos de las imágenes de resultados para un prompt.
     func fetchShowcaseImagePaths(byId id: UUID) async -> [String] {
-        let prompt = await fetchPrompt(byId: id, includeImages: false)
-        if let paths = prompt?.showcaseImagePaths, !paths.isEmpty {
-            return paths
-        }
-
-        // Fallback legacy: si aún hay blobs, migrar on-demand para que la UI no pierda imágenes.
-        if (prompt?.showcaseImageCount ?? 0) > 0 {
-            let images = await fetchShowcaseImages(byId: id)
-            if !images.isEmpty {
-                _ = await updateShowcaseImages(promptId: id, images: images)
-                let refreshed = await fetchPrompt(byId: id, includeImages: false)
-                return refreshed?.showcaseImagePaths ?? []
-            }
-        }
-
-        return []
+        return await PromptRepository.shared.fetchShowcaseImagePaths(byId: id)
     }
     
         /// Carga todas las carpetas desde Core Data aplicando el orden guardado
@@ -754,7 +481,7 @@ class PromptService: ObservableObject {
                     touched = true
                 }
                 self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
-                self.removePromptIndices(for: updatedPrompt.id)
+                self.removePromptLookup(for: updatedPrompt.id); self.searchEngine.removePromptIndices(for: updatedPrompt.id)
                 if previousPrompt?.customShortcut != nil || (previousPrompt == nil && updatedPrompt.customShortcut != nil) {
                     requiresHotkeyRefresh = true
                 }
@@ -770,7 +497,7 @@ class PromptService: ObservableObject {
                     || (previousPrompt == nil && updatedPrompt.customShortcut != nil) {
                     requiresHotkeyRefresh = true
                 }
-                self.upsertPromptIndices(with: updatedPrompt)
+                self.upsertPromptLookup(with: updatedPrompt); self.searchEngine.upsertPromptIndices(with: updatedPrompt)
                 if let i = self.trashedPrompts.firstIndex(where: { $0.id == updatedPrompt.id }) {
                     self.trashedPrompts.remove(at: i)
                     touched = true
@@ -820,7 +547,7 @@ class PromptService: ObservableObject {
                         self.trashedPrompts.append(prompt)
                         touched = true
                     }
-                    self.removePromptIndices(for: prompt.id)
+                    self.removePromptLookup(for: prompt.id); self.searchEngine.removePromptIndices(for: prompt.id)
                     if previousPrompt?.customShortcut != nil || (previousPrompt == nil && prompt.customShortcut != nil) {
                         requiresHotkeyRefresh = true
                     }
@@ -836,7 +563,7 @@ class PromptService: ObservableObject {
                         || (previousPrompt == nil && prompt.customShortcut != nil) {
                         requiresHotkeyRefresh = true
                     }
-                    self.upsertPromptIndices(with: prompt)
+                    self.upsertPromptLookup(with: prompt); self.searchEngine.upsertPromptIndices(with: prompt)
                     if let i = self.trashedPrompts.firstIndex(where: { $0.id == prompt.id }) {
                         self.trashedPrompts.remove(at: i)
                         touched = true
@@ -865,80 +592,13 @@ class PromptService: ObservableObject {
 
     /// Actualiza solo las imágenes de showcase (y su conteo) en background.
     func updateShowcaseImages(promptId: UUID, images: [Data]) async -> Bool {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                guard let self = self else {
-                    continuation.resume(returning: false)
-                    return
-                }
-                let context: NSManagedObjectContext = self.dataController.backgroundContext
-                var ok = false
-                var updatedPrompt: Prompt? = nil
-
-                context.performAndWaitCompat {
-                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                    request.predicate = NSPredicate(format: "id == %@", promptId as CVarArg)
-                    request.fetchLimit = 1
-
-                    do {
-                        guard let entity = try context.fetch(request).first else { return }
-                        self.applyShowcaseImages(images, to: entity, promptId: promptId, clearExisting: true)
-                        entity.modifiedAt = Date()
-
-                        try context.save()
-                        updatedPrompt = entity.toPrompt()
-                        ok = true
-                    } catch {
-                        print("Error actualizando imágenes de showcase: \(error)")
-                    }
-                }
-
-                if ok, let updatedPrompt {
-                    self.applyUpdatedPromptToInMemoryState(updatedPrompt)
-                }
-                continuation.resume(returning: ok)
-            }
-        }
+        let result = await PromptRepository.shared.updateShowcaseImages(promptId: promptId, images: images)
+        if result { DispatchQueue.main.async { self.loadPrompts() } }
+        return result
     }
 
-    private func applyShowcaseImages(_ images: [Data], to entity: PromptEntity, promptId: UUID, clearExisting: Bool) {
-        if clearExisting {
-            ImageStore.shared.deleteAllImages(for: promptId)
-        }
-
-        // Reset fields
-        entity.image1Path = nil
-        entity.image2Path = nil
-        entity.image3Path = nil
-        entity.thumb1 = nil
-        entity.thumb2 = nil
-        entity.thumb3 = nil
-
-        // Clear legacy blobs
-        entity.image1 = nil
-        entity.image2 = nil
-        entity.image3 = nil
-
-        let capped = Array(images.prefix(3))
-        var savedPaths: [String] = []
-        var thumbs: [Data] = []
-
-        for (idx, data) in capped.enumerated() {
-            if let saved = try? ImageStore.shared.saveShowcaseImage(imageData: data, promptId: promptId, slot: idx + 1) {
-                savedPaths.append(saved.relativePath)
-                thumbs.append(saved.thumbnailData)
-            }
-        }
-
-        entity.image1Path = savedPaths.indices.contains(0) ? savedPaths[0] : nil
-        entity.image2Path = savedPaths.indices.contains(1) ? savedPaths[1] : nil
-        entity.image3Path = savedPaths.indices.contains(2) ? savedPaths[2] : nil
-
-        entity.thumb1 = thumbs.indices.contains(0) ? thumbs[0] : nil
-        entity.thumb2 = thumbs.indices.contains(1) ? thumbs[1] : nil
-        entity.thumb3 = thumbs.indices.contains(2) ? thumbs[2] : nil
-
-        entity.showcaseImageCount = Int16(savedPaths.count)
+    func applyShowcaseImages(_ images: [Data], to entity: PromptEntity, promptId: UUID, clearExisting: Bool) {
+        PromptRepository.shared.applyShowcaseImages(images, to: entity, promptId: promptId, clearExisting: clearExisting)
     }
     
     // MARK: - Papelera (Soft Delete)
@@ -1120,27 +780,7 @@ class PromptService: ObservableObject {
     
     /// Elimina automáticamente los prompts con más de 7 días de eliminación
     private func purgeExpiredTrash() {
-        let context = dataController.viewContext
-        let request = PromptEntity.fetchAll(in: context)
-        
-        guard let entities = try? context.fetch(request) else { return }
-        let cutoff = Date().addingTimeInterval(-7 * 86400)
-        
-        var purgedCount = 0
-        for entity in entities {
-            if let deletedAt = entity.deletedAt, deletedAt < cutoff {
-                // Limpiar UserDefaults
-                var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
-                dict.removeValue(forKey: entity.id.uuidString)
-                UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
-                context.delete(entity)
-                purgedCount += 1
-            }
-        }
-        if purgedCount > 0 {
-            dataController.save()
-            print("🗑️ Purgados \(purgedCount) prompts expirados de la papelera.")
-        }
+        PromptRepository.shared.purgeExpiredTrash()
     }
     
     // MARK: - Operaciones de Carpetas
@@ -1222,244 +862,19 @@ class PromptService: ObservableObject {
     // MARK: - Búsqueda y Filtrado
     
     /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
+
     private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
-        filterTask?.cancel()
-        
-        let determinedCategory: String?
-        if let override = categoryOverride, override == "USE_CURRENT" {
-            determinedCategory = selectedCategory
-        } else {
-            determinedCategory = categoryOverride
-        }
-        
-        let safePrompts = self.prompts
-        let safeActiveApp = self.activeAppBundleID
-        let safeSortMode = self.promptSortMode
-        let safeSearchIndex = self.searchIndex
-        let indexedContentCharacterLimit = 1600
-        let minKeywordLength = 2
-        let quotedPhrasesRegex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
-        let normalizeSearch: (String) -> String = { text in
-            text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-        }
-        let buildDocument: (Prompt) -> PromptSearchDocument = { prompt in
-            let normalizedTitle = normalizeSearch(prompt.title)
-            let normalizedContent = normalizeSearch(String(prompt.content.prefix(indexedContentCharacterLimit)))
-            let normalizedFolder = normalizeSearch(prompt.folder ?? "")
-            let titleWords = normalizedTitle.split(whereSeparator: \.isWhitespace).map(String.init)
-            return PromptSearchDocument(
-                normalizedTitle: normalizedTitle,
-                normalizedContent: normalizedContent,
-                normalizedFolder: normalizedFolder,
-                titleWords: titleWords
-            )
-        }
-        
-        filterTask = Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return }
-            var filtered = safePrompts
-            
-            if Task.isCancelled { return }
-            
-            // Filtrar por categoría si hay una seleccionada
-            if let category = determinedCategory {
-                switch category {
-                case "recent":
-                    let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
-                    let recentlyUsed = safePrompts.filter {
-                        if let lastUsed = $0.lastUsedAt { return lastUsed > fortyEightHoursAgo }
-                        return false
-                    }
-                    
-                    let mostUsed = safePrompts.filter { $0.useCount > 0 }
-                        .sorted { $0.useCount > $1.useCount }
-                        .prefix(10)
-                    
-                    var combined = recentlyUsed
-                    for p in mostUsed {
-                        if !combined.contains(where: { $0.id == p.id }) {
-                            combined.append(p)
-                        }
-                    }
-                    
-                    combined.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
-                    filtered = Array(combined.prefix(7))
-                    
-                case "favorites":
-                    filtered = filtered.filter { $0.isFavorite }
-                    filtered.sort { $0.useCount > $1.useCount }
-                    
-                case "uncategorized":
-                    filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
-                default:
-                    filtered = filtered.filter { $0.folder == category }
-                }
-            }
-            
-            if Task.isCancelled { return }
-            
-            // --- Smart Boost based on Active Application ---
-            if let activeApp = safeActiveApp, !activeApp.isEmpty, query.isEmpty {
-                let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-                filtered = matched + others
-            }
-            
-            // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO
-            if !query.isEmpty {
-                // 0. SANITIZACIÓN Y NORMALIZACIÓN
-                let sanitized = query.replacingOccurrences(of: "[\\x00-\\x1F\\x7F]", with: "", options: .regularExpression)
-                let normalizedSpaces = sanitized.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-                let originalQuery = normalizedSpaces.trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                guard !originalQuery.isEmpty else {
-                    if !Task.isCancelled {
-                        let resultToSet = filtered
-                        await MainActor.run { self.filteredPrompts = resultToSet }
-                    }
-                    return
-                }
-                
-                // 1. EXTRAER FRASES EXACTAS (entre comillas)
-                var phrasalQueries: [String] = []
-                var remainingQuery = originalQuery
-                
-                if let matches = quotedPhrasesRegex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
-                    for match in matches.reversed() { // Reversa para no corromper índices al remover
-                        if let range = Range(match.range(at: 1), in: originalQuery) {
-                            phrasalQueries.append(normalizeSearch(String(originalQuery[range])))
-                        }
-                        if let fullRange = Range(match.range(at: 0), in: originalQuery) {
-                            remainingQuery.removeSubrange(fullRange)
-                        }
-                    }
-                }
-                
-                // 2. NORMALIZACIÓN Y KEYWORDS RESTANTES
-                let normalizedRemaining = normalizeSearch(remainingQuery)
-                let keywords = normalizedRemaining
-                    .split(whereSeparator: \.isWhitespace)
-                    .map(String.init)
-                    .filter { $0.count >= minKeywordLength } // Ignorar conectores de 1 letra
-                
-                // 3. SCORING AVANZADO
-                let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
-                    var score = 0
-                    let document = safeSearchIndex[prompt.id] ?? buildDocument(prompt)
-                    let title = document.normalizedTitle
-                    let content = document.normalizedContent
-                    let folder = document.normalizedFolder
-                    
-                    // --- A. VALIDACIÓN DE FRASES COINCIDENTES ("Exact Match") ---
-                    for phrase in phrasalQueries {
-                        if title.contains(phrase) { score += 500 }
-                        else if content.contains(phrase) { score += 200 }
-                        else { return (prompt, 0) } // Si pidió frase exacta y no está, descartar
-                    }
-                    
-                    // --- B. VALIDACIÓN DE KEYWORDS (Lógica AND Flexible + FUZZY) ---
-                    for kw in keywords {
-                        var kwFound = false
-                        
-                        // B1. COINCIDENCIA POR PREFIJO (Muy relevante: Escribes "mar" y sale "Marketing")
-                        if title.hasPrefix(kw) { score += 150; kwFound = true }
-                        else if title.contains(" " + kw) { score += 100; kwFound = true } // Inicio de cualquier palabra en título
-                        
-                        // B2. FUZZY MATCHING (Tolerancia a 1 error en palabras > 4 letras)
-                        if !kwFound && kw.count > 4 {
-                            for word in document.titleWords where word.count > 3 {
-                                if word.commonPrefix(with: kw).count >= kw.count - 1 {
-                                    score += 60 // Casi coincide
-                                    kwFound = true
-                                    break
-                                }
-                            }
-                        }
-                        
-                        // B3. BÚSQUEDA EN CONTENIDO
-                        if !kwFound && content.contains(kw) {
-                            score += 30
-                            kwFound = true
-                        }
-                        
-                        // B4. BÚSQUEDA EN CATEGORÍA
-                        if !kwFound && folder.contains(kw) {
-                            score += 20
-                            kwFound = true
-                        }
-                        
-                        // Si el usuario escribió una palabra y no está NI PARECIDA, penalizamos o descartamos
-                        if !kwFound { score -= 20 }
-                    }
-                    
-                    // --- C. BONUS POR RECIENCIA Y USO ---
-                    if score > 0 {
-                        score += Int(prompt.useCount) / 2
-                        if prompt.isFavorite { score += 40 }
-                        
-                        // Bonus por reciencia: Si se tocó en la última semana, impulsamos un poco
-                        let lastWeek = Date().addingTimeInterval(-7 * 86400)
-                        if prompt.modifiedAt > lastWeek {
-                            score += 30
-                        }
-                        if prompt.modifiedAt > Date().addingTimeInterval(-24 * 3600) {
-                            score += 20 // Acumulativo si es muy muy reciente
-                        }
-                        
-                        // BONUS POR APP ACTIVA
-                        if let activeApp = safeActiveApp, prompt.targetAppBundleIDs.contains(activeApp) {
-                            score += 500 // Impulso masivo para matches de app
-                        }
-                    }
-                    
-                    return (prompt, score)
-                }
-                
-                if Task.isCancelled { return }
-                
-                filtered = scoredPrompts
-                    .filter { $0.1 > 0 }
-                    .sorted { $0.1 > $1.1 }
-                    .map { $0.0 }
-            }
-            
-            if Task.isCancelled { return }
-            
-            // --- Terminal Global Sort ---
-            if query.isEmpty {
-                switch safeSortMode {
-                case .name:
-                    filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
-                case .newest:
-                    // Priorizar los más recientemente modificados para que reflejen la actividad real
-                    filtered.sort { $0.modifiedAt > $1.modifiedAt }
-                case .mostUsed:
-                    filtered.sort { $0.useCount > $1.useCount }
-                }
-            }
-            
-            // --- RECOMMENDED ALWAYS ON TOP ---
-            // Un prompt es "Recomendado" solo si su array de aplicaciones asignadas
-            // INCLUYE la aplicación activa actual en pantalla.
-            let recommended: [Prompt]
-            let others: [Prompt]
-            if let activeApp = safeActiveApp {
-                recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-                others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-            } else {
-                recommended = []
-                others = filtered
-            }
-            let finalFiltered = recommended + others
-            
-            if !Task.isCancelled {
-                await MainActor.run {
-                    self.filteredPrompts = finalFiltered
-                }
-            }
+        searchEngine.filterPrompts(
+            prompts: self.prompts,
+            query: query,
+            categoryOverride: categoryOverride,
+            selectedCategory: self.selectedCategory,
+            activeAppBundleID: self.activeAppBundleID,
+            promptSortMode: self.promptSortMode
+        ) { [weak self] filtered in
+            self?.filteredPrompts = filtered
         }
     }
-
     /// Obtiene prompts favoritos
     func getFavoritePrompts() -> [Prompt] {
         return prompts.filter { $0.isFavorite }
@@ -1477,436 +892,17 @@ class PromptService: ObservableObject {
         return prompts
     }
     
-    /// Exporta todos los prompts a texto plano
-    func exportAllPrompts() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
-        let timestamp = dateFormatter.string(from: Date())
-        
-        var exportText = "=== PROMPTS EXPORTADOS ===\n"
-        exportText += "Fecha: \(timestamp)\n\n"
-        
-        for prompt in prompts {
-            exportText += "Título: \(prompt.title)\n"
-            exportText += "Contenido:\n\(prompt.content)\n"
-            exportText += "---\n\n"
-        }
-        
-        return exportText
-    }
+
+    private lazy var exportService: PromptExportService = {
+        PromptExportService(dataController: dataController, promptService: self)
+    }()
     
-    /// Exporta toda la base de datos (Prompts + Carpetas) en formato JSON
-    func exportAllPromptsAsJSON() -> Data? {
-        do {
-            // Export debe incluir imágenes aunque la lista use lazy-load.
-            // NOTA: JSON es portable (incluye imágenes en base64), pero puede ser pesado.
-            let context: NSManagedObjectContext = dataController.backgroundContext
-            var allPrompts: [Prompt] = []
-            var allFolders: [Folder] = []
-
-            context.performAndWaitCompat {
-                do {
-                    let folderRequest = FolderEntity.fetchAll(in: context)
-                    allFolders = try context.fetch(folderRequest).map { $0.toFolder() }
-
-                    let request = PromptEntity.fetchAll(in: context)
-                    let entities = try context.fetch(request)
-                    allPrompts = entities.map { entity in
-                        var p = entity.toPrompt()
-                        // Incluir imágenes completas (para que el JSON sea auto-contenido).
-                        if !p.showcaseImagePaths.isEmpty {
-                            p.showcaseImages = self.loadShowcaseImages(
-                                from: p.showcaseImagePaths,
-                                maxImages: ShowcaseImageLoadPolicy.runtimeMaxImages
-                            )
-                            p.showcaseImageCount = p.showcaseImages.count
-                        } else {
-                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
-                            p.showcaseImages = legacy
-                            p.showcaseImageCount = legacy.count
-                        }
-                        return p
-                    }
-                } catch {
-                    print("❌ Error preparando export JSON: \(error)")
-                }
-            }
-
-            let package = BackupPackage(
-                version: "2.3",
-                prompts: allPrompts,
-                folders: allFolders
-            )
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            encoder.dateEncodingStrategy = .iso8601
-            return try encoder.encode(package)
-        } catch {
-            print("❌ Error codificando backup a JSON: \(error)")
-            return nil
-        }
-    }
-
-    /// Exporta un backup completo en ZIP (manifest JSON + carpeta Images con archivos).
-    /// - Importante: a diferencia del JSON, el manifest NO incluye imágenes en base64.
-    func exportBackupZip(to destinationZipURL: URL) -> Bool {
-        let fm = FileManager.default
-        let tempRoot = fm.temporaryDirectory.appendingPathComponent("promtier_backup_\(UUID().uuidString)", isDirectory: true)
-        let bundleRoot = tempRoot.appendingPathComponent("Promtier Backup", isDirectory: true)
-        let imagesRoot = bundleRoot.appendingPathComponent("Images", isDirectory: true)
-        let manifestURL = bundleRoot.appendingPathComponent("manifest.json", isDirectory: false)
-
-        do {
-            try fm.createDirectory(at: imagesRoot, withIntermediateDirectories: true)
-
-            let context: NSManagedObjectContext = dataController.backgroundContext
-            var allPrompts: [Prompt] = []
-            var allFolders: [Folder] = []
-
-            context.performAndWaitCompat {
-                do {
-                    let folderRequest = FolderEntity.fetchAll(in: context)
-                    allFolders = try context.fetch(folderRequest).map { $0.toFolder() }
-
-                    let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                    request.sortDescriptors = [
-                        NSSortDescriptor(key: "useCount", ascending: false),
-                        NSSortDescriptor(key: "modifiedAt", ascending: false)
-                    ]
-                    let entities = try context.fetch(request)
-
-                    // Asegurar que prompts legacy tengan paths en disco antes de exportar.
-                    var didChange = false
-                    for entity in entities {
-                        let hasPaths = (entity.image1Path != nil || entity.image2Path != nil || entity.image3Path != nil)
-                        if !hasPaths {
-                            let legacy = [entity.image1, entity.image2, entity.image3].compactMap { $0 }
-                            if !legacy.isEmpty {
-                                self.applyShowcaseImages(legacy, to: entity, promptId: entity.id, clearExisting: true)
-                                didChange = true
-                            }
-                        }
-                    }
-                    if didChange, context.hasChanges {
-                        try context.save()
-                    }
-
-                    allPrompts = entities.map { entity in
-                        var p = entity.toPrompt()
-                        // Mantener manifest ligero: las imágenes viajan como archivos en /Images (y thumbs se regeneran al importar).
-                        p.showcaseThumbnails = []
-                        p.showcaseImages = []
-                        return p
-                    }
-                } catch {
-                    print("❌ Error preparando backup ZIP: \(error)")
-                }
-            }
-
-            let archive = BackupArchive(
-                version: "3.0",
-                exportedAt: Date(),
-                prompts: allPrompts,
-                folders: allFolders
-            )
-
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            encoder.dateEncodingStrategy = .iso8601
-            let manifestData = try encoder.encode(archive)
-            try manifestData.write(to: manifestURL, options: [.atomic])
-
-            // Copiar imágenes referenciadas al bundle (sin cargar en memoria completa).
-            var copied = Set<String>()
-            for prompt in allPrompts {
-                for rel in Array(prompt.showcaseImagePaths.prefix(3)) {
-                    guard let safeRel = sanitizeRelativeImagePath(rel) else { continue }
-                    guard copied.insert(safeRel).inserted else { continue }
-
-                    let sourceURL = ImageStore.shared.url(forRelativePath: safeRel)
-                    guard fm.fileExists(atPath: sourceURL.path) else { continue }
-
-                    let destURL = imagesRoot.appendingPathComponent(safeRel, isDirectory: false)
-                    try fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-                    if fm.fileExists(atPath: destURL.path) { try? fm.removeItem(at: destURL) }
-                    try fm.copyItem(at: sourceURL, to: destURL)
-                }
-            }
-
-            if fm.fileExists(atPath: destinationZipURL.path) { try? fm.removeItem(at: destinationZipURL) }
-            try ZipService.zip(directory: bundleRoot, to: destinationZipURL)
-            try? fm.removeItem(at: tempRoot)
-            return true
-        } catch {
-            print("❌ Error exportando backup ZIP: \(error)")
-            try? fm.removeItem(at: tempRoot)
-            return false
-        }
-    }
-
-    /// Importa un backup ZIP (manifest + Images). No sobrescribe prompts existentes por ID.
-    func importBackupZip(from zipURL: URL) -> (success: Int, failed: Int, foldersCreated: Int) {
-        let fm = FileManager.default
-        let tempRoot = fm.temporaryDirectory.appendingPathComponent("promtier_import_\(UUID().uuidString)", isDirectory: true)
-
-        do {
-            try fm.createDirectory(at: tempRoot, withIntermediateDirectories: true)
-            try ZipService.unzip(zipFile: zipURL, to: tempRoot)
-
-            guard let manifestURL = findFirstFile(named: "manifest.json", under: tempRoot) else {
-                print("❌ ZIP inválido: no se encontró manifest.json")
-                try? fm.removeItem(at: tempRoot)
-                return (0, 0, 0)
-            }
-
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let archive = try decoder.decode(BackupArchive.self, from: Data(contentsOf: manifestURL))
-
-            // El bundle root es el directorio donde vive el manifest.
-            let bundleRoot = manifestURL.deletingLastPathComponent()
-            let imagesRoot = bundleRoot.appendingPathComponent("Images", isDirectory: true)
-
-            let context: NSManagedObjectContext = dataController.backgroundContext
-            let (successCount, failedCount, foldersCreated) = context.performAndWaitCompat { [self] in
-                var sCount = 0
-                var fCount = 0
-                var cCount = 0
-                do {
-                    // Cache de existentes por ID para evitar fetch por item.
-                    let existingPromptIds = try self.fetchExistingPromptIds(in: context)
-                    let existingFolderIds = try self.fetchExistingFolderIds(in: context)
-                    let existingFolderNames = try self.fetchExistingFolderNames(in: context)
-
-                    var promptIdSet = existingPromptIds
-                    var folderIdSet = existingFolderIds
-                    var folderNameSet = existingFolderNames
-
-                    // 1) Carpetas
-                    for folder in archive.folders {
-                        if folderIdSet.contains(folder.id) || folderNameSet.contains(folder.name) { continue }
-                        _ = FolderEntity.create(from: folder, in: context)
-                        cCount += 1
-                        folderIdSet.insert(folder.id)
-                        folderNameSet.insert(folder.name)
-                    }
-
-                    // 2) Prompts
-                    for prompt in archive.prompts {
-                        if promptIdSet.contains(prompt.id) {
-                            fCount += 1
-                            continue
-                        }
-
-                        let entity = PromptEntity(context: context)
-                        entity.id = prompt.id
-                        entity.createdAt = prompt.createdAt
-                        entity.updateFromPrompt(prompt)
-
-                        let paths = Array(prompt.showcaseImagePaths.prefix(3)).compactMap(self.sanitizeRelativeImagePath(_:))
-                        var thumbs: [Data] = []
-
-                        if !paths.isEmpty {
-                            for rel in paths {
-                                let sourceURL = imagesRoot.appendingPathComponent(rel, isDirectory: false)
-                                guard fm.fileExists(atPath: sourceURL.path) else { continue }
-
-                                let destURL = ImageStore.shared.url(forRelativePath: rel)
-                                try fm.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-                                if fm.fileExists(atPath: destURL.path) { try? fm.removeItem(at: destURL) }
-                                try fm.copyItem(at: sourceURL, to: destURL)
-
-                                if let data = try? Data(contentsOf: destURL),
-                                   let thumb = ImageOptimizer.shared.optimizeForDisk(imageData: data, maxPixelSize: 480, compressionQuality: 0.7)?.data {
-                                    thumbs.append(thumb)
-                                }
-                            }
-                        }
-
-                        entity.image1Path = paths.indices.contains(0) ? paths[0] : nil
-                        entity.image2Path = paths.indices.contains(1) ? paths[1] : nil
-                        entity.image3Path = paths.indices.contains(2) ? paths[2] : nil
-
-                        entity.thumb1 = thumbs.indices.contains(0) ? thumbs[0] : nil
-                        entity.thumb2 = thumbs.indices.contains(1) ? thumbs[1] : nil
-                        entity.thumb3 = thumbs.indices.contains(2) ? thumbs[2] : nil
-
-                        entity.image1 = nil
-                        entity.image2 = nil
-                        entity.image3 = nil
-
-                        entity.showcaseImageCount = Int16(paths.count)
-
-                        sCount += 1
-                        promptIdSet.insert(prompt.id)
-
-                        if sCount % 50 == 0, context.hasChanges {
-                            try context.save()
-                        }
-                    }
-
-                    if context.hasChanges {
-                        try context.save()
-                    }
-                } catch {
-                    print("❌ Error importando backup ZIP: \(error)")
-                }
-                
-                return (sCount, fCount, cCount)
-            }
-
-            DispatchQueue.main.async {
-                self.loadFolders()
-                self.loadPrompts()
-            }
-
-            try? fm.removeItem(at: tempRoot)
-            return (successCount, failedCount, foldersCreated)
-        } catch {
-            print("❌ Error leyendo ZIP: \(error)")
-            try? fm.removeItem(at: tempRoot)
-            return (0, 0, 0)
-        }
-    }
-
-    private func sanitizeRelativeImagePath(_ path: String) -> String? {
-        if path.isEmpty { return nil }
-        if path.hasPrefix("/") { return nil }
-        let components = (path as NSString).pathComponents
-        if components.contains("..") { return nil }
-        return path
-    }
-
-    private func findFirstFile(named filename: String, under directory: URL) -> URL? {
-        let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
-            return nil
-        }
-        for case let url as URL in enumerator {
-            if url.lastPathComponent == filename { return url }
-        }
-        return nil
-    }
-
-    private func fetchExistingPromptIds(in context: NSManagedObjectContext) throws -> Set<UUID> {
-        let request = NSFetchRequest<NSDictionary>(entityName: "PromptEntity")
-        request.resultType = .dictionaryResultType
-        request.propertiesToFetch = ["id"]
-        let rows = try context.fetch(request)
-        return Set(rows.compactMap { $0["id"] as? UUID })
-    }
-
-    private func fetchExistingFolderIds(in context: NSManagedObjectContext) throws -> Set<UUID> {
-        let request = NSFetchRequest<NSDictionary>(entityName: "FolderEntity")
-        request.resultType = .dictionaryResultType
-        request.propertiesToFetch = ["id"]
-        let rows = try context.fetch(request)
-        return Set(rows.compactMap { $0["id"] as? UUID })
-    }
-
-    private func fetchExistingFolderNames(in context: NSManagedObjectContext) throws -> Set<String> {
-        let request = NSFetchRequest<NSDictionary>(entityName: "FolderEntity")
-        request.resultType = .dictionaryResultType
-        request.propertiesToFetch = ["name"]
-        let rows = try context.fetch(request)
-        return Set(rows.compactMap { $0["name"] as? String })
-    }
-    
-    /// Exporta todos los prompts en formato CSV (RFC 4180)
-    /// Columnas: id, title, content, folder, icon, isFavorite, useCount, createdAt, modifiedAt
-    func exportAllPromptsAsCSV() -> Data? {
-        let iso = ISO8601DateFormatter()
-        
-        // Función helper: envuelve el valor en comillas y escapa las comillas internas
-        func csv(_ value: String) -> String {
-            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
-            return "\"\(escaped)\""
-        }
-        
-        var rows: [String] = []
-        // Cabecera
-        rows.append("id,title,content,folder,icon,isFavorite,useCount,createdAt,modifiedAt,lastUsedAt,negativePrompt,alternatives")
-        
-        for p in prompts {
-            let row = [
-                csv(p.id.uuidString),
-                csv(p.title),
-                csv(p.content),
-                csv(p.folder ?? ""),
-                csv(p.icon ?? ""),
-                p.isFavorite ? "true" : "false",
-                "\(p.useCount)",
-                csv(iso.string(from: p.createdAt)),
-                csv(iso.string(from: p.modifiedAt)),
-                csv(p.lastUsedAt != nil ? iso.string(from: p.lastUsedAt!) : ""),
-                csv(p.negativePrompt ?? ""),
-                csv(p.alternatives.joined(separator: " | "))
-            ].joined(separator: ",")
-            rows.append(row)
-        }
-        
-        let csvString = rows.joined(separator: "\n")
-        return csvString.data(using: .utf8)
-    }
-    
-    /// Importa datos desde un archivo JSON (Soporta formato antiguo y nuevo BackupPackage)
-    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        
-        var promptsToImport: [Prompt] = []
-        var foldersToImport: [Folder] = []
-        var foldersCreated = 0
-        
-        do {
-            // Intentar decodificar como BackupPackage (Nuevo Formato)
-            let package = try decoder.decode(BackupPackage.self, from: data)
-            promptsToImport = package.prompts
-            foldersToImport = package.folders
-            print("📦 Detectado formato BackupPackage v\(package.version)")
-        } catch {
-            // Intentar decodificar como [Prompt] (Formato Antiguo)
-            do {
-                promptsToImport = try decoder.decode([Prompt].self, from: data)
-                print("📄 Detectado formato de lista de prompts (Legacy)")
-            } catch {
-                print("❌ Error decodificando archivo de importación: \(error)")
-                return (0, 0, 0)
-            }
-        }
-        
-        // Detectar Carpetas
-        for folder in foldersToImport {
-            // Evitar duplicados por nombre o ID
-            if !folders.contains(where: { $0.id == folder.id || $0.name == folder.name }) {
-                if createFolder(folder) {
-                    foldersCreated += 1
-                }
-            }
-        }
-        
-        // 2. Importar Prompts
-        var successCount = 0
-        var failedCount = 0
-        
-        for prompt in promptsToImport {
-            // Evitar duplicados exactos por ID
-            if prompts.contains(where: { $0.id == prompt.id }) {
-                failedCount += 1
-                continue
-            }
-            
-            if createPrompt(prompt) {
-                successCount += 1
-            } else {
-                failedCount += 1
-            }
-        }
-        
-        loadFolders()
-        loadPrompts()
-        return (successCount, failedCount, foldersCreated)
-    }
+    func exportAllPrompts() -> String { exportService.exportAllPrompts() }
+    func exportAllPromptsAsJSON() -> Data? { exportService.exportAllPromptsAsJSON() }
+    func exportBackupZip(to destinationZipURL: URL) -> Bool { exportService.exportBackupZip(to: destinationZipURL) }
+    func importBackupZip(from zipURL: URL) -> (success: Int, failed: Int, foldersCreated: Int) { exportService.importBackupZip(from: zipURL) }
+    func exportAllPromptsAsCSV() -> Data? { exportService.exportAllPromptsAsCSV() }
+    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) { exportService.importPromptsFromData(data) }
     
     /// Restablece toda la base de datos (BORRADO TOTAL)
     func resetAllData() {
@@ -2003,8 +999,3 @@ class PromptService: ObservableObject {
 // MARK: - Estructuras de Soporte para Transferencia
 
 /// Paquete completo de copia de seguridad
-struct BackupPackage: Codable {
-    var version: String
-    var prompts: [Prompt]
-    var folders: [Folder]
-}
