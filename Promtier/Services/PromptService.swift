@@ -409,7 +409,12 @@ class PromptService: ObservableObject {
     func recordPromptUse(_ prompt: Prompt) {
         var updated = prompt
         updated.recordUse()
-        _ = updatePrompt(updated)
+        
+        // 1. Actualizar el estado en memoria para reflejar cambios inmediatos en la UI
+        applyUpdatedPromptToState(updated)
+        
+        // 2. Ejecutar la persistencia en background para no bloquear el Main Thread (Fase 11)
+        PromptRepository.shared.recordPromptUseBackground(promptId: prompt.id)
     }
 
     func usePrompt(_ prompt: Prompt, contentOverride: String? = nil) {

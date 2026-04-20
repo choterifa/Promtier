@@ -21,7 +21,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var popover: NSPopover?
     private var ghostWindow: NSPanel?
     private var floatingZenWindow: NSPanel?
-    private var eventMonitor: Any?
+    private var eventMonitorId: UUID?
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main {
@@ -586,22 +586,18 @@ class MenuBarManager: NSObject, ObservableObject {
     }
 
     private func startEventMonitoring() {
-        guard eventMonitor == nil else { return }
-        
-        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+        guard eventMonitorId == nil else { return }
+
+        eventMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { [weak self] event in
             guard let self = self, let popover = self.popover, popover.isShown else { return }
-            
             if self.isModalActive { return }
-            
-            // Si el click no es en el popover, cerrarlo
             self.closePopover()
-        }
-    }
+        }    }
 
     private func stopEventMonitoring() {
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-            eventMonitor = nil
+        if let id = eventMonitorId {
+            GlobalHotkeyManager.shared.unsubscribeFromGlobalEvents(id: id)
+            eventMonitorId = nil
         }
     }
 }

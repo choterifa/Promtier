@@ -103,7 +103,7 @@ struct ShortcutRecorderView: View {
         return ShortcutFormatter.format(keyCode: hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(hotkeyModifiers)))
     }
     
-    @State private var globalMonitor: Any?
+    @State private var globalMonitorId: UUID?
     
     private func startRecording() {
         isRecording = true
@@ -148,7 +148,7 @@ struct ShortcutRecorderView: View {
             return nil
         }
         
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { _ in
+        globalMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { _ in
             stopRecording()
         }
     }
@@ -159,9 +159,9 @@ struct ShortcutRecorderView: View {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
         }
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalMonitor = nil
+        if let id = globalMonitorId {
+            GlobalHotkeyManager.shared.unsubscribeFromGlobalEvents(id: id)
+            globalMonitorId = nil
         }
     }
 }
@@ -313,7 +313,7 @@ struct ReusableShortcutRecorderView: View {
         }
     }
     
-    @State private var globalMonitor: Any?
+    @State private var globalMonitorId: UUID?
     
     private func startRecording() {
         isRecording = true
@@ -345,7 +345,7 @@ struct ReusableShortcutRecorderView: View {
             return nil
         }
         
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { _ in
+        globalMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { _ in
             stopRecording()
         }
     }
@@ -356,9 +356,9 @@ struct ReusableShortcutRecorderView: View {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
         }
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalMonitor = nil
+        if let id = globalMonitorId {
+            GlobalHotkeyManager.shared.unsubscribeFromGlobalEvents(id: id)
+            globalMonitorId = nil
         }
     }
 }

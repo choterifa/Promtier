@@ -440,6 +440,28 @@ final class PromptRepository {
         return true
     }
 
+    /// Records usage metrics (last used, count) in the background to prevent main-thread stutters.
+    func recordPromptUseBackground(promptId: UUID) {
+        let context = dataController.backgroundContext
+        context.perform {
+            let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+            request.predicate = NSPredicate(format: "id == %@", promptId as CVarArg)
+            request.fetchLimit = 1
+            
+            if let entity = try? context.fetch(request).first {
+                entity.useCount += 1
+                entity.lastUsedAt = Date()
+                if context.hasChanges {
+                    do {
+                        try context.save()
+                    } catch {
+                        print("Error saving prompt usage in background: \(error)")
+                    }
+                }
+            }
+        }
+    }
+
     /// Soft-delete: mueve a la papelera registrando la fecha en UserDefaults.
     func deletePrompt(withId id: UUID) -> Bool {
         var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
