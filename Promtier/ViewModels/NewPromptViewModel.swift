@@ -23,7 +23,6 @@ final class NewPromptViewModel: ObservableObject {
     @Published var isSaving = false
     
     @Published var tags: [String] = []
-    @Published var newTag: String = ""
     
     @Published var targetAppBundleIDs: [String] = []
     @Published var customShortcut: String? = nil

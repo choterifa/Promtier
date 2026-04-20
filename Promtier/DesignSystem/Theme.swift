@@ -16,6 +16,23 @@ struct Theme {
             ("Menta", .mint, "🍃"), ("Cian", .cyan, "🩵"), ("Gris", .gray, "⚪️")
         ]
     }
+
+    struct Layout {
+        struct SectionHeader {
+            static let iconSize: CGFloat = 12
+            static let titleFontSize: CGFloat = 11
+            static let titleTracking: CGFloat = 1
+            static let itemSpacing: CGFloat = 8
+            static let horizontalPadding: CGFloat = 8
+        }
+
+        struct EditorCard {
+            static let cornerRadius: CGFloat = 16
+            static let sectionTopPadding: CGFloat = 14
+            static let idleBorderWidth: CGFloat = 1.5
+            static let activeBorderWidth: CGFloat = 2
+        }
+    }
     
     struct Icons {
         struct IconCategory: Identifiable {

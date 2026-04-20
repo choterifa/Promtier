@@ -57,3 +57,52 @@ extension View {
         self.modifier(PromtierToastModifier(isPresented: isPresented, icon: icon, message: message, duration: duration, iconColor: iconColor, autoHide: autoHide))
     }
 }
+
+struct PromtierSectionHeader<Trailing: View>: View {
+    let iconName: String
+    let title: String
+    let iconColor: Color
+    let bottomPadding: CGFloat
+    let trailing: Trailing
+
+    init(
+        iconName: String,
+        title: String,
+        iconColor: Color,
+        bottomPadding: CGFloat = 0,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.iconName = iconName
+        self.title = title
+        self.iconColor = iconColor
+        self.bottomPadding = bottomPadding
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(spacing: Theme.Layout.SectionHeader.itemSpacing) {
+            Image(systemName: iconName)
+                .font(.system(size: Theme.Layout.SectionHeader.iconSize, weight: .bold))
+                .foregroundColor(iconColor)
+
+            Text(title)
+                .font(.system(size: Theme.Layout.SectionHeader.titleFontSize, weight: .bold))
+                .foregroundColor(.secondary)
+                .tracking(Theme.Layout.SectionHeader.titleTracking)
+
+            trailing
+
+            Spacer()
+        }
+        .padding(.horizontal, Theme.Layout.SectionHeader.horizontalPadding)
+        .padding(.bottom, bottomPadding)
+    }
+}
+
+extension PromtierSectionHeader where Trailing == EmptyView {
+    init(iconName: String, title: String, iconColor: Color, bottomPadding: CGFloat = 0) {
+        self.init(iconName: iconName, title: title, iconColor: iconColor, bottomPadding: bottomPadding) {
+            EmptyView()
+        }
+    }
+}

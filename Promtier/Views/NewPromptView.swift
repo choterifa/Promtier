@@ -34,6 +34,8 @@ struct NewPromptView: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var menuBarManager: MenuBarManager
     @StateObject private var viewModel: NewPromptViewModel
+    @StateObject private var keyboardCoordinator = NewPromptKeyboardCoordinator()
+    private let shortcutRouter = NewPromptShortcutRouter()
 
     @StateObject private var titleHoister = TextHoister()
     @StateObject private var contentHoister = TextHoister()
@@ -200,7 +202,6 @@ struct NewPromptView: View {
     @State private var focusNegative: Bool = false
     @State private var focusAlternative: Bool = false
     @State private var showingShortcutHelp: Bool = false
-    @State private var localMonitor: Any? = nil
     struct DiffComparison: Identifiable {
         let id = UUID()
         let text1: String
@@ -928,10 +929,7 @@ struct NewPromptView: View {
             setupKeyboardMonitor()
         }
         .onDisappear {
-            if let monitor = localMonitor {
-                NSEvent.removeMonitor(monitor)
-                localMonitor = nil
-            }
+            keyboardCoordinator.stop()
             // Cancelar auto-guardado pendiente al salir de la vista
             MenuBarManager.shared.isModalActive = false
         }
@@ -1076,70 +1074,90 @@ struct NewPromptView: View {
     }
 
     private func setupKeyboardMonitor() {
-        guard localMonitor == nil else { return }
-
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        keyboardCoordinator.start { event in
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-            if self.handleOverlayNavigationShortcut(event: event) { return nil }
-            if self.handleImageGalleryArrowShortcut(event: event) { return nil }
-            if self.handleSpacePreviewShortcut(event: event) { return nil }
-            if self.handleSaveShortcut(modifiers: modifiers, event: event) { return nil }
-            if self.handleCopyShortcut(modifiers: modifiers, event: event) { return nil }
-            if self.handlePasteImageShortcut(modifiers: modifiers, event: event) { return nil }
-            if self.handleEscapeShortcut(event: event) { return nil }
-            if self.handleQuickFocusShortcut(modifiers: modifiers, event: event) { return nil }
+            return self.shortcutRouter.route(
+                event: event,
+                modifiers: modifiers,
+                overlayNavigation: { self.handleOverlayNavigationShortcut(event: $0) },
+                galleryNavigation: { self.handleImageGalleryArrowShortcut(event: $0) },
+                spacePreview: { self.handleSpacePreviewShortcut(event: $0) },
+                save: { self.handleSaveShortcut(modifiers: $0, event: $1) },
+                copy: { self.handleCopyShortcut(modifiers: $0, event: $1) },
+                pasteImage: { self.handlePasteImageShortcut(modifiers: $0, event: $1) },
+                escape: { self.handleEscapeShortcut(event: $0) },
+                quickFocus: { self.handleQuickFocusShortcut(modifiers: $0, event: $1) }
+            )
+        }
+    }
 
-            return event
+    private func handleOverlayListNavigation(
+        event: NSEvent,
+        isVisible: Bool,
+        moveUp: @escaping () -> Void,
+        moveDown: @escaping () -> Void,
+        select: @escaping () -> Void
+    ) -> Bool {
+        guard isVisible else { return false }
+
+        switch event.keyCode {
+        case ShortcutKeyCode.upArrow:
+            DispatchQueue.main.async { moveUp() }
+            return true
+        case ShortcutKeyCode.downArrow:
+            DispatchQueue.main.async { moveDown() }
+            return true
+        case ShortcutKeyCode.returnKey, ShortcutKeyCode.enterKey:
+            DispatchQueue.main.async { select() }
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func presentField(_ showAction: @escaping () -> Void, focusAction: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            withAnimation(.spring()) {
+                showAction()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                focusAction()
+            }
+        }
+    }
+
+    private func handleOptionVariableShortcut() {
+        DispatchQueue.main.async {
+            if self.preferences.isPremiumActive {
+                withAnimation {
+                    self.showVariables.toggle()
+                    self.variablesSelectedIndex = 0
+                }
+            } else {
+                self.showingPremiumFor = "dynamic_variables".localized(for: self.preferences.language)
+            }
         }
     }
 
     private func handleOverlayNavigationShortcut(event: NSEvent) -> Bool {
-        if showVariables {
-            switch event.keyCode {
-            case ShortcutKeyCode.upArrow:
-                DispatchQueue.main.async {
-                    self.variablesSelectedIndex = max(0, self.variablesSelectedIndex - 1)
-                }
-                return true
-            case ShortcutKeyCode.downArrow:
-                DispatchQueue.main.async {
-                    self.variablesSelectedIndex += 1
-                }
-                return true
-            case ShortcutKeyCode.returnKey, ShortcutKeyCode.enterKey:
-                DispatchQueue.main.async {
-                    self.triggerVariablesSelection = true
-                }
-                return true
-            default:
-                break
-            }
+        if handleOverlayListNavigation(
+            event: event,
+            isVisible: showVariables,
+            moveUp: { self.variablesSelectedIndex = max(0, self.variablesSelectedIndex - 1) },
+            moveDown: { self.variablesSelectedIndex += 1 },
+            select: { self.triggerVariablesSelection = true }
+        ) {
+            return true
         }
 
-        if showSnippets {
-            switch event.keyCode {
-            case ShortcutKeyCode.upArrow:
-                DispatchQueue.main.async {
-                    self.snippetSelectedIndex = max(0, self.snippetSelectedIndex - 1)
-                }
-                return true
-            case ShortcutKeyCode.downArrow:
-                DispatchQueue.main.async {
-                    self.snippetSelectedIndex += 1
-                }
-                return true
-            case ShortcutKeyCode.returnKey, ShortcutKeyCode.enterKey:
-                DispatchQueue.main.async {
-                    self.triggerSnippetSelection = true
-                }
-                return true
-            default:
-                break
-            }
-        }
-
-        return false
+        return handleOverlayListNavigation(
+            event: event,
+            isVisible: showSnippets,
+            moveUp: { self.snippetSelectedIndex = max(0, self.snippetSelectedIndex - 1) },
+            moveDown: { self.snippetSelectedIndex += 1 },
+            select: { self.triggerSnippetSelection = true }
+        )
     }
 
     private func handleImageGalleryArrowShortcut(event: NSEvent) -> Bool {
@@ -1315,40 +1333,23 @@ struct NewPromptView: View {
 
     private func handleQuickFocusShortcut(modifiers: NSEvent.ModifierFlags, event: NSEvent) -> Bool {
         if modifiers == .option && event.keyCode == ShortcutKeyCode.keyN {
-            DispatchQueue.main.async {
-                withAnimation(.spring()) {
-                    self.showNegativeField = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.focusNegative = true
-                }
-            }
+            presentField(
+                { self.showNegativeField = true },
+                focusAction: { self.focusNegative = true }
+            )
             return true
         }
 
         if modifiers == .option && event.keyCode == ShortcutKeyCode.keyA {
-            DispatchQueue.main.async {
-                withAnimation(.spring()) {
-                    self.showAlternativeField = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.focusAlternative = true
-                }
-            }
+            presentField(
+                { self.showAlternativeField = true },
+                focusAction: { self.focusAlternative = true }
+            )
             return true
         }
 
         if modifiers == .option && event.keyCode == ShortcutKeyCode.keyV {
-            DispatchQueue.main.async {
-                if self.preferences.isPremiumActive {
-                    withAnimation {
-                        self.showVariables.toggle()
-                        self.variablesSelectedIndex = 0
-                    }
-                } else {
-                    self.showingPremiumFor = "dynamic_variables".localized(for: self.preferences.language)
-                }
-            }
+            handleOptionVariableShortcut()
             return true
         }
 

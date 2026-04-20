@@ -37,15 +37,11 @@ struct PromptImageShowcaseView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "photo.stack.fill")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(themeColor)
-                Text("prompt_results".localized(for: preferences.language).uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
-                
+            PromtierSectionHeader(
+                iconName: "photo.stack.fill",
+                title: "prompt_results".localized(for: preferences.language).uppercased(),
+                iconColor: themeColor
+            ) {
                 if showcaseImages.count < PromptMediaImportPipeline.maxSlots {
                     Button(action: importImagesDirectly) {
                         Image(systemName: "plus.circle.fill")
@@ -55,9 +51,7 @@ struct PromptImageShowcaseView: View {
                     .buttonStyle(.plain)
                     .help("add_image".localized(for: preferences.language))
                 }
-                Spacer()
             }
-            .padding(.horizontal, 8)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 12) {

@@ -20,15 +20,12 @@ struct PromptAppTargetsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(themeColor)
-                Text("smart_recommendation".localized(for: preferences.language).uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
-                
+            PromtierSectionHeader(
+                iconName: "sparkles",
+                title: "smart_recommendation".localized(for: preferences.language).uppercased(),
+                iconColor: themeColor,
+                bottomPadding: 4
+            ) {
                 Button(action: { showingSmartHelp.toggle() }) {
                     Image(systemName: "questionmark.circle")
                         .font(.system(size: 11))
@@ -47,8 +44,6 @@ struct PromptAppTargetsView: View {
                     .frame(width: 250)
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 4)
 
             VStack(alignment: .leading, spacing: 12) {
                 if targetAppBundleIDs.isEmpty {
@@ -136,10 +131,10 @@ struct PromptAppTargetsView: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: Theme.Layout.EditorCard.cornerRadius)
                     .fill(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.04) : Color.primary.opacity(0.01))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: Theme.Layout.EditorCard.cornerRadius)
                             .stroke(preferences.isHaloEffectEnabled ? currentCategoryColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
                     )
             )
