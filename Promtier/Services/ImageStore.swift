@@ -1,9 +1,25 @@
 import Foundation
 
+// MARK: - ImageStore
+// Responsabilidad única: gestionar el ciclo de vida de imágenes en disco.
+// - Guarda, carga, elimina imágenes de showcase.
+// - Caché LRU en memoria para evitar lecturas repetidas del disco.
+// - Purga imágenes huérfanas (no referenciadas por ningún prompt activo).
+
 final class ImageStore: @unchecked Sendable {
     nonisolated static let shared = ImageStore()
 
-    private init() {}
+    // MARK: - LRU Cache
+
+    private let cache = NSCache<NSString, NSData>()
+    private let cacheQueue = DispatchQueue(label: "com.promtier.imagestore.cache", attributes: .concurrent)
+
+    private init() {
+        // Límite de caché: 64 MB en memoria (thumbnail-level data principalmente)
+        cache.totalCostLimit = 64 * 1024 * 1024
+    }
+
+    // MARK: - Paths
 
     nonisolated private var appSupportBaseURL: URL {
         let fm = FileManager.default
@@ -17,13 +33,14 @@ final class ImageStore: @unchecked Sendable {
     }
 
     nonisolated func ensureDirectories() throws {
-        let fm = FileManager.default
-        try fm.createDirectory(at: imagesBaseURL, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: imagesBaseURL, withIntermediateDirectories: true)
     }
 
     nonisolated func url(forRelativePath relativePath: String) -> URL {
         imagesBaseURL.appendingPathComponent(relativePath, isDirectory: false)
     }
+
+    // MARK: - Save
 
     /// Guarda una imagen de showcase en disco (optimizada) y devuelve el path relativo + thumbnail.
     nonisolated func saveShowcaseImage(imageData: Data, promptId: UUID, slot: Int) throws -> (relativePath: String, thumbnailData: Data) {
@@ -33,12 +50,16 @@ final class ImageStore: @unchecked Sendable {
         let promptFolder = imagesBaseURL.appendingPathComponent(promptId.uuidString, isDirectory: true)
         try fm.createDirectory(at: promptFolder, withIntermediateDirectories: true)
 
-        guard let optimized = ImageOptimizer.shared.optimizeForDisk(imageData: imageData, maxPixelSize: 1200, compressionQuality: 0.82) else {
-            throw NSError(domain: "ImageStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "No se pudo optimizar la imagen"])
+        guard let optimized = ImageOptimizer.shared.optimizeForDisk(
+            imageData: imageData, maxPixelSize: 1200, compressionQuality: 0.82
+        ) else {
+            throw ImageStoreError.optimizationFailed("No se pudo optimizar la imagen")
         }
 
-        guard let thumb = ImageOptimizer.shared.optimizeForDisk(imageData: imageData, maxPixelSize: 480, compressionQuality: 0.7) else {
-            throw NSError(domain: "ImageStore", code: 2, userInfo: [NSLocalizedDescriptionKey: "No se pudo generar thumbnail"])
+        guard let thumb = ImageOptimizer.shared.optimizeForDisk(
+            imageData: imageData, maxPixelSize: 480, compressionQuality: 0.7
+        ) else {
+            throw ImageStoreError.optimizationFailed("No se pudo generar thumbnail")
         }
 
         let filename = "showcase_\(slot).\(optimized.fileExtension)"
@@ -46,33 +67,111 @@ final class ImageStore: @unchecked Sendable {
         try optimized.data.write(to: fileURL, options: [.atomic])
 
         let relativePath = "\(promptId.uuidString)/\(filename)"
+
+        // Invalidar caché para este path (datos frescos)
+        invalidateCache(for: relativePath)
+
         return (relativePath, thumb.data)
     }
 
+    // MARK: - Load
+
     nonisolated func loadData(relativePath: String) -> Data? {
-        try? Data(contentsOf: url(forRelativePath: relativePath))
+        let cacheKey = relativePath as NSString
+
+        // Fast-path: caché en memoria
+        if let cached = cache.object(forKey: cacheKey) {
+            return cached as Data
+        }
+
+        guard let data = try? Data(contentsOf: url(forRelativePath: relativePath)) else { return nil }
+
+        // Almacenar en caché con costo igual al tamaño en bytes
+        cache.setObject(data as NSData, forKey: cacheKey, cost: data.count)
+        return data
     }
+
+    // MARK: - Existence Check
 
     nonisolated func fileExists(relativePath: String) -> Bool {
         FileManager.default.fileExists(atPath: url(forRelativePath: relativePath).path)
     }
 
+    // MARK: - Deletion
+
     nonisolated func delete(relativePaths: [String]) {
         let fm = FileManager.default
         for path in relativePaths {
-            let fileURL = url(forRelativePath: path)
-            try? fm.removeItem(at: fileURL)
+            try? fm.removeItem(at: url(forRelativePath: path))
+            invalidateCache(for: path)
         }
     }
 
     nonisolated func deleteAllImages(for promptId: UUID) {
-        let fm = FileManager.default
         let folderURL = imagesBaseURL.appendingPathComponent(promptId.uuidString, isDirectory: true)
-        try? fm.removeItem(at: folderURL)
+        try? FileManager.default.removeItem(at: folderURL)
+        // Invalidar cualquier entrada de caché con este promptId como prefijo
+        cache.removeAllObjects()
     }
 
     nonisolated func wipeAll() {
-        let fm = FileManager.default
-        try? fm.removeItem(at: imagesBaseURL)
+        try? FileManager.default.removeItem(at: imagesBaseURL)
+        cache.removeAllObjects()
     }
+
+    // MARK: - Orphan Purge
+
+    /// Elimina en background carpetas de imágenes que no están en el conjunto de IDs activos.
+    /// Llamar después de una operación de borrado masivo para liberar espacio en disco.
+    func purgeOrphanedImages(activePromptIds: Set<UUID>) {
+        let fm = FileManager.default
+        let base = imagesBaseURL
+
+        DispatchQueue.global(qos: .background).async {
+            guard let contents = try? fm.contentsOfDirectory(
+                at: base,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: .skipsHiddenFiles
+            ) else { return }
+
+            var purgedCount = 0
+            for itemURL in contents {
+                guard let uuidString = itemURL.lastPathComponent.nilIfEmpty,
+                      let uuid = UUID(uuidString: uuidString) else { continue }
+
+                if !activePromptIds.contains(uuid) {
+                    try? fm.removeItem(at: itemURL)
+                    purgedCount += 1
+                }
+            }
+
+            if purgedCount > 0 {
+                print("🖼️ ImageStore: \(purgedCount) carpetas huérfanas eliminadas.")
+            }
+        }
+    }
+
+    // MARK: - Cache Helpers
+
+    private func invalidateCache(for relativePath: String) {
+        cache.removeObject(forKey: relativePath as NSString)
+    }
+}
+
+// MARK: - ImageStoreError
+
+enum ImageStoreError: LocalizedError {
+    case optimizationFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .optimizationFailed(let msg): return "ImageStore: \(msg)"
+        }
+    }
+}
+
+// MARK: - String Helper
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

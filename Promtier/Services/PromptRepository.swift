@@ -392,7 +392,6 @@ final class PromptRepository {
     }
 
 
-
     func purgeExpiredTrash() {
         let context = dataController.viewContext
         let request = PromptEntity.fetchAll(in: context)
@@ -403,7 +402,6 @@ final class PromptRepository {
         var purgedCount = 0
         for entity in entities {
             if let deletedAt = entity.deletedAt, deletedAt < cutoff {
-                // Limpiar UserDefaults
                 var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
                 dict.removeValue(forKey: entity.id.uuidString)
                 UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
@@ -417,4 +415,198 @@ final class PromptRepository {
         }
     }
 
+    // MARK: - Prompt CRUD
+
+    func createPrompt(_ prompt: Prompt) -> Bool {
+        let context = dataController.viewContext
+        let entity = PromptEntity(context: context)
+        entity.id = prompt.id
+        entity.createdAt = prompt.createdAt
+        entity.updateFromPrompt(prompt)
+        applyShowcaseImages(prompt.showcaseImages, to: entity, promptId: prompt.id, clearExisting: true)
+        dataController.save()
+        return true
+    }
+
+    func updatePrompt(_ prompt: Prompt) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", prompt.id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let entity = try? context.fetch(request).first else { return false }
+        entity.updateFromPrompt(prompt)
+        dataController.save()
+        return true
+    }
+
+    /// Soft-delete: mueve a la papelera registrando la fecha en UserDefaults.
+    func deletePrompt(withId id: UUID) -> Bool {
+        var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+        dict[id.uuidString] = Date()
+        UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+        return true
+    }
+
+    func deletePrompts(withIds ids: [UUID]) -> Bool {
+        var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+        let now = Date()
+        for id in ids { dict[id.uuidString] = now }
+        UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+        return true
+    }
+
+    func movePrompts(withIds ids: [UUID], toFolder folderName: String?) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", ids.map { $0 as CVarArg })
+
+        guard let entities = try? context.fetch(request) else { return false }
+        for entity in entities {
+            entity.folder = folderName
+            entity.modifiedAt = Date()
+        }
+        dataController.save()
+        return true
+    }
+
+    func markPromptsFavorite(withIds ids: [UUID]) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id IN %@", ids.map { $0 as CVarArg })
+
+        guard let entities = try? context.fetch(request) else { return false }
+        for entity in entities {
+            entity.isFavorite = true
+            entity.modifiedAt = Date()
+        }
+        dataController.save()
+        return true
+    }
+
+    func restorePrompt(withId id: UUID) -> Bool {
+        var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+        dict.removeValue(forKey: id.uuidString)
+        UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+        return true
+    }
+
+    func permanentlyDeletePrompt(withId id: UUID) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let entity = try? context.fetch(request).first else { return false }
+        ImageStore.shared.deleteAllImages(for: id)
+
+        var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+        dict.removeValue(forKey: id.uuidString)
+        UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
+
+        context.delete(entity)
+        dataController.save()
+        return true
+    }
+
+    // MARK: - Folder CRUD
+
+    func reorderFolders(_ folders: [Folder]) {
+        let ids = folders.map { $0.id.uuidString }
+        UserDefaults.standard.set(ids, forKey: "folderSortOrder")
+    }
+
+    func createFolder(_ folder: Folder) -> Bool {
+        let context = dataController.viewContext
+        _ = FolderEntity.create(from: folder, in: context)
+        dataController.save()
+        return true
+    }
+
+    func updateFolder(_ folder: Folder, oldName: String? = nil) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", folder.id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let entity = try? context.fetch(request).first else { return false }
+        entity.name = folder.name
+        entity.color = folder.color
+        entity.icon = folder.icon
+
+        // Renombrar la carpeta en prompts existentes si el nombre cambió
+        if let oldName = oldName, oldName != folder.name {
+            let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+            promptRequest.predicate = NSPredicate(format: "folder == %@", oldName)
+            if let promptEntities = try? context.fetch(promptRequest) {
+                for promptEntity in promptEntities {
+                    promptEntity.folder = folder.name
+                }
+            }
+        }
+
+        dataController.save()
+        return true
+    }
+
+    func deleteFolder(withId id: UUID, name: String) -> Bool {
+        let context = dataController.viewContext
+        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+
+        guard let entity = try? context.fetch(request).first else { return false }
+
+        // Desasignar prompts que pertenecían a esta carpeta
+        let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        promptRequest.predicate = NSPredicate(format: "folder == %@", name)
+        if let promptEntities = try? context.fetch(promptRequest) {
+            for promptEntity in promptEntities { promptEntity.folder = nil }
+        }
+
+        context.delete(entity)
+        dataController.save()
+        return true
+    }
+
+    func fetchFolders(sortMode: PromptService.FolderSortMode) -> [Folder] {
+        let request = FolderEntity.fetchAll(in: dataController.viewContext)
+        guard let entities = try? dataController.viewContext.fetch(request) else { return [] }
+
+        var folders = entities.map { $0.toFolder() }
+
+        if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder"), !savedOrder.isEmpty {
+            let newFolders = folders.filter { !savedOrder.contains($0.id.uuidString) }
+                .sorted { $0.createdAt > $1.createdAt }
+            let orderedFolders = savedOrder.compactMap { id in folders.first { $0.id.uuidString == id } }
+            folders = newFolders + orderedFolders
+        } else {
+            switch sortMode {
+            case .name:    folders.sort { $0.name.localizedCompare($1.name) == .orderedAscending }
+            case .newest:  folders.sort { $0.createdAt > $1.createdAt }
+            }
+        }
+
+        return folders
+    }
+
+    // MARK: - Reset
+
+    func resetAllData(dataController: DataController) {
+        let context = dataController.viewContext
+        ImageStore.shared.wipeAll()
+
+        let promptRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
+        let folderRequest: NSFetchRequest<NSFetchRequestResult> = FolderEntity.fetchRequest()
+
+        try? context.execute(NSBatchDeleteRequest(fetchRequest: promptRequest))
+        try? context.execute(NSBatchDeleteRequest(fetchRequest: folderRequest))
+
+        ["hasSeededDefaultsV28", "hasSeededInitialPromptsV28",
+         "hasMigratedShowcaseImagesToDiskV1", "hasMigratedShowcaseImageCountV1"].forEach {
+            UserDefaults.standard.removeObject(forKey: $0)
+        }
+
+        dataController.save()
+    }
 }
