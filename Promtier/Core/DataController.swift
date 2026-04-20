@@ -13,27 +13,36 @@ import Combine
 // SERVICIO PRINCIPAL: Controlador de persistencia con Core Data
 class DataController: ObservableObject {
     static let shared = DataController()
-    
-    // CONFIGURABLE: Nombre del archivo de base de datos
     private static let modelName = "Promtier"
     
-    // Container principal de Core Data (Vuelto a NSPersistentContainer para estabilidad)
-    lazy var container: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: DataController.modelName)
+    // Cambiamos 'lazy var' por una propiedad que podamos resetear
+    @Published var container: NSPersistentCloudKitContainer
+    
+    private init() {
+        self.container = Self.makeContainer(syncToCloud: PreferencesManager.shared.icloudSyncEnabled)
+    }
+    
+    private static func makeContainer(syncToCloud: Bool) -> NSPersistentCloudKitContainer {
+        let container = NSPersistentCloudKitContainer(name: modelName)
         
-        // CONFIGURABLE: Opciones de persistencia
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
-                                                               forKey: NSPersistentHistoryTrackingKey)
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber, 
-                                                               forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber,
-                                                               forKey: NSMigratePersistentStoresAutomaticallyOption)
-        container.persistentStoreDescriptions.first?.setOption(true as NSNumber,
-                                                               forKey: NSInferMappingModelAutomaticallyOption)
+        guard let description = container.persistentStoreDescriptions.first else {
+            fatalError("No se encontró la descripción del persistent store")
+        }
+        
+        description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+        description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
+        description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+        
+        if syncToCloud {
+            description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.valencia.Promtier.app")
+        } else {
+            description.cloudKitContainerOptions = nil
+        }
         
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
-                print("❌ Error cargando Core Data: \(error), \(error.userInfo)")
+                print("❌ Error cargando Core Data: \(error)")
             }
         }
         
@@ -41,7 +50,23 @@ class DataController: ObservableObject {
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
         return container
-    }()
+    }
+    
+    /// Cambia el modo de iCloud y migra los datos si es necesario
+    func toggleCloudSync(enabled: Bool) async {
+        // 1. Guardar todo lo pendiente antes de cerrar
+        save()
+        
+        // 2. Crear el nuevo contenedor
+        let newContainer = Self.makeContainer(syncToCloud: enabled)
+        
+        // 3. Actualizar la referencia en el hilo principal
+        await MainActor.run {
+            self.container = newContainer
+            // Notificar a los servicios que los datos han cambiado (recargar lista)
+            PromptRepository.shared.onDataChanged?()
+        }
+    }
     
     // Contexto principal para la UI
     var viewContext: NSManagedObjectContext {
@@ -52,8 +77,6 @@ class DataController: ObservableObject {
     var backgroundContext: NSManagedObjectContext {
         return container.newBackgroundContext()
     }
-    
-    private init() {}
     
     // MARK: - Métodos de guardado
     

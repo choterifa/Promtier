@@ -7,8 +7,18 @@ final class PromptRepository {
     let dataController: DataController
     var onDataChanged: (() -> Void)?
     
+    private var remoteChangeToken: Any?
+
     init(dataController: DataController = .shared) {
         self.dataController = dataController
+        
+        remoteChangeToken = NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: dataController.container.persistentStoreCoordinator,
+            queue: .main
+        ) { [weak self] _ in
+            self?.onDataChanged?()
+        }
     }
     
     func removeDuplicatePrompts() {

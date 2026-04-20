@@ -77,7 +77,10 @@ class PromptService: ObservableObject {
 
         let repo = PromptRepository.shared
         repo.onDataChanged = { [weak self] in
-            DispatchQueue.main.async { self?.loadPrompts() }
+            DispatchQueue.main.async {
+                self?.loadFolders()
+                self?.loadPrompts()
+            }
         }
 
         seedDefaultFolders()

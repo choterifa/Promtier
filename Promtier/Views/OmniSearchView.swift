@@ -146,9 +146,7 @@ struct OmniSearchView: View {
                     .background(Color.black.opacity(0.001))
                     .frame(maxHeight: 380)
                     .onChange(of: selectedIndex) { _, newValue in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            proxy.scrollTo(newValue, anchor: .center)
-                        }
+                        proxy.scrollTo(newValue, anchor: .center)
                     }
                 }
             } else if !query.isEmpty {

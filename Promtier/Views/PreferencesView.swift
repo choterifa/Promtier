@@ -395,13 +395,13 @@ struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var menuBarManager: MenuBarManager
-    
+
     @Binding var showingResetAlert: Bool
     var onClose: () -> Void
-    
+
     @State private var importStatus: String?
     @State private var exportFormat: ExportFormat = .json
-    
+    @State private var showingiCloudRestartAlert = false    
     enum ExportFormat: String, CaseIterable, Identifiable {
         case json = "JSON"
         case csv  = "CSV"
@@ -478,21 +478,19 @@ struct DataTab: View {
             
             SettingsSection(title: "cloud", icon: "icloud.fill") {
                 SettingsRow("icloud_sync", subtitle: "sync_macs") {
-                    HStack(spacing: 8) {
-                        Text("Soon")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(Color.gray.opacity(0.5)))
-                        
-                        Toggle("", isOn: .constant(false))
-                            .toggleStyle(.switch)
-                            .disabled(true)
-                    }
+                    Toggle("", isOn: Binding(
+                        get: { preferences.icloudSyncEnabled },
+                        set: { newValue in
+                            preferences.icloudSyncEnabled = newValue
+                            Task {
+                                await DataController.shared.toggleCloudSync(enabled: newValue)
+                                HapticService.shared.playSuccess()
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
                 }
-            }
-            
+            }            
             Button(action: { showingResetAlert = true }) {
                 HStack {
                     Image(systemName: "arrow.counterclockwise")
@@ -512,9 +510,9 @@ struct DataTab: View {
                 )
             }
             .buttonStyle(.plain)
-        }
-    }
-    
+            .padding(.top, 10)
+            }
+            }
     /// Lógica de exportación nativa — soporta JSON y CSV
     private func exportData(as format: ExportFormat) {
         let timestamp = Int(Date().timeIntervalSince1970)
