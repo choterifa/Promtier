@@ -561,11 +561,52 @@ struct SearchViewSimple: View {
                             .zIndex(50)
                     }
                     
-                    searchHeaderView
+                    SearchHeaderView(
+                        isSearchFocused: $isSearchFocused,
+                        onNewPrompt: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedPrompt = nil
+                                menuBarManager.activeViewState = .newPrompt
+                            }
+                        },
+                        onSettings: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                menuBarManager.activeViewState = .preferences
+                            }
+                        }
+                    )
                     
                     Divider().padding(.leading, 14).padding(.trailing, 24)
                     
-                    promptContentView
+                    SearchPromptListView(
+                        selectedPrompt: $selectedPrompt,
+                        showingPreview: $showingPreview,
+                        isSearchFocused: $isSearchFocused,
+                        isNavigatingWithKeys: $isNavigatingWithKeys,
+                        isPerformanceCardMode: isPerformanceCardMode,
+                        categoryColor: categoryColor(for:),
+                        resolvedIcon: resolvedIcon(for:),
+                        onSelect: { prompt in 
+                            isSearchFocused = false
+                            isNavigatingWithKeys = false
+                            let latest = latestPrompt(for: prompt)
+                            selectedPrompt = latest
+                            prewarmPreviewAssets(for: latest)
+                            if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
+                            if showingPreview && preferences.soundEnabled { SoundService.shared.playInteractionSound() }
+                            NSApp.keyWindow?.makeKeyAndOrderFront(nil)
+                        },
+                        onDoubleTap: { prompt in 
+                            isNavigatingWithKeys = false
+                            selectedPrompt = latestPrompt(for: prompt)
+                            withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
+                        },
+                        onUse: { prompt in usePrompt(prompt) },
+                        onCopyPack: { prompt in copyPromptPack(prompt) },
+                        onHover: { prompt, hovering in handlePromptHover(prompt, isHovering: hovering) },
+                        contextMenu: { prompt in AnyView(promptContextMenu(for: prompt)) },
+                        previewPopover: { prompt, content in AnyView(previewPopoverIfSelected(for: prompt) { content }) }
+                    )
                 }
             }
             .coordinateSpace(name: "sidebarContainer")
@@ -580,237 +621,9 @@ struct SearchViewSimple: View {
         }
     }
 
-    private var searchHeaderView: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Button(action: {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        preferences.isGridView.toggle()
-                        if preferences.autoHideSidebarInGallery {
-                            preferences.showSidebar = !preferences.isGridView
-                        }
-                    }
-                }) {
-                    Image(systemName: preferences.isGridView ? "list.dash.header.rectangle" : "text.below.photo")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(preferences.isGridView ? .blue : .secondary)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.15 : 0.1) : Color.primary.opacity(isViewToggleHovered ? 0.08 : 0.04))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(preferences.isGridView ? Color.blue.opacity(isViewToggleHovered ? 0.3 : 0.15) : Color.primary.opacity(isViewToggleHovered ? 0.12 : 0.06), lineWidth: 1)
-                                )
-                        )
-                }
-                .buttonStyle(.plain)
-                .onHover { hovering in
-                    isViewToggleHovered = hovering
-                }
-                .help(preferences.isGridView ? "List View" : "Grid View")
+    // searchHeaderView extraído a Componente
 
-                HStack(spacing: 12) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.blue)
-
-                    TextField("search_placeholder".localized(for: preferences.language), text: $promptService.searchQuery)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 15 * preferences.fontSize.scale))
-                        .disableAutocorrection(true)
-                        .focused($isSearchFocused)
-                        .onExitCommand {
-                            isSearchFocused = false
-                        }
-                        .onChange(of: promptService.searchQuery) { _, newValue in
-                            isNavigatingWithKeys = false
-                            if newValue.count > 40 {
-                                promptService.searchQuery = String(newValue.prefix(40))
-                            }
-                        }
-
-                    if !promptService.searchQuery.isEmpty {
-                        Button(action: { promptService.searchQuery = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary.opacity(0.5))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.primary.opacity(0.04))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                        )
-                )
-
-                HStack(spacing: 10) {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedPrompt = nil
-                            menuBarManager.activeViewState = .newPrompt
-                        }
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 34, height: 34)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(isPlusHovered ? Color.blue.opacity(0.85) : Color.blue)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.white.opacity(isPlusHovered ? 0.2 : 0), lineWidth: 1)
-                                    )
-                                    .shadow(color: preferences.isHaloEffectEnabled ? Color.blue.opacity(isPlusHovered ? 0.4 : 0.3) : .clear, radius: isPlusHovered ? 6 : 4, y: 2)
-                            )
-                            .scaleEffect(isPlusHovered ? 1.03 : 1.0)
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            isPlusHovered = hovering
-                        }
-                    }
-                    .help("new_prompt".localized(for: preferences.language) + " (N)")
-
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3)) {
-                            batchService.isSelectionModeActive.toggle()
-                            if !batchService.isSelectionModeActive {
-                                batchService.clearSelection()
-                            }
-                        }
-                        HapticService.shared.playLight()
-                    }) {
-                        Image(systemName: batchService.isSelectionModeActive ? "checkmark.circle.fill" : "list.bullet.indent")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(batchService.isSelectionModeActive ? .blue : .primary.opacity(0.7))
-                            .frame(width: 34, height: 34)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(batchService.isSelectionModeActive ? Color.blue.opacity(0.12) : Color.primary.opacity(isBatchHovered ? 0.08 : 0.04))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(batchService.isSelectionModeActive ? Color.blue.opacity(0.3) : Color.primary.opacity(isBatchHovered ? 0.12 : 0.06), lineWidth: 1)
-                                    )
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        isBatchHovered = hovering
-                    }
-                    .help(batchService.isSelectionModeActive ? "cancel_selection_help".localized(for: preferences.language) : "batch_selection_help".localized(for: preferences.language))
-
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            menuBarManager.activeViewState = .preferences
-                        }
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary.opacity(0.7))
-                            .frame(width: 34, height: 34)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.primary.opacity(isSettingsHovered ? 0.08 : 0.04))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.primary.opacity(isSettingsHovered ? 0.12 : 0.06), lineWidth: 1)
-                                    )
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        isSettingsHovered = hovering
-                    }
-                    .help("settings".localized(for: preferences.language) + " (Cmd+,)")
-                }
-            }
-            .padding(.leading, 14)
-            .padding(.trailing, 24)
-            .padding(.vertical, 20)
-        }
-        .background(Color(NSColor.windowBackgroundColor))
-        .onTapGesture {
-            isSearchFocused = false
-        }
-    }
-
-    @ViewBuilder
-    private var promptContentView: some View {
-        if promptService.filteredPrompts.isEmpty {
-            VStack(spacing: 32) {
-                Spacer()
-                Image(systemName: "text.bubble")
-                    .font(.system(size: 64))
-                    .foregroundColor(.secondary.opacity(0.6))
-
-                VStack(spacing: 12) {
-                    Text(promptService.searchQuery.isEmpty ? "no_prompts".localized(for: preferences.language) : "no_results".localized(for: preferences.language))
-                        .font(.system(size: 20 * preferences.fontSize.scale, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Text(promptService.searchQuery.isEmpty ? "create_first_prompt".localized(for: preferences.language) : "try_other_terms".localized(for: preferences.language))
-                        .font(.system(size: 14 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
-                }
-
-                if promptService.searchQuery.isEmpty {
-                    Button("create_first_prompt".localized(for: preferences.language)) {
-                        selectedPrompt = nil
-                        withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                }
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.leading, 14)
-            .padding(.trailing, 24)
-        } else {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    if preferences.isGridView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260, maximum: 360), spacing: 16)], spacing: 16) {
-                            ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                promptGridCard(for: prompt)
-                                    .id(prompt.id)
-                            }
-                        }
-                        .padding(.leading, 14)
-                        .padding(.trailing, 14)
-                        .padding(.vertical, 16)
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(promptService.filteredPrompts, id: \.id) { prompt in
-                                promptRow(for: prompt)
-                                    .id(prompt.id)
-                            }
-                        }
-                        .padding(.leading, 14)
-                        .padding(.trailing, 14)
-                        .padding(.vertical, 16)
-                    }
-                }
-                .scrollIndicators(.hidden)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    isSearchFocused = false
-                }
-                .onChange(of: selectedPrompt?.id) { _, newId in
-                    guard let id = newId, isNavigatingWithKeys else { return }
-                    proxy.scrollTo(id, anchor: .center)
-                }
-            }
-        }
-    }
+    // promptContentView extraído a Componente
 
     private func categoryColor(for prompt: Prompt) -> Color {
         guard let folderName = prompt.folder, !folderName.isEmpty else { return .blue }
