@@ -336,6 +336,26 @@ struct OnboardingView: View {
                         )
                         .transition(.asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .opacity))
                 }
+                
+                // Indicador visual de la tecla espacio
+                if isShowingSpaceAnim {
+                    HStack(spacing: 8) {
+                        Image(systemName: "keyboard")
+                        Text("Space")
+                    }
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(NSColor.windowBackgroundColor))
+                            .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+                    )
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.1), lineWidth: 1))
+                    .offset(y: 130)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
             .frame(height: 300)
             
