@@ -69,7 +69,7 @@ struct OmniSearchView: View {
                     .foregroundColor(.primary)
                     .focused($isFocused)
                     .onExitCommand {
-                        isFocused = false
+                        manager.hide()
                     }
                     .onChange(of: query) { _, _ in
                         selectedIndex = 0
