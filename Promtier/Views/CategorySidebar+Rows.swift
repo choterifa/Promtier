@@ -65,6 +65,7 @@ struct FolderRow: View {
     let isSelected: Bool
     let isDropTarget: Bool
     let isReorderTarget: Bool
+    var depth: Int = 0
 
     var onSelect: () -> Void
     var onRename: (String) -> Void
@@ -98,6 +99,7 @@ struct FolderRow: View {
             onRename: onRename,
             onDoubleClickRow: onEdit
         )
+        .padding(.leading, CGFloat(depth * 14))
         .transition(.move(edge: .leading).combined(with: .opacity))
         .onDrag {
             onDragStarted()

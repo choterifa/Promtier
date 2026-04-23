@@ -34,9 +34,41 @@ struct FolderManagerView: View {
     @State private var isCreateHovered = false
     
     private let presetColors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
-    
-    var body: some View {
-        ZStack {
+
+    struct ParentOption: Identifiable {
+        let folder: Folder
+        let depth: Int
+        var id: UUID { folder.id }
+
+        var displayName: String {
+            if depth == 0 { return folder.name }
+            let prefix = String(repeating: "—", count: depth)
+            return "\(prefix) \(folder.name)"
+        }
+    }
+
+    private var availableParents: [ParentOption] {
+        var options: [ParentOption] = []
+        var visited: Set<UUID> = []
+
+        func traverse(parentId: UUID?, currentDepth: Int) {
+            let children = promptService.folders.filter { $0.parentId == parentId }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            for child in children {
+                if let editingId = viewModel.editingFolder?.id, child.id == editingId { continue }
+                if visited.contains(child.id) { continue }
+                if currentDepth >= 2 { continue } // Max 2 levels total (0...1 for parents, creating depth 2 children)
+
+                visited.insert(child.id)
+                options.append(ParentOption(folder: child, depth: currentDepth))
+                traverse(parentId: child.id, currentDepth: currentDepth + 1)
+            }
+        }
+
+        traverse(parentId: nil, currentDepth: 0)
+        return options
+    }
+
+    var body: some View {        ZStack {
             // Fondo Premium con gradientes
             backgroundView
             
@@ -306,6 +338,24 @@ struct FolderManagerView: View {
                             
                             colorPickerGrid
                         }
+                    }
+
+                    // Selector de Categoría Padre (Subcategorías)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("parent_category".localized(for: preferences.language).uppercased())
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(.secondary.opacity(0.6))
+                            .tracking(1)
+                        
+                        Picker("", selection: $viewModel.selectedParentId) {
+                            Text("none".localized(for: preferences.language)).tag(UUID?.none)
+                            ForEach(availableParents) { option in
+                                Text(option.displayName).tag(UUID?.some(option.id))
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 .padding(24)

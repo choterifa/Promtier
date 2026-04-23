@@ -13,6 +13,7 @@ class FolderManagerViewModel: ObservableObject {
     @Published var newFolderName = ""
     @Published var selectedColor: Color = .blue
     @Published var selectedIcon: String? = "folder.fill"
+    @Published var selectedParentId: UUID? = nil
     @Published var editingFolder: Folder? = nil
     
     @Published var showingIconPicker = false
@@ -46,6 +47,7 @@ class FolderManagerViewModel: ObservableObject {
             newFolderName = folder.name
             selectedIcon = folder.icon ?? "folder.fill"
             selectedColor = Color(hex: folder.displayColor)
+            selectedParentId = folder.parentId
         }
     }
     
@@ -55,6 +57,7 @@ class FolderManagerViewModel: ObservableObject {
             newFolderName = ""
             selectedColor = .blue
             selectedIcon = "folder.fill"
+            selectedParentId = nil
             menuBarManager.folderToEdit = nil
         }
     }
@@ -65,6 +68,7 @@ class FolderManagerViewModel: ObservableObject {
             newFolderName = folder.name
             selectedIcon = folder.icon ?? "folder.fill"
             selectedColor = Color(hex: folder.displayColor)
+            selectedParentId = folder.parentId
         }
     }
     
@@ -118,7 +122,7 @@ class FolderManagerViewModel: ObservableObject {
                             
         // Auto-Magic Icon/Color
         if editingFolder == nil && selectedIcon == "folder.fill" && selectedColor == .blue && isAIAvailable {
-            finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", promptService: promptService, onSuccess: onSuccess)
+            finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", parentIdParam: selectedParentId, promptService: promptService, onSuccess: onSuccess)
 
             let magicPrompt = AIServiceManager.generateCategoryIconAndColorPrompt(categoryName: sanitizedName)
             let allowedIcons = Set(Theme.Icons.allIconNames)
@@ -153,7 +157,7 @@ class FolderManagerViewModel: ObservableObject {
                 } catch { }
             }
         } else if editingFolder == nil && selectedIcon == "folder.fill" && isAIAvailable {
-             finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", promptService: promptService, onSuccess: onSuccess)
+             finishSavingFolder(sanitizedName: sanitizedName, iconParam: "folder.fill", parentIdParam: selectedParentId, promptService: promptService, onSuccess: onSuccess)
 
              let iconPrompt = AIServiceManager.generateCategoryIconPrompt(categoryName: sanitizedName)
              let allowedIcons = Set(Theme.Icons.allIconNames)
@@ -175,18 +179,18 @@ class FolderManagerViewModel: ObservableObject {
                  } catch { }
              }
         } else {
-            finishSavingFolder(sanitizedName: sanitizedName, iconParam: selectedIcon, promptService: promptService, onSuccess: onSuccess)
+            finishSavingFolder(sanitizedName: sanitizedName, iconParam: selectedIcon, parentIdParam: selectedParentId, promptService: promptService, onSuccess: onSuccess)
         }
     }
     
-    private func finishSavingFolder(sanitizedName: String, iconParam: String?, promptService: PromptService, onSuccess: @escaping () -> Void) {
+    private func finishSavingFolder(sanitizedName: String, iconParam: String?, parentIdParam: UUID?, promptService: PromptService, onSuccess: @escaping () -> Void) {
         let hex = "#" + NSColor(selectedColor).hexString
         
         if let editing = editingFolder {
-            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: iconParam, createdAt: editing.createdAt, parentId: editing.parentId)
+            let updated = Folder(id: editing.id, name: sanitizedName, color: hex, icon: iconParam, createdAt: editing.createdAt, parentId: parentIdParam)
             _ = promptService.updateFolder(updated, oldName: editing.name)
         } else {
-            let new = Folder(name: sanitizedName, color: hex, icon: iconParam)
+            let new = Folder(name: sanitizedName, color: hex, icon: iconParam, parentId: parentIdParam)
             _ = promptService.createFolder(new)
         }
         onSuccess()

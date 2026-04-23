@@ -70,6 +70,8 @@
 
 /* Behavior Tab */
 "interaction" = "Interaction";
+"include_subcategory_prompts" = "Include Subcategories";
+"include_subcategory_prompts_subtitle" = "Show prompts from subcategories when a parent is selected";
 "sounds" = "Sounds";
 "sounds_subtitle" = "Auditory feedback when copying";
 "ghost_tips" = "Visual Tips";

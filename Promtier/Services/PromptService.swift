@@ -253,6 +253,7 @@ class PromptService: ObservableObject {
     private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
         searchEngine.filterPrompts(
             prompts: prompts,
+            folders: folders,
             query: query,
             categoryOverride: categoryOverride,
             selectedCategory: selectedCategory,

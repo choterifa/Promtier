@@ -61,6 +61,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var includeSubcategoryPrompts: Bool {
+        didSet {
+            userDefaults.set(includeSubcategoryPrompts, forKey: "includeSubcategoryPrompts")
+        }
+    }
+
     @Published var isGridView: Bool {
         didSet {
             userDefaults.set(isGridView, forKey: "isGridView")
@@ -458,6 +464,7 @@ class PreferencesManager: ObservableObject {
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
         self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
+        self.includeSubcategoryPrompts = userDefaults.object(forKey: "includeSubcategoryPrompts") == nil ? true : userDefaults.bool(forKey: "includeSubcategoryPrompts")
         self.isGridView = userDefaults.bool(forKey: "isGridView")
         self.autoHideSidebarInGallery = userDefaults.object(forKey: "autoHideSidebarInGallery") == nil ? true : userDefaults.bool(forKey: "autoHideSidebarInGallery")
         let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")

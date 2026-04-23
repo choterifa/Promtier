@@ -228,6 +228,45 @@ struct CategorySidebar: View {
         )
     }
     
+    struct FolderNode: Identifiable {
+        let folder: Folder
+        let depth: Int
+        var id: UUID { folder.id }
+    }
+
+    private func flattenedUnpinnedFolders() -> [FolderNode] {
+        let unpinnedFolders = promptService.folders.filter {
+            !preferences.pinnedFolderNames.contains($0.name)
+        }
+
+        var nodes: [FolderNode] = []
+        var visited: Set<UUID> = []
+
+        func traverse(parentId: UUID?, currentDepth: Int) {
+            let children = unpinnedFolders.filter { $0.parentId == parentId }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            for child in children {
+                if visited.contains(child.id) { continue }
+                visited.insert(child.id)
+                nodes.append(FolderNode(folder: child, depth: currentDepth))
+                traverse(parentId: child.id, currentDepth: currentDepth + 1)
+            }
+        }
+
+        let roots = unpinnedFolders.filter { folder in
+            folder.parentId == nil || !unpinnedFolders.contains(where: { $0.id == folder.parentId })
+        }
+        
+        for root in roots.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) {
+            if !visited.contains(root.id) {
+                visited.insert(root.id)
+                nodes.append(FolderNode(folder: root, depth: 0))
+                traverse(parentId: root.id, currentDepth: 1)
+            }
+        }
+
+        return nodes
+    }
+
     @ViewBuilder
     private var foldersListView: some View {
         ScrollView(showsIndicators: false) {
@@ -290,43 +329,40 @@ struct CategorySidebar: View {
                 }
 
                 // ── Remaining folders ────────────────────────────
-                let unpinnedFolders = promptService.folders.filter {
-                    !preferences.pinnedFolderNames.contains($0.name)
-                }
-
-                ForEach(unpinnedFolders, id: \.id) { folder in
+                ForEach(flattenedUnpinnedFolders(), id: \.id) { node in
                     FolderRow(
-                        folder: folder,
-                        count: viewModel.categoryCount(for: folder.name),
-                        isSelected: promptService.selectedCategory == folder.name,
-                        isDropTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder == nil,
-                        isReorderTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder != nil,
-                        onSelect: { promptService.selectedCategory = folder.name },
+                        folder: node.folder,
+                        count: viewModel.categoryCount(for: node.folder.name),
+                        isSelected: promptService.selectedCategory == node.folder.name,
+                        isDropTarget: viewModel.dropTargetFolderId == node.folder.id && viewModel.draggedFolder == nil,
+                        isReorderTarget: viewModel.dropTargetFolderId == node.folder.id && viewModel.draggedFolder != nil,
+                        depth: node.depth,
+                        onSelect: { promptService.selectedCategory = node.folder.name },
                         onRename: { newName in
-                            var updated = folder
+                            var updated = node.folder
                             updated.name = newName
                             _ = promptService.updateFolder(updated)
-                            if promptService.selectedCategory == folder.name {
+                            if promptService.selectedCategory == node.folder.name {
                                 promptService.selectedCategory = newName
                             }
                         },
                         onEdit: {
-                            menuBarManager.folderToEdit = folder
+                            menuBarManager.folderToEdit = node.folder
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 menuBarManager.activeViewState = .folderManager
                             }
                         },
-                        onTogglePin: { preferences.togglePin(folder.name) },
+                        onTogglePin: { preferences.togglePin(node.folder.name) },
                         onDelete: {
-                            viewModel.requestDelete(folder: folder, counts: viewModel.categoryCounts)
+                            viewModel.requestDelete(folder: node.folder, counts: viewModel.categoryCounts)
                             if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    _ = promptService.deleteFolder(folder)
+                                    _ = promptService.deleteFolder(node.folder)
                                 }
                                 HapticService.shared.playSuccess()
                             }
                         },
-                        onDragStarted: { viewModel.draggedFolder = folder },
+                        onDragStarted: { viewModel.draggedFolder = node.folder },
                         onPromptMove: { ids, folderName in
                             viewModel.movePrompts(ids: ids, to: folderName, promptService: promptService, batchService: batchService, preferences: preferences)
                         },

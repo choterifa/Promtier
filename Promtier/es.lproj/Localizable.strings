@@ -89,6 +89,8 @@
 
 /* Behavior Tab */
 "interaction" = "Interacción";
+"include_subcategory_prompts" = "Incluir Subcategorías";
+"include_subcategory_prompts_subtitle" = "Mostrar prompts de las subcategorías al seleccionar un padre";
 "sounds" = "Sonidos";
 "sounds_subtitle" = "Feedback auditivo al copiar";
 "ghost_tips" = "Consejos visuales";

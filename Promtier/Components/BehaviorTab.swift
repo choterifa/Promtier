@@ -9,6 +9,13 @@ struct BehaviorTab: View {
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "interaction", icon: "hand.tap.fill") {
+                SettingsRow("include_subcategory_prompts", subtitle: "include_subcategory_prompts_subtitle", icon: "folder.tree.fill", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.includeSubcategoryPrompts)
+                        .toggleStyle(.switch)
+                }
+
+                Divider().padding(.leading, 20)
+
                 SettingsRow("sounds", subtitle: "sounds_subtitle", icon: "speaker.wave.2.fill", iconColor: .blue) {
                     Toggle("", isOn: $preferences.soundEnabled)
                         .toggleStyle(.switch)

@@ -50,16 +50,40 @@ final class PromptSearchEngine {
     }
 
 
-    func filterPrompts(prompts: [Prompt], query: String, categoryOverride: String? = "USE_CURRENT", selectedCategory: String?, activeAppBundleID: String?, promptSortMode: PromptService.PromptSortMode, completion: @escaping ([Prompt]) -> Void) {
+    func filterPrompts(prompts: [Prompt], folders: [Folder], query: String, categoryOverride: String? = "USE_CURRENT", selectedCategory: String?, activeAppBundleID: String?, promptSortMode: PromptService.PromptSortMode, completion: @escaping ([Prompt]) -> Void) {
         filterTask?.cancel()
-        
+
         let determinedCategory: String?
         if let override = categoryOverride, override == "USE_CURRENT" {
             determinedCategory = selectedCategory
         } else {
             determinedCategory = categoryOverride
         }
-        
+
+        var allowedCategories: Set<String>? = nil
+        if let targetCat = determinedCategory, !["all", "recent", "favorites", "uncategorized"].contains(targetCat) {
+            var validNames: Set<String> = [targetCat]
+            let includeSubcategoryPrompts = PreferencesManager.shared.includeSubcategoryPrompts
+            
+            if includeSubcategoryPrompts, let rootFolder = folders.first(where: { $0.name == targetCat }) {
+                var toProcess = [rootFolder.id]
+                var processed = Set<UUID>()
+
+                while !toProcess.isEmpty {
+                    let currentId = toProcess.removeFirst()
+                    processed.insert(currentId)
+
+                    let children = folders.filter { $0.parentId == currentId }
+                    for child in children {
+                        validNames.insert(child.name)
+                        if !processed.contains(child.id) {
+                            toProcess.append(child.id)
+                        }
+                    }
+                }
+            }
+            allowedCategories = validNames
+        }        
         let safePrompts = prompts
         let safeActiveApp = activeAppBundleID
         let safeSortMode = promptSortMode
@@ -90,7 +114,12 @@ final class PromptSearchEngine {
             if Task.isCancelled { return }
             
             // Filtrar por categoría si hay una seleccionada
-            if let category = determinedCategory {
+            if let allowed = allowedCategories {
+                filtered = safePrompts.filter {
+                    if let folder = $0.folder { return allowed.contains(folder) }
+                    return false
+                }
+            } else if let category = determinedCategory {
                 switch category {
                 case "recent":
                     let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
