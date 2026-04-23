@@ -559,3 +559,5 @@
 "show_diff" = "Mostrar Cambios";
 "hide_diff" = "Ocultar Cambios";
 "double_tap_right_option" = "⌥ Derecho (x2)";
+"ai_draft_ready_title" = "Borrador de IA Listo";
+"ai_draft_ready_body" = "La IA ha terminado de generar tu contenido.";

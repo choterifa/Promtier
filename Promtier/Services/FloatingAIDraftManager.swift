@@ -30,6 +30,7 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
     @Published var isGenerating: Bool = false
     @Published var error: String?
     @Published var isDiffActive: Bool = false
+    @Published var isFullSize: Bool = false
     @Published private(set) var executionPhase: ExecutionPhase = .idle
     
     // Historial de la sesión (solo para la instancia actual, no se persiste)
@@ -110,6 +111,11 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         panel?.orderOut(nil)
         isVisible = false
         // No guardamos nada, esto es "sin entrar"
+    }
+
+    func toggleFullSize() {
+        isFullSize.toggle()
+        HapticService.shared.playLight()
     }
 
     @MainActor

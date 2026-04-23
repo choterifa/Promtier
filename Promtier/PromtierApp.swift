@@ -11,6 +11,9 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Solicitar permisos de notificación
+        NotificationService.shared.requestPermissions()
+        
         // Mostrar Onboarding en primer lanzamiento
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             if !PreferencesManager.shared.hasSeenOnboarding {

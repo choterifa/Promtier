@@ -540,3 +540,5 @@
 "show_diff" = "Show Changes";
 "hide_diff" = "Hide Changes";
 "double_tap_right_option" = "Right ⌥ (x2)";
+"ai_draft_ready_title" = "AI Draft Ready";
+"ai_draft_ready_body" = "The AI has finished generating your content.";
