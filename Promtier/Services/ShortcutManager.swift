@@ -253,6 +253,12 @@ final class GlobalHotkeyManager: ObservableObject {
     }
 
     private func triggerAIDraft() {
+        let manager = FloatingAIDraftManager.shared
+        if manager.isVisible {
+            manager.hide()
+            return
+        }
+        
         let pasteboard = NSPasteboard.general
         let oldChangeCount = pasteboard.changeCount
         let source = CGEventSource(stateID: .hidSystemState)
@@ -273,7 +279,7 @@ final class GlobalHotkeyManager: ObservableObject {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
-            FloatingAIDraftManager.shared.show(content: selection ?? "", autoImprove: selection != nil)
+            manager.show(content: selection ?? "", autoImprove: selection != nil)
         }
     }
     
