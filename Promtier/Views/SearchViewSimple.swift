@@ -205,7 +205,6 @@ struct SearchViewSimple: View {
             // Variables y Otros
             GhostTip(title: "copy_final_prompt".localized(for: preferences.language), icon: "doc.on.doc.fill", shortcut: "gt_copy_final_shortcut".localized(for: preferences.language)),
             GhostTip(title: "cancel_close".localized(for: preferences.language), icon: "xmark.square", shortcut: "gt_close_window_shortcut".localized(for: preferences.language)),
-            GhostTip(title: "gt_auto_paste_tip".localized(for: preferences.language), icon: "wand.and.stars", shortcut: "gt_auto_paste_shortcut".localized(for: preferences.language)),
              GhostTip(title: "gt_drag_images".localized(for: preferences.language), icon: "photo", shortcut: "gt_images_hint".localized(for: preferences.language)),
             GhostTip(title: "gt_zoom_images".localized(for: preferences.language), icon: "magnifyingglass", shortcut: "gt_zoom_hint".localized(for: preferences.language))
         ]
@@ -556,13 +555,6 @@ struct SearchViewSimple: View {
                 
                 // Contenido principal
                 VStack(spacing: 0) {
-                    // Banner de Accesibilidad (Refinado)
-                    if !ShortcutManager.shared.isAccessibilityGranted {
-                        AccessibilityBanner()
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                            .zIndex(50)
-                    }
-                    
                     SearchHeaderView(
                         isSearchFocused: $isSearchFocused,
                         onNewPrompt: {

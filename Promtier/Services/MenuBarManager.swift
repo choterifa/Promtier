@@ -616,10 +616,7 @@ extension MenuBarManager: NSPopoverDelegate {
     
     func popoverWillShow(_ notification: Notification) {
         isPopoverShown = true
-        
-        // Comprobación rápida de permisos al abrir el popover
-        ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false)
-        
+
         // Actualizar icono a estado activo
         statusItem?.button?.image = NSImage(systemSymbolName: menuBarIconAlt, 
                                            accessibilityDescription: "Promtier Activo")

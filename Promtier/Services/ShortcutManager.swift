@@ -31,7 +31,6 @@ final class GlobalHotkeyManager: ObservableObject {
     
     private init() {
         print("✅ GlobalHotkeyManager inicializado")
-        checkAccessibilityPermissions()
         setupMonitors()
         setupCarbonHotKey()
     }
