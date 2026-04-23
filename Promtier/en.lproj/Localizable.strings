@@ -535,3 +535,7 @@
 "char_count_short" = "%d chars";
 "magic_variant" = "Magic Variant";
 "new_subcategory" = "New Subcategory";
+"diff_view_title" = "Diff View";
+"comparison" = "Comparison";
+"show_diff" = "Show Changes";
+"hide_diff" = "Hide Changes";

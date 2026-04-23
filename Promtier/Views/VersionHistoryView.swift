@@ -17,8 +17,30 @@ struct VersionHistoryView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selected: PromptSnapshot? = nil
+    @State private var showDiff: Bool = true
 
     private var selectedSnapshot: PromptSnapshot? { selected ?? snapshots.first }
+    
+    @ViewBuilder
+    private func lineView(_ line: LineDiff) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Text(line.type == .added ? "+" : (line.type == .removed ? "-" : " "))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(line.type == .unchanged ? .clear : (line.type == .added ? .green : .red))
+                .frame(width: 10)
+            
+            Text(line.text.isEmpty ? " " : line.text)
+                .font(.system(size: 12 * preferences.fontSize.scale, design: .monospaced))
+                .foregroundColor(.primary.opacity(line.type == .unchanged ? 0.7 : 0.9))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 1)
+        .background(
+            line.type == .added ? Color.green.opacity(0.12) :
+            (line.type == .removed ? Color.red.opacity(0.12) : Color.clear)
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -105,13 +127,47 @@ struct VersionHistoryView: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 20) {
                                 // 1. Contenido principal
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("main_prompt".localized(for: preferences.language))
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.secondary)
-                                    Text(snap.content)
-                                        .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
-                                        .foregroundColor(.primary.opacity(0.85))
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text("main_prompt".localized(for: preferences.language))
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.secondary)
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: { withAnimation { showDiff.toggle() } }) {
+                                            HStack(spacing: 4) {
+                                                Image(systemName: showDiff ? "eye.fill" : "eye.slash.fill")
+                                                Text(showDiff ? "hide_diff".localized(for: preferences.language) : "show_diff".localized(for: preferences.language))
+                                            }
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundColor(.blue)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.blue.opacity(0.1))
+                                            .cornerRadius(6)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    
+                                    if showDiff {
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            ForEach(DiffEngine.computeLineDiff(oldText: snap.content, newText: currentContent)) { line in
+                                                lineView(line)
+                                            }
+                                        }
+                                        .padding(.vertical, 8)
+                                        .background(Color.primary.opacity(0.03))
+                                        .cornerRadius(8)
+                                    } else {
+                                        Text(snap.content)
+                                            .font(.system(size: 13 * preferences.fontSize.scale, design: .monospaced))
+                                            .foregroundColor(.primary.opacity(0.85))
+                                            .padding(12)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color.primary.opacity(0.03))
+                                            .cornerRadius(8)
+                                    }
                                 }
 
                                 // 2. Negative Prompt (si existe)
@@ -123,9 +179,10 @@ struct VersionHistoryView: View {
                                         Text(neg)
                                             .font(.system(size: 12 * preferences.fontSize.scale, design: .monospaced))
                                             .foregroundColor(.primary.opacity(0.75))
-                                            .padding(10)
+                                            .padding(12)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
                                             .background(Color.red.opacity(0.05))
-                                            .cornerRadius(6)
+                                            .cornerRadius(8)
                                     }
                                 }
 
@@ -138,9 +195,10 @@ struct VersionHistoryView: View {
                                             Text(alt)
                                                 .font(.system(size: 12 * preferences.fontSize.scale, design: .monospaced))
                                                 .foregroundColor(.primary.opacity(0.75))
-                                                .padding(10)
+                                                .padding(12)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                                 .background(Color.blue.opacity(0.05))
-                                                .cornerRadius(6)
+                                                .cornerRadius(8)
                                         }
                                     }
                                 }

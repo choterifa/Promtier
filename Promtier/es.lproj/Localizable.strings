@@ -554,3 +554,7 @@
 "char_count_short" = "%d car.";
 "magic_variant" = "Variante Mágica";
 "new_subcategory" = "Nueva subcategoría";
+"diff_view_title" = "Vista de Diferencias";
+"comparison" = "Comparación";
+"show_diff" = "Mostrar Cambios";
+"hide_diff" = "Ocultar Cambios";
