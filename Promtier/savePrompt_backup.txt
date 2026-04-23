@@ -1,0 +1,121 @@
+
+    private func savePrompt(closeAfter: Bool = true, isAutoSave: Bool = false) {
+        if !isAutoSave {
+            isSaving = true
+        }
+
+        // Limpiar borrador al guardar con éxito (solo si cerramos o es explícito)
+        if closeAfter {
+            DraftService.shared.clearDraft()
+            MenuBarManager.shared.isModalActive = false
+        }
+
+        let newNegativePrompt: String? = negativePrompt.isEmpty ? nil : negativePrompt
+
+        // Usar originalPrompt si existe (restaurado de borrador o asignado en onAppear)
+        if let existingPrompt = originalPrompt ?? prompt {
+            // Verificar si hay cambios de cualquier tipo para evitar guardados redundantes
+            let basicChanges = existingPrompt.title != title ||
+                             existingPrompt.content != content ||
+                             existingPrompt.promptDescription != (promptDescription.isEmpty ? nil : promptDescription) ||
+                             existingPrompt.folder != selectedFolder ||
+                             existingPrompt.isFavorite != isFavorite ||
+                             existingPrompt.icon != selectedIcon ||
+                             existingPrompt.showcaseImages != showcaseImages ||
+                             existingPrompt.negativePrompt != newNegativePrompt ||
+                             existingPrompt.alternatives != alternatives ||
+                             existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
+                             existingPrompt.customShortcut != customShortcut
+
+            if !basicChanges {
+                if closeAfter { onClose() }
+                return
+            }
+
+            var updated = existingPrompt
+
+            // ✅ Solo crear snapshot si cambió el Título o el Contenido (Premium)
+            if preferences.isPremiumActive && !isAutoSave {
+                let coreChanges = existingPrompt.title != title ||
+                                 existingPrompt.content != content ||
+                                 existingPrompt.negativePrompt != newNegativePrompt ||
+                                 existingPrompt.alternatives != alternatives
+
+                if coreChanges {
+                    let snapshot = PromptSnapshot(
+                        title:     title,
+                        content:   content,
+                        negativePrompt: newNegativePrompt,
+                        alternatives:   alternatives,
+                        timestamp: Date()
+                    )
+                    var history = existingPrompt.versionHistory
+                    history.insert(snapshot, at: 0)
+                    if history.count > 20 { history = Array(history.prefix(20)) }
+                    updated.versionHistory = history
+                }
+            }
+
+            updated.title = title
+            updated.content = content
+            updated.promptDescription = promptDescription.isEmpty ? nil : promptDescription
+            updated.folder = selectedFolder
+            updated.isFavorite = isFavorite
+            updated.icon = selectedIcon
+            updated.showcaseImages = showcaseImages
+            updated.tags = tags
+            updated.negativePrompt = newNegativePrompt
+            updated.alternatives = alternatives
+            updated.targetAppBundleIDs = targetAppBundleIDs
+            updated.customShortcut = customShortcut
+            updated.modifiedAt = Date()
+            _ = promptService.updatePrompt(updated)
+            
+            // ✅ Actualizar el prompt original para que la UI (botones de historial, etc.) reaccione al instante
+            DispatchQueue.main.async {
+                self.originalPrompt = updated
+            }
+        } else {
+            var new = Prompt(
+                title: title,
+                content: content,
+                promptDescription: promptDescription.isEmpty ? nil : promptDescription,
+                folder: selectedFolder,
+                icon: selectedIcon,
+                showcaseImages: showcaseImages,
+                tags: tags,
+                targetAppBundleIDs: targetAppBundleIDs,
+                negativePrompt: newNegativePrompt,
+                alternatives: alternatives,
+                customShortcut: customShortcut
+            )
+            new.isFavorite = isFavorite
+            _ = promptService.createPrompt(new)
+
+            if isAutoSave {
+                DispatchQueue.main.async { self.originalPrompt = new }
+            }
+        }
+
+        if closeAfter {
+            let isNewPrompt = (originalPrompt ?? prompt) == nil
+            
+            if preferences.isPremiumActive && preferences.visualEffectsEnabled && !isAutoSave {
+                showParticles = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    if isNewPrompt && !isAutoSave {
+                        menuBarManager.closePopover()
+                    }
+                    onClose()
+                }
+            } else {
+                if isNewPrompt && !isAutoSave {
+                    menuBarManager.closePopover()
+                }
+                onClose()
+            }
+        }
+    }
+
+
+    private func branchPrompt() {

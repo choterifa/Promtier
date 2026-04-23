@@ -1,6 +1,8 @@
 import UniformTypeIdentifiers
 
 extension UTType {
-    static let promtierPromptId = UTType("com.promtier.prompt.id") ?? .data
-    static let promtierFolderId = UTType("com.promtier.folder.id") ?? .data
+    // Usar `exportedAs` para evitar fallback a `public.data` (rompe detección en drop)
+    static let promtierPromptId = UTType(exportedAs: "com.promtier.prompt.id")
+    static let promtierPromptIds = UTType(exportedAs: "com.promtier.prompt.ids")
+    static let promtierFolderId = UTType(exportedAs: "com.promtier.folder.id")
 }

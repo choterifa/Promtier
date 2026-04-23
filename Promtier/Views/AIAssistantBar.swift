@@ -7,11 +7,11 @@ struct AIAssistantBar: View {
     @State private var showingMagicTipText = ""
     
     let options = [
-        (title: "Mejorar", icon: "magicmouse.fill", color: Color.blue),
-        (title: "Profesional", icon: "briefcase.fill", color: Color.secondary),
-        (title: "Conciso", icon: "scissors", color: Color.orange),
-        (title: "Creativo", icon: "sparkles", color: Color.purple),
-        (title: "Corregir", icon: "checkmark.shield.fill", color: Color.green)
+        (title: "ai_enhance", icon: "magicmouse.fill", color: Color.blue),
+        (title: "ai_professional", icon: "briefcase.fill", color: Color.secondary),
+        (title: "ai_concise", icon: "scissors", color: Color.orange),
+        (title: "ai_creative", icon: "sparkles", color: Color.purple),
+        (title: "ai_fix", icon: "checkmark.shield.fill", color: Color.green)
     ]
     
     var body: some View {
@@ -21,7 +21,7 @@ struct AIAssistantBar: View {
                     Image(systemName: "apple.intelligence")
                         .font(.system(size: 14, weight: .bold))
                         .symbolRenderingMode(.multicolor)
-                    Text("APPLE INTELLIGENCE")
+                    Text("apple_intelligence_header".localized(for: preferences.language))
                         .font(.system(size: 10, weight: .black))
                         .tracking(1)
                 }
@@ -44,13 +44,13 @@ struct AIAssistantBar: View {
                 HStack(spacing: 10) {
                     ForEach(options, id: \.title) { option in
                         Button(action: {
-                            if option.title == "Mejorar" {
+                            if option.title == "ai_enhance" {
                                 enhancePrompt()
-                                showingMagicTipText = "¡Sugerencias añadidas!"
+                                showingMagicTipText = "ai_tip_applied".localized(for: preferences.language)
                             } else {
                                 // Trigger Apple Intelligence Panel
                                 NotificationCenter.default.post(name: NSNotification.Name("TriggerAppleIntelligence"), object: nil)
-                                showingMagicTipText = "¡Abriendo Writing Tools para \(option.title)!"
+                                showingMagicTipText = String(format: "ai_tip_writing_tools".localized(for: preferences.language), option.title.localized(for: preferences.language))
                             }
                             
                             withAnimation(.spring()) {
@@ -66,7 +66,7 @@ struct AIAssistantBar: View {
                             HStack(spacing: 6) {
                                 Image(systemName: option.icon)
                                     .font(.system(size: 11, weight: .bold))
-                                Text(option.title)
+                                Text(option.title.localized(for: preferences.language))
                                     .font(.system(size: 12, weight: .semibold))
                             }
                             .padding(.horizontal, 12)

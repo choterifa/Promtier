@@ -42,6 +42,7 @@ extension FolderEntity {
     /// Petición para obtener todas las carpetas ordenadas
     static func fetchAll(in context: NSManagedObjectContext) -> NSFetchRequest<FolderEntity> {
         let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
+        request.fetchBatchSize = 50 // Carpetas pueden ser más sin afectar RAM
         request.sortDescriptors = [NSSortDescriptor(keyPath: \FolderEntity.name, ascending: true)]
         return request
     }

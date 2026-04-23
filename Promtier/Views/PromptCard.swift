@@ -6,61 +6,100 @@
 //  Created by Carlos on 15/03/26.
 //
 
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+private struct PromtierDragPayload: Codable {
+    let kind: String
+    let ids: [String]
+}
+
+struct IndicatorBadge: View {
+    let icon: String
+    let count: Int
+    let color: Color
+    let help: String?
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+            Text("\(count)")
+                .font(.system(size: 9, weight: .bold))
+        }
+        .foregroundColor(color.opacity(0.7))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(color.opacity(0.1))
+        .clipShape(Capsule())
+        .help(help ?? "")
+    }
+}
+
 struct PromptCard: View {
     let prompt: Prompt
+    let precomputedCategoryColor: Color
+    let precomputedResolvedIcon: String
+    let isPerformanceMode: Bool
     let isSelected: Bool
     let isHovered: Bool
     let onTap: () -> Void
     let onDoubleTap: () -> Void
-    let onHover: (Bool) -> Void
-    
-    @EnvironmentObject var preferences: PreferencesManager
-    @EnvironmentObject var promptService: PromptService
-    @EnvironmentObject var batchService: BatchOperationsService
-    
-    @State private var isTargetedForDrop = false
-    
-    private var highlightedContent: AttributedString {
-        var attrString = AttributedString(prompt.content)
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return attrString
-        }
-        
-        let range = NSRange(prompt.content.startIndex..<prompt.content.endIndex, in: prompt.content)
-        let matches = regex.matches(in: prompt.content, options: [], range: range)
-        
-        // Aplicar estilos de atrás hacia adelante para no romper los índices (aunque AttributedString maneja rangos, es buena práctica)
-        for match in matches.reversed() {
-            if let range = Range(match.range, in: attrString) {
-                attrString[range].foregroundColor = .blue
-                attrString[range].font = .system(size: 13 * preferences.fontSize.scale, weight: .bold)
-            }
-        }
-        
-        return attrString
-    }
-    
-    // EXTENSIÓN: Contador de variables
-    private var variableCount: Int {
-        prompt.extractTemplateVariables().count
+    let onCopy: (() -> Void)?
+    let onCopyPack: (() -> Void)?
+    let onHover: (Bool) -> Void            
+    private let keyMap: [Int: String] = [
+        0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X", 8: "C", 9: "V",
+        11: "B", 12: "Q", 13: "W", 14: "E", 15: "R", 16: "Y", 17: "T", 18: "1", 19: "2",
+        20: "3", 21: "4", 22: "6", 23: "5", 24: "=", 25: "9", 26: "7", 27: "-", 28: "8",
+        29: "0", 30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P", 37: "L", 38: "J",
+        39: "'", 40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: ".",
+        50: "`", 65: ".", 67: "*", 69: "+", 71: "Clear", 75: "/", 76: "Enter", 78: "-",
+        81: "=", 82: "0", 83: "1", 84: "2", 85: "3", 86: "4", 87: "5", 88: "6", 89: "7",
+        91: "8", 92: "9", 123: "←", 124: "→", 125: "↓", 126: "↑"
+    ]        
+    init(
+        prompt: Prompt,
+        precomputedCategoryColor: Color = .blue,
+        precomputedResolvedIcon: String = "doc.text.fill",
+        isPerformanceMode: Bool = false,
+        isSelected: Bool,
+        isHovered: Bool,
+        onTap: @escaping () -> Void,
+        onDoubleTap: @escaping () -> Void,
+        onCopy: (() -> Void)?,
+        onCopyPack: (() -> Void)?,
+        onHover: @escaping (Bool) -> Void
+    ) {
+        self.prompt = prompt
+        self.isPerformanceMode = isPerformanceMode
+        self.isSelected = isSelected
+        self.isHovered = isHovered
+        self.onTap = onTap
+        self.onDoubleTap = onDoubleTap
+        self.onCopy = onCopy
+        self.onCopyPack = onCopyPack
+        self.onHover = onHover
+
+        self.precomputedCategoryColor = precomputedCategoryColor
+        self.precomputedResolvedIcon = precomputedResolvedIcon
     }
 
-    private var variableCountText: String {
-        "\(variableCount)"
-    }
-    
-    private func getFolderColor(for folderName: String) -> Color {
-        if let customFolder = promptService.folders.first(where: { $0.name == folderName }) {
-            return Color(hex: customFolder.displayColor)
-        }
-        return PredefinedCategory.fromString(folderName)?.color ?? .blue
-    }
-    
+    @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var menuBarManager: MenuBarManager
+    @EnvironmentObject var batchService: BatchOperationsService
+
+    @State var isTargetedForDrop = false
+    @State var isGlowAnimating = false
+    @State var isLocallyHovered = false
+    @State var highlightedContentCache: AttributedString = AttributedString("")
+    @State var highlightedContentCacheKey: String = ""
+    @State var plainSnippetCache: String = ""
+
+    @Environment(\.colorScheme) var colorScheme
+
     var body: some View {
         HStack(spacing: 16) {
             // Checkbox para selección en lote
@@ -77,50 +116,30 @@ struct PromptCard: View {
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
             
-            // Icono de categoría o personalizado grande restaurado
-            if let iconName = prompt.icon {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill((prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue).opacity(0.1))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: iconName)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(prompt.folder != nil ? getFolderColor(for: prompt.folder!) : .blue)
-                }
-            } else if let folder = prompt.folder {
-                let color = getFolderColor(for: folder)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.1))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(color)
-                }
-            } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.primary.opacity(0.05))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
+            // Icono de categoría/Prompt
+            let resolvedIcon = precomputedResolvedIcon
+            
+            let color = currentCategoryColor
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: resolvedIcon)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(color)
             }
             
-            // Texto detallado
+            // Contenido de Texto
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(prompt.title)
-                        .font(.system(size: 15 * preferences.fontSize.scale, weight: .bold))
+                        .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
                         .foregroundColor(isSelected ? .blue : .primary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                     
                     if let folder = prompt.folder, !folder.isEmpty {
-                        let color = getFolderColor(for: folder)
+                        let color = currentCategoryColor
                         Text(folder)
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(color)
@@ -129,111 +148,153 @@ struct PromptCard: View {
                             .background(color.opacity(0.15))
                             .clipShape(Capsule())
                     }
+                    
+                    if isRecommended {
+                        HStack(spacing: 3) {
+                            if let activeApp = promptService.activeAppBundleID {
+                                if let icon = AppInfoCache.getIcon(for: activeApp) {
+                                    Image(nsImage: icon)
+                                        .resizable()
+                                        .frame(width: 11, height: 11)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 8, weight: .bold))
+                                }
+                                
+                                Text(AppInfoCache.getName(for: activeApp))
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.purple.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
                 }
                 
                 if let desc = prompt.promptDescription, !desc.isEmpty {
-                    Text(desc)
-                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.65))
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(desc)
+                            .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.65))
+                            .lineLimit(isPerformanceMode ? 1 : (desc.count < 55 ? 1 : 2))
+                        
+                        if !isPerformanceMode && desc.count < 55 {
+                            snippetView
+                                .lineLimit(1)
+                        }
+                    }
+                } else {
+                    snippetView
+                        .lineLimit(isPerformanceMode ? 2 : 3)
                 }
-                
-                Text(highlightedContent)
-                    .font(.system(size: 13 * preferences.fontSize.scale))
-                    .foregroundColor(.secondary.opacity(0.8))
-                    .lineLimit(prompt.promptDescription != nil ? 2 : 3)
             }
             
             Spacer()
             
-            // Indicadores de estado
-            HStack(spacing: 12) {
-                if prompt.useCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "doc.on.doc.fill")
-                            .font(.system(size: 8))
-                        Text("\(prompt.useCount)")
-                            .font(.system(size: 9, weight: .bold))
+            // Indicadores
+            HStack(spacing: 8) {
+                let hasNegative = !(prompt.negativePrompt?.isEmpty ?? true)
+                let hasAlternativeField = !(prompt.alternativePrompt?.isEmpty ?? true)
+                
+                if hasNegative || hasAlternativeField {
+                    HStack(spacing: 4) {
+                        if hasNegative {
+                            Circle().fill(Color.red.opacity(0.8)).frame(width: 6, height: 6)
+                        }
+                        if hasAlternativeField {
+                            Circle().fill(Color.green.opacity(0.8)).frame(width: 6, height: 6)
+                        }
                     }
-                    .foregroundColor(.secondary.opacity(0.5))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(Color.primary.opacity(0.04))
-                    .clipShape(Capsule())
+                }
+
+                if !prompt.alternatives.isEmpty {
+                    IndicatorBadge(icon: "square.3.layers.3d.down.right", count: prompt.alternatives.count, color: .teal, help: "tooltip_alternatives".localized(for: preferences.language))
                 }
                 
                 if variableCount > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "cube.transparent.fill")
-                            .font(.system(size: 8))
-                        Text("\(variableCount)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.blue.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Capsule())
+                    IndicatorBadge(icon: "cube.transparent.fill", count: variableCount, color: .blue, help: "tooltip_variables".localized(for: preferences.language))
+                }
+
+                if prompt.showcaseImageCount > 0 {
+                    IndicatorBadge(icon: "photo.fill", count: prompt.showcaseImageCount, color: .cyan, help: "tooltip_images".localized(for: preferences.language))
+                }
+
+                if prompt.parentID != nil {
+                    Image(systemName: "arrow.branch")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.green.opacity(0.1))
+                        .clipShape(Capsule())
+                        .help("tooltip_branch".localized(for: preferences.language))
                 }
                 
-                // Indicador de Imagen
-                if !prompt.showcaseImages.isEmpty {
-                    HStack(spacing: 3) {
-                        Image(systemName: "photo.fill")
-                            .font(.system(size: 8))
-                        Text("\(prompt.showcaseImages.count)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.cyan.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.cyan.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                
-                // Indicador de Versiones (Premium)
                 if !prompt.versionHistory.isEmpty {
-                    HStack(spacing: 3) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 8))
-                        Text("\(prompt.versionHistory.count)")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .foregroundColor(.purple.opacity(0.7))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.purple.opacity(0.1))
-                    .clipShape(Capsule())
+                    IndicatorBadge(icon: "clock.arrow.circlepath", count: prompt.versionHistory.count, color: .purple, help: "tooltip_versions".localized(for: preferences.language))
                 }
 
                 if prompt.isFavorite {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
-                        .shadow(color: .yellow.opacity(0.3), radius: 2)
+                }
+                
+                if let display = shortcutDisplay {
+                    Text(display)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundColor(.blue.opacity(0.8))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.08))
+                        .cornerRadius(4)
+                }
+                
+
+                
+                if prompt.useCount > 0 {
+                    IndicatorBadge(icon: "doc.on.doc.fill", count: prompt.useCount, color: .secondary, help: "tooltip_use_count".localized(for: preferences.language))
                 }
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.primary.opacity(0.2))
-                    .opacity(isHovered || isSelected ? 1 : 0)
-                    .frame(width: 10) // Espacio fijo reservado
+                    .foregroundColor(.primary.opacity(0.15))
+                    .opacity(effectiveHover || isSelected ? 1 : 0)
             }
         }
-
-        .padding(.horizontal, 16)
+        .padding(.leading, 18)
+        .padding(.trailing, 10)
         .padding(.vertical, 14)
+        .frame(minHeight: 82)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(cardBackgroundColor)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || effectiveHover ? themeColor.opacity(0.08) : Color.clear))
+                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && effectiveHover ? 12 : 0))
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(cardBorderColor, lineWidth: 1)
+                        .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: .black.opacity(isHovered ? 0.05 : 0.0), radius: 8, y: 4)
+        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.05 : (isPerformanceMode ? 0.01 : 0.0)), radius: isRecommended ? 8 : (isPerformanceMode ? 4 : 8), y: isRecommended ? 0 : (isPerformanceMode ? 2 : 4))
         .contentShape(Rectangle())
+        .onAppear {
+            refreshHighlightedContentCacheIfNeeded()
+            if isRecommended {
+                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+                    isGlowAnimating = true
+                }
+            }
+        }
+        .task(id: highlightedContentRefreshToken) {
+            refreshHighlightedContentCacheIfNeeded()
+        }
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
             if batchService.isSelectionModeActive {
@@ -252,23 +313,45 @@ struct PromptCard: View {
             }
         )
         .onHover { hovering in
+            if hoverEffectsEnabled {
+                isLocallyHovered = hovering
+            }
             onHover(hovering)
         }
         // SOPORTE DRAG AND DROP AVANZADO
         .onDrag {
+            // MEJORA: No cerrar inmediatamente para permitir categorización interna (drag-to-sidebar).
+            // Solo cerramos si detectamos que el arrastre sale de los límites de la ventana.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                if let window = NSApp.keyWindow, 
+                   window.className.contains("Popover"),
+                   !NSMouseInRect(NSEvent.mouseLocation, window.frame, false) {
+                    menuBarManager.closePopover()
+                }
+            }
             let provider = NSItemProvider()
-            
-            // 1. ID interno con UTI personalizada (para que apps externas no lo vean)
-            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier, visibility: .all) { completion in
-                completion(prompt.id.uuidString.data(using: .utf8), nil)
-                return nil
+
+            let selectedIds = batchService.selectedPromptIds
+            let draggedIds: [UUID]
+            if batchService.isSelectionModeActive,
+               selectedIds.contains(prompt.id),
+               selectedIds.count > 1 {
+                draggedIds = selectedIds.sorted { $0.uuidString < $1.uuidString }
+            } else {
+                draggedIds = [prompt.id]
+            }
+
+            // Payload interno (SwiftUI Drop estable): JSON con ids (1..N)
+            let payload = PromtierDragPayload(kind: "promtier.prompt.ids", ids: draggedIds.map { $0.uuidString })
+            if let data = try? JSONEncoder().encode(payload) {
+                provider.registerDataRepresentation(forTypeIdentifier: UTType.json.identifier, visibility: .all) { completion in
+                    completion(data, nil)
+                    return nil
+                }
             }
             
-            // 2. Contenido para apps externas (Texto plano)
-            provider.registerDataRepresentation(forTypeIdentifier: UTType.plainText.identifier, visibility: .all) { completion in
-                completion(prompt.content.data(using: .utf8), nil)
-                return nil
-            }
+            // 2. Contenido para apps externas (Texto plano - Máxima compatibilidad)
+            provider.registerObject(prompt.content as NSString, visibility: .all)
             
             return provider
         }
@@ -281,63 +364,7 @@ struct PromptCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.blue, lineWidth: isTargetedForDrop ? 2 : 0)
         )
-    }
-    
-    private func handleImageDrop(providers: [NSItemProvider]) {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url, let data = try? Data(contentsOf: url) {
-                        DispatchQueue.main.async {
-                            var updated = prompt
-                            updated.showcaseImages.append(data)
-                            _ = promptService.updatePrompt(updated)
-                            
-                            // Feedback háptico
-                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                        }
-                    }
-                }
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    if let data = data {
-                        DispatchQueue.main.async {
-                            var updated = prompt
-                            updated.showcaseImages.append(data)
-                            _ = promptService.updatePrompt(updated)
-                            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // Colores dinámicos Premium
-    private var cardBackgroundColor: Color {
-        let isBatchSelected = batchService.selectedPromptIds.contains(prompt.id)
-        
-        if isBatchSelected {
-            return Color.blue.opacity(0.12)
-        } else if isSelected {
-            return Color.blue.opacity(0.05)
-        } else if isHovered {
-            return Color.primary.opacity(0.04)
-        } else {
-            return Color.primary.opacity(0.02)
-        }
-    }
-    
-    private var cardBorderColor: Color {
-        if isSelected {
-            return Color.blue.opacity(0.3)
-        } else if isHovered {
-            return Color.primary.opacity(0.08)
-        } else {
-            return Color.primary.opacity(0.04)
-        }
-    }
-}
+    }        }
 
 #Preview {
     VStack(spacing: 12) {
@@ -351,6 +378,8 @@ struct PromptCard: View {
             isHovered: false,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
         
@@ -364,6 +393,8 @@ struct PromptCard: View {
             isHovered: false,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
         
@@ -377,6 +408,8 @@ struct PromptCard: View {
             isHovered: true,
             onTap: { },
             onDoubleTap: { },
+            onCopy: nil,
+            onCopyPack: nil,
             onHover: { _ in }
         )
     }

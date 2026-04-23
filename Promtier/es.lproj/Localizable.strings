@@ -1,0 +1,553 @@
+/* General */
+"search_placeholder" = "Buscar tus prompts...";
+"openrouter_service" = "Servicio OpenRouter";
+"openrouter_subtitle" = "200+ Modelos";
+"openrouter_model_id" = "ID de Modelo";
+"openrouter_explore_models" = "Explorar Modelos ↗";
+"security_notice" = "Tus claves se cifran en el Keychain de Apple.\nPromtier no sube ni almacena tus claves en ningún servidor intermediario.";
+
+"new_prompt" = "Nuevo Prompt";
+"settings" = "Configuración";
+"trash" = "Papelera";
+"no_prompts" = "No hay prompts aún";
+"no_results" = "No se encontraron resultados";
+"create_first_prompt" = "Crea tu primer prompt para comenzar";
+"try_other_terms" = "Intenta con otros términos de búsqueda";
+"copy" = "Copiar";
+"copy_pack" = "Copiar pack";
+"edit" = "Editar";
+"preview" = "Vista previa";
+"add_favorite" = "Añadir a favoritos";
+"remove_favorite" = "Quitar de favoritos";
+"choose_icon" = "Elegir Icono";
+"use_category_icon_help" = "Usar default";
+"delete" = "Mover a la papelera";
+"close" = "Cerrar";
+"done" = "Hecho";
+"cancel" = "Cancelar";
+"save" = "Guardar";
+"create" = "Crear";
+"add" = "Añadir";
+"clear_form" = "Limpiar Formulario";
+
+/* Tabs */
+"appearance_tab" = "Apariencia";
+"general_tab" = "General";
+"ai_tab" = "IA";
+"shortcuts_tab" = "Atajos";
+"snippets_tab" = "Snippets";
+"data_tab" = "Datos";
+"support_tab" = "Soporte";
+"trash_tab" = "Papelera";
+
+/* Appearance Tab */
+"appearance" = "Apariencia";
+"language" = "Idioma";
+"language_subtitle" = "Selecciona el idioma de la aplicación";
+"appearance_subtitle" = "Selecciona el modo visual de la app";
+"settings_subtitle" = "Personaliza tu experiencia en Promtier";
+"light" = "Claro";
+"dark" = "Oscuro";
+"system" = "Sistema";
+"font_size" = "Tamaño de fuente";
+"font_size_subtitle" = "Ajusta el texto de tus prompts";
+"preferred_ai_provider" = "IA Preferida";
+"openai_service" = "OpenAI (Cloud)";
+"openai_subtitle" = "Usa tu API Key de OpenAI para mejorar prompts";
+"openai_api_key_subtitle" = "Tu API Key personal de la plataforma OpenAI";
+"api_key" = "API Key";
+"openai_model_id" = "ID del modelo";
+"openai_model_presets" = "Selecciona un modelo";
+"gemini_service" = "Google Gemini";
+"gemini_subtitle" = "Usa la API de Google Gemini";
+"ai_error_invalid_api_key" = "API Key inválida. Revísala en Configuración → IA.";
+"ai_error_model_not_found" = "El modelo no existe. Elige otro en Configuración → IA.";
+"ai_error_rate_limited" = "Límite alcanzado. Intenta de nuevo en un momento.";
+"ai_error_server_busy" = "Servidor saturado. Intenta de nuevo pronto.";
+"ai_error_bad_request" = "Error en la solicitud. Revisa el modelo y el prompt.";
+"ai_error_network" = "Error de red. Revisa tu conexión.";
+"ai_error_empty_response" = "Respuesta vacía del servicio de IA.";
+"ai_error_unknown" = "Error de IA.";
+"gemini_model_id" = "ID del modelo Gemini";
+"gemini_model_subtitle" = "Escribe el ID del modelo Gemini (ej. gemini-2.0-flash)";
+"preview_priority" = "Prioridad en Preview";
+"preview_priority_subtitle" = "Orden de elementos en la vista rápida";
+"images_first" = "Imágenes primero";
+"text_first" = "Texto primero";
+"visual_effects" = "Efectos visuales";
+"visual_effects_subtitle" = "Efectos especiales al copiar y guardar prompts";
+"window" = "Ventana";
+"width" = "Ancho";
+"height" = "Alto";
+"reset_size" = "Restablecer tamaño";
+"reset_size_subtitle" = "Volver al tamaño por defecto (800 × 570)";
+"reset" = "Resetear";
+"target_size" = "TAMAÑO OBJETIVO";
+"release_to_apply" = "Soltar para aplicar";
+"halo_effects" = "Acentos y Brillos";
+"halo_effects_subtitle" = "Activa degradados y resplandores (Desmarcar para estilo plano)";
+
+/* Behavior Tab */
+"interaction" = "Interacción";
+"sounds" = "Sonidos";
+"sounds_subtitle" = "Feedback auditivo al copiar";
+"ghost_tips" = "Consejos visuales";
+"ghost_tips_subtitle" = "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)";
+"disable_image_animations" = "Desactivar animaciones de imagen";
+"disable_image_animations_subtitle" = "Desactiva el zoom animado al abrir la vista completa";
+"show_advanced_fields" = "Campos avanzados";
+"show_advanced_fields_subtitle" = "Mostrar campos de Negative y Alternative prompt";
+"view_negative" = "Ver Negative";
+"view_alternative" = "Ver Prompt Alternativo";
+"global_shortcut_copy" = "Atajo personalizado (global)";
+"gesture_hints" = "Sugerencias de gestos";
+"gesture_hints_subtitle" = "Muestra animaciones de zoom al abrir imágenes";
+"close_on_copy" = "Cerrar al copiar";
+"close_on_copy_subtitle" = "Cierra la ventana automáticamente al copiar";
+"trackpad_carousel" = "Desplazar Imágenes con Trackpad";
+"trackpad_carousel_subtitle" = "Permite mover imágenes en el preview deslizando el dedo en el trackpad.";
+"auto_paste" = "Pegado instantáneo";
+"auto_paste_subtitle" = "Pega automáticamente el prompt en la aplicación activa";
+"clipboard_suggestions" = "Sugerencias de Portapapeles";
+"clipboard_suggestions_subtitle" = "Muestra un banner si hay texto útil en el portapapeles";
+"clipboard_only_browsers" = "Sugerir solo desde Navegadores";
+"clipboard_only_browsers_subtitle" = "Solo muestra sugerencias para contenido copiado desde Safari, Chrome, Firefox, etc.";
+"clipboard_banner_title" = "Nuevo contenido en el portapapeles";
+"clipboard_banner_action" = "Crear Prompt";
+"custom_apps" = "Aplicaciones Personalizadas";
+"add_app" = "Añadir Aplicación...";
+"remove_app" = "Eliminar";
+"manage_allowed_apps" = "Gestiona las apps que activan sugerencias";
+"accessibility" = "Accesibilidad";
+"accessibility_granted" = "Permisos concedidos ✅";
+"accessibility_required" = "Permisos requeridos ⚠️";
+"accessibility_verified" = "Verificado";
+"accessibility_configure" = "Configurar";
+"haptic_feedback" = "Feedback háptico";
+"haptic_feedback_subtitle" = "Retroalimentación táctil en el trackpad";
+"test_vibration" = "Probar Vibración";
+"test_vibration_subtitle" = "Haz clic en los botones para probar el trackpad";
+"haptic_light" = "Suave";
+"haptic_medium" = "Medio";
+"haptic_strong" = "Fuerte 🪄";
+"haptic_note" = "Nota: Requiere Force Touch o Magic Trackpad.";
+"apple_intelligence" = "Herramientas de IA Local";
+"apple_intelligence_subtitle" = "Usa Ollama para mejorar y pulir tus prompts en el editor";
+"launch_at_login" = "Inicio automático";
+"variable_simple" = "Variable";
+"variable_multiline" = "Multivariable";
+"launch_at_login_subtitle" = "Abrir Promtier al iniciar sesión";
+"updates" = "Actualizaciones";
+"updates_subtitle" = "Buscar nuevas versiones de Promtier";
+"check_now" = "Buscar ahora";
+"premium" = "Promtier Premium 💎";
+"activate_premium" = "Activar Funciones Premium";
+"activate_premium_subtitle" = "Simular estado Premium para pruebas";
+
+/* Shortcuts Tab */
+"global_shortcuts" = "Atajo Global";
+"global_shortcuts_subtitle" = "Habilitar combinaciones en todo el sistema";
+"list_navigation" = "Navegación de Lista";
+"omni_search_shortcuts" = "Omni-Search";
+"move_up" = "Mover selección arriba";
+"move_down" = "Mover selección abajo";
+"toggle_sidebar" = "Mostrar/Ocultar Sidebar";
+"prompt_editor" = "Editor de Prompt";
+"save_prompt" = "Guardar prompt";
+"open_snippets" = "Apertura de Snippets (/)";
+"snippet_up" = "Navegar snippet arriba";
+"snippet_down" = "Navegar snippet abajo";
+"insert_snippet" = "Insertar snippet / Cerrar menú";
+"insert_variable" = "Insertar variable";
+"refresh_models" = "Actualizar modelos";
+"focus_negative" = "Enfocar Prompt Negativo";
+"focus_alternative" = "Enfocar Prompt Alternativo";
+"fill_variables" = "Rellenar Variables";
+"next_field" = "Avanzar al siguiente campo";
+"copy_final_prompt" = "Copiar prompt final";
+"cancel_close" = "Cancelar / Cerrar panel";
+"toggle_promtier" = "Abrir / Cerrar Promtier";
+"close_window" = "Cerrar ventana";
+
+/* Data Tab */
+"export" = "Exportar";
+"import" = "Importar";
+"format" = "Formato";
+"export_format_subtitle" = "Elige el formato de exportación";
+"save_as_file" = "Guardar como archivo";
+"export_json_subtitle" = "Backup completo con carpetas (recomendado)";
+"export_csv_subtitle" = "Solo prompts — compatible con Excel / Sheets";
+"export_zip_subtitle" = "Backup completo (ZIP) — incluye imágenes y carpetas";
+"import_library" = "Importar Biblioteca";
+"import_subtitle" = "Carga desde un archivo JSON";
+"icloud_sync" = "Sincronización iCloud";
+"sync_macs" = "Sincroniza entre tus Macs";
+"reset_all" = "Restablecer todo";
+"reset_factory" = "Restablecer a fábrica";
+"reset_message" = "Se perderán permanentemente todos tus ajustes y prompts.";
+
+/* Support Tab */
+"icon_glossary" = "Glosario de Iconos";
+"glossary_variable_title" = "Variables";
+"glossary_variables_desc" = "Campos dinámicos que rellenas antes de copiar el prompt.";
+"glossary_recent_desc" = "Prompts que has usado recientemente en todas las categorías.";
+"glossary_favorites_desc" = "Tus prompts marcados para un acceso rápido.";
+"glossary_snippets_desc" = "Fragmentos de texto reutilizables que insertas escribiendo /.";
+"glossary_snippets_trigger_desc" = "Escribe / en el editor para insertar fragmentos reutilizables rápidamente.";
+"glossary_negative_desc" = "Instrucciones sobre qué excluir del resultado (común en IA).";
+"glossary_alternative_desc" = "Una variación o enfoque similar al prompt principal.";
+"glossary_copy_title" = "Copiar al Portapapeles";
+"glossary_copy_desc" = "Copia el contenido final a tu portapapeles, listo para usar.";
+"glossary_images_title" = "Imágenes y Resultados";
+"glossary_images_desc" = "Resultados visuales o fotos de referencia adjuntas a tu prompt.";
+"glossary_negative_dot_title" = "Indicador Negativo";
+"glossary_negative_dot_desc" = "Punto rojo que indica que el prompt tiene instrucciones negativas.";
+"glossary_alternative_dot_title" = "Indicador Alternativo";
+"glossary_alternative_dot_desc" = "Punto verde que indica que el prompt tiene variaciones alternativas.";
+"glossary_variable_indicator_title" = "Indicador de Variables";
+"glossary_variable_indicator_desc" = "Cantidad de campos dinámicos en el prompt.";
+"glossary_images_indicator_title" = "Indicador de Imágenes";
+"glossary_images_indicator_desc" = "Cantidad de imágenes o resultados adjuntos.";
+"glossary_versions_indicator_title" = "Indicador de Versiones";
+"glossary_versions_indicator_desc" = "Historial de cambios realizados en este prompt.";
+"contact_help" = "Contacto y Ayuda";
+"email_support" = "Soporte por Email";
+"report_problem" = "Reportar un Problema";
+"report_details" = "Envíanos detalles sobre un error";
+"legal_privacy" = "Legal y Privacidad";
+"privacy_policy" = "Política de Privacidad";
+"how_data_handled" = "Cómo manejamos tus datos";
+"terms_service" = "Términos de Servicio";
+"app_conditions" = "Condiciones de uso de la app";
+"created_with_passion" = "Creado con pasión por Choterifa";
+"visit_website" = "Visitar Sitio Web";
+
+/* Categories */
+"explore" = "Explorar";
+"all" = "Todas";
+"recent" = "Recientes";
+"favorites" = "Favoritos";
+"uncategorized" = "Sin categoría";
+"manage_categories" = "Gestionar Categorías";
+"customize_workflow" = "Personaliza tu flujo de trabajo";
+"show_categories" = "Mostrar Categorías";
+"hide_categories" = "Ocultar Categorías";
+"hide_sidebar_help" = "Ocultar Sidebar (⌘B)";
+"show_sidebar_help" = "Mostrar Sidebar (⌘B)";
+"gallery_toggle" = "Galería / Lista";
+"auto_hide_sidebar_gallery" = "Auto-ocultar Sidebar";
+"auto_hide_sidebar_gallery_subtitle" = "Colapsa el panel lateral al entrar en modo Galería para ganar espacio";
+"cancel_selection_help" = "Cancelar Selección";
+"batch_selection_help" = "Selección en Lote";
+"new_category" = "Nueva Categoría";
+"edit_category" = "Editar Categoría";
+"name" = "Nombre";
+"name_placeholder" = "Ej: Marketing...";
+"icon" = "Icono";
+"color" = "Color";
+"create_category" = "Crear Categoría";
+"delete_category_title" = "Eliminar Categoría";
+"delete_category_msg" = "¿Estás seguro de que quieres eliminar esta categoría?";
+"delete_category_with_items_msg" = "Esta categoría contiene %d prompts. Si la eliminas, estos prompts pasarán a estar Sin categoría. ¿Quieres continuar?";
+"save_changes" = "Guardar Cambios";
+"delete_category" = "Eliminar categoría";
+
+/* Variable Fill */
+"fill_variables_title" = "Rellenar Variables";
+"value_for" = "Valor para %@...";
+"typing" = "Escribiendo...";
+"selecting" = "Seleccionando...";
+"choosing" = "Eligiendo...";
+"drag_and_drop" = "Arrastrar y Soltar";
+"export_prompts_title" = "Exportar Prompt";
+"export_prompts_message" = "Elige dónde guardar el archivo de texto.";
+"export_error_title" = "Error de Exportación";
+"import_data_alert_title" = "Importar Biblioteca";
+"import_button" = "Importar";
+"import_completed_message" = "¡Importación completada: %d prompts añadidos!";
+"import_confirmation_message" = "¿Estás seguro de importar este archivo? Se omitirán los IDs duplicados.";
+
+/* Premium Upsell */
+"premium_exclusive_message" = "Esta función es exclusiva de Promtier Premium.";
+"advanced_variables_desc" = "Menús desplegables y selectores de fecha nativos en lugar de solo texto.";
+"reusable_snippets_desc" = "Autocompleta fragmentos de texto enteros con solo escribir '/'";
+"version_history_desc" = "Viaja en el tiempo y recupera iteraciones pasadas de tus prompts.";
+"visual_vfx" = "Magia Visual (VFX)";
+"visual_vfx_desc" = "Efectos de confeti y partículas al copiar para que el trabajo se sienta vivo.";
+"unlock_premium" = "Desbloquear Premium";
+"maybe_later" = "Quizás más Tarde";
+
+/* Batch Operations */
+"selected_count" = "Seleccionados";
+"all_action" = "Todos";
+"select_all_help" = "Seleccionar todos los visibles";
+"move_action" = "Mover";
+"trash_action" = "Papelera";
+"move_to_trash_confirmation" = "¿Mover %d prompts a la papelera?";
+"move_to_trash_button" = "Mover a la papelera";
+"move_to" = "Mover a...";
+
+/* New Keys for Audit */
+"apple_intelligence" = "Apple Intelligence";
+"edit" = "Editar";
+"copy" = "Copiar";
+"preview" = "Vista Previa";
+"edit_from_preview" = "Editar desde Preview";
+"add_favorite" = "Añadir a Favoritos";
+"remove_favorite" = "Quitar de Favoritos";
+"export_plain_text" = "Exportar como Texto Plano";
+"delete" = "Eliminar";
+"drag_and_drop" = "Arrastrar y Soltar";
+"create_tool" = "Diseña tus propios prompts";
+"update_details" = "Actualiza los detalles del prompt";
+"advanced_variables" = "Variables Avanzadas";
+"preview_placeholder" = "La vista previa aparecerá aquí...";
+"selecting" = "Seleccionando...";
+"choosing" = "Eligiendo...";
+"explore" = "Explorar";
+"all" = "Todos";
+"recent" = "Recientes";
+"favorites" = "Favoritos";
+"edit_action" = "Editar";
+"delete_action" = "Eliminar";
+"title_label" = "Título";
+"content_label" = "Contenido";
+"value_for" = "Valor para %@";
+
+/* Snippets Manager */
+"quick_snippets" = "Snippets Rápidos";
+"my_snippets" = "Mis Snippets";
+"snippets_desc" = "Inserta texto frecuente usando /";
+"no_snippets_configured" = "No tienes snippets configurados";
+"new_snippet" = "Nuevo Snippet";
+"edit_snippet" = "Editar Snippet";
+"title_label" = "Título";
+"title_placeholder" = "Ej: Firma";
+"command_shortcut" = "Shortcut";
+"command_placeholder" = "Ej: firma";
+"command_rule" = "Una palabra, sin espacios.";
+"content_label" = "Contenido";
+"edit_action" = "Editar";
+"delete_action" = "Eliminar";
+
+/* Ghost Tips */
+"gt_preview" = "Vista Previa";
+"gt_spacebar" = "Barra Espaciadora";
+"gt_move_selection" = "Mover Selección";
+"gt_move_shortcut" = "↑ / ↓";
+"gt_quick_copy" = "Copiar Rápido";
+"gt_new_prompt" = "Nuevo Prompt";
+"gt_settings" = "Configuración";
+"gt_hide_sidebar" = "Ocultar Sidebar";
+"gt_move_categories" = "Mover a Categorías";
+"gt_multi_select" = "Multi-selección";
+"gt_batch_mode" = "Modo Lote";
+"gt_auto_delete" = "Auto-borrado 7d";
+"gt_backup_prompts" = "Respaldar Prompts";
+"gt_drag_images" = "Arrastrar y Soltar";
+"gt_images_hint" = "Imágenes";
+"gt_zoom_images" = "Zoom en Imágenes";
+"gt_zoom_hint" = "Clic para ampliar";
+"gt_zen_mode" = "Modo Zen";
+"gt_zen_shortcut" = "Cmd + ⇧ + Z";
+"gt_variables" = "Variables";
+"gt_variables_shortcut" = "Alt + V";
+"gt_snippets_shortcut" = "Toca / para insertar snippet";
+"gt_auto_paste_tip" = "Pegado Instantáneo";
+"gt_auto_paste_shortcut" = "Activa en Ajustes";
+"gt_save_prompt" = "Guardar Prompt";
+"gt_save_shortcut" = "Cmd + S";
+"gt_edit" = "Editar Prompt";
+"gt_edit_shortcut" = "Enter / Doble Clic";
+"gt_edit_from_preview" = "Editar desde Preview";
+"gt_focus_negative" = "Prompt Negativo";
+"gt_focus_negative_shortcut" = "Alt + N";
+"gt_focus_alternative" = "Prompt Alternativo";
+"gt_focus_alternative_shortcut" = "Alt + A";
+"gt_copy_final" = "Copiar Prompt Final";
+"gt_copy_final_shortcut" = "Cmd + C / Enter";
+"gt_next_field" = "Siguiente Campo";
+"gt_next_field_shortcut" = "Tab / Enter";
+"gt_close_window" = "Cerrar Ventana";
+"gt_close_window_shortcut" = "Esc";
+"gt_magic_autocomplete" = "Autocompletar Mágico";
+"gt_bold" = "Texto en Negrita";
+"gt_italic" = "Texto en Cursiva";
+"gt_list" = "Lista de Viñetas";
+
+"duplicate_category_title" = "Categoría Duplicada";
+"duplicate_category_msg" = "Ya existe una categoría con este nombre. Por favor, elige uno diferente.";
+"reserved_name_msg" = "Este nombre está reservado para el sistema.";
+
+/* Default Data */
+"snippet_signature_title" = "MJ Parameters";
+"snippet_signature_content" = "--ar 16:9 --v 6.0 --stylize 250 --relax";
+"snippet_signature_shortcut" = "mj";
+"snippet_bug_title" = "Cinematic Lighting";
+"snippet_bug_content" = "volumetric lighting, ray tracing, golden hour, soft shadows, 8k, ultra detailed";
+"snippet_bug_shortcut" = "lighting";
+"snippet_review_title" = "Art Styles";
+"snippet_review_content" = "{{cyberpunk, impressionist, minimalist, watercolor}} style, vibrant colors, symmetrical composition";
+"snippet_review_shortcut" = "style";
+
+"default_prompt_chatgpt_title" = "Brainstorming de Estrategia de Marketing";
+"default_prompt_chatgpt_content" = "Actúa como un estratega creativo. Ayúdame a generar 5 ángulos de marketing únicos para un {{descripcion_del_producto}}. Enfócate en disparadores psicológicos y potencial viral.";
+
+"default_prompt_claude_title" = "Asistente de Refactorización SOLID";
+"default_prompt_claude_content" = "Tengo una función compleja en {{lenguaje}} que se está volviendo difícil de mantener. Revisa el siguiente código y sugiere una refactorización usando principios SOLID y patrones modernos. Enfócate en el rendimiento. /review";
+
+"default_prompt_cursor_title" = "Desarrollo de Funcionalidad (@Codebase)";
+"default_prompt_cursor_content" = "Usando el contexto actual del @Codebase, implementa una nueva {{nombre_de_la_funcionalidad}} que se integre con la capa de almacenamiento existente. Asegúrate de seguir las convenciones de estilo del proyecto y añadir pruebas unitarias exhaustivas.";
+
+"default_prompt_midjourney_title" = "Parámetros de Retrato Cinematográfico";
+"default_prompt_midjourney_content" = "A hyper-realistic close-up portrait of a {{subject}}, lighting inspired by Rembrandt, deep shadows, 8k, cinematic, highly detailed texture, shot on 35mm lens --v 6.0 --ar 16:9 --stylize 250";
+
+"default_prompt_images_title" = "Mirror Selfie en Habitación Otaku (Nano Banana)";
+"default_prompt_images_content" = "### Escena\nMirror selfie en un rincón de computadora estilo otaku, con tonos azules.\n\n### Sujeto\nChica joven con cabello largo castaño, vistiendo un cárdigan corto azul claro y pantalones cortos de mezclilla, sosteniendo un teléfono con funda azul para tomarse una selfie frente al espejo.\n\n### Entorno\nEscritorio de gamer blanco con teclado azul y ratón, PC con ventiladores RGB azules, plantas en macetas blancas, póster de torre japonesa en la pared, figuritas de anime en el estante.\n\n### Iluminación\nLuz diurna suave que entra por la ventana, acentuada por el brillo azul de los periféricos y ventiladores del PC.\n\n### Parámetros\n--ar 3:4 --v 6.0 --stylize 250";
+
+"default_negative_otaku" = "(deforme, distorsionado, desfigurado:1.3), mal dibujado, mala anatomía, anatomía incorrecta, extremidad extra, extremidad faltante, extremidades flotantes, (manos y dedos mutados:1.4), extremidades desconectadas, mutación, mutado, feo, asqueroso, borroso, amputación.";
+"default_negative_cursor" = "No uses librerías obsoletas, evita el código inflado, sin comentarios redundantes.";
+
+"cat_chatgpt" = "ChatGPT";
+"cat_claude" = "Claude";
+"cat_cursor" = "Cursor";
+"cat_midjourney" = "Midjourney";
+"cat_images_prompts" = "Prompts de Imágenes";
+"cat_vibe_coding" = "Vibe Coding";
+"cat_windsurf" = "Windsurf";
+
+/* New Prompt */
+"edit_prompt" = "Editar Prompt";
+"update_details" = "Actualiza los detalles";
+"create_tool" = "Crea una herramienta";
+"prompt_title_placeholder" = "Título del prompt...";
+"insert_variable_hint" = "Insertar Variable (Premium)";
+"insert_snippet_hint" = "Insertar Snippet (Premium)";
+"version_history" = "Historial de versiones";
+"dynamic_variables" = "Variables Dinámicas";
+"reusable_snippets" = "Snippets Reutilizables";
+"zen_editor" = "Editor Zen";
+"short_desc_placeholder" = "Descripción breve (opcional)...";
+"prompt_content_placeholder" = "Escribe aquí el contenido de tu prompt...";
+"characters" = "%d caracteres";
+"reference_images" = "Imágenes de Referencia";
+"add_image" = "Añadir Imagen";
+"image_import_too_large" = "Imagen demasiado pesada (máx %d MB).";
+"image_import_unsupported" = "No se pudo leer esa imagen. Prueba otro formato.";
+"image_import_slots_full" = "Solo puedes adjuntar hasta 3 imágenes.";
+"add_prompt_results" = "Añadir resultados del prompt";
+"category" = "Categoría";
+"prompt_results" = "RESULTADOS DEL PROMPT";
+"main_prompt" = "Prompt Principal";
+"main_content" = "Contenido Principal";
+"negative_prompt" = "Prompt Negativo";
+"negative_prompt_placeholder" = "Lo que la IA NO debe hacer (ej: sin desenfoque, sin texto)...";
+"alternatives" = "Alternativas";
+"alternative" = "Prompt Alternativo";
+"add_alternative" = "Añadir Alternativa";
+"no_alternatives_hint" = "Aún no hay prompts alternativos añadidos.";
+"alternative_prompt" = "Prompt Alternativo";
+"alternative_desc_placeholder" = "Descripción corta (máx. 1 línea)...";
+"alternative_prompt_placeholder" = "Una variación similar o enfoque alternativo...";
+"alternative_summary_empty" = "Aún sin resumen. Escribe una variación corta para identificarla rápido.";
+"export_plain_text" = "Exportar a texto plano";
+"spanish" = "Español";
+"english" = "Inglés";
+
+/* Zen Editor */
+"zen_title_placeholder" = "Título del prompt...";
+"add_variable_action" = "Añadir Variable";
+"exit_zen_mode" = "Salir del Modo Zen";
+"zen_content_placeholder" = "Escribe tu prompt aquí con total libertad...";
+"words_count" = "%d palabras";
+"words_count_short" = "Palabras";
+"auto_save_active" = "Auto-guardado activo";
+"apple_intelligence_header" = "APPLE INTELLIGENCE";
+
+/* AI Assistant */
+"ai_enhance" = "Mejorar";
+"ai_professional" = "Profesional";
+"ai_concise" = "Conciso";
+"ai_creative" = "Creativo";
+"ai_fix" = "Corregir";
+"ai_tip_applied" = "¡Sugerencias añadidas!";
+"ai_tip_writing_tools" = "¡Abriendo Writing Tools para %@!";
+
+/* Contextual Awareness */
+"smart_recommendation" = "Recomendación Inteligente";
+"no_apps_assigned" = "Aún no hay aplicaciones asignadas a este prompt.";
+"assign_app" = "Asignar a Aplicación...";
+"current_app" = "App actual";
+"recommended" = "Recomendado";
+"select_app_title" = "Selecciona una Aplicación";
+"context_awareness" = "Conciencia Contextual";
+"tooltip_negative_prompt" = "Prompt Negativo";
+"tooltip_alternative_prompt" = "Prompt Alternativo";
+"tooltip_alternatives" = "Alternativas";
+"tooltip_variables" = "Variables";
+"popup_title_variables" = "Variables";
+"popup_title_snippets" = "Snippets";
+"popup_hint_escape_cancel" = "ESC para cancelar";
+"snippets_empty_state" = "No hay snippets para '%@'";
+"variables_example_options" = "{{opcion1, opcion2}}";
+"tooltip_images" = "Imágenes";
+"tooltip_use_count" = "Veces usado";
+"tooltip_versions" = "Historial de versiones";
+"tooltip_branch" = "Derivado de otro prompt";
+"branch_label" = "Rama";
+"create_branch" = "Crear Rama";
+"branch_created_success" = "¡Rama creada con éxito!";
+"sort_by" = "Ordenar por";
+"sort_manual" = "Manual";
+"sort_name" = "Nombre";
+"sort_newest" = "Más reciente";
+"sort_most_used" = "Más usados";
+"sort_prompts_help" = "Cambiar orden de los prompts";
+
+"ai_improvement_placeholder" = "Escribe un comando para probar o mejorar el resultado...";
+"ai_action_create_from_text" = "Crear como nuevo Prompt";
+"prompt_created_success" = "¡Nuevo prompt creado!";
+"ai_action_instruct" = "Ejecutar como Comando";
+"ai_thinking" = "La IA está pensando...";
+"ai_crafting_message" = "Diseñando tu mensaje a la perfección";
+"ai_action_enhance" = "Mejorar Prompt";
+"ai_action_translate" = "Traducir Prompt";
+"ai_action_fix" = "Corregir Gramática";
+"ai_action_concise" = "Hacer Conciso";
+"ai_action_creative" = "Hacer Creativo";
+
+/* Omni-Search */
+"gt_search_prompts" = "Buscar prompts...";
+"move_selection" = "Mover Selección (↑↓)";
+"copy_and_close" = "Copiar y Cerrar (Enter)";
+
+
+"gt_fast_add_title" = "Añadir Prompt Rápido";
+"gt_create_category_title" = "Nueva Categoría";
+"about_promtier" = "Acerca de Promtier";
+"quit" = "Salir";
+
+/* Help Popovers */
+"shortcut_help" = "Atajo Global";
+"shortcut_help_desc" = "Configura una combinación de teclas para copiar este prompt instantáneamente desde cualquier aplicación sin abrir Promtier.";
+"smart_recommendation_help" = "Recomendación Inteligente";
+"smart_recommendation_help_desc" = "Asocia este prompt con aplicaciones específicas. Al usar esas apps, Promtier lo priorizará en la lista para un acceso más rápido.";
+"required_fields" = "El Título y el Prompt son obligatorios";
+"unsaved_changes_title" = "Cambios sin guardar";
+"unsaved_changes_message" = "Tienes cambios sin guardar. ¿Deseas mantenerlos como borrador o descartarlos?";
+"save_as_draft" = "Guardar como borrador";
+"discard" = "Descartar";
+"draft_prefix" = "Borrador";
+
+"ai_response_language" = "Idioma respuesta IA";
+"ai_response_language_subtitle" = "Fuerza el idioma del contenido generado por IA";
+"welcome_guide" = "Guía de Bienvenida";
+
+"accessibility_permissions" = "Permisos de accesibilidad";
+"accessibility_required_for_paste" = "Se requieren permisos para pegar automáticamente";
+
+"version_history_count" = "%d versiones guardadas";
+"restore_version" = "Restaurar";
+"select_version" = "Selecciona una versión";
+"char_count_short" = "%d car.";
+"magic_variant" = "Variante Mágica";

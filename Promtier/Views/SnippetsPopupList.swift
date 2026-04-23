@@ -15,14 +15,16 @@ struct SnippetsPopupList: View {
     let onDismiss: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
+    @StateObject private var debouncer = Debouncer(delay: 0.15)
     
     var filteredSnippets: [Snippet] {
-        if query.isEmpty {
+        let q = debouncer.debouncedValue
+        if q.isEmpty {
             return preferences.snippets
         } else {
             return preferences.snippets.filter {
-                $0.shortcut.localizedCaseInsensitiveContains(query) ||
-                $0.title.localizedCaseInsensitiveContains(query)
+                $0.shortcut.localizedCaseInsensitiveContains(q) ||
+                $0.title.localizedCaseInsensitiveContains(q)
             }
         }
     }
@@ -31,11 +33,11 @@ struct SnippetsPopupList: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Snippets")
+                Text("popup_title_snippets".localized(for: preferences.language))
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("ESC para cancelar")
+                Text("popup_hint_escape_cancel".localized(for: preferences.language))
                     .font(.system(size: 9))
                     .foregroundColor(.secondary.opacity(0.5))
             }
@@ -50,7 +52,7 @@ struct SnippetsPopupList: View {
                     Image(systemName: "text.badge.xmark")
                         .font(.system(size: 20))
                         .foregroundColor(.secondary.opacity(0.5))
-                    Text("No hay snippets para '\(query)'")
+                    Text(String(format: "snippets_empty_state".localized(for: preferences.language), query))
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -72,7 +74,7 @@ struct SnippetsPopupList: View {
                         .padding(8)
                     }
                     .frame(maxHeight: 250)
-                    .onChange(of: selectedIndex) { newIndex in
+                    .onChange(of: selectedIndex) { _, newIndex in
                         withAnimation {
                             proxy.scrollTo(newIndex, anchor: .center)
                         }
@@ -91,12 +93,12 @@ struct SnippetsPopupList: View {
                 .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
         // Add implicit animation to the row when selection state changes
-        .onChange(of: selectedIndex) { newIndex in
+        .onChange(of: selectedIndex) { _, newIndex in
             if newIndex >= filteredSnippets.count && !filteredSnippets.isEmpty {
                 selectedIndex = filteredSnippets.count - 1
             }
         }
-        .onChange(of: triggerSelection) { triggered in
+        .onChange(of: triggerSelection) { _, triggered in
             if triggered {
                 if !filteredSnippets.isEmpty {
                     let clampedIndex = min(max(0, selectedIndex), filteredSnippets.count - 1)
@@ -108,11 +110,12 @@ struct SnippetsPopupList: View {
         // KeyEvent handler local para navegación de flechas
         .onAppear {
             self.selectedIndex = 0
+            self.debouncer.debouncedValue = self.query
         }
-        .onChange(of: query) { _ in
+        .onChange(of: query) { _, newQuery in
+            self.debouncer.send(newQuery)
             self.selectedIndex = 0
         }
-        // Evitar que el ESC cierre la ventana principal
         .onExitCommand {
             onDismiss()
         }

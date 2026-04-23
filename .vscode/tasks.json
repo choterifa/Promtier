@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "checkBuild",
+			"type": "shell",
+			"command": "xcodebuild -project Promtier.xcodeproj -scheme Promtier -destination 'platform=macOS,arch=arm64' build | grep \"error:\" || echo \"Build ok\"",
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}

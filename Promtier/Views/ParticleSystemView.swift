@@ -58,7 +58,7 @@ struct ParticleSystemView: View {
                     lastTick = .now
                     emit(in: geo.size)
                 }
-                .onChange(of: ctx.date) { newDate in
+                .onChange(of: ctx.date) { _, newDate in
                     let dt = CGFloat(min(newDate.timeIntervalSince(lastTick), 0.05))
                     lastTick = newDate
                     tick(dt: dt)

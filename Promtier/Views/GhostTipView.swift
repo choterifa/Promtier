@@ -16,7 +16,10 @@ struct GhostTip: Identifiable {
 
 struct GhostTipView: View {
     let tip: GhostTip
+    var highlightColor: Color = .blue
     var onDismiss: () -> Void
+    
+    @EnvironmentObject var preferences: PreferencesManager
     
     @State private var opacity: Double = 0
     @State private var offset: CGFloat = 20
@@ -25,9 +28,9 @@ struct GhostTipView: View {
         HStack(spacing: 12) {
             Image(systemName: tip.icon)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.blue)
+                .foregroundColor(preferences.isHaloEffectEnabled ? highlightColor : .blue)
                 .frame(width: 32, height: 32)
-                .background(Circle().fill(Color.blue.opacity(0.1)))
+                .background(Circle().fill(preferences.isHaloEffectEnabled ? highlightColor.opacity(0.1) : Color.blue.opacity(0.1)))
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(tip.title)
@@ -56,15 +59,17 @@ struct GhostTipView: View {
         .padding(.leading, 8)
         .padding(.trailing, 12)
         .padding(.vertical, 8)
-        .background(
+        .background {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                // Efecto iluminado (glow) dinámico
+                .shadow(color: preferences.isHaloEffectEnabled ? highlightColor.opacity(0.15) : .clear, radius: 12, x: 0, y: 0)
+                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                        .stroke(preferences.isHaloEffectEnabled ? highlightColor.opacity(0.12) : Color.primary.opacity(0.1), lineWidth: 1)
                 )
-        )
+        }
         .opacity(opacity)
         .offset(y: offset)
         .onAppear {
@@ -73,8 +78,8 @@ struct GhostTipView: View {
                 offset = 0
             }
             
-            // Auto-dismiss after 8 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+            // Auto-dismiss after 4.5 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
                 withAnimation(.easeIn(duration: 0.5)) {
                     opacity = 0
                     offset = -20

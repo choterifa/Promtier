@@ -12,6 +12,19 @@ import Combine
 import AppKit
 import ServiceManagement
 
+enum AIService: String, Codable, CaseIterable {
+    case gemini = "gemini"
+    case openai = "openai"
+    case openrouter = "openrouter"
+}
+
+struct DraftPreset: Codable, Identifiable, Equatable {
+    var id = UUID()
+    let title: String
+    let instruction: String
+    let icon: String
+}
+
 // SERVICIO: Gestión centralizada de preferencias con UserDefaults
 class PreferencesManager: ObservableObject {
     static let shared = PreferencesManager()
@@ -48,19 +61,87 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var isGridView: Bool {
+        didSet {
+            userDefaults.set(isGridView, forKey: "isGridView")
+        }
+    }
+
+    @Published var autoHideSidebarInGallery: Bool {
+        didSet {
+            userDefaults.set(autoHideSidebarInGallery, forKey: "autoHideSidebarInGallery")
+        }
+    }
+
+    @Published var sidebarWidth: CGFloat {
+        didSet {
+            userDefaults.set(sidebarWidth, forKey: "sidebarWidth")
+        }
+    }
+    
     @Published var closeOnCopy: Bool {
         didSet {
             userDefaults.set(closeOnCopy, forKey: "closeOnCopy")
         }
     }
     
-    @Published var windowWidth: CGFloat
-    @Published var windowHeight: CGFloat
+    @Published var autoPaste: Bool {
+        didSet {
+            userDefaults.set(autoPaste, forKey: "autoPaste")
+        }
+    }
     
-    /// Guarda las dimensiones en UserDefaults (llamar al terminar de redimensionar)
-    func saveWindowDimensions() {
-        userDefaults.set(Double(windowWidth), forKey: "windowWidth")
-        userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+    @Published var clipboardSuggestions: Bool {
+        didSet {
+            userDefaults.set(clipboardSuggestions, forKey: "clipboardSuggestions")
+        }
+    }
+
+    @Published var autoCopyDraft: Bool {
+        didSet {
+            userDefaults.set(autoCopyDraft, forKey: "autoCopyDraft")
+        }
+    }
+
+    @Published var enableTrackpadCarousel: Bool {
+        didSet {
+            userDefaults.set(enableTrackpadCarousel, forKey: "enableTrackpadCarousel")
+        }
+    }
+    
+    @Published var onlySuggestFromBrowsers: Bool {
+        didSet {
+            userDefaults.set(onlySuggestFromBrowsers, forKey: "onlySuggestFromBrowsers")
+        }
+    }
+    
+    let browserBundleIDs: Set<String> = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "org.mozilla.firefox",
+        "com.microsoft.edgemac",
+        "com.brave.Browser",
+        "com.operasoftware.Opera",
+        "company.thebrowser.Browser",   // Arc Browser
+        "com.vivaldi.Vivaldi",
+        "com.kagi.orion"
+    ]
+    
+    @Published var customAllowedAppBundleIDs: Set<String> {
+        didSet {
+            userDefaults.set(Array(customAllowedAppBundleIDs), forKey: "customAllowedAppBundleIDs")
+        }
+    }
+    
+    @Published var windowWidth: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowWidth), forKey: "windowWidth")
+        }
+    }
+    @Published var windowHeight: CGFloat {
+        didSet {
+            userDefaults.set(Double(windowHeight), forKey: "windowHeight")
+        }
     }
     
     // MARK: - Estado de Redimensionado (No persistente)
@@ -93,12 +174,92 @@ class PreferencesManager: ObservableObject {
     @Published var hotkeyCode: Int {
         didSet {
             userDefaults.set(hotkeyCode, forKey: "hotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
         }
     }
     
     @Published var hotkeyModifiers: Int {
         didSet {
             userDefaults.set(hotkeyModifiers, forKey: "hotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var omniHotkeyCode: Int {
+        didSet {
+            userDefaults.set(omniHotkeyCode, forKey: "omniHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var omniHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(omniHotkeyModifiers, forKey: "omniHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var fastAddHotkeyCode: Int {
+        didSet {
+            userDefaults.set(fastAddHotkeyCode, forKey: "fastAddHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var fastAddHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(fastAddHotkeyModifiers, forKey: "fastAddHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var categoryHotkeyCode: Int {
+        didSet {
+            userDefaults.set(categoryHotkeyCode, forKey: "categoryHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var categoryHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(categoryHotkeyModifiers, forKey: "categoryHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var newPromptHotkeyCode: Int {
+        didSet {
+            userDefaults.set(newPromptHotkeyCode, forKey: "newPromptHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var newPromptHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(newPromptHotkeyModifiers, forKey: "newPromptHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var aiDraftHotkeyCode: Int {
+        didSet {
+            userDefaults.set(aiDraftHotkeyCode, forKey: "aiDraftHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var aiDraftHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(aiDraftHotkeyModifiers, forKey: "aiDraftHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var draftPresets: [DraftPreset] {
+        didSet {
+            if let data = try? JSONEncoder().encode(draftPresets) {
+                userDefaults.set(data, forKey: "draftPresets")
+            }
         }
     }
     
@@ -107,6 +268,13 @@ class PreferencesManager: ObservableObject {
     @Published var language: AppLanguage {
         didSet {
             userDefaults.set(language.rawValue, forKey: "language")
+        }
+    }
+    
+    // "auto" = detect from input, "en" = force English, "es" = force Spanish
+    @Published var aiResponseLanguage: String {
+        didSet {
+            userDefaults.set(aiResponseLanguage, forKey: "aiResponseLanguage")
         }
     }
     
@@ -137,6 +305,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var hasSeenOnboarding: Bool {
+        didSet {
+            userDefaults.set(hasSeenOnboarding, forKey: "hasSeenOnboarding")
+        }
+    }
+    
     @Published var isPremiumActive: Bool {
         didSet {
             userDefaults.set(isPremiumActive, forKey: "isPremiumActive")
@@ -163,9 +337,22 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var appleIntelligenceEnabled: Bool {
+    @Published var geminiEnabled: Bool {
         didSet {
-            userDefaults.set(appleIntelligenceEnabled, forKey: "appleIntelligenceEnabled")
+            userDefaults.set(geminiEnabled, forKey: "geminiEnabled")
+        }
+    }
+    
+    @Published var geminiDefaultModel: String {
+        didSet {
+            userDefaults.set(geminiDefaultModel, forKey: "geminiDefaultModel")
+        }
+    }
+    
+    @Published var geminiAPIKey: String {
+        didSet {
+            KeychainHelper.standard.saveString(geminiAPIKey, service: "com.valencia.promtier", account: "geminiAPIKey")
+            userDefaults.set(geminiAPIKey, forKey: "geminiAPIKey_local")
         }
     }
     
@@ -175,79 +362,263 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    private init() {
-        // Inicializar valores desde UserDefaults o defaults
-        self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "system") ?? .system
+    @Published var gestureHintsEnabled: Bool {
+        didSet {
+            userDefaults.set(gestureHintsEnabled, forKey: "gestureHintsEnabled")
+        }
+    }
+    
+    @Published var disableImageAnimations: Bool {
+        didSet {
+            userDefaults.set(disableImageAnimations, forKey: "disableImageAnimations")
+        }
+    }
+    
+    @Published var showAdvancedFields: Bool {
+        didSet {
+            userDefaults.set(showAdvancedFields, forKey: "showAdvancedFields")
+        }
+    }
+    
+    @Published var isHaloEffectEnabled: Bool {
+        didSet {
+            userDefaults.set(isHaloEffectEnabled, forKey: "isHaloEffectEnabled")
+        }
+    }
+    
+    @Published var preferredAIService: AIService {
+        didSet {
+            userDefaults.set(preferredAIService.rawValue, forKey: "preferredAIService")
+        }
+    }
+
+    @Published var openAIEnabled: Bool {
+        didSet {
+            userDefaults.set(openAIEnabled, forKey: "openAIEnabled")
+        }
+    }
+    
+    @Published var openAIApiKey: String {
+        didSet {
+            KeychainHelper.standard.saveString(openAIApiKey, service: "com.valencia.promtier", account: "openAIApiKey")
+            userDefaults.set(openAIApiKey, forKey: "openAIApiKey_local")
+        }
+    }
+    
+    @Published var openAIDefaultModel: String {
+        didSet {
+            userDefaults.set(openAIDefaultModel, forKey: "openAIDefaultModel")
+        }
+    }
+    
+    // MARK: OpenRouter Config
+    @Published var openRouterEnabled: Bool {
+        didSet {
+            userDefaults.set(openRouterEnabled, forKey: "openRouterEnabled")
+        }
+    }
+    
+    @Published var openRouterAPIKey: String {
+        didSet {
+            KeychainHelper.standard.saveString(openRouterAPIKey, service: "com.valencia.promtier", account: "openRouterAPIKey")
+            userDefaults.set(openRouterAPIKey, forKey: "openRouterAPIKey_local")
+        }
+    }
+    
+    @Published var openRouterDefaultModel: String {
+        didSet {
+            userDefaults.set(openRouterDefaultModel, forKey: "openRouterDefaultModel")
+        }
+    }
+    
+    /// Carpetas pineadas en el sidebar (máx. 3), persistidas por nombre
+    @Published var pinnedFolderNames: [String] {
+        didSet {
+            userDefaults.set(pinnedFolderNames, forKey: "pinnedFolderNames")
+        }
+    }
+    
+    func isPinned(_ folderName: String) -> Bool {
+        pinnedFolderNames.contains(folderName)
+    }
+    
+    func togglePin(_ folderName: String) {
+        if let idx = pinnedFolderNames.firstIndex(of: folderName) {
+            pinnedFolderNames.remove(at: idx)
+        } else if pinnedFolderNames.count < 3 {
+            pinnedFolderNames.insert(folderName, at: 0)
+        }
+    }
+     private init() {
+        // 1. Inicializar todas las propiedades SIN usar self si es posible,
+        // o simplemente inicializar cada una antes de cualquier llamada a método.
+        
+        // 1. Initial property assignments (MUST NOT read other properties via self yet)
+        self.appearance = AppAppearance(rawValue: userDefaults.string(forKey: "appearance") ?? "light") ?? .light
         self.fontSize = FontSize(rawValue: userDefaults.string(forKey: "fontSize") ?? "medium") ?? .medium
         self.launchAtLogin = userDefaults.bool(forKey: "launchAtLogin")
-        // Sidebar visible por defecto
-        self.showSidebar = userDefaults.object(forKey: "showSidebar") as? Bool ?? true
+        self.showSidebar = userDefaults.object(forKey: "showSidebar") == nil ? true : userDefaults.bool(forKey: "showSidebar")
+        self.isGridView = userDefaults.bool(forKey: "isGridView")
+        self.autoHideSidebarInGallery = userDefaults.object(forKey: "autoHideSidebarInGallery") == nil ? true : userDefaults.bool(forKey: "autoHideSidebarInGallery")
+        let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")
+        self.sidebarWidth = savedSidebarWidth > 0 ? min(350, max(200, CGFloat(savedSidebarWidth))) : 220
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
+        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
+        self.clipboardSuggestions = userDefaults.object(forKey: "clipboardSuggestions") == nil ? true : userDefaults.bool(forKey: "clipboardSuggestions")
+        self.autoCopyDraft = userDefaults.object(forKey: "autoCopyDraft") == nil ? true : userDefaults.bool(forKey: "autoCopyDraft")
+        self.enableTrackpadCarousel = userDefaults.object(forKey: "enableTrackpadCarousel") == nil ? true : userDefaults.bool(forKey: "enableTrackpadCarousel")
+        self.onlySuggestFromBrowsers = true
+        self.customAllowedAppBundleIDs = Set(userDefaults.array(forKey: "customAllowedAppBundleIDs") as? [String] ?? [])
+        
+        let savedWidth = userDefaults.object(forKey: "windowWidth") as? Double
+        self.windowWidth = (savedWidth != nil && savedWidth! > 0) ? min(900, max(500, CGFloat(savedWidth!))) : 800
+        let savedHeight = userDefaults.object(forKey: "windowHeight") as? Double
+        self.windowHeight = (savedHeight != nil && savedHeight! > 0) ? min(750, max(450, CGFloat(savedHeight!))) : 570
+        
+        // Non-persistent state defaults
+        self.isResizingVisible = false
+        self.previewWidth = 800  // Initial defaults
+        self.previewHeight = 570
+        
         self.soundEnabled = userDefaults.bool(forKey: "soundEnabled")
-        
-        // Háptica por defecto en true
-        if userDefaults.object(forKey: "hapticFeedbackEnabled") != nil {
-            self.hapticFeedbackEnabled = userDefaults.bool(forKey: "hapticFeedbackEnabled")
-        } else {
-            self.hapticFeedbackEnabled = true
-        }
-        
+        self.hapticFeedbackEnabled = userDefaults.object(forKey: "hapticFeedbackEnabled") == nil ? true : userDefaults.bool(forKey: "hapticFeedbackEnabled")
         self.globalShortcutEnabled = userDefaults.bool(forKey: "globalShortcutEnabled")
-        
-        // Atajo por defecto: ⌘⇧P (KeyCode 35, Command + Shift)
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
-        // Dimensiones de ventana (Defaults: 690x540, Max: 900x750, Min: 500x450)
-        let savedWidth = userDefaults.double(forKey: "windowWidth")
-        self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 690
+        self.omniHotkeyCode = userDefaults.object(forKey: "omniHotkeyCode") as? Int ?? 49
+        self.omniHotkeyModifiers = userDefaults.object(forKey: "omniHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.fastAddHotkeyCode = userDefaults.object(forKey: "fastAddHotkeyCode") as? Int ?? 3
+        self.fastAddHotkeyModifiers = userDefaults.object(forKey: "fastAddHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.categoryHotkeyCode = userDefaults.object(forKey: "categoryHotkeyCode") as? Int ?? 45
+        self.categoryHotkeyModifiers = userDefaults.object(forKey: "categoryHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+        self.newPromptHotkeyCode = userDefaults.object(forKey: "newPromptHotkeyCode") as? Int ?? 0
+        self.newPromptHotkeyModifiers = userDefaults.object(forKey: "newPromptHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 34
+        self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         
-        let savedHeight = userDefaults.double(forKey: "windowHeight")
-        self.windowHeight = savedHeight > 0 ? min(750, max(450, CGFloat(savedHeight))) : 540
-        
-        // Nuevas propiedades
+        self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
+        self.aiResponseLanguage = userDefaults.string(forKey: "aiResponseLanguage") ?? "auto"
         self.showInDock = userDefaults.bool(forKey: "showInDock")
-        self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
+        self.showCopyNotifications = userDefaults.object(forKey: "showCopyNotifications") == nil ? true : userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
+        // Se eliminó suppressAccessibilityWarning
+        self.hasSeenOnboarding = userDefaults.bool(forKey: "hasSeenOnboarding")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
-        
-        // Efectos visuales por defecto en true
-        if userDefaults.object(forKey: "visualEffectsEnabled") != nil {
-            self.visualEffectsEnabled = userDefaults.bool(forKey: "visualEffectsEnabled")
-        } else {
-            self.visualEffectsEnabled = true
-        }
-        
-        // Imágenes primero por defecto
+        self.visualEffectsEnabled = userDefaults.object(forKey: "visualEffectsEnabled") == nil ? true : userDefaults.bool(forKey: "visualEffectsEnabled")
         self.previewImagesFirst = userDefaults.object(forKey: "previewImagesFirst") as? Bool ?? true
+        self.geminiEnabled = userDefaults.object(forKey: "geminiEnabled") as? Bool ?? false
+        self.ghostTipsEnabled = userDefaults.object(forKey: "ghostTipsEnabled") == nil ? true : userDefaults.bool(forKey: "ghostTipsEnabled")
+        self.gestureHintsEnabled = userDefaults.object(forKey: "gestureHintsEnabled") == nil ? true : userDefaults.bool(forKey: "gestureHintsEnabled")
+        self.disableImageAnimations = userDefaults.bool(forKey: "disableImageAnimations")
+        self.showAdvancedFields = userDefaults.object(forKey: "showAdvancedFields") == nil ? true : userDefaults.bool(forKey: "showAdvancedFields")
+        self.isHaloEffectEnabled = userDefaults.object(forKey: "isHaloEffectEnabled") == nil ? true : userDefaults.bool(forKey: "isHaloEffectEnabled")
         
-        // Apple Intelligence por defecto en true
-        self.appleIntelligenceEnabled = userDefaults.object(forKey: "appleIntelligenceEnabled") as? Bool ?? true
-        
-        // Consejos Ghost por defecto en true
-        if userDefaults.object(forKey: "ghostTipsEnabled") != nil {
-            self.ghostTipsEnabled = userDefaults.bool(forKey: "ghostTipsEnabled")
+        // Migración de LLaves API fuera de Keychain para evitar prompts de permisos molestos
+        if let localGemini = userDefaults.string(forKey: "geminiAPIKey_local") {
+            self.geminiAPIKey = localGemini
+        } else if let legacyGemini = KeychainManager.shared.read(key: "geminiAPIKey") {
+            self.geminiAPIKey = legacyGemini
+            userDefaults.set(legacyGemini, forKey: "geminiAPIKey_local")
+            _ = KeychainManager.shared.delete(key: "geminiAPIKey")
         } else {
-            self.ghostTipsEnabled = true
+            self.geminiAPIKey = ""
+        }
+        self.geminiDefaultModel = userDefaults.string(forKey: "geminiDefaultModel") ?? "gemini-2.5-flash"
+        
+        self.openRouterEnabled = userDefaults.object(forKey: "openRouterEnabled") as? Bool ?? false
+        
+        if let localOpenRouter = userDefaults.string(forKey: "openRouterAPIKey_local") {
+            self.openRouterAPIKey = localOpenRouter
+        } else if let legacyOpenRouter = KeychainHelper.standard.readString(service: "com.valencia.promtier", account: "openRouterAPIKey") {
+            self.openRouterAPIKey = legacyOpenRouter
+            userDefaults.set(legacyOpenRouter, forKey: "openRouterAPIKey_local")
+        } else {
+            self.openRouterAPIKey = ""
         }
         
+        self.openRouterDefaultModel = userDefaults.string(forKey: "openRouterDefaultModel") ?? "anthropic/claude-3-opus"
+        
+        self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
+        self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
+        
+        if let localOpenAI = userDefaults.string(forKey: "openAIApiKey_local") {
+            self.openAIApiKey = localOpenAI
+        } else if let legacyOpenAI = KeychainManager.shared.read(key: "openAIApiKey") {
+            self.openAIApiKey = legacyOpenAI
+            userDefaults.set(legacyOpenAI, forKey: "openAIApiKey_local")
+            _ = KeychainManager.shared.delete(key: "openAIApiKey")
+        } else {
+            self.openAIApiKey = ""
+        }
+        
+        self.openAIDefaultModel = userDefaults.string(forKey: "openAIDefaultModel") ?? "gpt-4o"
+        self.pinnedFolderNames = userDefaults.stringArray(forKey: "pinnedFolderNames") ?? []
+        self.snippets = [] // Assigned below
+        
+        if let data = userDefaults.data(forKey: "draftPresets"),
+           let decoded = try? JSONDecoder().decode([DraftPreset].self, from: data) {
+            self.draftPresets = decoded
+        } else {
+            self.draftPresets = [
+                DraftPreset(title: "Sarcástico", instruction: "Hacerlo sarcástico e ingenioso", icon: "face.smiling"),
+                DraftPreset(title: "Email Pro", instruction: "Reescribir como un email profesional", icon: "envelope.fill"),
+                DraftPreset(title: "Markdown", instruction: "Convertir a formato Markdown limpio", icon: "text.justify")
+            ]
+        }
+        
+        // 2. NOW ALL properties are initialized. We can use self.
+        
+        // Derived state
+        self.previewWidth = self.windowWidth
+        self.previewHeight = self.windowHeight
+        
+        let seedLang = self.language
         if let data = userDefaults.data(forKey: "savedSnippets"),
            let decoded = try? JSONDecoder().decode([Snippet].self, from: data) {
             self.snippets = decoded
         } else {
-            // Snippets de ejemplo
             self.snippets = [
-                Snippet(title: "Firma Profesional", content: "Saludos cordiales,\nEquipo Promtier", shortcut: "firma"),
-                Snippet(title: "Plantilla Bug", content: "**Descripción:**\n**Pasos a reproducir:**\n1. \n2. \n**Resultado esperado:**", shortcut: "bug"),
-                Snippet(title: "Revisión Rápida", content: "Por favor revisa este código y optimízalo para SwiftUI:", shortcut: "revisar")
+                Snippet(title: "snippet_signature_title".localized(for: seedLang), content: "snippet_signature_content".localized(for: seedLang), shortcut: "snippet_signature_shortcut".localized(for: seedLang)),
+                Snippet(title: "snippet_bug_title".localized(for: seedLang), content: "snippet_bug_content".localized(for: seedLang), shortcut: "snippet_bug_shortcut".localized(for: seedLang)),
+                Snippet(title: "snippet_review_title".localized(for: seedLang), content: "snippet_review_content".localized(for: seedLang), shortcut: "snippet_review_shortcut".localized(for: seedLang))
             ]
         }
         
-        // Aplicar configuración inicial
+        normalizeAISettings()
         applyAppearance()
         applyDockPolicy()
         applyLaunchAtLogin()
+    }
+
+    private func normalizeAISettings() {
+        // Asegurarse de que si preferredAIService se configuró, el respectivo toggle esté activo
+        switch preferredAIService {
+        case .openrouter:
+            if !openRouterEnabled { 
+                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : .openai)
+            }
+        case .openai:
+            if !openAIEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : .openai)
+            }
+        case .gemini:
+            if !geminiEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : .openai)
+            }
+        }
+        
+        // Ahora si preferredAIService es valido, apagamos el resto
+        if preferredAIService == .openrouter {
+            openAIEnabled = false
+            geminiEnabled = false
+        } else if preferredAIService == .openai {
+            openRouterEnabled = false
+            geminiEnabled = false
+        } else if preferredAIService == .gemini {
+            openRouterEnabled = false
+            openAIEnabled = false
+        }
     }
     
     // MARK: - Métodos de Configuración
@@ -259,8 +630,7 @@ class PreferencesManager: ObservableObject {
             if launchAtLogin {
                 if service.status != .enabled {
                     try service.register()
-                    print("✅ Inicio automático activado")
-                }
+               }
             } else {
                 if service.status == .enabled {
                     try service.unregister()
@@ -301,35 +671,72 @@ class PreferencesManager: ObservableObject {
     
     /// Restablece todas las preferencias a valores por defecto
     func resetToDefaults() {
-        let domain = Bundle.main.bundleIdentifier!
-        userDefaults.removePersistentDomain(forName: domain)
+        if let domain = Bundle.main.bundleIdentifier {
+            userDefaults.removePersistentDomain(forName: domain)
+        }
         
         // Recargar valores por defecto
         objectWillChange.send()
         
-        self.appearance = .system
+        self.appearance = .light
         self.fontSize = .medium
         self.launchAtLogin = false
         self.showSidebar = true
+        self.isGridView = false
+        self.autoHideSidebarInGallery = true
         self.closeOnCopy = true
         self.soundEnabled = true
         self.hapticFeedbackEnabled = true
         self.globalShortcutEnabled = true
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.language = .spanish
-        self.windowWidth = 690
-        self.windowHeight = 540
+        self.omniHotkeyCode = 49
+        self.categoryHotkeyCode = 45
+        self.categoryHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+        self.newPromptHotkeyCode = 0
+        self.newPromptHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.aiDraftHotkeyCode = 2
+        self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.language = .english
+        self.autoPaste = false
+        self.clipboardSuggestions = true
+        self.onlySuggestFromBrowsers = true
+        self.windowWidth = 800
+        self.windowHeight = 570
+        self.enableTrackpadCarousel = true
+        self.autoCopyDraft = true
         
         // Nuevas propiedades por defecto
         self.showInDock = false
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
+        self.hasSeenOnboarding = false
         self.isPremiumActive = false
-        self.appleIntelligenceEnabled = true
         self.ghostTipsEnabled = true
+        self.gestureHintsEnabled = true
         self.previewImagesFirst = true
+        self.disableImageAnimations = false
+        self.showAdvancedFields = true
+        self.isHaloEffectEnabled = true
+        self.geminiEnabled = false
+        self.geminiAPIKey = ""
+        userDefaults.removeObject(forKey: "geminiAPIKey_local")
+        _ = KeychainManager.shared.delete(key: "geminiAPIKey")
+        self.geminiDefaultModel = "gemini-2.5-flash"
+        
+        self.openRouterEnabled = false
+        self.openRouterAPIKey = ""
+        userDefaults.removeObject(forKey: "openRouterAPIKey_local")
+        KeychainHelper.standard.delete(service: "com.valencia.promtier", account: "openRouterAPIKey")
+        self.openRouterDefaultModel = "anthropic/claude-3-opus"
+        
+        self.preferredAIService = .openai
+        self.openAIEnabled = true
+        self.openAIApiKey = ""
+        userDefaults.removeObject(forKey: "openAIApiKey_local")
+        _ = KeychainManager.shared.delete(key: "openAIApiKey")
+        self.openAIDefaultModel = "gpt-4o"
         
         applyAppearance()
     }
@@ -406,5 +813,149 @@ class PreferencesManager: ObservableObject {
         }
         
         return false
+    }
+    
+    // MARK: - App Whitelist Management
+    
+    func addAppToWhitelist(at url: URL) -> Bool {
+        guard let bundle = Bundle(url: url),
+              let bundleID = bundle.bundleIdentifier else {
+            return false
+        }
+        
+        if customAllowedAppBundleIDs.contains(bundleID) { return true }
+        
+        customAllowedAppBundleIDs.insert(bundleID)
+        return true
+    }
+    
+    func addAppToWhitelist(bundleID: String) -> Bool {
+        if customAllowedAppBundleIDs.contains(bundleID) { return true }
+        customAllowedAppBundleIDs.insert(bundleID)
+        return true
+    }
+    
+    func removeAppFromWhitelist(bundleID: String) {
+        customAllowedAppBundleIDs.remove(bundleID)
+    }
+    
+    // MARK: - Helpers de Atajos
+    
+    /// Devuelve una cadena legible para el atajo (ej: "⌘⇧N")
+    func shortcutDisplayString(keyCode: Int, modifiers: Int) -> String {
+        if keyCode == -1 { return "" }
+        var result = ""
+        let flags = NSEvent.ModifierFlags(rawValue: UInt(modifiers))
+        
+        if flags.contains(.control) { result += "⌃" }
+        if flags.contains(.option) { result += "⌥" }
+        if flags.contains(.shift) { result += "⇧" }
+        if flags.contains(.command) { result += "⌘" }
+        
+        // Convertir keyCode a carácter legible usando CGEvent (más robusto)
+        let keyStr: String
+        switch keyCode {
+        case 36: keyStr = "↩"
+        case 48: keyStr = "⇥"
+        case 49: keyStr = "Space"
+        case 51: keyStr = "⌫"
+        case 53: keyStr = "⎋"
+        case 123: keyStr = "←"
+        case 124: keyStr = "→"
+        case 125: keyStr = "↓"
+        case 126: keyStr = "↑"
+        default:
+            let source = CGEventSource(stateID: .combinedSessionState)
+            if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true),
+               let nsEvent = NSEvent(cgEvent: cgEvent),
+               let chars = nsEvent.charactersIgnoringModifiers, !chars.isEmpty {
+                keyStr = chars.uppercased()
+            } else {
+                keyStr = "\(keyCode)"
+            }
+        }
+        
+        return result + keyStr
+    }
+}
+
+// MARK: - Helper de Seguridad
+
+class KeychainManager {
+    static let shared = KeychainManager()
+    
+    private let serviceIdentifier: String
+    
+    private init() {
+        self.serviceIdentifier = Bundle.main.bundleIdentifier ?? "app.promtier.keys"
+    }
+    
+    func save(key: String, data: String) -> OSStatus {
+        guard let dataFromString = data.data(using: .utf8, allowLossyConversion: false) else {
+            return errSecParam
+        }
+        
+        let _ = delete(key: key)
+        
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
+            kSecAttrAccount as String : key,
+            kSecValueData as String   : dataFromString,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+        ]
+        
+        return SecItemAdd(query as CFDictionary, nil)
+    }
+    
+    func read(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
+            kSecAttrAccount as String : key,
+            kSecReturnData as String  : kCFBooleanTrue!,
+            kSecMatchLimit as String  : kSecMatchLimitOne
+        ]
+        
+        var dataTypeRef: AnyObject?
+        var status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        
+        // --- Migración desde llaves antiguas sin 'kSecAttrService' ---
+        if status == errSecItemNotFound {
+            let legacyQuery: [String: Any] = [
+                kSecClass as String       : kSecClassGenericPassword,
+                kSecAttrAccount as String : key,
+                kSecReturnData as String  : kCFBooleanTrue!,
+                kSecMatchLimit as String  : kSecMatchLimitOne
+            ]
+            
+            var legacyRef: AnyObject?
+            status = SecItemCopyMatching(legacyQuery as CFDictionary, &legacyRef)
+            
+            if status == errSecSuccess, let legacyData = legacyRef as? Data, let legacyStr = String(data: legacyData, encoding: .utf8) {
+                // Migrar a la nueva estructura segura borrando la insegura
+                SecItemDelete(legacyQuery as CFDictionary)
+                _ = self.save(key: key, data: legacyStr)
+                return legacyStr
+            }
+        }
+        
+        if status == errSecSuccess {
+            if let retrievedData = dataTypeRef as? Data,
+               let result = String(data: retrievedData, encoding: .utf8) {
+                return result
+            }
+        }
+        return nil
+    }
+    
+    func delete(key: String) -> OSStatus {
+        let query: [String: Any] = [
+            kSecClass as String       : kSecClassGenericPassword,
+            kSecAttrService as String : serviceIdentifier,
+            kSecAttrAccount as String : key
+        ]
+        
+        return SecItemDelete(query as CFDictionary)
     }
 }

@@ -22,25 +22,152 @@ struct Prompt: Identifiable, Codable {
     var lastUsedAt: Date?           // Última vez que se copió
     var icon: String?               // Icono personalizado (SFSymbol)
     var showcaseImages: [Data] = [] // Imágenes de resultados (max 3)
+    /// Conteo persistido para UI/lista (permite lazy-load de blobs).
+    var showcaseImageCount: Int = 0
+    /// Paths relativos en disco (app support) para imágenes guardadas.
+    var showcaseImagePaths: [String] = []
+    /// Thumbnails (pequeños) para UI rápida.
+    var showcaseThumbnails: [Data] = []
     var versionHistory: [PromptSnapshot] = [] // Historial de versiones (Premium)
     var tags: [String] = []         // Etiquetas (Premium)
+    var targetAppBundleIDs: [String] = [] // Apps asociadas (Context-Aware)
     var deletedAt: Date? = nil      // Si tiene fecha, está en la papelera
     
+    var negativePrompt: String?     // Lo que la IA NO debe hacer
+    var alternativePrompt: String?  // Un prompt similar o variante (Legacy/Single)
+    var alternatives: [String] = [] // Lista de prompts alternativos (Hasta 10)
+    var alternativeDescriptions: [String] = [] // Descripción breve por alternativa (1 línea)
+    var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
+    var parentID: UUID?             // ID del prompt original si es una rama
+    
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = []) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], targetAppBundleIDs: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], alternativeDescriptions: [String] = [], customShortcut: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
         self.promptDescription = promptDescription
         self.folder = folder
         self.icon = icon
-        self.showcaseImages = showcaseImages
+        self.showcaseImages = Array(showcaseImages.prefix(3))
+        self.showcaseImageCount = self.showcaseImages.count
+        self.showcaseImagePaths = []
+        self.showcaseThumbnails = []
         self.tags = tags
+        self.targetAppBundleIDs = targetAppBundleIDs
+        self.negativePrompt = negativePrompt
+        self.alternativePrompt = alternativePrompt
+        self.alternatives = Array(alternatives.prefix(10))
+        self.alternativeDescriptions = Array(alternativeDescriptions.prefix(10))
+        if self.alternativeDescriptions.count < self.alternatives.count {
+            self.alternativeDescriptions.append(contentsOf: Array(repeating: "", count: self.alternatives.count - self.alternativeDescriptions.count))
+        } else if self.alternativeDescriptions.count > self.alternatives.count {
+            self.alternativeDescriptions = Array(self.alternativeDescriptions.prefix(self.alternatives.count))
+        }
+        self.customShortcut = customShortcut
+        self.parentID = nil
         self.isFavorite = false
         self.createdAt = Date()
         self.modifiedAt = Date()
         self.useCount = 0
         self.deletedAt = nil
+    }
+
+    // MARK: - Codable (retrocompatible)
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case content
+        case promptDescription
+        case folder
+        case isFavorite
+        case createdAt
+        case modifiedAt
+        case useCount
+        case lastUsedAt
+        case icon
+        case showcaseImages
+        case showcaseImageCount
+        case showcaseImagePaths
+        case showcaseThumbnails
+        case versionHistory
+        case tags
+        case deletedAt
+        case negativePrompt
+        case alternativePrompt
+        case alternatives
+        case alternativeDescriptions
+        case customShortcut
+        case targetAppBundleIDs
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        content = try container.decode(String.self, forKey: .content)
+
+        promptDescription = try container.decodeIfPresent(String.self, forKey: .promptDescription)
+        folder = try container.decodeIfPresent(String.self, forKey: .folder)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt) ?? createdAt
+        useCount = try container.decodeIfPresent(Int.self, forKey: .useCount) ?? 0
+        lastUsedAt = try container.decodeIfPresent(Date.self, forKey: .lastUsedAt)
+
+        icon = try container.decodeIfPresent(String.self, forKey: .icon)
+        showcaseImages = Array((try container.decodeIfPresent([Data].self, forKey: .showcaseImages) ?? []).prefix(3))
+
+        let decodedCount = try container.decodeIfPresent(Int.self, forKey: .showcaseImageCount)
+        showcaseImageCount = decodedCount ?? showcaseImages.count
+
+        showcaseImagePaths = try container.decodeIfPresent([String].self, forKey: .showcaseImagePaths) ?? []
+        showcaseThumbnails = try container.decodeIfPresent([Data].self, forKey: .showcaseThumbnails) ?? []
+
+        versionHistory = try container.decodeIfPresent([PromptSnapshot].self, forKey: .versionHistory) ?? []
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        targetAppBundleIDs = try container.decodeIfPresent([String].self, forKey: .targetAppBundleIDs) ?? []
+        deletedAt = try container.decodeIfPresent(Date.self, forKey: .deletedAt)
+
+        negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
+        alternativePrompt = try container.decodeIfPresent(String.self, forKey: .alternativePrompt)
+        alternatives = try container.decodeIfPresent([String].self, forKey: .alternatives) ?? []
+        alternativeDescriptions = try container.decodeIfPresent([String].self, forKey: .alternativeDescriptions) ?? []
+        if alternativeDescriptions.count < alternatives.count {
+            alternativeDescriptions.append(contentsOf: Array(repeating: "", count: alternatives.count - alternativeDescriptions.count))
+        } else if alternativeDescriptions.count > alternatives.count {
+            alternativeDescriptions = Array(alternativeDescriptions.prefix(alternatives.count))
+        }
+        customShortcut = try container.decodeIfPresent(String.self, forKey: .customShortcut)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(promptDescription, forKey: .promptDescription)
+        try container.encodeIfPresent(folder, forKey: .folder)
+        try container.encode(isFavorite, forKey: .isFavorite)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(modifiedAt, forKey: .modifiedAt)
+        try container.encode(useCount, forKey: .useCount)
+        try container.encodeIfPresent(lastUsedAt, forKey: .lastUsedAt)
+        try container.encodeIfPresent(icon, forKey: .icon)
+        try container.encode(showcaseImages, forKey: .showcaseImages)
+        try container.encode(showcaseImageCount, forKey: .showcaseImageCount)
+        try container.encode(showcaseImagePaths, forKey: .showcaseImagePaths)
+        try container.encode(showcaseThumbnails, forKey: .showcaseThumbnails)
+        try container.encode(versionHistory, forKey: .versionHistory)
+        try container.encode(tags, forKey: .tags)
+        try container.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        try container.encodeIfPresent(negativePrompt, forKey: .negativePrompt)
+        try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
+        try container.encode(alternatives, forKey: .alternatives)
+        try container.encode(alternativeDescriptions, forKey: .alternativeDescriptions)
+        try container.encodeIfPresent(customShortcut, forKey: .customShortcut)
+        try container.encode(targetAppBundleIDs, forKey: .targetAppBundleIDs)
     }
     
     // MARK: - Métodos de ayuda
@@ -52,18 +179,28 @@ struct Prompt: Identifiable, Codable {
         modifiedAt = Date()
     }
     
+    // Statically cached Regex patterns to avoid compiling on every view redra
+    static let variableExtractRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    static let variableCheckRegex = try? NSRegularExpression(pattern: "\\{\\{[^}]+\\}\\}", options: [])
+    static let chainExtractRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
+    
     /// Verifica si el prompt contiene variables de plantilla {{variable}}
     func hasTemplateVariables() -> Bool {
-        let pattern = "\\{\\{[^}]+\\}\\}"
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let regex = Self.variableCheckRegex
+        let range = NSRange(content.startIndex..<content.endIndex, in: content)
+        return regex?.firstMatch(in: content, options: [], range: range) != nil
+    }
+    
+    /// Verifica si tiene encadenamientos [[@Prompt:Nombre]]
+    func hasChains() -> Bool {
+        let regex = Self.chainExtractRegex
         let range = NSRange(content.startIndex..<content.endIndex, in: content)
         return regex?.firstMatch(in: content, options: [], range: range) != nil
     }
     
     /// Extrae los nombres de las variables de plantilla del contenido
     func extractTemplateVariables() -> [String] {
-        let pattern = "\\{\\{([^}]+)\\}\\}"
-        let regex = try? NSRegularExpression(pattern: pattern, options: [])
+        let regex = Self.variableExtractRegex
         let range = NSRange(content.startIndex..<content.endIndex, in: content)
         
         var variables: [String] = []
@@ -79,6 +216,57 @@ struct Prompt: Identifiable, Codable {
         }
         return variables
     }
+
+    /// Extrae recursivamente todas las variables, incluyendo las de los prompts encadenados
+    func extractAllVariables(availablePrompts: [Prompt], depth: Int = 0) -> [String] {
+        if depth > 5 { return extractTemplateVariables() }
+        
+        var allVars = extractTemplateVariables()
+        let chainedNames = extractChainedPromptNames()
+        
+        for name in chainedNames {
+            if let linked = availablePrompts.first(where: { $0.title.lowercased() == name.lowercased() }) {
+                let linkedVars = linked.extractAllVariables(availablePrompts: availablePrompts, depth: depth + 1)
+                for v in linkedVars {
+                    if !allVars.contains(v) {
+                        allVars.append(v)
+                    }
+                }
+            }
+        }
+        return allVars
+    }
+
+    /// Extrae los nombres de los prompts encadenados [[@Prompt:Nombre]]
+    func extractChainedPromptNames() -> [String] {
+        let regex = Self.chainExtractRegex
+        let range = NSRange(content.startIndex..<content.endIndex, in: content)
+        
+        var names: [String] = []
+        regex?.enumerateMatches(in: content, options: [], range: range) { match, _, _ in
+            if let captureRange = match?.range(at: 1),
+               let name = (content as NSString).substring(with: captureRange) as String? {
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty && !names.contains(trimmedName) {
+                    names.append(trimmedName)
+                }
+            }
+        }
+        return names
+    }
+    
+    /// Verifica si un prompt contiene únicamente variables inteligentes (que se autorresuelven)
+    func isSmartOnly() -> Bool {
+        let vars = extractTemplateVariables()
+        if vars.isEmpty { return false }
+        return vars.allSatisfy { PlaceholderResolver.isSmart($0) }
+    }
+    
+    /// Verifica si tiene al menos una variable inteligente
+    func hasAnySmartVariable() -> Bool {
+        let vars = extractTemplateVariables()
+        return vars.contains { PlaceholderResolver.isSmart($0) }
+    }
     
     /// True si está en la papelera
     var isInTrash: Bool { deletedAt != nil }
@@ -92,8 +280,41 @@ struct Prompt: Identifiable, Codable {
 
 /// Representa una versión guardada de un prompt (Premium)
 struct PromptSnapshot: Codable, Identifiable {
-    var id: UUID = UUID()
+    var id: UUID
     let title: String
     let content: String
+    var negativePrompt: String?
+    var alternatives: [String]
+    var alternativeDescriptions: [String]
     let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, content, negativePrompt, alternatives, alternativeDescriptions, timestamp
+    }
+
+    init(id: UUID = UUID(), title: String, content: String, negativePrompt: String? = nil, alternatives: [String] = [], alternativeDescriptions: [String] = [], timestamp: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.content = content
+        self.negativePrompt = negativePrompt
+        self.alternatives = alternatives
+        self.alternativeDescriptions = alternativeDescriptions
+        self.timestamp = timestamp
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? container.decode(UUID.self, forKey: .id)) ?? UUID()
+        self.title = try container.decode(String.self, forKey: .title)
+        self.content = try container.decode(String.self, forKey: .content)
+        self.negativePrompt = try? container.decodeIfPresent(String.self, forKey: .negativePrompt)
+        self.alternatives = (try? container.decodeIfPresent([String].self, forKey: .alternatives)) ?? []
+        self.alternativeDescriptions = (try? container.decodeIfPresent([String].self, forKey: .alternativeDescriptions)) ?? []
+        if self.alternativeDescriptions.count < self.alternatives.count {
+            self.alternativeDescriptions.append(contentsOf: Array(repeating: "", count: self.alternatives.count - self.alternativeDescriptions.count))
+        } else if self.alternativeDescriptions.count > self.alternatives.count {
+            self.alternativeDescriptions = Array(self.alternativeDescriptions.prefix(self.alternatives.count))
+        }
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
+    }
 }
