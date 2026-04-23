@@ -61,19 +61,17 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
         
         let newPanel = OnboardingPanel(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
-            styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
         
-        newPanel.titleVisibility = .hidden
-        newPanel.titlebarAppearsTransparent = true
         newPanel.isMovableByWindowBackground = true
         newPanel.isFloatingPanel = true
         newPanel.level = .floating
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        newPanel.isOpaque = true
-        newPanel.backgroundColor = NSColor.windowBackgroundColor
+        newPanel.isOpaque = false
+        newPanel.backgroundColor = .clear
         newPanel.hasShadow = true
         
         // Efecto de esquina
@@ -87,7 +85,7 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
 
         let hostingView = NSHostingView(rootView: view)
         hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         hostingView.layer?.cornerRadius = 24
         hostingView.layer?.masksToBounds = true
 
