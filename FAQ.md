@@ -12,8 +12,8 @@ No elimines las anteriores; simplemente agrega más preguntas, máximo 100.
 **Técnico:** La UI utiliza un tinte de fondo del 5% de opacidad basado en el tipo de campo dentro de `NewPromptView`, facilitando la jerarquía visual en formularios complejos.
 
 ## 3) ¿Necesito permisos de Accesibilidad para usar Promtier?
-**Para humanos:** **Solo si activas el "Pegado Automático" (Instant Paste).** Para el resto de funciones (copiar, buscar, atajos globales) no necesitas ningún permiso especial.
-**Técnico:** El pegado automático requiere simular eventos de teclado del sistema (`CGEvent` para Cmd+V), lo cual macOS bloquea por seguridad a menos que el usuario conceda permisos en *Ajustes del Sistema > Privacidad y Seguridad > Accesibilidad*.
+**Para humanos:** No. Promtier no requiere permisos de accesibilidad para sus funciones actuales.
+**Técnico:** Se retiró el flujo de pegado automático y con ello toda la lógica que solicitaba o comprobaba permisos de Accesibilidad.
 
 ## 4) ¿Qué hacen los botones Swap, Merge y Branching?
 **Para humanos:** Son herramientas de productividad para iterar prompts:

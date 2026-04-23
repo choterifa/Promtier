@@ -106,8 +106,6 @@
 "close_on_copy_subtitle" = "Cierra la ventana automáticamente al copiar";
 "trackpad_carousel" = "Desplazar Imágenes con Trackpad";
 "trackpad_carousel_subtitle" = "Permite mover imágenes en el preview deslizando el dedo en el trackpad.";
-"auto_paste" = "Pegado instantáneo";
-"auto_paste_subtitle" = "Pega automáticamente el prompt en la aplicación activa";
 "clipboard_suggestions" = "Sugerencias de Portapapeles";
 "clipboard_suggestions_subtitle" = "Muestra un banner si hay texto útil en el portapapeles";
 "clipboard_only_browsers" = "Sugerir solo desde Navegadores";
@@ -119,10 +117,6 @@
 "remove_app" = "Eliminar";
 "manage_allowed_apps" = "Gestiona las apps que activan sugerencias";
 "accessibility" = "Accesibilidad";
-"accessibility_granted" = "Permisos concedidos ✅";
-"accessibility_required" = "Permisos requeridos ⚠️";
-"accessibility_verified" = "Verificado";
-"accessibility_configure" = "Configurar";
 "haptic_feedback" = "Feedback háptico";
 "haptic_feedback_subtitle" = "Retroalimentación táctil en el trackpad";
 "test_vibration" = "Probar Vibración";
@@ -353,8 +347,6 @@
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Alt + V";
 "gt_snippets_shortcut" = "Toca / para insertar snippet";
-"gt_auto_paste_tip" = "Pegado Instantáneo";
-"gt_auto_paste_shortcut" = "Activa en Ajustes";
 "gt_save_prompt" = "Guardar Prompt";
 "gt_save_shortcut" = "Cmd + S";
 "gt_edit" = "Editar Prompt";
@@ -543,8 +535,6 @@
 "ai_response_language_subtitle" = "Fuerza el idioma del contenido generado por IA";
 "welcome_guide" = "Guía de Bienvenida";
 
-"accessibility_permissions" = "Permisos de accesibilidad";
-"accessibility_required_for_paste" = "Se requieren permisos para pegar automáticamente";
 
 "version_history_count" = "%d versiones guardadas";
 "restore_version" = "Restaurar";

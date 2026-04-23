@@ -85,8 +85,6 @@
 "close_on_copy_subtitle" = "Close the window automatically after copying";
 "trackpad_carousel" = "Scroll Images with Trackpad";
 "trackpad_carousel_subtitle" = "Allow moving or switching preview images by swiping on the trackpad.";
-"auto_paste" = "Instant Paste";
-"auto_paste_subtitle" = "Automatically paste the prompt in the active app";
 "clipboard_suggestions" = "Clipboard Suggestions";
 "clipboard_suggestions_subtitle" = "Show a creation banner if there's text on the clipboard";
 "clipboard_only_browsers" = "Suggest Only from Browsers";
@@ -98,10 +96,6 @@
 "remove_app" = "Remove";
 "manage_allowed_apps" = "Manage applications that trigger suggestions";
 "accessibility" = "Accessibility";
-"accessibility_granted" = "Permissions granted ✅";
-"accessibility_required" = "Permissions required ⚠️";
-"accessibility_verified" = "Verified";
-"accessibility_configure" = "Configure";
 "haptic_feedback" = "Haptic Feedback";
 "haptic_feedback_subtitle" = "Tactile feedback on the trackpad";
 "test_vibration" = "Test Vibration";
@@ -311,8 +305,6 @@
 "gt_variables" = "Variables";
 "gt_variables_shortcut" = "Opt + V";
 "gt_snippets_shortcut" = "Tap / to insert snippet";
-"gt_auto_paste_tip" = "Instant Paste";
-"gt_auto_paste_shortcut" = "Enable in Settings";
 "gt_save_prompt" = "Save Prompt";
 "gt_save_shortcut" = "Cmd + S";
 "gt_edit" = "Edit Prompt";
@@ -525,8 +517,6 @@
 "ai_response_language_subtitle" = "Force the language of all AI-generated content";
 "welcome_guide" = "Welcome Guide";
 
-"accessibility_permissions" = "Accessibility permissions";
-"accessibility_required_for_paste" = "Permissions required for auto-paste";
 "version_history_count" = "%d versions saved";
 "restore_version" = "Restore";
 "select_version" = "Select a version";

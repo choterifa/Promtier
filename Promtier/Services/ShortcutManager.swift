@@ -24,13 +24,10 @@ final class GlobalHotkeyManager: ObservableObject {
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
     
-    private var permissionTimer: Timer?
     private static var isHandlerInstalled = false
-    private var hasLoggedInitialAccessibilityState = false
     
     private init() {
         print("✅ GlobalHotkeyManager inicializado")
-        checkAccessibilityPermissions()
         setupMonitors()
         setupCarbonHotKey()
     }
@@ -230,37 +227,6 @@ final class GlobalHotkeyManager: ObservableObject {
         } else if let promptId = promptHotkeyMap[id] {
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)
         }
-    }
-    
-    // MARK: - Accesibilidad
-    
-    private var lastPermissionCheck: Date = Date.distantPast
-    
-    @discardableResult
-    func checkAccessibilityPermissions(forceDialog: Bool = false) -> Bool {
-        if !forceDialog && Date().timeIntervalSince(lastPermissionCheck) < 60 {
-            return isAccessibilityGranted
-        }
-        
-        lastPermissionCheck = Date()
-        let silentOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
-        let isTrusted = AXIsProcessTrustedWithOptions(silentOptions)
-        
-        if self.isAccessibilityGranted != isTrusted {
-            self.isAccessibilityGranted = isTrusted
-        }
-
-        if !hasLoggedInitialAccessibilityState {
-            print("🔍 [GlobalHotkeyManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
-            hasLoggedInitialAccessibilityState = true
-        }
-        
-        if !isTrusted && forceDialog {
-            let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            AXIsProcessTrustedWithOptions(promptOptions)
-        }
-        
-        return isTrusted
     }
     
     // MARK: - Control

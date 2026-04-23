@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 
 struct BehaviorTab: View {
     @EnvironmentObject var preferences: PreferencesManager
-    @ObservedObject private var shortcutManager = ShortcutManager.shared
     @State private var showingAppPicker = false
     
     var body: some View {
@@ -119,30 +118,6 @@ struct BehaviorTab: View {
                     .padding(.leading, 40)
                     .padding(.top, 4)
                 
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("auto_paste", subtitle: "auto_paste_subtitle", icon: "wand.and.stars", iconColor: .orange) {
-                    HStack(spacing: 8) {
-                        if !shortcutManager.isAccessibilityGranted {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                                .help("accessibility_required".localized(for: preferences.language))
-                        }
-                        Toggle("", isOn: $preferences.autoPaste)
-                            .toggleStyle(.switch)
-                    }
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow(LocalizedStringKey("accessibility_permissions".localized(for: preferences.language)), subtitle: LocalizedStringKey(shortcutManager.isAccessibilityGranted ? "accessibility_granted".localized(for: preferences.language) : "accessibility_required_for_paste".localized(for: preferences.language)), icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
-                    Button(LocalizedStringKey((shortcutManager.isAccessibilityGranted ? "accessibility_verified" : "accessibility_configure").localized(for: preferences.language))) {
-                        shortcutManager.checkAccessibilityPermissions(forceDialog: true)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(shortcutManager.isAccessibilityGranted)
-                }
             }
             
             SettingsSection(title: "haptic_feedback", icon: "hand.tap.fill") {

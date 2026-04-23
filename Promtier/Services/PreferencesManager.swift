@@ -85,12 +85,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var autoPaste: Bool {
-        didSet {
-            userDefaults.set(autoPaste, forKey: "autoPaste")
-        }
-    }
-    
     @Published var clipboardSuggestions: Bool {
         didSet {
             userDefaults.set(clipboardSuggestions, forKey: "clipboardSuggestions")
@@ -463,7 +457,6 @@ class PreferencesManager: ObservableObject {
         let savedSidebarWidth = userDefaults.double(forKey: "sidebarWidth")
         self.sidebarWidth = savedSidebarWidth > 0 ? min(350, max(200, CGFloat(savedSidebarWidth))) : 220
         self.closeOnCopy = userDefaults.bool(forKey: "closeOnCopy")
-        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
         self.clipboardSuggestions = userDefaults.object(forKey: "clipboardSuggestions") == nil ? true : userDefaults.bool(forKey: "clipboardSuggestions")
         self.autoCopyDraft = userDefaults.object(forKey: "autoCopyDraft") == nil ? true : userDefaults.bool(forKey: "autoCopyDraft")
         self.enableTrackpadCarousel = userDefaults.object(forKey: "enableTrackpadCarousel") == nil ? true : userDefaults.bool(forKey: "enableTrackpadCarousel")
@@ -698,7 +691,6 @@ class PreferencesManager: ObservableObject {
         self.aiDraftHotkeyCode = 2
         self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .english
-        self.autoPaste = false
         self.clipboardSuggestions = true
         self.onlySuggestFromBrowsers = true
         self.windowWidth = 800
