@@ -274,9 +274,9 @@ extension NewPromptView {
     }
 
     func syncHoistedFieldsFromViewModel() {
-        titleHoister.updateFast(viewModel.title)
-        contentHoister.updateFast(viewModel.content)
-        promptDescriptionHoister.updateFast(viewModel.promptDescription)
+        titleHoister.setExternal(viewModel.title)
+        contentHoister.setExternal(viewModel.content)
+        promptDescriptionHoister.setExternal(viewModel.promptDescription)
     }
 
     func syncAlternativeDescriptionsWithAlternatives() {

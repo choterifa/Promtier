@@ -54,9 +54,33 @@ struct NewPromptView: View {
         nonmutating set { promptDescriptionHoister.updateFast(newValue) }
     }
 
-    var titleBinding: Binding<String> { Binding(get: { title }, set: { title = $0 }) }
-    var contentBinding: Binding<String> { Binding(get: { content }, set: { content = $0 }) }
-    var promptDescriptionBinding: Binding<String> { Binding(get: { promptDescription }, set: { promptDescription = $0 }) }
+    var titleBinding: Binding<String> {
+        Binding(
+            get: { viewModel.title },
+            set: { val in
+                viewModel.title = val
+                titleHoister.updateFast(val)
+            }
+        )
+    }
+    var contentBinding: Binding<String> {
+        Binding(
+            get: { viewModel.content },
+            set: { val in
+                viewModel.content = val
+                contentHoister.updateFast(val)
+            }
+        )
+    }
+    var promptDescriptionBinding: Binding<String> {
+        Binding(
+            get: { viewModel.promptDescription },
+            set: { val in
+                viewModel.promptDescription = val
+                promptDescriptionHoister.updateFast(val)
+            }
+        )
+    }
 
     var negativePrompt: String {
         get { viewModel.negativePrompt }
@@ -925,6 +949,15 @@ struct NewPromptView: View {
                 } message: {
                     Text("unsaved_changes_message".localized(for: preferences.language))
                 }
+        .onChange(of: viewModel.title) { _, newValue in
+            titleHoister.setExternal(newValue)
+        }
+        .onChange(of: viewModel.content) { _, newValue in
+            contentHoister.setExternal(newValue)
+        }
+        .onChange(of: viewModel.promptDescription) { _, newValue in
+            promptDescriptionHoister.setExternal(newValue)
+        }
         .onAppear {
             setupOnAppear()
             setupKeyboardMonitor()
@@ -947,15 +980,6 @@ struct NewPromptView: View {
             DispatchQueue.main.async {
                 self.setupOnAppear()
             }
-        }
-        .onReceive(viewModel.$title.dropFirst()) { _ in
-            syncHoistedFieldsFromViewModel()
-        }
-        .onReceive(viewModel.$content.dropFirst()) { _ in
-            syncHoistedFieldsFromViewModel()
-        }
-        .onReceive(viewModel.$promptDescription.dropFirst()) { _ in
-            syncHoistedFieldsFromViewModel()
         }
     }
 

@@ -35,6 +35,23 @@ class AIServiceManager: AIServiceProtocol {
         }
     }
     
+    // MARK: - UI Callbacks
+    var onFallbackOccurred: ((String) -> Void)?
+    
+    private func reportFallback(service: AIService, error: String) {
+        let serviceName = {
+            switch service {
+            case .openai: return "OpenAI"
+            case .gemini: return "Gemini"
+            case .openrouter: return "OpenRouter"
+            }
+        }()
+        
+        DispatchQueue.main.async {
+            self.onFallbackOccurred?("⚠️ \(serviceName) falló (\(error)). Probando alternativa...")
+        }
+    }
+
     func generate(prompt: String, imageData: Data? = nil, useFallback: Bool = true) async throws -> String {
         let prefs = PreferencesManager.shared
         
@@ -71,17 +88,20 @@ class AIServiceManager: AIServiceProtocol {
                 // Si es un error de saturación o servidor, probamos el siguiente. Si es 401 (Auth), probamos otro (podría estar mal la key)
                 let code = error.statusCode ?? 0
                 if code == 429 || code >= 500 {
+                    reportFallback(service: service, error: "\(code)")
                     print("⚠️ Fallback: \(service) falló por saturación (\(code)). Probando alternativa...")
                     continue
                 }
             } catch let error as NSError {
                 lastError = error
                 if error.domain == "GeminiAPI" && (error.code == 429 || error.code >= 500) {
+                    reportFallback(service: service, error: "\(error.code)")
                     print("⚠️ Fallback: Gemini falló por saturación (\(error.code)). Probando alternativa...")
                     continue
                 }
                 // Si es error de red o timeout, intentamos fallback
                 if error.domain == NSURLErrorDomain {
+                    reportFallback(service: service, error: "Red")
                     print("⚠️ Fallback: Error de red con \(service). Probando alternativa...")
                     continue
                 }
