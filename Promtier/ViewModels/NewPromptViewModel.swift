@@ -150,16 +150,22 @@ final class NewPromptViewModel: ObservableObject {
         let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
         let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
         
-        let isContentProvided = keepContent && !trimmedContent.isEmpty
+        let hasContentInput = !trimmedContent.isEmpty
+        let shouldKeepContentUnchanged = keepContent && hasContentInput
         let isTitleProvided = !trimmedTitle.isEmpty
         
         let titleInstruction = isTitleProvided
             ? "The title is already provided. DO NOT modify it in any way. Return it EXACTLY as it is."
             : "If the title is empty or generic, generate a catchy, short title (max 1 line)."
 
-        let contentInstruction = isContentProvided
-            ? "The content is already provided by the user. DO NOT modify it, do not expand it, and do not improve it. Return it EXACTLY as it is."
-            : "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}}. If you must create new variables, use a MAXIMUM of 3. New variables MUST use exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
+        let contentInstruction: String
+        if shouldKeepContentUnchanged {
+            contentInstruction = "The content is already provided by the user. DO NOT modify it, do not expand it, and do not improve it. Return it EXACTLY as it is."
+        } else if hasContentInput {
+            contentInstruction = "Use the provided content as the primary seed and convert it into a complete, production-quality prompt. If the input is short (for example: 'prompt for bananas'), you MUST expand it into a detailed prompt. If it is already complete, improve structure and clarity. Never return the same text unchanged. Maintain EXISTING variables {{...}} exactly as they are. If you must create new variables, use a MAXIMUM of 3 with exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
+        } else {
+            contentInstruction = "Generate the main prompt content. It must be high-quality and detailed. Maintain EXISTING variables {{...}}. If you must create new variables, use a MAXIMUM of 3 with exact syntax {{snake_case_name}} (e.g. {{web_folder_path}}). NEVER USE ITALICS OR BOLD FORMATTING AROUND VARIABLES. For example, never output *{{variable}}* or _{{variable}}_, just output {{variable}} cleanly."
+        }
 
         systemPrompt = """
         You are an expert prompt engineer. Your goal is to create or improve an AI prompt based on the user's input.
