@@ -91,59 +91,6 @@ class ClipboardService: ObservableObject {
         finalizeCopy(plainText: attributedText.string, addToHistory: addToHistory)
     }
     
-    /// Ejecuta el pegado automático mediante CoreGraphics (Simulación de Teclado)
-    private func performAutoPaste() {
-        // Asegurar que el proceso tiene permisos antes de intentar
-        guard ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false) else {
-            return
-        }
-        
-        // 1. Forzar que la aplicación se oculte para devolver el foco de forma inmediata y fiable
-        DispatchQueue.main.async {
-            if MenuBarManager.shared.isPopoverShown {
-                MenuBarManager.shared.closePopover()
-            }
-            
-            // Ocultar la app asegura que macOS devuelva el foco a la aplicación anterior al 100%
-            NSApp.hide(nil)
-            
-            // 2. Esperar un margen de seguridad (0.5s) para que la transición de foco se complete
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                // Usar .hidSystemState para ignorar estados de teclas de la sesión actual y ser más fiel al hardware
-                let source = CGEventSource(stateID: .hidSystemState)
-                
-                // Definir códigos de tecla nativos (Virtual Key Codes de Carbon)
-                let kVK_Command: CGKeyCode = 55
-                let kVK_ANSI_V: CGKeyCode = 9
-                
-                // Crear eventos
-                let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
-                let vDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: true)
-                vDown?.flags = .maskCommand
-                
-                let vUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: false)
-                vUp?.flags = .maskCommand
-                
-                let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
-                
-                // Ejecutar secuencia con micro-retrasos
-                cmdDown?.post(tap: .cghidEventTap)
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                    vDown?.post(tap: .cghidEventTap)
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                        vUp?.post(tap: .cghidEventTap)
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            cmdUp?.post(tap: .cghidEventTap)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
     /// Obtiene el contenido actual del clipboard, con sanitización de seguridad
     func getClipboardContent() -> String? {
         guard let content = NSPasteboard.general.string(forType: .string) else { return nil }
@@ -211,9 +158,5 @@ class ClipboardService: ObservableObject {
         }
 
         showCopyNotification()
-
-        if PreferencesManager.shared.autoPaste {
-            performAutoPaste()
-        }
     }
 }

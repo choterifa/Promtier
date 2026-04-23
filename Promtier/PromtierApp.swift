@@ -8,15 +8,11 @@
 
 import SwiftUI
 import AppKit
-import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Aumentar el retraso a 3 segundos para dar tiempo al sistema TCC a inicializarse
+        // Mostrar Onboarding en primer lanzamiento
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false)
-            
-            // Mostrar Onboarding en primer lanzamiento
             if !PreferencesManager.shared.hasSeenOnboarding {
                 FloatingOnboardingManager.shared.show()
             }
