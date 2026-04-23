@@ -92,8 +92,8 @@ class AIServiceManager: AIServiceProtocol {
     }
     
     // MARK: - Generación de Metadatos Comunes
-    func generatePromptMetadata(title: String, content: String) async throws -> PromptMetadataResponse {
-        let isContentProvided = !content.isEmpty
+    func generatePromptMetadata(title: String, content: String, keepContent: Bool = true) async throws -> PromptMetadataResponse {
+        let isContentProvided = keepContent && !content.isEmpty
         let isTitleProvided = !title.isEmpty
         
         let titleInstruction = isTitleProvided

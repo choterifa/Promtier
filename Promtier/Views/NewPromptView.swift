@@ -1006,6 +1006,7 @@ struct NewPromptView: View {
                     .zIndex(300)
             }
             magicOptionsOverlayLayer
+            creationOptionsOverlayLayer
 
             if let msg = branchMessage {
                 NewPromptBranchMessageOverlay(
@@ -1056,6 +1057,13 @@ struct NewPromptView: View {
             magicTarget: vmBinding(\.magicTarget),
             magicCommand: vmBinding(\.magicCommand),
             executeAction: { executeMagicWithCommand() }
+        )
+    }
+
+    var creationOptionsOverlayLayer: some View {
+        NewPromptCreationOptionsOverlay(
+            showingCreationOptions: vmBinding(\.showingCreationOptions),
+            executeAction: { keepContent in executeAutocomplete(keepContent: keepContent) }
         )
     }
 

@@ -37,6 +37,9 @@ struct NewPromptOverlaysManager: View {
     @Binding var magicCommand: String
     var executeMagicWithCommand: () -> Void
 
+    @Binding var showingCreationOptions: Bool
+    var executeAutocomplete: (Bool) -> Void
+
     var body: some View {
         Group {
             if let target = zenTarget {
@@ -93,6 +96,11 @@ struct NewPromptOverlaysManager: View {
                 magicTarget: $magicTarget,
                 magicCommand: $magicCommand,
                 executeAction: executeMagicWithCommand
+            )
+            
+            NewPromptCreationOptionsOverlay(
+                showingCreationOptions: $showingCreationOptions,
+                executeAction: executeAutocomplete
             )
 
             if let msg = branchMessage {

@@ -293,6 +293,11 @@ extension NewPromptView {
         viewModel.autocompletePromptContent(preferences: preferences, promptService: promptService)
     }
 
+    func executeAutocomplete(keepContent: Bool) {
+        syncHoistedFieldsToViewModel()
+        viewModel.executeAutocomplete(preferences: preferences, promptService: promptService, keepContent: keepContent)
+    }
+
     func executeMagicWithCommand() {
         syncHoistedFieldsToViewModel()
         viewModel.executeMagicWithCommand(preferences: preferences)

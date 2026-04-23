@@ -34,6 +34,7 @@ final class NewPromptViewModel: ObservableObject {
     // AI & Magic States
     @Published var showingPremiumFor: String? = nil
     @Published var showingMagicOptions: Bool = false
+    @Published var showingCreationOptions: Bool = false
     @Published var branchMessage: String? = nil
     @Published var isAutocompleting: Bool = false
     @Published var isCategorizing: Bool = false
@@ -125,6 +126,19 @@ final class NewPromptViewModel: ObservableObject {
             return
         }
         
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showingCreationOptions = true
+        }
+    }
+
+    func executeAutocomplete(preferences: PreferencesManager, promptService: PromptService, keepContent: Bool) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showingCreationOptions = false
+        }
+        
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        
         isAutocompleting = true
         HapticService.shared.playImpact()
         
@@ -136,7 +150,7 @@ final class NewPromptViewModel: ObservableObject {
         let currentTitle = trimmedTitle.isEmpty ? "No title provided" : trimmedTitle
         let currentContent = trimmedContent.isEmpty ? "No content provided" : trimmedContent
         
-        let isContentProvided = !trimmedContent.isEmpty
+        let isContentProvided = keepContent && !trimmedContent.isEmpty
         let isTitleProvided = !trimmedTitle.isEmpty
         
         let titleInstruction = isTitleProvided
