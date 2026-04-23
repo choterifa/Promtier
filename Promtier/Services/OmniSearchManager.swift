@@ -15,6 +15,7 @@ enum OmniSearchCommand {
     case moveDown
     case submit
     case copy
+    case edit
 }
 
 struct OmniSearchCommandEvent {
@@ -46,6 +47,9 @@ class OmniSearchPanel: NSPanel {
             return true
         } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 8 { // Cmd + C
             OmniSearchManager.shared.emit(.copy)
+            return true
+        } else if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command && keyCode == 14 { // Cmd + E
+            OmniSearchManager.shared.emit(.edit)
             return true
         }
         

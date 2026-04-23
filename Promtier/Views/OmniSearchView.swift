@@ -250,6 +250,11 @@ struct OmniSearchView: View {
                 if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
                     copyAndClose(filteredResults[selectedIndex].prompt)
                 }
+
+            case .edit:
+                if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
+                    openEditorAndClose(filteredResults[selectedIndex].prompt)
+                }
             }
         }
         .onDisappear {
@@ -417,6 +422,14 @@ struct OmniSearchView: View {
         if preferences.soundEnabled {
             SoundService.shared.playMagicSound()
         }
+        manager.hide()
+    }
+
+    private func openEditorAndClose(_ prompt: Prompt) {
+        let latestPrompt = promptService.promptSnapshot(byId: prompt.id) ?? prompt
+        MenuBarManager.shared.promptToEditFromOmniSearch = latestPrompt
+        MenuBarManager.shared.showWithState(.newPrompt)
+        HapticService.shared.playLight()
         manager.hide()
     }
 }

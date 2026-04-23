@@ -31,9 +31,13 @@ class MenuBarManager: NSObject, ObservableObject {
             if activeViewState == .main && oldValue != .main {
                 suggestedClipboardContent = nil
             }
+            if activeViewState != .newPrompt {
+                promptToEditFromOmniSearch = nil
+            }
         }
     }
     @Published var folderToEdit: Folder? = nil
+    @Published var promptToEditFromOmniSearch: Prompt? = nil
     @Published var suggestedClipboardContent: String? = nil
     @Published var isModalActive: Bool = false {
         didSet {

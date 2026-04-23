@@ -235,9 +235,10 @@ struct SearchViewSimple: View {
                     }
                     .transition(.opacity)
             case .newPrompt:
-                NewPromptView(prompt: selectedPrompt, onClose: {
+                NewPromptView(prompt: selectedPrompt ?? menuBarManager.promptToEditFromOmniSearch, onClose: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedPrompt = nil
+                        menuBarManager.promptToEditFromOmniSearch = nil
                         menuBarManager.activeViewState = .main
                     }
                 })
