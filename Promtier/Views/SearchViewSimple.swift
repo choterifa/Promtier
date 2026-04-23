@@ -846,9 +846,11 @@ struct SearchViewSimple: View {
                 return nil
             }
         }
-        if keyCode == 14 { // 'e' key for edit
-            if showingPreview, let _ = selectedPrompt {
-                closePreviewImmediately(playSound: false)
+        if keyCode == 14 && !isSearchFocused { // 'e' key for edit
+            if let _ = selectedPrompt {
+                if showingPreview {
+                    closePreviewImmediately(playSound: false)
+                }
                 if preferences.soundEnabled { SoundService.shared.playMagicSound() }
                 withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                 return nil
