@@ -14,7 +14,6 @@ class ShortcutManager: ObservableObject {
     static let shared = ShortcutManager()
     
     @Published var isEnabled = true
-    @Published var isAccessibilityGranted = false
     
     // Eliminamos la dependencia circular
     // private let menuBarManager = MenuBarManager.shared
@@ -49,42 +48,11 @@ class ShortcutManager: ObservableObject {
     
     private var hotKeyRef: EventHotKeyRef?
     private var localMonitor: Any?
-    private var permissionTimer: Timer?
     
     private init() {
         print("✅ ShortcutManager inicializado")
-        checkAccessibilityPermissions()
         setupMonitors()
         setupCarbonHotKey()
-        startPermissionPolling()
-        setupLifecycleObservers()
-    }
-    
-    // MARK: - Sincronización Automática
-    
-    private func startPermissionPolling() {
-        // Solo iniciar polling si aún no tenemos permisos
-        guard !isAccessibilityGranted else { return }
-        
-        permissionTimer?.invalidate()
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            // Si ya se concedió, detener el timer
-            if self.checkAccessibilityPermissions(forceDialog: false) {
-                print("✨ Permisos detectados automáticamente. Deteniendo polling.")
-                self.permissionTimer?.invalidate()
-                self.permissionTimer = nil
-            }
-        }
-    }
-    
-    private func setupLifecycleObservers() {
-        // Verificar solo cuando el popover se va a mostrar (vía notificación personalizada o evento)
-        // Por ahora mantenemos didBecomeActive pero con control de frecuencia
-        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.checkAccessibilityPermissions(forceDialog: false)
-        }
     }
     
     // MARK: - Carbon HotKey (Detección Global Real)
@@ -138,48 +106,6 @@ class ShortcutManager: ObservableObject {
     func handleCarbonHotKey() {
         print("🚀 Carbon HotKey detectado!")
         MenuBarManager.shared.togglePopover()
-    }
-    
-    // MARK: - Accesibilidad
-    
-    private var lastPermissionCheck: Date = Date.distantPast
-    
-    @discardableResult
-    func checkAccessibilityPermissions(forceDialog: Bool = false, ignoreSuppression: Bool = false) -> Bool {
-        // Evitar spam al sistema: si no es forzado, solo comprobar cada 60 segundos
-        if !forceDialog && Date().timeIntervalSince(lastPermissionCheck) < 60 {
-            return isAccessibilityGranted
-        }
-        
-        lastPermissionCheck = Date()
-        
-        // 1. Comprobación silenciosa para actualizar el estado interno
-        let silentOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
-        let isTrusted = AXIsProcessTrustedWithOptions(silentOptions)
-        
-        // Actualizar propiedad publicada para la UI
-        DispatchQueue.main.async {
-            if self.isAccessibilityGranted != isTrusted {
-                self.isAccessibilityGranted = isTrusted
-            }
-        }
-        
-        print("🔍 [ShortcutManager] Comprobando accesibilidad. Estado: \(isTrusted ? "CONCEDIDO" : "DENEGADO")")
-        
-        // 2. Si no es confiable y se solicita diálogo (respetando la supresión a menos que se ignore)
-        if !isTrusted && forceDialog {
-            if !PreferencesManager.shared.suppressAccessibilityWarning || ignoreSuppression {
-                print("🏛️ Invocando diálogo de accesibilidad nativo de macOS")
-                
-                // Esta llamada disparará el diálogo del sistema si el proceso no es confiable
-                let promptOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-                AXIsProcessTrustedWithOptions(promptOptions)
-            } else {
-                print("ℹ️ Aviso de accesibilidad suprimido por el usuario.")
-            }
-        }
-        
-        return isTrusted
     }
     
     // MARK: - Monitores de Eventos

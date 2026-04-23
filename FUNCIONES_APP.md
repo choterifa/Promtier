@@ -55,7 +55,6 @@ Promtier es un gestor de prompts moderno, minimalista y potente diseñado espec�
 - **Drag & Drop Avanzado**:
     - **Soporte Universal**: Arrastra prompts entre categorías o hacia aplicaciones externas (Slack, Notion, etc.).
     - **Feedback Visual**: Resaltado de bordes azules en categorías al pasar por encima y cursor "+" reactivado.
-- **Pegado Instantáneo**: Tecnología de automatización para transferir el prompt directamente a la app de destino.
 - **Global Shortcut**: Invoca Promtier desde cualquier lugar del sistema con un atajo personalizable.
 - **Importar/Exportar**: Soporte para copias de seguridad en JSON y exportación a CSV o texto plano.
 

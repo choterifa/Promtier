@@ -54,12 +54,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var autoPaste: Bool {
-        didSet {
-            userDefaults.set(autoPaste, forKey: "autoPaste")
-        }
-    }
-    
     @Published var windowWidth: CGFloat
     @Published var windowHeight: CGFloat
     
@@ -143,12 +137,6 @@ class PreferencesManager: ObservableObject {
         }
     }
     
-    @Published var suppressAccessibilityWarning: Bool {
-        didSet {
-            userDefaults.set(suppressAccessibilityWarning, forKey: "suppressAccessibilityWarning")
-        }
-    }
-    
     @Published var isPremiumActive: Bool {
         didSet {
             userDefaults.set(isPremiumActive, forKey: "isPremiumActive")
@@ -210,8 +198,6 @@ class PreferencesManager: ObservableObject {
         self.hotkeyCode = userDefaults.object(forKey: "hotkeyCode") as? Int ?? 35
         self.hotkeyModifiers = userDefaults.object(forKey: "hotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "es") ?? .spanish
-        self.autoPaste = userDefaults.bool(forKey: "autoPaste")
-        
         // Dimensiones de ventana (Defaults: 690x540, Max: 900x750, Min: 500x450)
         let savedWidth = userDefaults.double(forKey: "windowWidth")
         self.windowWidth = savedWidth > 0 ? min(900, max(500, CGFloat(savedWidth))) : 690
@@ -224,7 +210,6 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = userDefaults.bool(forKey: "showCopyNotifications")
         self.showUsageNotifications = userDefaults.bool(forKey: "showUsageNotifications")
         self.icloudSyncEnabled = userDefaults.bool(forKey: "icloudSyncEnabled")
-        self.suppressAccessibilityWarning = userDefaults.bool(forKey: "suppressAccessibilityWarning")
         self.isPremiumActive = userDefaults.bool(forKey: "isPremiumActive")
         
         // Efectos visuales por defecto en true
@@ -333,7 +318,6 @@ class PreferencesManager: ObservableObject {
         self.hotkeyCode = 35
         self.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.language = .spanish
-        self.autoPaste = false
         self.windowWidth = 690
         self.windowHeight = 540
         
@@ -342,7 +326,6 @@ class PreferencesManager: ObservableObject {
         self.showCopyNotifications = true
         self.showUsageNotifications = false
         self.icloudSyncEnabled = false
-        self.suppressAccessibilityWarning = false
         self.isPremiumActive = false
         self.appleIntelligenceEnabled = true
         self.ghostTipsEnabled = true
