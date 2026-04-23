@@ -300,7 +300,7 @@ struct OnboardingView: View {
                             .frame(height: 60)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(i == 1 ? Color.blue.opacity(0.5) : Color.clear, lineWidth: 2)
+                                    .stroke(selectedSpaceIndex == i ? Color.blue.opacity(0.5) : Color.clear, lineWidth: 2)
                             )
                     }
                 }
@@ -343,14 +343,13 @@ struct OnboardingView: View {
                 .font(.system(size: 14, weight: .bold)).foregroundColor(.blue)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5)) {
-                isShowingSpaceAnim = true
-            }
+            startSpaceAnimation()
         }
-        .onDisappear { isShowingSpaceAnim = false }
+        .onDisappear { 
+            isShowingSpaceAnim = false 
+        }
     }
     
-    @State private var isShowingSpaceAnim = false
 
     private var galleryStep: some View {
         VStack(spacing: 35) {
@@ -415,8 +414,6 @@ struct OnboardingView: View {
         }
     }
     
-    @State private var isShowingGalleryAnim = false
-    @State private var isShowingDragAnim = false
 
     private var dragDropStep: some View {
         VStack(spacing: 35) {
@@ -442,9 +439,10 @@ struct OnboardingView: View {
                         .foregroundColor(.secondary.opacity(0.5))
                 }
                 
-                // Elemento animado único (se hace una sola vez)
+                // Elementos animados secuenciales
                 if isShowingDragAnim {
-                    OnboardingDragItem()
+                    OnboardingDragItem(direction: .leftToCenter, delay: 0.5)
+                    OnboardingDragItem(direction: .rightToCenter, delay: 2.8)
                 }
             }
             .frame(height: 250)
@@ -462,7 +460,16 @@ struct OnboardingView: View {
     
     // Sub-vista para un item arrastrable
     private struct OnboardingDragItem: View {
+        enum DragDirection {
+            case leftToCenter
+            case rightToCenter
+        }
+        
+        let direction: DragDirection
+        let delay: Double
+        
         @State private var anim: Bool = false
+        @State private var isShown: Bool = false
         
         var body: some View {
             RoundedRectangle(cornerRadius: 12)
@@ -473,7 +480,7 @@ struct OnboardingView: View {
                     HStack(spacing: 12) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 6).fill(Color.blue.opacity(0.1))
-                            Image(systemName: "photo").foregroundColor(.blue).font(.system(size: 14))
+                            Image(systemName: direction == .leftToCenter ? "photo" : "doc.text.fill").foregroundColor(.blue).font(.system(size: 14))
                         }
                         .frame(width: 40, height: 40)
                         
@@ -487,14 +494,18 @@ struct OnboardingView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.05), lineWidth: 1)
                 )
-                .offset(x: anim ? 0 : -180, y: anim ? 0 : -80)
-                .rotationEffect(.degrees(anim ? 0 : -10))
+                .offset(x: anim ? 0 : (direction == .leftToCenter ? -200 : 200), y: anim ? 0 : -80)
+                .rotationEffect(.degrees(anim ? 0 : (direction == .leftToCenter ? -10 : 10)))
                 .scaleEffect(anim ? 0.9 : 1.1)
-                .opacity(anim ? 0 : 1)
+                .opacity(isShown ? (anim ? 0 : 1) : 0)
                 .onAppear {
-                    // Animación de una sola ejecución (sin repeatForever)
-                    withAnimation(.easeInOut(duration: 2.2).delay(0.5)) {
-                        anim = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            isShown = true
+                        }
+                        withAnimation(.easeInOut(duration: 2.2)) {
+                            anim = true
+                        }
                     }
                 }
         }
@@ -658,6 +669,10 @@ struct OnboardingView: View {
     @State private var omniTypingText: String = ""
     @State private var draftTypingText: String = ""
     @State private var aiTypingText: String = ""
+    @State private var selectedSpaceIndex: Int = 0
+    @State private var isShowingSpaceAnim: Bool = false
+    @State private var isShowingGalleryAnim: Bool = false
+    @State private var isShowingDragAnim: Bool = false
     @State private var isCursorVisible: Bool = false
     @State private var magicPulse: Bool = false
     @State private var typingID = UUID()
@@ -715,6 +730,43 @@ struct OnboardingView: View {
                     aiTypingText.append(char)
                 }
             }
+        }
+    }
+    
+    private func startSpaceAnimation() {
+        let currentID = UUID()
+        self.typingID = currentID
+        
+        selectedSpaceIndex = 0
+        isShowingSpaceAnim = false
+        
+        func runCycle(index: Int) {
+            guard self.typingID == currentID else { return }
+            
+            // 1. Mostrar Preview
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                selectedSpaceIndex = index
+                isShowingSpaceAnim = true
+            }
+            
+            // 2. Cerrar Preview
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                guard self.typingID == currentID else { return }
+                withAnimation(.easeIn(duration: 0.3)) {
+                    isShowingSpaceAnim = false
+                }
+                
+                // 3. Mover al siguiente y repetir
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    guard self.typingID == currentID else { return }
+                    runCycle(index: (index + 1) % 3)
+                }
+            }
+        }
+        
+        // Empezar tras un pequeño delay inicial
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            runCycle(index: 0)
         }
     }
 }
