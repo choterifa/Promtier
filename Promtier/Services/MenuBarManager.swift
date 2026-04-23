@@ -37,6 +37,7 @@ class MenuBarManager: NSObject, ObservableObject {
         }
     }
     @Published var folderToEdit: Folder? = nil
+    @Published var parentFolderIdForNewCategory: UUID? = nil
     @Published var promptToEditFromOmniSearch: Prompt? = nil
     @Published var suggestedClipboardContent: String? = nil
     @Published var isModalActive: Bool = false {

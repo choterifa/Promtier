@@ -123,6 +123,9 @@ struct FolderManagerView: View {
             }
             if let initialFolder = folderToEdit {
                 viewModel.startEditing(initialFolder)
+            } else if let parentId = menuBarManager.parentFolderIdForNewCategory {
+                viewModel.resetForm(menuBarManager: menuBarManager)
+                viewModel.selectedParentId = parentId
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -211,37 +214,62 @@ struct FolderManagerView: View {
         .padding(.vertical, 20)
     }
     
+    @ViewBuilder
     private var sidebarListView: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 LazyVStack(spacing: 2) {
-                    ForEach(promptService.folders) { folder in
+                    ForEach(flattenedFolders(), id: \.folder.id) { node in
                         CategoryRow(
-                            folder: folder,
-                            isEditing: viewModel.editingFolder?.id == folder.id,
-                            isDropTarget: dropTargetFolder?.id == folder.id,
-                            onEdit: { viewModel.startEditing(folder) },
+                            folder: node.folder,
+                            isEditing: viewModel.editingFolder?.id == node.folder.id,
+                            isDropTarget: dropTargetFolder?.id == node.folder.id,
+                            depth: node.depth,
+                            onEdit: { viewModel.startEditing(node.folder) },
                             onDelete: {
-                                viewModel.requestDelete(folder: folder)
+                                viewModel.requestDelete(folder: node.folder)
                                 if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
                                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                        _ = promptService.deleteFolder(folder)
+                                        _ = promptService.deleteFolder(node.folder)
                                     }
                                     HapticService.shared.playSuccess()
+                                }
+                            },
+                            onNewSubcategory: {
+                                if node.depth < 2 {
+                                    viewModel.resetForm(menuBarManager: menuBarManager)
+                                    viewModel.selectedParentId = node.folder.id
+                                    isNameFocused = true
                                 }
                             }
                         )
                         .transition(.scale.combined(with: .opacity))
                         .onDrag {
-                            self.draggedFolder = folder
-                            return NSItemProvider(object: folder.id.uuidString as NSString)
+                            self.draggedFolder = node.folder
+                            return NSItemProvider(object: node.folder.id.uuidString as NSString)
                         }
                         .onDrop(of: [.text], delegate: FolderReorderDelegate(
-                            item: folder,
+                            item: node.folder,
                             promptService: promptService,
                             draggedItem: $draggedFolder,
                             dropTarget: $dropTargetFolder
                         ))
+                        .contextMenu {
+                            if node.depth < 2 {
+                                Button {
+                                    viewModel.resetForm(menuBarManager: menuBarManager)
+                                    viewModel.selectedParentId = node.folder.id
+                                    isNameFocused = true
+                                } label: {
+                                    Label("new_subcategory".localized(for: preferences.language), systemImage: "folder.badge.plus")
+                                }
+                            }
+                            Button(role: .destructive) {
+                                viewModel.requestDelete(folder: node.folder)
+                            } label: {
+                                Label("delete".localized(for: preferences.language), systemImage: "trash")
+                            }
+                        }
                     }
                 }
                 .padding(.vertical, 8)
@@ -250,6 +278,39 @@ struct FolderManagerView: View {
             .scrollIndicators(.hidden)
         }
         .background(Color.primary.opacity(0.015))
+    }
+    
+    private struct FolderNode {
+        let folder: Folder
+        let depth: Int
+    }
+    
+    private func flattenedFolders() -> [FolderNode] {
+        var nodes: [FolderNode] = []
+        var visited: Set<UUID> = []
+        
+        func traverse(parentId: UUID?, currentDepth: Int) {
+            let children = promptService.folders.filter { $0.parentId == parentId }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            for child in children {
+                if visited.contains(child.id) { continue }
+                visited.insert(child.id)
+                nodes.append(FolderNode(folder: child, depth: currentDepth))
+                traverse(parentId: child.id, currentDepth: currentDepth + 1)
+            }
+        }
+        
+        let roots = promptService.folders.filter { folder in
+            folder.parentId == nil || !promptService.folders.contains(where: { $0.id == folder.parentId })
+        }
+        
+        for root in roots.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) {
+            if !visited.contains(root.id) {
+                visited.insert(root.id)
+                nodes.append(FolderNode(folder: root, depth: 0))
+                traverse(parentId: root.id, currentDepth: 1)
+            }
+        }
+        return nodes
     }
     
     private var mainContentView: some View {
@@ -508,8 +569,10 @@ struct CategoryRow: View {
     let folder: Folder
     let isEditing: Bool
     let isDropTarget: Bool
+    let depth: Int
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onNewSubcategory: () -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
@@ -527,6 +590,12 @@ struct CategoryRow: View {
             }
             
             HStack(spacing: preferences.windowWidth >= 620 ? 12 : 0) {
+                if depth > 0 {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: CGFloat(depth * 14), height: 1)
+                }
+                
                 if preferences.windowWidth >= 620 {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8)

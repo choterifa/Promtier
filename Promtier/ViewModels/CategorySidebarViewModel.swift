@@ -33,14 +33,14 @@ class CategorySidebarViewModel: ObservableObject {
     @Published var isHeaderHovered = false
     @Published var isSystemSectionExpanded = true
     
-    func refreshCounters(with prompts: [Prompt]) {
-        var counts: [String: Int] = [:]
+    func refreshCounters(with prompts: [Prompt], folders: [Folder], includeSubcategories: Bool) {
+        var directCounts: [String: Int] = [:]
         var recent = 0
         var favorites = 0
 
         for prompt in prompts {
             let folder = prompt.folder ?? "uncategorized"
-            counts[folder, default: 0] += 1
+            directCounts[folder, default: 0] += 1
 
             if prompt.lastUsedAt != nil {
                 recent += 1
@@ -50,7 +50,33 @@ class CategorySidebarViewModel: ObservableObject {
             }
         }
 
-        categoryCounts = counts
+        var finalCounts = directCounts
+        if includeSubcategories {
+            for folder in folders {
+                var total = 0
+                var toProcess = [folder.id]
+                var processed = Set<UUID>()
+
+                while !toProcess.isEmpty {
+                    let currentId = toProcess.removeFirst()
+                    processed.insert(currentId)
+
+                    if let currentFolder = folders.first(where: { $0.id == currentId }) {
+                        total += directCounts[currentFolder.name] ?? 0
+                    }
+
+                    let children = folders.filter { $0.parentId == currentId }
+                    for child in children {
+                        if !processed.contains(child.id) {
+                            toProcess.append(child.id)
+                        }
+                    }
+                }
+                finalCounts[folder.name] = total
+            }
+        }
+
+        categoryCounts = finalCounts
         recentCount = recent
         favoritesCount = favorites
     }

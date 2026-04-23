@@ -205,10 +205,10 @@ struct CategorySidebar: View {
             menuBarManager.setSidebarHovered(hovering)
         }
         .onAppear {
-            viewModel.refreshCounters(with: promptService.prompts)
+            viewModel.refreshCounters(with: promptService.prompts, folders: promptService.folders, includeSubcategories: preferences.includeSubcategoryPrompts)
         }
         .onReceive(promptService.$prompts) { prompts in
-            viewModel.refreshCounters(with: prompts)
+            viewModel.refreshCounters(with: prompts, folders: promptService.folders, includeSubcategories: preferences.includeSubcategoryPrompts)
         }
         .alert("delete_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDeleteAlert, presenting: viewModel.folderToDelete) { folder in
             Button("delete".localized(for: preferences.language), role: .destructive) {

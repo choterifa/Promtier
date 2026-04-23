@@ -118,6 +118,19 @@ struct FolderRow: View {
 
     @ViewBuilder
     private var contextMenuContent: some View {
+        if depth < 2 {
+            Button {
+                menuBarManager.parentFolderIdForNewCategory = folder.id
+                menuBarManager.folderToEdit = nil
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+            } label: {
+                Label("new_subcategory".localized(for: preferences.language), systemImage: "folder.badge.plus")
+            }
+            Divider()
+        }
+
         if preferences.pinnedFolderNames.count < 3 || preferences.isPinned(folder.name) {
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { onTogglePin() }
