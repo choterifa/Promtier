@@ -834,6 +834,7 @@ struct SearchViewSimple: View {
             if isSearchFocused { return event }
             // Evita toggles en ráfaga cuando el usuario mantiene presionada la tecla.
             if event.isARepeat { return nil }
+            isNavigatingWithKeys = false
             
             // Si hay un preview abierto, lo cerramos
             if showingPreview {

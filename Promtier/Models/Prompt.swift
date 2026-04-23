@@ -36,11 +36,12 @@ struct Prompt: Identifiable, Codable {
     var negativePrompt: String?     // Lo que la IA NO debe hacer
     var alternativePrompt: String?  // Un prompt similar o variante (Legacy/Single)
     var alternatives: [String] = [] // Lista de prompts alternativos (Hasta 10)
+    var alternativeDescriptions: [String] = [] // Descripción breve por alternativa (1 línea)
     var customShortcut: String?     // Atajo personalizado (formato "keyCode:modifiers")
     var parentID: UUID?             // ID del prompt original si es una rama
     
     // Inicializador con valores por defecto
-    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], targetAppBundleIDs: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], customShortcut: String? = nil) {
+    init(title: String, content: String, promptDescription: String? = nil, folder: String? = nil, icon: String? = nil, showcaseImages: [Data] = [], tags: [String] = [], targetAppBundleIDs: [String] = [], negativePrompt: String? = nil, alternativePrompt: String? = nil, alternatives: [String] = [], alternativeDescriptions: [String] = [], customShortcut: String? = nil) {
         self.id = UUID()
         self.title = title
         self.content = content
@@ -56,6 +57,12 @@ struct Prompt: Identifiable, Codable {
         self.negativePrompt = negativePrompt
         self.alternativePrompt = alternativePrompt
         self.alternatives = Array(alternatives.prefix(10))
+        self.alternativeDescriptions = Array(alternativeDescriptions.prefix(10))
+        if self.alternativeDescriptions.count < self.alternatives.count {
+            self.alternativeDescriptions.append(contentsOf: Array(repeating: "", count: self.alternatives.count - self.alternativeDescriptions.count))
+        } else if self.alternativeDescriptions.count > self.alternatives.count {
+            self.alternativeDescriptions = Array(self.alternativeDescriptions.prefix(self.alternatives.count))
+        }
         self.customShortcut = customShortcut
         self.parentID = nil
         self.isFavorite = false
@@ -88,6 +95,7 @@ struct Prompt: Identifiable, Codable {
         case negativePrompt
         case alternativePrompt
         case alternatives
+        case alternativeDescriptions
         case customShortcut
         case targetAppBundleIDs
     }
@@ -125,6 +133,12 @@ struct Prompt: Identifiable, Codable {
         negativePrompt = try container.decodeIfPresent(String.self, forKey: .negativePrompt)
         alternativePrompt = try container.decodeIfPresent(String.self, forKey: .alternativePrompt)
         alternatives = try container.decodeIfPresent([String].self, forKey: .alternatives) ?? []
+        alternativeDescriptions = try container.decodeIfPresent([String].self, forKey: .alternativeDescriptions) ?? []
+        if alternativeDescriptions.count < alternatives.count {
+            alternativeDescriptions.append(contentsOf: Array(repeating: "", count: alternatives.count - alternativeDescriptions.count))
+        } else if alternativeDescriptions.count > alternatives.count {
+            alternativeDescriptions = Array(alternativeDescriptions.prefix(alternatives.count))
+        }
         customShortcut = try container.decodeIfPresent(String.self, forKey: .customShortcut)
     }
 
@@ -151,6 +165,7 @@ struct Prompt: Identifiable, Codable {
         try container.encodeIfPresent(negativePrompt, forKey: .negativePrompt)
         try container.encodeIfPresent(alternativePrompt, forKey: .alternativePrompt)
         try container.encode(alternatives, forKey: .alternatives)
+        try container.encode(alternativeDescriptions, forKey: .alternativeDescriptions)
         try container.encodeIfPresent(customShortcut, forKey: .customShortcut)
         try container.encode(targetAppBundleIDs, forKey: .targetAppBundleIDs)
     }
@@ -270,18 +285,20 @@ struct PromptSnapshot: Codable, Identifiable {
     let content: String
     var negativePrompt: String?
     var alternatives: [String]
+    var alternativeDescriptions: [String]
     let timestamp: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, title, content, negativePrompt, alternatives, timestamp
+        case id, title, content, negativePrompt, alternatives, alternativeDescriptions, timestamp
     }
 
-    init(id: UUID = UUID(), title: String, content: String, negativePrompt: String? = nil, alternatives: [String] = [], timestamp: Date = Date()) {
+    init(id: UUID = UUID(), title: String, content: String, negativePrompt: String? = nil, alternatives: [String] = [], alternativeDescriptions: [String] = [], timestamp: Date = Date()) {
         self.id = id
         self.title = title
         self.content = content
         self.negativePrompt = negativePrompt
         self.alternatives = alternatives
+        self.alternativeDescriptions = alternativeDescriptions
         self.timestamp = timestamp
     }
 
@@ -292,6 +309,12 @@ struct PromptSnapshot: Codable, Identifiable {
         self.content = try container.decode(String.self, forKey: .content)
         self.negativePrompt = try? container.decodeIfPresent(String.self, forKey: .negativePrompt)
         self.alternatives = (try? container.decodeIfPresent([String].self, forKey: .alternatives)) ?? []
+        self.alternativeDescriptions = (try? container.decodeIfPresent([String].self, forKey: .alternativeDescriptions)) ?? []
+        if self.alternativeDescriptions.count < self.alternatives.count {
+            self.alternativeDescriptions.append(contentsOf: Array(repeating: "", count: self.alternatives.count - self.alternativeDescriptions.count))
+        } else if self.alternativeDescriptions.count > self.alternatives.count {
+            self.alternativeDescriptions = Array(self.alternativeDescriptions.prefix(self.alternatives.count))
+        }
         self.timestamp = try container.decode(Date.self, forKey: .timestamp)
     }
 }

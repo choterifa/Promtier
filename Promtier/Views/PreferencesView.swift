@@ -325,6 +325,20 @@ struct ShortcutsTab: View {
                 Divider().padding(.leading, 20)
                 ShortcutRow(label: "gallery_toggle",           shortcut: "⌘G")
             }
+
+            SettingsSection(title: "omni_search_shortcuts", icon: "magnifyingglass") {
+                ShortcutRow(label: "move_up", shortcut: "↑")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "move_down", shortcut: "↓")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "copy_and_close", shortcut: "↩ Enter")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "copy", shortcut: "⌘C")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "edit_prompt", shortcut: "⌘E")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "close_window", shortcut: "Esc")
+            }
             
             // Editor de prompt
             SettingsSection(title: "prompt_editor", icon: "square.and.pencil") {

@@ -15,6 +15,7 @@ final class NewPromptViewModel: ObservableObject {
     @Published var content = ""
     @Published var negativePrompt = ""
     @Published var alternatives: [String] = []
+    @Published var alternativeDescriptions: [String] = []
     @Published var promptDescription = ""
     @Published var selectedFolder: String?
     @Published var isFavorite = false
@@ -56,6 +57,7 @@ final class NewPromptViewModel: ObservableObject {
             self.content = prompt.content
             self.negativePrompt = prompt.negativePrompt ?? ""
             self.alternatives = prompt.alternatives
+            self.alternativeDescriptions = prompt.alternativeDescriptions
             self.promptDescription = prompt.promptDescription ?? ""
             self.selectedFolder = prompt.folder
             self.tags = prompt.tags
@@ -67,6 +69,8 @@ final class NewPromptViewModel: ObservableObject {
         } else if let folder = initialFolder {
             self.selectedFolder = folder
         }
+
+        normalizeAlternativeDescriptions()
         
         updateDraftHash()
     }
@@ -314,6 +318,13 @@ final class NewPromptViewModel: ObservableObject {
                     
                     let negativeResponse = negativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
                     let alternativeResponse = alternativeResponseRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let alternativeDescriptionResponse: String
+                    if alternativeResponse.isEmpty {
+                        alternativeDescriptionResponse = ""
+                    } else {
+                        let descriptionPrompt = buildAlternativeDescriptionPrompt(for: alternativeResponse)
+                        alternativeDescriptionResponse = (try? await AIServiceManager.shared.generate(prompt: descriptionPrompt)) ?? ""
+                    }
                     
                     await MainActor.run {
                         self.isAutocompleting = false
@@ -331,6 +342,7 @@ final class NewPromptViewModel: ObservableObject {
                                 if !alternativeResponse.isEmpty {
                                     if !self.alternatives.contains(alternativeResponse) {
                                         self.alternatives.append(alternativeResponse)
+                                        self.alternativeDescriptions.append(self.normalizedAlternativeDescription(alternativeDescriptionResponse))
                                     }
                                     self.showAlternativeField = true
                                 }
@@ -395,16 +407,20 @@ final class NewPromptViewModel: ObservableObject {
             do {
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt)
                 let cleanedResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                let generatedDescription: String
+                if cleanedResponse.isEmpty {
+                    generatedDescription = ""
+                } else {
+                    let descriptionPrompt = self.buildAlternativeDescriptionPrompt(for: cleanedResponse)
+                    generatedDescription = (try? await AIServiceManager.shared.generate(prompt: descriptionPrompt)) ?? ""
+                }
                 
                 await MainActor.run {
                     self.isGeneratingAlternativeDirect = false
                     if !cleanedResponse.isEmpty {
                         withAnimation(.spring()) {
-                            if self.alternatives.isEmpty {
-                                self.alternatives.append(cleanedResponse)
-                            } else {
-                                self.alternatives.append(cleanedResponse)
-                            }
+                            self.alternatives.append(cleanedResponse)
+                            self.alternativeDescriptions.append(self.normalizedAlternativeDescription(generatedDescription))
                             self.showAlternativeField = true
                         }
                         HapticService.shared.playSuccess()
@@ -531,6 +547,7 @@ final class NewPromptViewModel: ObservableObject {
         hasher.combine(content)
         hasher.combine(negativePrompt)
         hasher.combine(alternatives)
+        hasher.combine(alternativeDescriptions)
         hasher.combine(promptDescription)
         hasher.combine(selectedFolder)
         draftHash = hasher.finalize()
@@ -542,6 +559,7 @@ final class NewPromptViewModel: ObservableObject {
         hasher.combine(content)
         hasher.combine(negativePrompt)
         hasher.combine(alternatives)
+        hasher.combine(alternativeDescriptions)
         hasher.combine(promptDescription)
         hasher.combine(selectedFolder)
         return draftHash != hasher.finalize()
@@ -566,6 +584,7 @@ final class NewPromptViewModel: ObservableObject {
             updated.tags = tags
             updated.negativePrompt = newNegativePrompt
             updated.alternatives = alternatives
+            updated.alternativeDescriptions = alternativeDescriptions
             updated.targetAppBundleIDs = targetAppBundleIDs
             updated.customShortcut = customShortcut
             updated.modifiedAt = Date()
@@ -584,6 +603,7 @@ final class NewPromptViewModel: ObservableObject {
                 targetAppBundleIDs: targetAppBundleIDs,
                 negativePrompt: newNegativePrompt,
                 alternatives: alternatives,
+                alternativeDescriptions: alternativeDescriptions,
                 customShortcut: customShortcut
             )
             new.isFavorite = isFavorite
@@ -593,5 +613,33 @@ final class NewPromptViewModel: ObservableObject {
         
         DraftService.shared.clearDraft()
         onClose?()
+    }
+
+    private func normalizeAlternativeDescriptions() {
+        if alternativeDescriptions.count < alternatives.count {
+            alternativeDescriptions.append(contentsOf: Array(repeating: "", count: alternatives.count - alternativeDescriptions.count))
+        } else if alternativeDescriptions.count > alternatives.count {
+            alternativeDescriptions = Array(alternativeDescriptions.prefix(alternatives.count))
+        }
+    }
+
+    private func normalizedAlternativeDescription(_ raw: String) -> String {
+        let oneLine = raw
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(oneLine.prefix(120))
+    }
+
+    private func buildAlternativeDescriptionPrompt(for alternativeText: String) -> String {
+        """
+        You are an expert prompt editor.
+        Write a concise one-line description (max 12 words) for this alternative prompt.
+        Keep the SAME language as the prompt.
+        Return ONLY the description text. No quotes, no labels, no markdown.
+
+        Alternative prompt:
+        \(alternativeText)
+        """
     }
 }

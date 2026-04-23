@@ -182,6 +182,13 @@ struct OmniSearchView: View {
                     Text("copy".localized(for: preferences.language))
                         .opacity(0.8)
                 }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "command")
+                    Text("E")
+                    Text("edit_prompt".localized(for: preferences.language))
+                        .opacity(0.8)
+                }
                 
                 Spacer()
             }

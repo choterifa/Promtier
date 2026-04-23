@@ -4,6 +4,7 @@ import Foundation
 struct PromptAdvancedFieldsView: View {
     @Binding var negativePrompt: String
     @Binding var alternatives: [String]
+    @Binding var alternativeDescriptions: [String]
     @Binding var content: String
     @Binding var branchMessage: String?
 
@@ -143,6 +144,7 @@ struct PromptAdvancedFieldsView: View {
                             Button(action: {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                                     alternatives.append("")
+                                    alternativeDescriptions.append("")
                                 }
                             }) {
                                 HStack(spacing: 8) {

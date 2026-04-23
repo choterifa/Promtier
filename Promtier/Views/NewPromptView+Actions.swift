@@ -8,6 +8,7 @@ extension NewPromptView {
         content = source.content
         negativePrompt = source.negativePrompt ?? ""
         alternatives = normalizedAlternatives(from: source)
+        alternativeDescriptions = normalizedAlternativeDescriptions(from: source, for: alternatives)
         promptDescription = source.promptDescription ?? ""
         selectedFolder = source.folder
         isFavorite = source.isFavorite
@@ -20,6 +21,7 @@ extension NewPromptView {
         showNegativeField = !negativePrompt.isEmpty
         showAlternativeField = !alternatives.isEmpty
         isDraftRestored = markDraftRestored
+        syncAlternativeDescriptionsWithAlternatives()
         syncHoistedFieldsToViewModel()
     }
 
@@ -93,6 +95,7 @@ extension NewPromptView {
                              showcaseImages != original.showcaseImages ||
                              negativePrompt != (original.negativePrompt ?? "") ||
                              alternatives != original.alternatives ||
+                             alternativeDescriptions != normalizedAlternativeDescriptions(from: original, for: original.alternatives) ||
                              targetAppBundleIDs != original.targetAppBundleIDs ||
                              customShortcut != original.customShortcut
             if !hasChanges { return }
@@ -109,6 +112,7 @@ extension NewPromptView {
             targetAppBundleIDs: targetAppBundleIDs,
             negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
             alternatives: alternatives,
+            alternativeDescriptions: alternativeDescriptions,
             customShortcut: customShortcut
         )
 
@@ -203,6 +207,7 @@ extension NewPromptView {
                 targetAppBundleIDs: targetAppBundleIDs,
                 negativePrompt: newNegativePrompt,
                 alternatives: alternatives,
+                alternativeDescriptions: alternativeDescriptions,
                 customShortcut: customShortcut
             )
             new.isFavorite = isFavorite
@@ -274,19 +279,32 @@ extension NewPromptView {
         promptDescriptionHoister.updateFast(viewModel.promptDescription)
     }
 
+    func syncAlternativeDescriptionsWithAlternatives() {
+        if alternativeDescriptions.count < alternatives.count {
+            alternativeDescriptions.append(contentsOf: Array(repeating: "", count: alternatives.count - alternativeDescriptions.count))
+        } else if alternativeDescriptions.count > alternatives.count {
+            alternativeDescriptions = Array(alternativeDescriptions.prefix(alternatives.count))
+        }
+        viewModel.alternativeDescriptions = alternativeDescriptions
+    }
+
     func autocompletePromptContent() {
+        syncHoistedFieldsToViewModel()
         viewModel.autocompletePromptContent(preferences: preferences, promptService: promptService)
     }
 
     func executeMagicWithCommand() {
+        syncHoistedFieldsToViewModel()
         viewModel.executeMagicWithCommand(preferences: preferences)
     }
 
     func autoCategorizePrompt() {
+        syncHoistedFieldsToViewModel()
         viewModel.autoCategorizePrompt(preferences: preferences, promptService: promptService)
     }
 
     func generateAlternativeDirect() {
+        syncHoistedFieldsToViewModel()
         viewModel.generateAlternativeDirect(preferences: preferences)
     }
 

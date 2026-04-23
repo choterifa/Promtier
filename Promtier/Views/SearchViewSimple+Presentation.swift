@@ -14,7 +14,7 @@ extension SearchViewSimple {
 
     var isPerformanceCardMode: Bool {
         let count = promptService.filteredPrompts.count
-        return showingPreview ? count >= 48 : count >= 72
+        return count >= 72
     }
 
     func categoryColor(for prompt: Prompt) -> Color {

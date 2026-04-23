@@ -3,6 +3,9 @@ import AppKit
 
 struct SecondaryEditorCard<Actions: View>: View {
     let title: String
+    let subtitle: String?
+    var subtitleBinding: Binding<String>? = nil
+    var subtitlePlaceholder: String? = nil
     let placeholder: String
     @Binding var text: String
     let icon: String
@@ -45,7 +48,7 @@ struct SecondaryEditorCard<Actions: View>: View {
     @EnvironmentObject var preferences: PreferencesManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(title: String, placeholder: String, text: Binding<String>, icon: String, color: Color,
+    init(title: String, subtitle: String? = nil, subtitleBinding: Binding<String>? = nil, subtitlePlaceholder: String? = nil, placeholder: String, text: Binding<String>, icon: String, color: Color,
          focusRequest: Binding<Bool>? = nil, onZenMode: (() -> Void)? = nil,
          insertionRequest: Binding<String?>, replaceSnippetRequest: Binding<String?>,
          showSnippets: Binding<Bool>, snippetSearchQuery: Binding<String>,
@@ -60,6 +63,9 @@ struct SecondaryEditorCard<Actions: View>: View {
          editorID: String, currentCategoryColor: Color,
          @ViewBuilder actions: () -> Actions = { EmptyView() }) {
         self.title = title
+        self.subtitle = subtitle
+        self.subtitleBinding = subtitleBinding
+        self.subtitlePlaceholder = subtitlePlaceholder
         self.placeholder = placeholder
         self._text = text
         self.icon = icon
@@ -146,6 +152,28 @@ struct SecondaryEditorCard<Actions: View>: View {
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 2)
+
+            if let subtitleBinding {
+                TextField(
+                    subtitlePlaceholder ?? "",
+                    text: Binding(
+                        get: { subtitleBinding.wrappedValue },
+                        set: { subtitleBinding.wrappedValue = String($0.replacingOccurrences(of: "\n", with: " ").prefix(120)) }
+                    )
+                )
+                .textFieldStyle(.plain)
+                .font(.system(size: 11 * preferences.fontSize.scale, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .padding(.horizontal, 8)
+            } else if let subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .padding(.horizontal, 8)
+            }
 
             // Editor secundario con herramientas inteligentes (sidebar layout)
             HStack(alignment: .top, spacing: 0) {

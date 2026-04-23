@@ -66,6 +66,10 @@ struct NewPromptView: View {
         get { viewModel.alternatives }
         nonmutating set { viewModel.alternatives = newValue }
     }
+    var alternativeDescriptions: [String] {
+        get { viewModel.alternativeDescriptions }
+        nonmutating set { viewModel.alternativeDescriptions = newValue }
+    }
     var selectedFolder: String? {
         get { viewModel.selectedFolder }
         nonmutating set { viewModel.selectedFolder = newValue }
@@ -402,6 +406,7 @@ struct NewPromptView: View {
                 PromptAdvancedFieldsView(
                     negativePrompt: vmBinding(\.negativePrompt),
                     alternatives: vmBinding(\.alternatives),
+                    alternativeDescriptions: vmBinding(\.alternativeDescriptions),
                     content: contentBinding,
                     branchMessage: vmBinding(\.branchMessage),
                     focusNegative: $focusNegative,
@@ -541,6 +546,19 @@ struct NewPromptView: View {
     func alternativeRow(index: Int) -> some View {
         SecondaryEditorCard(
             title: "\("alternative".localized(for: preferences.language)) #\(index + 1)",
+            subtitleBinding: Binding(
+                get: { alternativeDescriptions.indices.contains(index) ? alternativeDescriptions[index] : "" },
+                set: { newValue in
+                    guard alternativeDescriptions.indices.contains(index) else { return }
+                    alternativeDescriptions[index] = String(
+                        newValue
+                            .replacingOccurrences(of: "\n", with: " ")
+                            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                            .prefix(120)
+                    )
+                }
+            ),
+            subtitlePlaceholder: "alternative_desc_placeholder".localized(for: preferences.language),
             placeholder: "alternative_prompt_placeholder".localized(for: preferences.language),
             text: Binding(
                 get: { alternatives.indices.contains(index) ? alternatives[index] : "" },
@@ -685,6 +703,9 @@ struct NewPromptView: View {
                 Button(action: {
                     withAnimation(.easeOut(duration: 0.2)) {
                         _ = alternatives.remove(at: index)
+                        if alternativeDescriptions.indices.contains(index) {
+                            _ = alternativeDescriptions.remove(at: index)
+                        }
                     }
                     HapticService.shared.playLight()
                 }) {
@@ -717,6 +738,7 @@ struct NewPromptView: View {
         let content: String
         let negativePrompt: String
         let alternatives: [String]
+        let alternativeDescriptions: [String]
         let promptDescription: String
         let selectedFolder: String?
         let isFavorite: Bool
@@ -734,6 +756,7 @@ struct NewPromptView: View {
             content: content,
             negativePrompt: negativePrompt,
             alternatives: alternatives,
+            alternativeDescriptions: alternativeDescriptions,
             promptDescription: promptDescription,
             selectedFolder: selectedFolder,
             isFavorite: isFavorite,
@@ -752,6 +775,7 @@ struct NewPromptView: View {
             if existingAlts.isEmpty, let legacy = existingPrompt.alternativePrompt, !legacy.isEmpty {
                 existingAlts = [legacy]
             }
+            let existingAltDescriptions = normalizedAlternativeDescriptions(from: existingPrompt, for: existingAlts)
             
             let existingDesc = (existingPrompt.promptDescription ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let currentDesc = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -768,6 +792,7 @@ struct NewPromptView: View {
                    existingPrompt.showcaseImages != showcaseImages ||
                    existingNeg != currentNeg ||
                    existingAlts != alternatives ||
+                   existingAltDescriptions != alternativeDescriptions ||
                    existingPrompt.tags != tags ||
                    existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
                    existingPrompt.customShortcut != customShortcut
@@ -912,6 +937,9 @@ struct NewPromptView: View {
         .onChange(of: draftState) { _, _ in
             saveCurrentDraft()
         }
+        .onChange(of: alternatives) { _, _ in
+            syncAlternativeDescriptionsWithAlternatives()
+        }
         .onChange(of: showcaseImages) { _, images in
             mediaState.clampSelection(for: images)
         }
@@ -1054,6 +1082,16 @@ struct NewPromptView: View {
         return normalized
     }
 
+    func normalizedAlternativeDescriptions(from source: Prompt, for alternatives: [String]) -> [String] {
+        var normalized = source.alternativeDescriptions
+        if normalized.count < alternatives.count {
+            normalized.append(contentsOf: Array(repeating: "", count: alternatives.count - normalized.count))
+        } else if normalized.count > alternatives.count {
+            normalized = Array(normalized.prefix(alternatives.count))
+        }
+        return normalized
+    }
+
 
 
 
@@ -1114,6 +1152,7 @@ struct NewPromptView: View {
         existingPrompt.showcaseImages != showcaseImages ||
         existingPrompt.negativePrompt != newNegativePrompt ||
         existingPrompt.alternatives != alternatives ||
+        existingPrompt.alternativeDescriptions != alternativeDescriptions ||
         existingPrompt.targetAppBundleIDs != targetAppBundleIDs ||
         existingPrompt.customShortcut != customShortcut
     }
@@ -1124,7 +1163,8 @@ struct NewPromptView: View {
         let coreChanges = existingPrompt.title != title ||
         existingPrompt.content != content ||
         existingPrompt.negativePrompt != newNegativePrompt ||
-        existingPrompt.alternatives != alternatives
+        existingPrompt.alternatives != alternatives ||
+        existingPrompt.alternativeDescriptions != alternativeDescriptions
 
         guard coreChanges else { return }
 
@@ -1133,6 +1173,7 @@ struct NewPromptView: View {
             content: content,
             negativePrompt: newNegativePrompt,
             alternatives: alternatives,
+            alternativeDescriptions: alternativeDescriptions,
             timestamp: Date()
         )
         var history = existingPrompt.versionHistory
@@ -1154,6 +1195,7 @@ struct NewPromptView: View {
         updatedPrompt.tags = tags
         updatedPrompt.negativePrompt = newNegativePrompt
         updatedPrompt.alternatives = alternatives
+        updatedPrompt.alternativeDescriptions = alternativeDescriptions
         updatedPrompt.targetAppBundleIDs = targetAppBundleIDs
         updatedPrompt.customShortcut = customShortcut
         updatedPrompt.modifiedAt = Date()

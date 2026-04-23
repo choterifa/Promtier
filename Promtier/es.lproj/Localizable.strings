@@ -148,6 +148,7 @@
 "global_shortcuts" = "Atajo Global";
 "global_shortcuts_subtitle" = "Habilitar combinaciones en todo el sistema";
 "list_navigation" = "Navegación de Lista";
+"omni_search_shortcuts" = "Omni-Search";
 "move_up" = "Mover selección arriba";
 "move_down" = "Mover selección abajo";
 "toggle_sidebar" = "Mostrar/Ocultar Sidebar";
@@ -446,7 +447,9 @@
 "add_alternative" = "Añadir Alternativa";
 "no_alternatives_hint" = "Aún no hay prompts alternativos añadidos.";
 "alternative_prompt" = "Prompt Alternativo";
+"alternative_desc_placeholder" = "Descripción corta (máx. 1 línea)...";
 "alternative_prompt_placeholder" = "Una variación similar o enfoque alternativo...";
+"alternative_summary_empty" = "Aún sin resumen. Escribe una variación corta para identificarla rápido.";
 "export_plain_text" = "Exportar a texto plano";
 "spanish" = "Español";
 "english" = "Inglés";

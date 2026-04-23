@@ -9,6 +9,11 @@
 import Foundation
 import CoreData
 
+private struct StoredAlternativeItem: Codable {
+    let prompt: String
+    let description: String?
+}
+
 
 
 // IMPORTAR MODELOS PARA CONVERSIÓN
@@ -40,10 +45,16 @@ extension PromptEntity {
         prompt.parentID = parentID
         
         if let altData = alternativesData,
-           let alts = try? JSONDecoder().decode([String].self, from: altData) {
+           let items = try? JSONDecoder().decode([StoredAlternativeItem].self, from: altData) {
+            prompt.alternatives = items.map { $0.prompt }
+            prompt.alternativeDescriptions = items.map { ($0.description ?? "") }
+        } else if let altData = alternativesData,
+                  let alts = try? JSONDecoder().decode([String].self, from: altData) {
             prompt.alternatives = alts
+            prompt.alternativeDescriptions = Array(repeating: "", count: alts.count)
         } else {
             prompt.alternatives = []
+            prompt.alternativeDescriptions = []
         }
 
         // Nuevo esquema: paths + thumbnails en Core Data (las imágenes completas viven en disco).
@@ -100,7 +111,15 @@ extension PromptEntity {
         targetAppBundleIDs = prompt.targetAppBundleIDs
         parentID = prompt.parentID
         
-        if let altData = try? JSONEncoder().encode(prompt.alternatives) {
+        let descriptions = Array(prompt.alternativeDescriptions.prefix(prompt.alternatives.count))
+        let items = prompt.alternatives.enumerated().map { index, text in
+            StoredAlternativeItem(prompt: text, description: index < descriptions.count ? descriptions[index] : nil)
+        }
+
+        if let altData = try? JSONEncoder().encode(items) {
+            alternativesData = altData
+        } else if let altData = try? JSONEncoder().encode(prompt.alternatives) {
+            // Fallback defensivo en caso de fallo serializando la estructura nueva
             alternativesData = altData
         }
 
