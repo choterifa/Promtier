@@ -216,54 +216,59 @@ struct SearchViewSimple: View {
         })
     }
     
+    @ViewBuilder
+    private var activeViewContent: some View {
+        switch menuBarManager.activeViewState {
+        case .main:
+            mainView
+                .overlay(alignment: .bottom) {
+                    if let suggestedContent = menuBarManager.suggestedClipboardContent {
+                        ClipboardSuggestionBanner(content: suggestedContent)
+                            .padding(.bottom, 32)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity),
+                                removal: .opacity.combined(with: .scale(scale: 0.95))
+                            ))
+                            .zIndex(70)
+                    }
+                }
+                .transition(.opacity)
+        case .newPrompt:
+            NewPromptView(prompt: selectedPrompt ?? menuBarManager.promptToEditFromOmniSearch, onClose: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedPrompt = nil
+                    menuBarManager.promptToEditFromOmniSearch = nil
+                    menuBarManager.activeViewState = .main
+                }
+            })
+            .environmentObject(promptService)
+            .environmentObject(preferences)
+            .environmentObject(menuBarManager)
+            .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
+        case .preferences:
+            PreferencesView(onClose: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .main
+                }
+            })
+            .environmentObject(preferences)
+            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+        case .folderManager:
+            FolderManagerView(folderToEdit: menuBarManager.folderToEdit, onClose: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.folderToEdit = nil // Limpiar al cerrar
+                    menuBarManager.activeViewState = .main
+                }
+            })
+            .environmentObject(promptService)
+            .environmentObject(preferences)
+            .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
+        }
+    }
+
     var body: some View {
         ZStack {
-            switch menuBarManager.activeViewState {
-            case .main:
-                mainView
-                    .overlay(alignment: .bottom) {
-                        if let suggestedContent = menuBarManager.suggestedClipboardContent {
-                            ClipboardSuggestionBanner(content: suggestedContent)
-                                .padding(.bottom, 32) // Más arriba para evitar solapamiento sutil
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                                    removal: .opacity.combined(with: .scale(scale: 0.95))
-                                ))
-                                .zIndex(70)
-                        }
-                    }
-                    .transition(.opacity)
-            case .newPrompt:
-                NewPromptView(prompt: selectedPrompt ?? menuBarManager.promptToEditFromOmniSearch, onClose: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedPrompt = nil
-                        menuBarManager.promptToEditFromOmniSearch = nil
-                        menuBarManager.activeViewState = .main
-                    }
-                })
-                .environmentObject(promptService)
-                .environmentObject(preferences)
-                .environmentObject(menuBarManager)
-                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-            case .preferences:
-                PreferencesView(onClose: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        menuBarManager.activeViewState = .main
-                    }
-                })
-                .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
-            case .folderManager:
-                FolderManagerView(folderToEdit: menuBarManager.folderToEdit, onClose: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        menuBarManager.folderToEdit = nil // Limpiar al cerrar
-                        menuBarManager.activeViewState = .main
-                    }
-                })
-                .environmentObject(promptService)
-                .environmentObject(preferences)
-                .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
-            }
+            activeViewContent
             
             // Overlay de Variables Dinámicas
             if let prompt = fillingVariablesFor {
@@ -408,22 +413,7 @@ struct SearchViewSimple: View {
             Text("import_confirmation_message".localized(for: preferences.language))
         }
         .onChange(of: preferences.windowWidth) { _, newWidth in
-            let threshold: CGFloat = 565
-            
-            // Solo auto-ocultar/mostrar en la vista principal
-            guard menuBarManager.activeViewState == .main, !preferences.isGridView else { return }
-            
-            if newWidth < threshold && preferences.showSidebar {
-                // Auto-hide when shrinking past 565
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    preferences.showSidebar = false
-                }
-            } else if newWidth > threshold && !preferences.showSidebar {
-                // Auto-show when expanding past 565
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    preferences.showSidebar = true
-                }
-            }
+            handleWindowResize(newWidth)
         }
         .onAppear {
             if localEventMonitor == nil {
@@ -439,6 +429,11 @@ struct SearchViewSimple: View {
             
             delayedPrewarmTask?.cancel()
             coordinateSelectionAndPrewarm(forcePrimaryPrewarm: true)
+        }
+        .onChange(of: menuBarManager.promptIdToNavigate) { _, newId in
+            if let id = newId {
+                handleDeepLinkNavigation(id: id)
+            }
         }
         .onDisappear {
             if let monitor = localEventMonitor {
@@ -1156,6 +1151,33 @@ struct SearchViewSimple: View {
             }
         }
     }
+    private func handleWindowResize(_ newWidth: CGFloat) {
+        let threshold: CGFloat = 565
+        guard menuBarManager.activeViewState == .main, !preferences.isGridView else { return }
+        
+        if newWidth < threshold && preferences.showSidebar {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                preferences.showSidebar = false
+            }
+        } else if newWidth > threshold && !preferences.showSidebar {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                preferences.showSidebar = true
+            }
+        }
+    }
+    
+    private func handleDeepLinkNavigation(id: UUID) {
+        if let prompt = promptService.prompts.first(where: { $0.id == id }) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                self.selectedPrompt = prompt
+                self.showingPreview = true
+                promptService.searchQuery = ""
+            }
+            HapticService.shared.playSuccess()
+        }
+        menuBarManager.promptIdToNavigate = nil
+    }
+
     private func isTextSelectedInSearchField() -> Bool {
         guard let window = NSApp.keyWindow,
               let fieldEditor = window.firstResponder as? NSTextView,

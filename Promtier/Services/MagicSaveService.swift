@@ -53,7 +53,8 @@ final class MagicSaveService {
                     HapticService.shared.playSuccess()
                     NotificationService.shared.sendNotification(
                         title: "¡Prompt Guardado!",
-                        body: "Se ha añadido '\(metadata.title)' a tu galería."
+                        body: "Se ha añadido '\(metadata.title)' a tu galería.",
+                        userInfo: ["promptId": newPrompt.id.uuidString]
                     )
                 }
             } catch {

@@ -14,6 +14,21 @@ import Combine
 class MenuBarManager: NSObject, ObservableObject {
     static let shared = MenuBarManager()
     
+    func navigateToPrompt(id: UUID) {
+        // 1. Asegurar que el popover esté abierto
+        if popover?.isShown == false {
+            showPopover()
+        }
+        
+        // 2. Cambiar a la vista principal si estamos en otro sitio
+        if activeViewState != .main {
+            activeViewState = .main
+        }
+        
+        // 3. Emitir la señal de navegación que las vistas observarán
+        self.promptIdToNavigate = id
+    }
+    
     private let menuBarIcon = "text.bubble.fill"
     private let menuBarIconAlt = "text.bubble.fill"
     
@@ -27,6 +42,9 @@ class MenuBarManager: NSObject, ObservableObject {
     @Published var activeViewState: PopoverViewState = .main {
         didSet {
             updatePopoverBehavior()
+            // Persistir el estado para que sobreviva a reinicios
+            UserDefaults.standard.set(activeViewState.rawValue, forKey: "lastNavigatedViewState")
+            
             // When returning to main, reset old suggestion so it can be re-triggered
             if activeViewState == .main && oldValue != .main {
                 suggestedClipboardContent = nil
@@ -40,6 +58,7 @@ class MenuBarManager: NSObject, ObservableObject {
     @Published var parentFolderIdForNewCategory: UUID? = nil
     @Published var promptToEditFromOmniSearch: Prompt? = nil
     @Published var suggestedClipboardContent: String? = nil
+    @Published var promptIdToNavigate: UUID? = nil
     @Published var isModalActive: Bool = false {
         didSet {
             updatePopoverBehavior()
@@ -53,11 +72,11 @@ class MenuBarManager: NSObject, ObservableObject {
     private var lastSuggestedText: String? = nil
     private var lastSuggestedCount: Int = 0
     
-    enum PopoverViewState {
-        case main
-        case newPrompt
-        case preferences
-        case folderManager
+    enum PopoverViewState: String {
+        case main = "main"
+        case newPrompt = "newPrompt"
+        case preferences = "preferences"
+        case folderManager = "folderManager"
     }
     
     private var cancellables = Set<AnyCancellable>()
@@ -93,7 +112,13 @@ class MenuBarManager: NSObject, ObservableObject {
             self.setupThemeObserver()
             self.setupDimensionObserver()
             
-            // RESTAURACIÓN DE ESTADO: Abrir en modo nuevo prompt si hay un borrador
+            // RESTAURACIÓN DE ESTADO: Recuperar última vista guardada
+            if let lastViewRaw = UserDefaults.standard.string(forKey: "lastNavigatedViewState"),
+               let lastView = PopoverViewState(rawValue: lastViewRaw) {
+                self.activeViewState = lastView
+            }
+            
+            // Prioridad crítica: Abrir en modo nuevo prompt si hay un borrador
             if DraftService.shared.hasDraft {
                 self.activeViewState = .newPrompt
                 self.isModalActive = false
@@ -245,13 +270,16 @@ class MenuBarManager: NSObject, ObservableObject {
     func showPopover() {
         guard let button = statusItem?.button else { return }
         
-        // Restore draft if it exists
+        // Solo cambiamos automáticamente si hay un borrador que requiere atención
         if DraftService.shared.hasDraft && suggestedClipboardContent == nil {
             activeViewState = .newPrompt
             isModalActive = false
-        } else if suggestedClipboardContent != nil || !DraftService.shared.hasDraft {
-            activeViewState = .main
-            checkClipboardForPromptSuggestion()
+        } else {
+            // En cualquier otro caso, MANTENEMOS el activeViewState donde estaba.
+            // Solo verificamos el portapapeles si estamos en la vista principal
+            if activeViewState == .main {
+                checkClipboardForPromptSuggestion()
+            }
         }
         
         showPopover(relativeTo: button.bounds, of: button)
