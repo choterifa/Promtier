@@ -8,29 +8,36 @@ enum ConnectionStatus: Equatable {
     case failure(String)
 }
 
-struct TestConnectionButton: View {
+struct ConnectionStatusDot: View {
     let status: ConnectionStatus
-    let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                if status == .testing {
-                    ProgressView().progressViewStyle(.circular).scaleEffect(0.5)
-                } else if status == .success {
-                    Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                } else if case .failure = status {
-                    Image(systemName: "xmark.circle.fill").foregroundColor(.red)
-                } else {
-                    Image(systemName: "network").foregroundColor(.blue)
-                }
+        ZStack {
+            if status == .testing {
+                Circle()
+                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                    .frame(width: 10, height: 10)
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 6, height: 6)
+                    .opacity(0.8)
+            } else {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: statusColor.opacity(0.4), radius: 2)
             }
-            .frame(width: 24, height: 24)
-            .background(Color.primary.opacity(0.05))
-            .cornerRadius(6)
         }
-        .buttonStyle(.plain)
-        .help("Probar Conexión")
+        .frame(width: 12, height: 12)
+    }
+    
+    private var statusColor: Color {
+        switch status {
+        case .idle: return .secondary.opacity(0.4)
+        case .testing: return .blue
+        case .success: return .green
+        case .failure: return .red
+        }
     }
 }
 
@@ -43,9 +50,13 @@ struct AITab: View {
     @State private var openAITestStatus: ConnectionStatus = .idle
     @State private var geminiTestStatus: ConnectionStatus = .idle
     @State private var openRouterTestStatus: ConnectionStatus = .idle
+    
+    @State private var showOpenAIKey = false
+    @State private var showGeminiKey = false
+    @State private var showOpenRouterKey = false
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 22) {
             SettingsSection(title: "OpenAI ChatGPT", icon: "cloud.fill") {
                 SettingsRow(
                     LocalizedStringKey("openai_service".localized(for: preferences.language)),
@@ -68,32 +79,49 @@ struct AITab: View {
                 VStack(spacing: 1) {
                     SettingsRow(LocalizedStringKey("api_key".localized(for: preferences.language))) {
                         HStack(spacing: 8) {
-                            SecureField("sk-...", text: $preferences.openAIApiKey)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 220)
+                            if showOpenAIKey {
+                                TextField("sk-...", text: $preferences.openAIApiKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                            } else {
+                                SecureField("sk-...", text: $preferences.openAIApiKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                            }
                             
-                            Button(action: {
-                                if let pasted = NSPasteboard.general.string(forType: .string) {
-                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    preferences.openAIApiKey = trimmed
-                                    HapticService.shared.playLight()
-                                    Task { await handleOpenAIKeyChanged() }
-                                }
-                            }) {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.blue)
-                                    .padding(4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(4)
+                            Button(action: { showOpenAIKey.toggle() }) {
+                                Image(systemName: showOpenAIKey ? "eye.slash.fill" : "eye.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 24, height: 24)
+                                    .background(Color.primary.opacity(0.05))
+                                    .cornerRadius(6)
                             }
                             .buttonStyle(.plain)
-                            .help("paste".localized(for: preferences.language))
-                            
-                            TestConnectionButton(status: openAITestStatus) {
-                                testOpenAIConnection()
-                            }
+                            .help(showOpenAIKey ? "Ocultar" : "Mostrar")
+
                         }
+                    }
+
+                    HStack(spacing: 14) {
+                        Spacer()
+                        
+                        Button(action: { testOpenAIConnection() }) {
+                            HStack(spacing: 5) {
+                                ConnectionStatusDot(status: openAITestStatus)
+                                Text(openAITestStatus == .idle ? "Probar" : (openAITestStatus == .testing ? "Probando..." : (openAITestStatus == .success ? "Conectado" : "Error")))
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                            .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, -6)
+
+                        Link("Get API Key", destination: URL(string: "https://platform.openai.com/api-keys")!)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 10)
+                            .padding(.top, -6)
                     }
 
                     Divider().padding(.leading, 20)
@@ -187,31 +215,49 @@ struct AITab: View {
                     VStack(spacing: 12) {
                         SettingsRow("API Key", subtitle: "Clave de API de Google Gemini") {
                             HStack(spacing: 8) {
-                                SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                if showGeminiKey {
+                                    TextField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 220)
+                                } else {
+                                    SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 220)
+                                }
                                 
-                                Button(action: {
-                                    if let pasted = NSPasteboard.general.string(forType: .string) {
-                                        let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-                                        preferences.geminiAPIKey = trimmed
-                                        HapticService.shared.playLight()
-                                    }
-                                }) {
-                                    Image(systemName: "doc.on.clipboard")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.blue)
-                                        .padding(4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(4)
+                                Button(action: { showGeminiKey.toggle() }) {
+                                    Image(systemName: showGeminiKey ? "eye.slash.fill" : "eye.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .frame(width: 24, height: 24)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(6)
                                 }
                                 .buttonStyle(.plain)
-                                .help("paste".localized(for: preferences.language))
-                                
-                                TestConnectionButton(status: geminiTestStatus) {
-                                    testGeminiConnection()
-                                }
+                                .help(showGeminiKey ? "Ocultar" : "Mostrar")
+
                             }
+                        }
+
+                        HStack(spacing: 14) {
+                            Spacer()
+                            
+                            Button(action: { testGeminiConnection() }) {
+                                HStack(spacing: 5) {
+                                    ConnectionStatusDot(status: geminiTestStatus)
+                                    Text(geminiTestStatus == .idle ? "Probar" : (geminiTestStatus == .testing ? "Probando..." : (geminiTestStatus == .success ? "Conectado" : "Error")))
+                                        .font(.system(size: 10, weight: .bold))
+                                }
+                                .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.top, -10)
+
+                            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/app/apikey")!)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(.trailing, 10)
+                                .padding(.top, -10)
                         }
 
                         SettingsRow(LocalizedStringKey("gemini_model_id".localized(for: preferences.language)),
@@ -276,31 +322,44 @@ struct AITab: View {
                 VStack(spacing: 1) {
                     SettingsRow(LocalizedStringKey("api_key".localized(for: preferences.language))) {
                         HStack(spacing: 8) {
-                            SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 220)
+                            if showOpenRouterKey {
+                                TextField("sk-or-...", text: $preferences.openRouterAPIKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                            } else {
+                                SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 220)
+                            }
                             
-                            Button(action: {
-                                if let pasted = NSPasteboard.general.string(forType: .string) {
-                                    let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    preferences.openRouterAPIKey = trimmed
-                                    HapticService.shared.playLight()
-                                }
-                            }) {
-                                Image(systemName: "doc.on.clipboard")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.blue)
-                                    .padding(4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(4)
+                            Button(action: { showOpenRouterKey.toggle() }) {
+                                Image(systemName: showOpenRouterKey ? "eye.slash.fill" : "eye.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 24, height: 24)
+                                    .background(Color.primary.opacity(0.05))
+                                    .cornerRadius(6)
                             }
                             .buttonStyle(.plain)
-                            .help("paste".localized(for: preferences.language))
-                            
-                            TestConnectionButton(status: openRouterTestStatus) {
-                                testOpenRouterConnection()
-                            }
+                            .help(showOpenRouterKey ? "Ocultar" : "Mostrar")
+
                         }
+                    }
+
+                    HStack(spacing: 12) {
+                        Spacer()
+                        
+                        Button(action: { testOpenRouterConnection() }) {
+                            HStack(spacing: 6) {
+                                ConnectionStatusDot(status: openRouterTestStatus)
+                                Text(openRouterTestStatus == .idle ? "Probar" : (openRouterTestStatus == .testing ? "Probando..." : (openRouterTestStatus == .success ? "Conectado" : "Error")))
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                            .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, -4)
+                        .padding(.trailing, 10)
                     }
 
                     Divider().padding(.leading, 20)
