@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22754" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="PromptEntity" representedClassName="PromptEntity" syncable="YES">
-        <attribute name="content" optional="NO" attributeType="String"/>
-        <attribute name="createdAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="isFavorite" optional="NO" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="modifiedAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="title" optional="NO" attributeType="String"/>
+        <attribute name="content" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isFavorite" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValueString="NO"/>
+        <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
         <attribute name="useCount" optional="NO" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="promptDescription" optional="YES" attributeType="String"/>
         <attribute name="folder" optional="YES" attributeType="String"/>
@@ -15,13 +15,24 @@
         <attribute name="image1" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="image2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
         <attribute name="image3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="image1Path" optional="YES" attributeType="String"/>
+        <attribute name="image2Path" optional="YES" attributeType="String"/>
+        <attribute name="image3Path" optional="YES" attributeType="String"/>
+        <attribute name="thumb1" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="thumb2" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="thumb3" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="showcaseImageCount" optional="NO" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="versionHistoryData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
+        <attribute name="negativePrompt" optional="YES" attributeType="String"/>
+        <attribute name="alternativePrompt" optional="YES" attributeType="String"/>
+        <attribute name="customShortcut" optional="YES" attributeType="String"/>
+        <attribute name="alternativesData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" usesScalarValueType="NO"/>
     </entity>
     <entity name="FolderEntity" representedClassName="FolderEntity" syncable="YES">
         <attribute name="color" optional="YES" attributeType="String"/>
-        <attribute name="createdAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="name" optional="NO" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="icon" optional="YES" attributeType="String"/>
     </entity>

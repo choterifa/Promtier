@@ -18,7 +18,7 @@ struct BatchToolbarView: View {
                     .frame(width: 22, height: 22)
                     .background(Circle().fill(Color.blue))
                 
-                Text("seleccionados")
+                Text("selected_count".localized(for: preferences.language))
                     .font(.system(size: 13, weight: .bold))
             }
             
@@ -31,17 +31,17 @@ struct BatchToolbarView: View {
                     batchService.selectAll(from: promptService.filteredPrompts)
                     HapticService.shared.playLight()
                 }) {
-                    Label("Todos", systemImage: "checkmark.circle")
+                    Label("all_action".localized(for: preferences.language), systemImage: "checkmark.circle")
                         .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.plain)
-                .help("Seleccionar todos los visibles")
+                .help("select_all_help".localized(for: preferences.language))
                 
                 Divider().frame(height: 16)
                 
                 // Mover a Carpeta
                 Button(action: { showingFolderPicker = true }) {
-                    Label("Mover", systemImage: "folder.badge.plus")
+                    Label("move_action".localized(for: preferences.language), systemImage: "folder.badge.plus")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.blue)
                 }
@@ -55,16 +55,16 @@ struct BatchToolbarView: View {
                 
                 // Eliminar (a la papelera)
                 Button(action: { showingDeleteConfirmation = true }) {
-                    Label("Papelera", systemImage: "trash")
+                    Label("trash_action".localized(for: preferences.language), systemImage: "trash")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.red)
                 }
                 .buttonStyle(.plain)
-                .confirmationDialog("¿Mover \(batchService.selectedPromptIds.count) prompts a la papelera?", isPresented: $showingDeleteConfirmation) {
-                    Button("Mover a la papelera", role: .destructive) {
+                .confirmationDialog(String(format: "move_to_trash_confirmation".localized(for: preferences.language), batchService.selectedPromptIds.count), isPresented: $showingDeleteConfirmation) {
+                    Button("move_to_trash_button".localized(for: preferences.language), role: .destructive) {
                         deleteSelected()
                     }
-                    Button("Cancelar", role: .cancel) { }
+                    Button("cancel".localized(for: preferences.language), role: .cancel) { }
                 }
             }
             
@@ -98,35 +98,28 @@ struct BatchToolbarView: View {
     }
     
     private func moveSelected(to folderName: String?) {
-        for id in batchService.selectedPromptIds {
-            if let prompt = promptService.prompts.first(where: { $0.id == id }) {
-                var updated = prompt
-                updated.folder = folderName
-                _ = promptService.updatePrompt(updated)
-            }
-        }
+        _ = promptService.movePrompts(withIds: Array(batchService.selectedPromptIds), toFolder: folderName)
         batchService.clearSelection()
+        if preferences.soundEnabled { SoundService.shared.playMoveSound() }
         HapticService.shared.playSuccess()
     }
     
     private func deleteSelected() {
-        for id in batchService.selectedPromptIds {
-            if let prompt = promptService.prompts.first(where: { $0.id == id }) {
-                _ = promptService.deletePrompt(prompt)
-            }
-        }
+        _ = promptService.deletePrompts(withIds: Array(batchService.selectedPromptIds))
         batchService.clearSelection()
+        if preferences.soundEnabled { SoundService.shared.playDeleteSound() }
         HapticService.shared.playSuccess()
     }
 }
 
 struct FolderPickerView: View {
     @EnvironmentObject var promptService: PromptService
+    @EnvironmentObject var preferences: PreferencesManager
     var onSelect: (String?) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Mover a...")
+            Text("move_to".localized(for: preferences.language))
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 12)
@@ -139,7 +132,7 @@ struct FolderPickerView: View {
                     Button(action: { onSelect(nil) }) {
                         HStack {
                             Image(systemName: "folder")
-                            Text("Sin categoría")
+                            Text("uncategorized".localized(for: preferences.language))
                             Spacer()
                         }
                         .padding(.horizontal, 12)

@@ -9,197 +9,217 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+@preconcurrency struct SidebarDragPayload: Codable, Sendable {
+    let kind: String
+    let ids: [String]?
+    let id: String?
+}
+
 struct CategorySidebar: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var preferences: PreferencesManager
-    
-    @State private var showingFolderManager = false
-    @State private var draggedFolder: Folder? = nil
-    @State private var dropTargetFolderId: UUID? = nil
-    @State private var isTargetedFavoritos = false
-    @State private var isTargetedSinCategoria = false
+    @EnvironmentObject var batchService: BatchOperationsService
     @EnvironmentObject var menuBarManager: MenuBarManager
+    
+    @StateObject private var viewModel = CategorySidebarViewModel()
     
     private var categories: [PredefinedCategory] {
         PredefinedCategory.allCases
     }
     
-    private var categoryCounts: [String: Int] {
-        var counts: [String: Int] = [:]
-        for prompt in promptService.prompts {
-            let folder = prompt.folder ?? "Sin categoría"
-            counts[folder, default: 0] += 1
-        }
-        return counts
-    }
-    
     var body: some View {
         VStack(spacing: 0) {
             // Header sutil
-            HStack {
-                Text("Explorar")
-                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-                    .tracking(1.2 * preferences.fontSize.scale)
+            HStack(spacing: 0) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(viewModel.isSystemSectionExpanded ? 90 : 0))
+                    
+                    Text("explore".localized(for: preferences.language))
+                        .font(.system(size: (preferences.language == .spanish ? 10 : 11) * preferences.fontSize.scale, weight: .bold))
+                        .foregroundColor(viewModel.isHeaderHovered ? .primary : .secondary)
+                        .textCase(.uppercase)
+                        .tracking((preferences.language == .spanish ? 0.8 : 1.2) * preferences.fontSize.scale)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        viewModel.isSystemSectionExpanded.toggle()
+                    }
+                    HapticService.shared.playLight()
+                }
+                .onHover { viewModel.isHeaderHovered = $0 }
                 
                 Spacer()
                 
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        menuBarManager.activeViewState = .folderManager
+                // Botones de Acción (Ordenamiento y Nueva Categoría)
+                HStack(spacing: 4) {
+                    // Botón de Ordenamiento de Prompts
+                    Menu {
+                        Button { promptService.promptSortMode = .name } label: {
+                            Label("sort_name".localized(for: preferences.language), systemImage: promptService.promptSortMode == .name ? "checkmark" : "textformat.abc")
+                        }
+                        Button { promptService.promptSortMode = .newest } label: {
+                            Label("sort_newest".localized(for: preferences.language), systemImage: promptService.promptSortMode == .newest ? "checkmark" : "calendar")
+                        }
+                        Button { promptService.promptSortMode = .mostUsed } label: {
+                            Label("sort_most_used".localized(for: preferences.language), systemImage: promptService.promptSortMode == .mostUsed ? "checkmark" : "flame.fill")
+                        }
+                    } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "line.3.horizontal.decrease")
+                                .font(.system(size: 11, weight: .bold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 7, weight: .bold))
+                        }
+                        .foregroundColor(viewModel.isSortMenuHovered ? .primary : .secondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(viewModel.isSortMenuHovered ? 0.06 : 0))
+                        )
+                        .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 14))
-                        .foregroundColor(.blue.opacity(0.8))
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("sort_prompts_help".localized(for: preferences.language))
+                    .onHover { viewModel.isSortMenuHovered = $0 }
+                    
+                    // Botón de Nueva Categoría
+                    Button {
+                        menuBarManager.folderToEdit = nil
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            menuBarManager.activeViewState = .folderManager
+                        }
+                        HapticService.shared.playLight()
+                    } label: {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 11))
+                            .foregroundColor(viewModel.isAddFolderHovered ? .blue : .secondary)
+                            .offset(y: -0.5) // Alineación visual perfecta
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.primary.opacity(viewModel.isAddFolderHovered ? 0.06 : 0))
+                            )
+                            .contentShape(Rectangle())
+                            .scaleEffect(viewModel.isAddFolderHovered ? 1.03 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: viewModel.isAddFolderHovered)
+                    }
+                    .buttonStyle(.plain)
+                    .help("create_category".localized(for: preferences.language))
+                    .onHover { viewModel.isAddFolderHovered = $0 }
                 }
-                .buttonStyle(.plain)
-                .help("Gestionar Categorías")
             }
             .padding(.horizontal, 24)
-            .padding(.top, 32)
-            .padding(.bottom, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
             
-            VStack(spacing: 4) {
-                // Botón "Todas"
-                SidebarItem(
-                    title: "Todas",
-                    icon: "square.grid.2x2.fill",
-                    color: .blue,
-                    count: promptService.prompts.count,
-                    isSelected: promptService.selectedCategory == nil
-                ) {
-                    promptService.selectedCategory = nil
-                }
-                
-                // Botón "Recientes"
-                SidebarItem(
-                    title: "Recientes",
-                    icon: "clock.arrow.2.circlepath",
-                    color: .purple,
-                    count: promptService.prompts.filter { $0.lastUsedAt != nil }.count,
-                    isSelected: promptService.selectedCategory == "Recientes"
-                ) {
-                    promptService.selectedCategory = "Recientes"
-                }
-                
-                // Botón "Favoritos"
-                SidebarItem(
-                    title: "Favoritos",
-                    icon: "star.fill",
-                    color: .yellow,
-                    count: promptService.prompts.filter { $0.isFavorite }.count,
-                    isSelected: promptService.selectedCategory == "Favoritos",
-                    isDropTarget: isTargetedFavoritos,
-                    action: {
-                        promptService.selectedCategory = "Favoritos"
-                    },
-                    dropHandler: { promptId in
-                        markAsFavorite(id: promptId)
-                    }
-                )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedFavoritos) { providers in
-                    handleQuickDrop(providers: providers, to: "Favoritos")
-                }
-                
-                // Botón "Sin categoría"
-                SidebarItem(
-                    title: "Sin categoría",
-                    icon: "folder.fill",
-                    color: .gray,
-                    count: categoryCounts["Sin categoría"] ?? 0,
-                    isSelected: promptService.selectedCategory == "Sin categoría",
-                    isDropTarget: isTargetedSinCategoria,
-                    action: {
-                        promptService.selectedCategory = "Sin categoría"
-                    },
-                    dropHandler: { promptId in
-                        movePrompt(id: promptId, to: nil)
-                    }
-                )
-                .onDrop(of: [.promtierPromptId, .plainText], isTargeted: $isTargetedSinCategoria) { providers in
-                    handleQuickDrop(providers: providers, to: nil)
-                }
-            }
-            .padding(.horizontal, 12)
-            
-            Divider()
-                .padding(.vertical, 16)
-                .padding(.horizontal, 24)
-            
-            // Lista de categorías
-            ScrollView(showsIndicators: false) {
+            if viewModel.isSystemSectionExpanded {
                 VStack(spacing: 4) {
-                    ForEach(promptService.folders) { folder in
-                        let count = categoryCounts[folder.name] ?? 0
-                        
-                        SidebarItem(
-                            title: folder.name,
-                            icon: folder.icon ?? "folder.fill",
-                            color: Color(hex: folder.displayColor),
-                            count: count,
-                            isSelected: promptService.selectedCategory == folder.name,
-                            isDropTarget: dropTargetFolderId == folder.id && draggedFolder == nil,
-                            action: {
-                                promptService.selectedCategory = folder.name
-                            }
-                        )
-                        .overlay(
-                            VStack {
-                                if dropTargetFolderId == folder.id && draggedFolder != nil {
-                                    Rectangle()
-                                        .fill(Color.blue)
-                                        .frame(height: 2)
-                                        .transition(.scale.combined(with: .opacity))
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 12)
-                            .offset(y: -2)
-                        )
-                        .onDrag {
-                            self.draggedFolder = folder
-                            menuBarManager.isModalActive = true // Evitar cierre automático
-                            let provider = NSItemProvider()
-                            provider.registerDataRepresentation(forTypeIdentifier: UTType.promtierFolderId.identifier, visibility: .all) { completion in
-                                completion(folder.id.uuidString.data(using: .utf8), nil)
-                                return nil
-                            }
-                            return provider
+                    // Botón "Todas"
+                    SidebarItem(
+                        title: "all",
+                        icon: "square.grid.2x2.fill",
+                        color: .blue,
+                        count: promptService.prompts.count,
+                        isSelected: promptService.selectedCategory == nil
+                    ) {
+                        promptService.selectedCategory = nil
+                    }
+                    
+                    // Botón "Recientes"
+                    SidebarItem(
+                        title: "recent",
+                        icon: "clock.arrow.2.circlepath",
+                        color: .purple,
+                        count: viewModel.recentCount,
+                        isSelected: promptService.selectedCategory == "recent"
+                    ) {
+                        promptService.selectedCategory = "recent"
+                    }
+                    
+                    // Botón "Favoritos"
+                    SidebarItem(
+                        title: "favorites",
+                        icon: "star.fill",
+                        color: .yellow,
+                        count: viewModel.favoritesCount,
+                        isSelected: promptService.selectedCategory == "favorites",
+                        isDropTarget: viewModel.isTargetedFavoritos,
+                        action: {
+                            promptService.selectedCategory = "favorites"
+                        },
+                        dropHandler: { promptId in
+                            viewModel.markAsFavorite(id: promptId, promptService: promptService, batchService: batchService, preferences: preferences)
                         }
-                        .onDrop(of: [.promtierFolderId, .promtierPromptId, .plainText], delegate: FolderDropDelegate(
-                            folder: folder,
-                            promptService: promptService,
-                            menuBarManager: menuBarManager,
-                            draggedFolder: $draggedFolder,
-                            dropTargetFolderId: $dropTargetFolderId,
-                            onMove: { source, dest in reorderFolder(source, to: dest) },
-                            onPromptMove: { pId, fName in movePrompt(id: pId, to: fName) }
-                        ))
-                        .contextMenu {
-                            Button {
-                                menuBarManager.folderToEdit = folder
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    menuBarManager.activeViewState = .folderManager
-                                }
-                            } label: {
-                                Label("Editar", systemImage: "square.and.pencil")
-                            }
-                            
-                            Button(role: .destructive) {
-                                _ = promptService.deleteFolder(folder)
-                            } label: {
-                                Label("Eliminar", systemImage: "trash")
-                            }
+                    )
+                    .onDrop(of: [.json, .plainText], isTargeted: $viewModel.isTargetedFavoritos) { providers in
+                        viewModel.handleQuickDrop(providers: providers, to: "favorites", promptService: promptService, batchService: batchService, preferences: preferences)
+                    }
+                    
+                    // Botón "Sin categoría"
+                    SidebarItem(
+                        title: "uncategorized",
+                        icon: "folder.fill",
+                        color: .gray,
+                        count: viewModel.categoryCount(for: "uncategorized"),
+                        isSelected: promptService.selectedCategory == "uncategorized",
+                        isDropTarget: viewModel.isTargetedSinCategoria,
+                        action: {
+                            promptService.selectedCategory = "uncategorized"
+                        },
+                        dropHandler: { promptId in
+                            viewModel.movePrompt(id: promptId, to: nil, promptService: promptService, batchService: batchService, preferences: preferences)
                         }
+                    )
+                    .onDrop(of: [.json, .plainText], isTargeted: $viewModel.isTargetedSinCategoria) { providers in
+                        viewModel.handleQuickDrop(providers: providers, to: nil, promptService: promptService, batchService: batchService, preferences: preferences)
                     }
                 }
                 .padding(.horizontal, 12)
-                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
+                ))
             }
+            
+            VStack(spacing: 0) {
+                // Divider (Cleanup)
+                Rectangle()
+                    .fill(Color.primary.opacity(0.1))
+                    .frame(height: 1)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 24)
+                
+                // Lista de categorías (Extraído para reducir complejidad)
+                foldersListView
+            }
+            
+            Spacer()
         }
-        .frame(width: 200)
+        .onHover { hovering in
+            menuBarManager.setSidebarHovered(hovering)
+        }
+        .onAppear {
+            viewModel.refreshCounters(with: promptService.prompts)
+        }
+        .onReceive(promptService.$prompts) { prompts in
+            viewModel.refreshCounters(with: prompts)
+        }
+        .alert("delete_category_title".localized(for: preferences.language), isPresented: $viewModel.showingDeleteAlert, presenting: viewModel.folderToDelete) { folder in
+            Button("delete".localized(for: preferences.language), role: .destructive) {
+                viewModel.confirmDelete(promptService: promptService)
+            }
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+        } message: { folder in
+            let count = viewModel.categoryCount(for: folder.name)
+            Text(String(format: "delete_category_with_items_msg".localized(for: preferences.language), count))
+        }
+        .frame(maxWidth: .infinity)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor).opacity(0.95)
@@ -208,87 +228,164 @@ struct CategorySidebar: View {
         )
     }
     
-    // MARK: - Helpers de Drag & Drop
-    
-    private func movePrompt(id: String, to folderName: String?) {
-        guard let uuid = UUID(uuidString: id),
-              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
-        
-        var updated = prompt
-        updated.folder = folderName
-        _ = promptService.updatePrompt(updated)
-        
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-    }
-    
-    private func markAsFavorite(id: String) {
-        guard let uuid = UUID(uuidString: id),
-              let prompt = promptService.prompts.first(where: { $0.id == uuid }) else { return }
-        
-        var updated = prompt
-        updated.isFavorite = true
-        _ = promptService.updatePrompt(updated)
-        
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-    }
-    
-    private func reorderFolder(_ source: Folder, to destination: Folder) {
-        var folders = promptService.folders
-        guard let sourceIndex = folders.firstIndex(where: { $0.id == source.id }),
-              let destIndex = folders.firstIndex(where: { $0.id == destination.id }) else { return }
-        
-        if sourceIndex == destIndex { return }
-        
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            let folder = folders.remove(at: sourceIndex)
-            folders.insert(folder, at: destIndex)
-            promptService.reorderFolders(folders)
-            
-            // Forzar actualización de UI
-            promptService.loadFolders()
-        }
-        
-        self.draggedFolder = nil
-        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
-    }
-    
-    // Helper para los botones superiores de drop
-    private func handleQuickDrop(providers: [NSItemProvider], to category: String?) -> Bool {
-        for provider in providers {
-            // Primero intentar con el ID interno
-            if provider.hasItemConformingToTypeIdentifier(UTType.promtierPromptId.identifier) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: UTType.promtierPromptId.identifier) { data, _ in
-                    if let data = data, let id = String(data: data, encoding: .utf8) {
-                        DispatchQueue.main.async {
-                            if category == "Favoritos" {
-                                markAsFavorite(id: id)
-                            } else {
-                                movePrompt(id: id, to: category)
-                            }
-                        }
-                    }
+    @ViewBuilder
+    private var foldersListView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 4) {
+                
+                // ── Pinned section ────────────────────────────────
+                let pinnedFolders = promptService.folders.filter {
+                    preferences.pinnedFolderNames.contains($0.name)
+                }.sorted {
+                    (preferences.pinnedFolderNames.firstIndex(of: $0.name) ?? 99) <
+                    (preferences.pinnedFolderNames.firstIndex(of: $1.name) ?? 99)
                 }
-                return true
+                
+                if !pinnedFolders.isEmpty {
+                    HStack {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.secondary.opacity(0.4))
+                        Text("pinned".localized(for: preferences.language).uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.secondary.opacity(0.4))
+                            .tracking(1)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
+                    
+                    ForEach(pinnedFolders, id: \.id) { folder in
+                        PinnedFolderRow(
+                            folder: folder,
+                            count: viewModel.categoryCount(for: folder.name),
+                            isSelected: promptService.selectedCategory == folder.name,
+                            onSelect: { promptService.selectedCategory = folder.name },
+                            onRename: { newName in
+                                var updated = folder
+                                updated.name = newName
+                                _ = promptService.updateFolder(updated)
+                                if promptService.selectedCategory == folder.name {
+                                    promptService.selectedCategory = newName
+                                }
+                                if preferences.isPinned(folder.name) {
+                                    preferences.togglePin(folder.name)
+                                    preferences.togglePin(newName)
+                                }
+                            },
+                            onEdit: {
+                                menuBarManager.folderToEdit = folder
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    menuBarManager.activeViewState = .folderManager
+                                }
+                            },
+                            onUnpin: { preferences.togglePin(folder.name) }
+                        )
+                    }
+
+                    Divider()
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 6)
+                }
+
+                // ── Remaining folders ────────────────────────────
+                let unpinnedFolders = promptService.folders.filter {
+                    !preferences.pinnedFolderNames.contains($0.name)
+                }
+
+                ForEach(unpinnedFolders, id: \.id) { folder in
+                    FolderRow(
+                        folder: folder,
+                        count: viewModel.categoryCount(for: folder.name),
+                        isSelected: promptService.selectedCategory == folder.name,
+                        isDropTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder == nil,
+                        isReorderTarget: viewModel.dropTargetFolderId == folder.id && viewModel.draggedFolder != nil,
+                        onSelect: { promptService.selectedCategory = folder.name },
+                        onRename: { newName in
+                            var updated = folder
+                            updated.name = newName
+                            _ = promptService.updateFolder(updated)
+                            if promptService.selectedCategory == folder.name {
+                                promptService.selectedCategory = newName
+                            }
+                        },
+                        onEdit: {
+                            menuBarManager.folderToEdit = folder
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                menuBarManager.activeViewState = .folderManager
+                            }
+                        },
+                        onTogglePin: { preferences.togglePin(folder.name) },
+                        onDelete: {
+                            viewModel.requestDelete(folder: folder, counts: viewModel.categoryCounts)
+                            if viewModel.folderToDelete == nil && !viewModel.showingDeleteAlert {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    _ = promptService.deleteFolder(folder)
+                                }
+                                HapticService.shared.playSuccess()
+                            }
+                        },
+                        onDragStarted: { viewModel.draggedFolder = folder },
+                        onPromptMove: { ids, folderName in
+                            viewModel.movePrompts(ids: ids, to: folderName, promptService: promptService, batchService: batchService, preferences: preferences)
+                        },
+                        dropTargetFolderId: $viewModel.dropTargetFolderId,
+                        draggedFolder: $viewModel.draggedFolder
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
+        }
+        .contextMenu {
+            Button {
+                menuBarManager.folderToEdit = nil
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    menuBarManager.activeViewState = .folderManager
+                }
+                HapticService.shared.playLight()
+            } label: {
+                Label("create_category".localized(for: preferences.language), systemImage: "folder.badge.plus")
             }
         }
-        return false
     }
 }
 
-// MARK: - DropDelegate especializado para Carpeta
-struct FolderDropDelegate: DropDelegate {
+// MARK: - DropDelegate Combinado para Sidebar (Prompts + Reordenado)
+struct FolderSidebarDropDelegate: DropDelegate {
     let folder: Folder
     let promptService: PromptService
     let menuBarManager: MenuBarManager
-    @Binding var draggedFolder: Folder?
     @Binding var dropTargetFolderId: UUID?
+    @Binding var draggedFolder: Folder?
     
-    var onMove: (Folder, Folder) -> Void
-    var onPromptMove: (String, String) -> Void
+    var onPromptMove: ([String], String) -> Void
     
     func dropEntered(info: DropInfo) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            dropTargetFolderId = folder.id
+        // Reordenado
+        if let draggedFolder = draggedFolder, draggedFolder.id != folder.id {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = folder.id
+            }
+            
+            let from = promptService.folders.firstIndex(where: { $0.id == draggedFolder.id })
+            let to = promptService.folders.firstIndex(where: { $0.id == folder.id })
+            
+            if let from = from, let to = to {
+                var updated = promptService.folders
+                updated.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+                promptService.reorderFolders(updated)
+            }
+            return
+        }
+        
+        // Mover Prompts
+        if draggedFolder == nil {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dropTargetFolderId = folder.id
+            }
         }
     }
     
@@ -301,118 +398,244 @@ struct FolderDropDelegate: DropDelegate {
     }
     
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        // Si estamos arrastrando una carpeta para reordenar, usamos .move
-        if draggedFolder != nil {
-            return DropProposal(operation: .move)
-        }
-        // Si es un prompt siendo categorizado, usamos .copy para mostrar el "+"
-        return DropProposal(operation: .copy)
+        return DropProposal(operation: .move)
     }
     
     func validateDrop(info: DropInfo) -> Bool {
-        return info.hasItemsConforming(to: [.promtierFolderId, .promtierPromptId, .plainText])
+        return info.hasItemsConforming(to: [.json, .plainText, .text])
     }
     
     func performDrop(info: DropInfo) -> Bool {
         dropTargetFolderId = nil
-        menuBarManager.isModalActive = false // Ya se puede cerrar
+        let wasDraggingFolder = draggedFolder != nil
+        self.draggedFolder = nil
         
-        // 1. Manejar reordenado de Carpeta
-        if let dragged = draggedFolder {
-            onMove(dragged, folder)
-            draggedFolder = nil
-            return true
-        }
+        if wasDraggingFolder { return true }
         
-        // 2. Manejar movimiento de Prompt
-        for provider in info.itemProviders(for: [.promtierPromptId, .plainText]) {
-            let internalId = UTType.promtierPromptId.identifier
-            if provider.hasItemConformingToTypeIdentifier(internalId) {
-                _ = provider.loadDataRepresentation(forTypeIdentifier: internalId) { data, _ in
-                    if let data = data, let id = String(data: data, encoding: .utf8) {
-                        DispatchQueue.main.async { onPromptMove(id, folder.name) }
+        let jsonType = UTType.json.identifier
+        for provider in info.itemProviders(for: [.json, .plainText]) {
+            if provider.hasItemConformingToTypeIdentifier(jsonType) {
+                _ = provider.loadDataRepresentation(forTypeIdentifier: jsonType) { data, _ in
+                    Task { @MainActor in
+                        guard let data,
+                              let payload = try? JSONDecoder().decode(SidebarDragPayload.self, from: data),
+                              payload.kind == "promtier.prompt.ids",
+                              let ids = payload.ids,
+                              !ids.isEmpty else { return }
+                        onPromptMove(ids, folder.name)
                     }
                 }
                 return true
             }
         }
         
-        return false
+        return true
     }
 }
 
 struct SidebarItem: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let color: Color
     let count: Int
     let isSelected: Bool
     var isDropTarget: Bool = false
+    var isReorderTarget: Bool = false
+    var isPinned: Bool = false
     let action: () -> Void
     
-    // Configuración opcional para Drop
     var dropAllowed: Bool = true
     var dropHandler: ((String) -> Void)? = nil
     
+    var isEditable: Bool = false
+    var rawTitle: String? = nil
+    var onRename: ((String) -> Void)? = nil
+    var onDoubleClickRow: (() -> Void)? = nil
+    var onDeleteSwipe: (() -> Void)? = nil
+    
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
+    @State private var isEditingName = false
+    @State private var editingName = ""
+    @FocusState private var isFocused: Bool
+    
+    // Swipe-to-delete states
+    @State private var dragOffset: CGFloat = 0
+    @State private var isSwiping: Bool = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                .foregroundColor(isSelected ? .white : color.opacity(0.8))
-                .frame(width: 20 * preferences.fontSize.scale)
+        ZStack(alignment: .trailing) {
+            // Fondo rojo de eliminación (oculto en el espacio desplazado)
+            if onDeleteSwipe != nil && dragOffset < 0 {
+                ZStack(alignment: .trailing) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                            isSwiping = false
+                        }
+                        onDeleteSwipe?()
+                    } label: {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.red)
+                            .frame(width: 60)
+                            .overlay(
+                                Image(systemName: "trash.fill")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(width: -dragOffset)
+                .clipped()
+            }
             
-            Text(title)
-                .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
-                .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                .lineLimit(1)
-            
-            Spacer()
-            
-            if count > 0 {
-                Text("\(count)")
-                    .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+            VStack(spacing: 0) {
+                if isReorderTarget {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(height: 2)
+                        .cornerRadius(1)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 2)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : color.opacity(0.8))
+                        .frame(width: 18 * preferences.fontSize.scale)
+                    
+                    if isEditingName {
+                        TextField("", text: $editingName, onCommit: {
+                            isEditingName = false
+                            if !editingName.trimmingCharacters(in: .whitespaces).isEmpty, editingName != rawTitle {
+                                onRename?(editingName)
+                            }
+                        })
+                        .textFieldStyle(.plain)
+                        .focused($isFocused)
+                        .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                        .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                        .tint(.white)
+                        .colorScheme(isSelected ? .dark : .light)
+                        .onAppear {
+                            isFocused = true
+                        }
+                    } else {
+                        Text(title)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: isSelected ? .bold : .medium))
+                            .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                            .lineLimit(1)
+                            .onTapGesture(count: 2) {
+                                if isEditable, let raw = rawTitle {
+                                    editingName = raw
+                                    isEditingName = true
+                                }
+                            }
+                            .onTapGesture(count: 1) {
+                                if !isEditingName {
+                                    HapticService.shared.playLight()
+                                    action()
+                                }
+                            }
+                    }
+                    
+                    Spacer()
+                    
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                            .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule()
+                                    .fill(isSelected ? .white.opacity(0.2) : Color.primary.opacity(0.05))
+                            )
+                    }
+                    
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(isSelected ? .white.opacity(0.7) : color.opacity(0.5))
+                            .rotationEffect(.degrees(45))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
+                    .shadow(color: preferences.isHaloEffectEnabled && isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
+                    .overlay(
+                        Group {
+                            if isDropTarget {
+                                Rectangle()
+                                    .fill(Color.blue)
+                                    .frame(width: 3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .clipShape(
+                                        .rect(
+                                            topLeadingRadius: 10,
+                                            bottomLeadingRadius: 10,
+                                            bottomTrailingRadius: 0,
+                                            topTrailingRadius: 0
+                                        )
+                                    )
+                            }
+                        }
                     )
+            )
+            .contentShape(Rectangle())
+            .offset(x: dragOffset)
+            .gesture(
+                DragGesture(minimumDistance: 15)
+                    .onChanged { value in
+                        guard onDeleteSwipe != nil else { return }
+                        if value.translation.width < 0 {
+                            dragOffset = max(-60, value.translation.width)
+                        } else if isSwiping && value.translation.width > 0 {
+                            dragOffset = min(0, -60 + value.translation.width)
+                        }
+                    }
+                    .onEnded { value in
+                        guard onDeleteSwipe != nil else { return }
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            if value.translation.width < -30 {
+                                dragOffset = -60
+                                isSwiping = true
+                            } else {
+                                dragOffset = 0
+                                isSwiping = false
+                            }
+                        }
+                    }
+            )
+            .onTapGesture(count: 2) {
+                if !isSwiping {
+                    onDoubleClickRow?()
+                }
+            }
+            .onTapGesture(count: 1) {
+                if isSwiping {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        dragOffset = 0
+                        isSwiping = false
+                    }
+                } else if !isEditingName {
+                    HapticService.shared.playLight()
+                    action()
+                }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? Color.blue : (isHovered ? Color.primary.opacity(0.05) : Color.clear))
-                .shadow(color: isSelected ? Color.blue.opacity(0.25) : .clear, radius: 4, y: 2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.blue, lineWidth: isDropTarget ? 2 : 0)
-                )
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            HapticService.shared.playLight()
-            action()
-        }
         .onHover { hovering in
-            isHovered = hovering
+            if !isSwiping {
+                isHovered = hovering
+            }
         }
     }
-}
-
-#Preview {
-    HStack(spacing: 0) {
-        CategorySidebar()
-            .environmentObject(PromptService())
-        
-        Rectangle()
-            .fill(Color.gray.opacity(0.1))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    .frame(width: 600, height: 400)
 }

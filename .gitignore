@@ -1,0 +1,39 @@
+# Logs
+build.log
+build_error.log
+build_error_2.log
+build_final.log
+build_test.log
+xcodebuild_playground.log
+xcodebuild_playground_final.log
+xcodebuild_playground_final_v2.log
+xcodebuild_playground_polish.log
+xcodebuild_ui_fix.log
+xcodebuild_ultra_magic.log
+xcodebuild_var_fix.log
+*.log
+
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+
+# OS X
+.DS_Store
+
+# JetBrains
+.idea/

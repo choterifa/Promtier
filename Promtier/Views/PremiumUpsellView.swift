@@ -22,7 +22,7 @@ struct PremiumUpsellView: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple.opacity(0.2), .blue.opacity(0.2)]),
+                                gradient: Gradient(colors: [.blue.opacity(0.15), .blue.opacity(0.05)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -33,7 +33,7 @@ struct PremiumUpsellView: View {
                         .font(.system(size: 40))
                         .foregroundStyle(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple, .blue]),
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.7)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -43,7 +43,7 @@ struct PremiumUpsellView: View {
                 Text(featureName)
                     .font(.system(size: 20, weight: .bold))
                 
-                Text("Esta función es exclusiva de Promtier Premium.")
+                Text("premium_exclusive_message".localized(for: preferences.language))
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -51,32 +51,53 @@ struct PremiumUpsellView: View {
             .padding(.top, 24)
             
             // Lista de beneficios
-            VStack(alignment: .leading, spacing: 16) {
-                PremiumFeatureRow(
-                    icon: "slider.horizontal.3",
-                    title: "Variables Avanzadas",
-                    description: "Menús desplegables y selectores de fecha nativos en lugar de solo texto."
-                )
-                
-                PremiumFeatureRow(
-                    icon: "keyboard.badge.waveform",
-                    title: "Snippets Reutilizables",
-                    description: "Autocompleta fragmentos de texto enteros con solo escribir '/'"
-                )
-                
-                PremiumFeatureRow(
-                    icon: "clock.arrow.circlepath",
-                    title: "Historial de Versiones",
-                    description: "Viaja en el tiempo y recupera iteraciones pasadas de tus prompts."
-                )
-                
-                PremiumFeatureRow(
-                    icon: "sparkles",
-                    title: "Magia Visual (VFX)",
-                    description: "Efectos de confeti y partículas al copiar para que el trabajo se sienta vivo."
-                )
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    PremiumFeatureRow(
+                        icon: "slider.horizontal.3",
+                        title: "advanced_variables".localized(for: preferences.language),
+                        description: "advanced_variables_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "/",
+                        title: "reusable_snippets".localized(for: preferences.language),
+                        description: "reusable_snippets_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "keyboard",
+                        title: "global_shortcut_copy".localized(for: preferences.language),
+                        description: "Atajos de teclado personalizados para cada prompt individual."
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "clock.arrow.circlepath",
+                        title: "version_history".localized(for: preferences.language),
+                        description: "version_history_desc".localized(for: preferences.language)
+                    )
+                    
+                    PremiumFeatureRow(
+                        icon: "sparkles",
+                        title: "visual_vfx".localized(for: preferences.language),
+                        description: "visual_vfx_desc".localized(for: preferences.language)
+                    )
+                    
+                    // Más por venir
+                    HStack(spacing: 12) {
+                        Image(systemName: "ellipsis.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.blue.opacity(0.5))
+                        
+                        Text("¡Y mucho más por venir!")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+                    .padding(.leading, 4)
+                }
+                .padding(24)
             }
-            .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.primary.opacity(0.03))
@@ -86,23 +107,20 @@ struct PremiumUpsellView: View {
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
             
-            Spacer()
-            
             // Botones
             VStack(spacing: 12) {
                 Button(action: {
                     // Acción para "comprar" - Por ahora abre ajustes para activar
-                    // En el futuro: Navegaría a Checkout
                     onCancel?() ?? dismiss()
                 }) {
-                    Text("Desbloquear Premium")
+                    Text("unlock_premium".localized(for: preferences.language))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(
                             LinearGradient(
-                                gradient: Gradient(colors: [.purple, .blue]),
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]),
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -111,7 +129,7 @@ struct PremiumUpsellView: View {
                 }
                 .buttonStyle(.plain)
                 
-                Button("Quizás más Tarde") {
+                Button("maybe_later".localized(for: preferences.language)) {
                     onCancel?() ?? dismiss()
                 }
                 .font(.system(size: 13))
@@ -121,8 +139,10 @@ struct PremiumUpsellView: View {
             .padding(.bottom, 24)
         }
         .padding(.horizontal, 32)
-        .frame(width: 450, height: 600)
+        .frame(width: 450)
+        .frame(minHeight: 400, maxHeight: 750)
         .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(24)
     }
 }
 
@@ -133,16 +153,35 @@ struct PremiumFeatureRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [.purple, .blue]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            if icon == "/" {
+                // Icono especial para Snippets estilo botón
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [.blue, .blue.opacity(0.8)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    Text("/")
+                        .font(.system(size: 14, weight: .black, design: .monospaced))
+                        .foregroundColor(.white)
+                }
                 .frame(width: 24, height: 24)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.blue, .blue.opacity(0.7)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 24, height: 24)
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -151,6 +190,7 @@ struct PremiumFeatureRow: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(nil)
             }
         }
     }

@@ -2,20 +2,37 @@
 //  PromptService.swift
 //  Promtier
 //
-//  SERVICIO PRINCIPAL: CRUD, búsqueda y gestión de prompts
+//  ORQUESTADOR DE ESTADO: Gestiona el estado publicado de la UI y delega
+//  todas las operaciones de persistencia a PromptRepository.
+//
 //  Created by Carlos on 15/03/26.
 //
 
 import Foundation
-import CoreData
+@preconcurrency import CoreData
 import Combine
+import SwiftUI
 
-// SERVICIO PRINCIPAL: Gestión completa de prompts
 class PromptService: ObservableObject {
-    private let dataController = DataController.shared
-    private let clipboardService = ClipboardService.shared
-    
-    // CONFIGURABLE: Publicación de cambios para UI reactiva
+    static let shared = PromptService()
+
+    // MARK: - Nested Types
+
+    enum ShowcaseImageLoadPolicy {
+        static let runtimeMaxImages = 3
+        static let runtimeMaxTotalBytes = 24 * 1024 * 1024
+    }
+
+    enum FolderSortMode: String, Codable, CaseIterable {
+        case name, newest
+    }
+
+    enum PromptSortMode: String, Codable, CaseIterable {
+        case name, newest, mostUsed
+    }
+
+    // MARK: - Published State
+
     @Published var prompts: [Prompt] = []
     @Published var filteredPrompts: [Prompt] = []
     @Published var trashedPrompts: [Prompt] = []
@@ -23,746 +40,464 @@ class PromptService: ObservableObject {
     @Published var searchQuery: String = ""
     @Published var selectedCategory: String? = nil
     @Published var isLoading: Bool = false
-    
+    @Published var activeAppBundleID: String? = nil
+
+    @Published var folderSortMode: FolderSortMode = .newest {
+        didSet {
+            UserDefaults.standard.set(folderSortMode.rawValue, forKey: "folderSortMode_preference")
+            loadFolders()
+        }
+    }
+
+    @Published var promptSortMode: PromptSortMode = .newest {
+        didSet {
+            UserDefaults.standard.set(promptSortMode.rawValue, forKey: "promptSortMode_preference")
+            filterPrompts(query: searchQuery)
+        }
+    }
+
+    // MARK: - Private Dependencies
+
+    let searchEngine = PromptSearchEngine()
+    private let dataController = DataController.shared
+    private let clipboardService = ClipboardService.shared
+
     private var cancellables = Set<AnyCancellable>()
-    
+    private var promptLookup: [UUID: Prompt] = [:]
+
+    private lazy var exportService: PromptExportService = {
+        PromptExportService(dataController: dataController, promptService: self)
+    }()
+
+    // MARK: - Initializer
+
     init() {
-        // Observar cambios en búsqueda para filtrar automáticamente
-        $searchQuery
-            .debounce(for: .milliseconds(150), scheduler: RunLoop.main) // CONFIGURABLE: Debounce de búsqueda
-            .sink { [weak self] query in
-                // VALIDACIÓN: Limitar a 40 caracteres
-                if query.count > 40 {
-                    self?.searchQuery = String(query.prefix(40))
-                }
-                self?.filterPrompts(query: self?.searchQuery ?? "")
+        restorePreferences()
+        bindReactiveFiltering()
+
+        let repo = PromptRepository.shared
+        repo.onDataChanged = { [weak self] in
+            DispatchQueue.main.async {
+                self?.loadFolders()
+                self?.loadPrompts()
             }
-            .store(in: &cancellables)
-            
-        // Observar cambios en categoría para filtrar automáticamente
-        $selectedCategory
-            .sink { [weak self] category in
-                self?.filterPrompts(query: self?.searchQuery ?? "", categoryOverride: category)
-            }
-            .store(in: &cancellables)
-        
-        seedDefaultFolders() // Crear categorías de sistema si no existen
-        seedDefaultPrompts() // Crear prompts de ejemplo iniciales
-        purgeExpiredTrash()  // Limpiar papelera de entradas > 7 días
+        }
+
+        seedDefaultFolders()
+        repo.removeDuplicatePrompts()
+        seedDefaultPrompts()
+        repo.purgeExpiredTrash()
         loadFolders()
         loadPrompts()
+        repo.migrateShowcaseImageCountIfNeeded()
+        repo.migrateShowcaseBlobsToDiskIfNeeded()
+        repo.repairMissingShowcaseReferencesIfNeeded()
     }
-    
-    /// Crea las carpetas por defecto si no han sido sembradas aún en esta versión
+
+    // MARK: - Setup Helpers
+
+    private func restorePreferences() {
+        if let raw = UserDefaults.standard.string(forKey: "folderSortMode_preference"),
+           let mode = FolderSortMode(rawValue: raw) { folderSortMode = mode }
+        if let raw = UserDefaults.standard.string(forKey: "promptSortMode_preference"),
+           let mode = PromptSortMode(rawValue: raw) { promptSortMode = mode }
+    }
+
+    private func bindReactiveFiltering() {
+        $searchQuery
+            .debounce(for: .milliseconds(150), scheduler: RunLoop.main)
+            .sink { [weak self] query in self?.filterPrompts(query: query) }
+            .store(in: &cancellables)
+
+        $selectedCategory
+            .sink { [weak self] cat in
+                self?.filterPrompts(query: self?.searchQuery ?? "", categoryOverride: cat)
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Seeding (Startup, done once per version)
+
     private func seedDefaultFolders() {
         let context = dataController.viewContext
-        
-        // Usamos un flag de versión para asegurar que se siembren al menos una vez al actualizar
-        let seedKey = "hasSeededDefaultsV21"
-        if UserDefaults.standard.bool(forKey: seedKey) { return }
-        
+        let seedKey = "hasSeededDefaultsV28"
+        guard !UserDefaults.standard.bool(forKey: seedKey) else { return }
+
         let request = FolderEntity.fetchAll(in: context)
-        
-        do {
-            let entities = try context.fetch(request)
-            let existingNames = entities.map { $0.name }
-            
-            print("🌱 Sembrando categorías base como guía...")
-            var seededCount = 0
-            
-            for cat in PredefinedCategory.allCases {
-                // Solo añadir si no existe ya una con ese nombre exacto
-                if !existingNames.contains(cat.displayName) {
-                    let folder = Folder(
-                        id: UUID(),
-                        name: cat.displayName,
-                        color: cat.hexColor,
-                        icon: cat.icon,
-                        createdAt: Date(),
-                        parentId: nil
-                    )
-                    _ = FolderEntity.create(from: folder, in: context)
-                    seededCount += 1
-                }
-            }
-            
-            if seededCount > 0 {
-                dataController.save()
-                print("✅ \(seededCount) categorías base añadidas.")
-            }
-            
-            UserDefaults.standard.set(true, forKey: seedKey)
-            
-        } catch {
-            print("Error sembrando categorías: \(error)")
+        guard let entities = try? context.fetch(request) else { return }
+        let existingNames = entities.map { $0.name }
+
+        var seeded = 0
+        for cat in PredefinedCategory.allCases where !existingNames.contains(cat.displayName) {
+            let folder = Folder(id: UUID(), name: cat.displayName, color: cat.hexColor,
+                                icon: cat.icon, createdAt: Date(), parentId: nil)
+            _ = FolderEntity.create(from: folder, in: context)
+            seeded += 1
         }
+
+        if seeded > 0 {
+            dataController.save()
+            print("✅ \(seeded) categorías base añadidas.")
+        }
+        UserDefaults.standard.set(true, forKey: seedKey)
     }
-    
-    /// Crea prompts de ejemplo para guiar al usuario
+
     private func seedDefaultPrompts() {
         let context = dataController.viewContext
-        let seedKey = "hasSeededInitialPromptsV22" // BUMP VERSION
-        if UserDefaults.standard.bool(forKey: seedKey) { return }
-        
-        print("🌱 Sembrando prompts de ejemplo (V22)...")
-        
-        // 1. Prompt Normal (Email) con Snippet de firma
-        let emailPrompt = Prompt(
-            title: "Resumen de Proyecto",
-            content: "Hola,\n\nTe adjunto el resumen de los avances de esta semana. Hemos superado los objetivos principales y estamos dentro del cronograma.\n\n/firma",
-            folder: "Trabajo",
-            icon: "briefcase.fill"
-        )
-        _ = PromptEntity.create(from: emailPrompt, in: context)
-        
-        // 2. Prompt con Variables (Programación)
-        let codingPrompt = Prompt(
-            title: "Revisión de Código (Ejemplo Variable)",
-            content: "Actúa como un programador senior. Revisa este código escrito en {{lenguaje}} y optimízalo para mejorar la {{objetivo: rendimiento o legibilidad}}:\n\n```\n{{codigo}}\n```",
-            folder: "Código",
-            icon: "terminal.fill"
-        )
-        _ = PromptEntity.create(from: codingPrompt, in: context)
-        
-        // 3. Prompt de Diseño (Creativo) con IMAGEN
-        let imagePath = "/Users/valencia/.gemini/antigravity/brain/834ebcad-97e6-4d5e-a810-2da61e58cece/cyberpunk_example_result_1773778750439.png"
-        var showcaseImages: [Data] = []
-        if let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) {
-            showcaseImages.append(data)
+        let seedKey = "hasSeededInitialPromptsV28"
+        guard !UserDefaults.standard.bool(forKey: seedKey) else { return }
+
+        let language = PreferencesManager.shared.language
+
+        func promptExists(id: UUID) -> Bool {
+            let req: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+            req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+            req.fetchLimit = 1
+            return (try? context.count(for: req)) ?? 0 > 0
         }
-        
-        let creativePrompt = Prompt(
-            title: "Showcase: Paisaje Cyberpunk",
-            content: "A stunning cyberpunk cityscape at night, neon purple and blue lights, high detail, 8k resolution, cinematic lighting.",
-            folder: "Creativo",
-            icon: "sparkles",
-            showcaseImages: showcaseImages
-        )
-        _ = PromptEntity.create(from: creativePrompt, in: context)
-        
+
+        let seeds: [(id: String, titleKey: String, contentKey: String,
+                      category: PredefinedCategory, extras: (Prompt) -> Prompt)] = [
+            ("88888888-8888-4444-AAAA-000000000001", "default_prompt_chatgpt_title",
+             "default_prompt_chatgpt_content", .chatGPT, { p in
+                 var p = p; p.targetAppBundleIDs = ["com.apple.Safari"]; return p }),
+            ("88888888-8888-4444-AAAA-000000000002", "default_prompt_claude_title",
+             "default_prompt_claude_content", .claude, { p in
+                 var p = p; p.customShortcut = "review"; return p }),
+            ("88888888-8888-4444-AAAA-000000000003", "default_prompt_cursor_title",
+             "default_prompt_cursor_content", .cursor, { p in
+                 var p = p; p.negativePrompt = "default_negative_cursor".localized(for: language); return p }),
+            ("88888888-8888-4444-AAAA-000000000004", "default_prompt_midjourney_title",
+             "default_prompt_midjourney_content", .midjourney, { p in
+                 var p = p
+                 p.versionHistory = [
+                     PromptSnapshot(id: UUID(), title: p.title,
+                                    content: "Initial cinematic prompt",
+                                    timestamp: Date().addingTimeInterval(-86400)),
+                     PromptSnapshot(id: UUID(), title: p.title,
+                                    content: "Added --v 6.0 and lighting details",
+                                    timestamp: Date().addingTimeInterval(-3600))
+                 ]
+                 return p }),
+            ("88888888-8888-4444-AAAA-000000000005", "default_prompt_images_title",
+             "default_prompt_images_content", .imagesPrompts, { p in
+                 var p = p; p.negativePrompt = "default_negative_otaku".localized(for: language); return p })
+        ]
+
+        for seed in seeds {
+            guard let uuid = UUID(uuidString: seed.id), !promptExists(id: uuid) else { continue }
+            var prompt = Prompt(title: seed.titleKey.localized(for: language),
+                                content: seed.contentKey.localized(for: language),
+                                folder: seed.category.displayName, icon: seed.category.icon)
+            prompt.id = uuid
+            prompt = seed.extras(prompt)
+            _ = PromptEntity.create(from: prompt, in: context)
+        }
+
         dataController.save()
         UserDefaults.standard.set(true, forKey: seedKey)
-        self.loadPrompts() // Recargar para que aparezcan inmediatamente
-        print("✅ Prompts de ejemplo actualizados.")
+        loadPrompts()
     }
-    
-    // MARK: - Operaciones CRUD
-    
-    /// Carga todos los prompts desde Core Data (excluye los de la papelera)
+
+    // MARK: - Loading
+
     func loadPrompts() {
         DispatchQueue.main.async { self.isLoading = true }
-        
-        let request = PromptEntity.fetchAll(in: dataController.viewContext)
-        
-        do {
-            let entities = try dataController.viewContext.fetch(request)
-            let allPrompts = entities.map { $0.toPrompt() }
-            
+        let trashDict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            let result = PromptRepository.shared.fetchPromptSummaries(trashDict: trashDict)
+
             DispatchQueue.main.async {
-                // Separar prompts activos de los eliminados
-                self.prompts = allPrompts.filter { !$0.isInTrash }
-                self.trashedPrompts = allPrompts.filter { $0.isInTrash }.sorted {
-                    ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast)
+                switch result {
+                case .failure(let error):
+                    print("Error cargando prompts: \(error)")
+                    self.isLoading = false
+                case .success(let all):
+                    self.prompts = all.filter { !$0.isInTrash }
+                    self.trashedPrompts = all.filter { $0.isInTrash }
+                        .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+                    self.rebuildLookup(with: self.prompts)
+                    self.filterPrompts(query: self.searchQuery)
+                    ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+                    self.isLoading = false
                 }
-                self.filterPrompts(query: self.searchQuery)
-                self.isLoading = false
             }
-        } catch {
-            print("Error cargando prompts: \(error)")
-            DispatchQueue.main.async { self.isLoading = false }
         }
     }
-    
-    /// Carga todas las carpetas desde Core Data aplicando el orden guardado
+
     func loadFolders() {
-        let request = FolderEntity.fetchAll(in: dataController.viewContext)
-        
-        do {
-            let entities = try dataController.viewContext.fetch(request)
-            var loadedFolders = entities.map { $0.toFolder() }
-            
-            // Aplicar orden personalizado guardado en UserDefaults
-            if let savedOrder = UserDefaults.standard.stringArray(forKey: "folderSortOrder") {
-                loadedFolders.sort { folder1, folder2 in
-                    let index1 = savedOrder.firstIndex(of: folder1.id.uuidString) ?? Int.max
-                    let index2 = savedOrder.firstIndex(of: folder2.id.uuidString) ?? Int.max
-                    
-                    if index1 != index2 {
-                        return index1 < index2
-                    }
-                    return folder1.name < folder2.name // Backup order
-                }
-            }
-            
-            DispatchQueue.main.async {
-                self.folders = loadedFolders
-            }
-        } catch {
-            print("Error cargando carpetas: \(error)")
-        }
-    }
-    
-    /// Persiste un nuevo orden de carpetas
-    func reorderFolders(_ folders: [Folder]) {
-        let order = folders.map { $0.id.uuidString }
-        UserDefaults.standard.set(order, forKey: "folderSortOrder")
-        
+        let sorted = PromptRepository.shared.fetchFolders(sortMode: folderSortMode)
         DispatchQueue.main.async {
-            self.folders = folders
-        }
-    }
-    
-    /// Crea un nuevo prompt
-    func createPrompt(_ prompt: Prompt) -> Bool {
-        let context = dataController.viewContext
-        
-        _ = PromptEntity.create(from: prompt, in: context)
-        dataController.save()
-        
-        loadPrompts()
-        return true
-    }
-    
-    /// Actualiza un prompt existente
-    func updatePrompt(_ prompt: Prompt) -> Bool {
-        let context = dataController.viewContext
-        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", prompt.id as CVarArg)
-        
-        do {
-            let entities = try context.fetch(request)
-            if let entity = entities.first {
-                entity.updateFromPrompt(prompt)
-                dataController.save()
-                loadPrompts()
-                return true
-            }
-        } catch {
-            print("Error actualizando prompt: \(error)")
-        }
-        
-        return false
-    }
-    
-    // MARK: - Papelera (Soft Delete)
-    
-    /// Mueve prompt a la papelera (soft delete)
-    func deletePrompt(_ prompt: Prompt) -> Bool {
-        var trashed = prompt
-        trashed.deletedAt = Date()
-        return updatePrompt(trashed)
-    }
-    
-    /// Restaura un prompt desde la papelera
-    func restorePrompt(_ prompt: Prompt) -> Bool {
-        var restored = prompt
-        restored.deletedAt = nil
-        return updatePrompt(restored)
-    }
-    
-    /// Elimina un prompt permanentemente de CoreData
-    func permanentlyDeletePrompt(_ prompt: Prompt) -> Bool {
-        let context = dataController.viewContext
-        let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", prompt.id as CVarArg)
-        
-        do {
-            let entities = try context.fetch(request)
-            if let entity = entities.first {
-                // Limpiar también el UserDefaults del trash
-                var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
-                dict.removeValue(forKey: prompt.id.uuidString)
-                UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
-                
-                context.delete(entity)
-                dataController.save()
-                loadPrompts()
-                return true
-            }
-        } catch {
-            print("Error eliminando prompt permanentemente: \(error)")
-        }
-        return false
-    }
-    
-    /// Elimina todos los prompts de la papelera de forma permanente
-    func emptyTrash() {
-        for prompt in trashedPrompts {
-            _ = permanentlyDeletePrompt(prompt)
-        }
-    }
-    
-    /// Elimina automáticamente los prompts con más de 7 días de eliminación
-    private func purgeExpiredTrash() {
-        let context = dataController.viewContext
-        let request = PromptEntity.fetchAll(in: context)
-        
-        guard let entities = try? context.fetch(request) else { return }
-        let cutoff = Date().addingTimeInterval(-7 * 86400)
-        
-        var purgedCount = 0
-        for entity in entities {
-            if let deletedAt = entity.deletedAt, deletedAt < cutoff {
-                // Limpiar UserDefaults
-                var dict = UserDefaults.standard.dictionary(forKey: PromptEntity.trashKey) as? [String: Date] ?? [:]
-                dict.removeValue(forKey: entity.id.uuidString)
-                UserDefaults.standard.set(dict, forKey: PromptEntity.trashKey)
-                context.delete(entity)
-                purgedCount += 1
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                self.folders = sorted
             }
         }
-        if purgedCount > 0 {
-            dataController.save()
-            print("🗑️ Purgados \(purgedCount) prompts expirados de la papelera.")
-        }
     }
-    
-    // MARK: - Operaciones de Carpetas
-    
-    /// Crea una nueva carpeta
-    func createFolder(_ folder: Folder) -> Bool {
-        let context = dataController.viewContext
-        _ = FolderEntity.create(from: folder, in: context)
-        dataController.save()
-        loadFolders()
-        return true
+
+    // MARK: - In-Memory Lookup
+
+    private func rebuildLookup(with prompts: [Prompt]) {
+        var lookup: [UUID: Prompt] = [:]
+        lookup.reserveCapacity(prompts.count)
+        for p in prompts { lookup[p.id] = p }
+        promptLookup = lookup
+        searchEngine.rebuildPromptIndices(with: prompts)
     }
-    
-    /// Actualiza una carpeta existente
-    func updateFolder(_ folder: Folder, oldName: String? = nil) -> Bool {
-        let context = dataController.viewContext
-        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", folder.id as CVarArg)
-        
-        do {
-            let entities = try context.fetch(request)
-            if let entity = entities.first {
-                entity.updateFromFolder(folder)
-                
-                // Si el nombre cambió, actualizar todos los prompts asociados
-                if let oldName = oldName, oldName != folder.name {
-                    let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                    promptRequest.predicate = NSPredicate(format: "folder == %@", oldName)
-                    
-                    let promptEntities = try context.fetch(promptRequest)
-                    for promptEntity in promptEntities {
-                        promptEntity.folder = folder.name
-                    }
-                }
-                
-                dataController.save()
-                loadFolders()
-                loadPrompts()
-                return true
-            }
-        } catch {
-            print("Error actualizando carpeta: \(error)")
-        }
-        
-        return false
-    }
-    
-    /// Elimina una carpeta
-    func deleteFolder(_ folder: Folder) -> Bool {
-        let context = dataController.viewContext
-        let request: NSFetchRequest<FolderEntity> = FolderEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", folder.id as CVarArg)
-        
-        do {
-            let entities = try context.fetch(request)
-            if let entity = entities.first {
-                // Desasociar prompts antes de borrar la carpeta
-                let promptRequest: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-                promptRequest.predicate = NSPredicate(format: "folder == %@", folder.name)
-                
-                let promptEntities = try context.fetch(promptRequest)
-                for promptEntity in promptEntities {
-                    promptEntity.folder = nil
-                }
-                
-                context.delete(entity)
-                dataController.save()
-                loadFolders()
-                loadPrompts()
-                return true
-            }
-        } catch {
-            print("Error eliminando carpeta: \(error)")
-        }
-        
-        return false
-    }
-    
-    // MARK: - Búsqueda y Filtrado
-    
-    /// Filtra prompts basado en consulta de búsqueda y categoría seleccionada
+
+    func promptSnapshot(byId id: UUID) -> Prompt? { promptLookup[id] }
+
+    // MARK: - Filtering
+
     private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
-        var filtered = prompts
-        
-        // Determinar qué categoría usar (la del override o la actual)
-        let category: String?
-        if let override = categoryOverride, override == "USE_CURRENT" {
-            category = selectedCategory
-        } else {
-            category = categoryOverride
-        }
-        
-        // Filtrar por categoría si hay una seleccionada
-        if let category = category {
-            switch category {
-            case "Recientes":
-                // Mostrar usados en las últimas 48 horas o los últimos 10
-                let fortyEightHoursAgo = Date().addingTimeInterval(-48 * 3600)
-                filtered = filtered.filter { prompt in
-                    if let lastUsed = prompt.lastUsedAt {
-                        return lastUsed > fortyEightHoursAgo
-                    }
-                    return false
-                }
-                // Si hay pocos, rellenar con los más usados históricamente
-                if filtered.count < 5 {
-                    let mostUsed = prompts.sorted { $0.useCount > $1.useCount }.prefix(10)
-                    for p in mostUsed {
-                        if !filtered.contains(where: { $0.id == p.id }) {
-                            filtered.append(p)
-                        }
-                    }
-                }
-                filtered.sort { ($0.lastUsedAt ?? Date.distantPast) > ($1.lastUsedAt ?? Date.distantPast) }
-                
-            case "Favoritos":
-                filtered = filtered.filter { $0.isFavorite }
-                filtered.sort { $0.useCount > $1.useCount }
-                
-            case "Sin categoría":
-                filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
-            default:
-                filtered = filtered.filter { $0.folder == category }
-            }
-        }
-        
-        // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO (Fuzzy + Phrasal + Weighted)
-        if !query.isEmpty {
-            let originalQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !originalQuery.isEmpty else { 
-                filteredPrompts = filtered
-                return 
-            }
-            
-            // 1. EXTRAER FRASES EXACTAS (entre comillas)
-            var phrasalQueries: [String] = []
-            var remainingQuery = originalQuery
-            
-            let regex = try? NSRegularExpression(pattern: "\"([^\"]+)\"", options: [])
-            if let matches = regex?.matches(in: originalQuery, options: [], range: NSRange(originalQuery.startIndex..., in: originalQuery)) {
-                for match in matches.reversed() { // Reversa para no corromper índices al remover
-                    if let range = Range(match.range(at: 1), in: originalQuery) {
-                        phrasalQueries.append(originalQuery[range].lowercased())
-                    }
-                    if let fullRange = Range(match.range(at: 0), in: originalQuery) {
-                        remainingQuery.removeSubrange(fullRange)
-                    }
-                }
-            }
-            
-            // 2. NORMALIZACIÓN Y KEYWORDS RESTANTES
-            let normalizedRemaining = remainingQuery.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-            let keywords = normalizedRemaining.components(separatedBy: .whitespaces)
-                .filter { $0.count >= 2 } // Ignorar conectores de 1 letra
-            
-            // 3. SCORING AVANZADO
-            let scoredPrompts = filtered.map { prompt -> (Prompt, Int) in
-                var score = 0
-                let title = prompt.title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                let content = prompt.content.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                let folder = (prompt.folder ?? "").folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
-                
-                // --- A. VALIDACIÓN DE FRASES COINCIDENTES ("Exact Match") ---
-                for phrase in phrasalQueries {
-                    if title.contains(phrase) { score += 500 }
-                    else if content.contains(phrase) { score += 200 }
-                    else { return (prompt, 0) } // Si pidió frase exacta y no está, descartar
-                }
-                
-                // --- B. VALIDACIÓN DE KEYWORDS (Lógica AND Flexible + FUZZY) ---
-                for kw in keywords {
-                    var kwFound = false
-                    
-                    // B1. COINCIDENCIA POR PREFIJO (Muy relevante: Escribes "mar" y sale "Marketing")
-                    if title.hasPrefix(kw) { score += 150; kwFound = true }
-                    else if title.contains(" " + kw) { score += 100; kwFound = true } // Inicio de cualquier palabra en título
-                    
-                    // B2. FUZZY MATCHING (Tolerancia a 1 error en palabras > 4 letras)
-                    if !kwFound && kw.count > 4 {
-                        // Comprobamos si hay una coincidencia aproximada (simple fuzzy)
-                        // Si la palabra está casi bien escrita en el título
-                        let titleWords = title.components(separatedBy: .whitespaces)
-                        for word in titleWords where word.count > 3 {
-                            if word.commonPrefix(with: kw).count >= kw.count - 1 {
-                                score += 60 // Casi coincide
-                                kwFound = true
-                                break
-                            }
-                        }
-                    }
-                    
-                    // B3. BÚSQUEDA EN CONTENIDO
-                    if !kwFound && content.contains(kw) { 
-                        score += 30
-                        kwFound = true
-                    }
-                    
-                    // B4. BÚSQUEDA EN CATEGORÍA
-                    if !kwFound && folder.contains(kw) {
-                        score += 20
-                        kwFound = true
-                    }
-                    
-                    // Si el usuario escribió una palabra y no está NI PARECIDA, penalizamos o descartamos
-                    if !kwFound { score -= 20 }
-                }
-                
-                // --- C. BONUS POR RECIENCIA Y USO ---
-                if score > 0 {
-                    score += Int(prompt.useCount) / 2
-                    if prompt.isFavorite { score += 40 }
-                }
-                
-                return (prompt, score)
-            }
-            
-            filtered = scoredPrompts
-                .filter { $0.1 > 0 }
-                .sorted { $0.1 > $1.1 }
-                .map { $0.0 }
-        }
-        
-        // CONFIGURABLE: Límite de resultados mostrados comentado para que se muestren todos en la categoría
-        // if filtered.count > 50 {
-        //    filtered = Array(filtered.prefix(50))
-        // }
-        
-        filteredPrompts = filtered
-    }
-    
-    /// Obtiene prompts favoritos
-    func getFavoritePrompts() -> [Prompt] {
-        return prompts.filter { $0.isFavorite }
-            .sorted { $0.useCount > $1.useCount }
-    }
-    
-    /// Busca prompts por carpeta
-    func getPromptsInFolder(_ folder: String) -> [Prompt] {
-        return prompts.filter { $0.folder == folder }
-            .sorted { $0.modifiedAt > $1.modifiedAt }
-    }
-    
-    /// Obtiene todos los prompts
-    func getAllPrompts() -> [Prompt] {
-        return prompts
-    }
-    
-    /// Exporta todos los prompts a texto plano
-    func exportAllPrompts() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
-        let timestamp = dateFormatter.string(from: Date())
-        
-        var exportText = "=== PROMPTS EXPORTADOS ===\n"
-        exportText += "Fecha: \(timestamp)\n\n"
-        
-        for prompt in prompts {
-            exportText += "Título: \(prompt.title)\n"
-            exportText += "Contenido:\n\(prompt.content)\n"
-            exportText += "---\n\n"
-        }
-        
-        return exportText
-    }
-    
-    /// Exporta toda la base de datos (Prompts + Carpetas) en formato JSON
-    func exportAllPromptsAsJSON() -> Data? {
-        do {
-            let package = BackupPackage(
-                version: "2.1",
-                prompts: prompts,
-                folders: folders
-            )
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            encoder.dateEncodingStrategy = .iso8601
-            return try encoder.encode(package)
-        } catch {
-            print("❌ Error codificando backup a JSON: \(error)")
-            return nil
+        searchEngine.filterPrompts(
+            prompts: prompts,
+            query: query,
+            categoryOverride: categoryOverride,
+            selectedCategory: selectedCategory,
+            activeAppBundleID: activeAppBundleID,
+            promptSortMode: promptSortMode
+        ) { [weak self] filtered in
+            self?.filteredPrompts = filtered
         }
     }
-    
-    /// Exporta todos los prompts en formato CSV (RFC 4180)
-    /// Columnas: id, title, content, folder, icon, isFavorite, useCount, createdAt, modifiedAt
-    func exportAllPromptsAsCSV() -> Data? {
-        let iso = ISO8601DateFormatter()
-        
-        // Función helper: envuelve el valor en comillas y escapa las comillas internas
-        func csv(_ value: String) -> String {
-            let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
-            return "\"\(escaped)\""
-        }
-        
-        var rows: [String] = []
-        // Cabecera
-        rows.append("id,title,content,folder,icon,isFavorite,useCount,createdAt,modifiedAt")
-        
-        for p in prompts {
-            let row = [
-                csv(p.id.uuidString),
-                csv(p.title),
-                csv(p.content),
-                csv(p.folder ?? ""),
-                csv(p.icon ?? ""),
-                p.isFavorite ? "true" : "false",
-                "\(p.useCount)",
-                csv(iso.string(from: p.createdAt)),
-                csv(iso.string(from: p.modifiedAt))
-            ].joined(separator: ",")
-            rows.append(row)
-        }
-        
-        let csvString = rows.joined(separator: "\n")
-        return csvString.data(using: .utf8)
+
+    // MARK: - Image Loading (delegates to Repository)
+
+    func loadShowcaseImages(from paths: [String],
+                            maxImages: Int = ShowcaseImageLoadPolicy.runtimeMaxImages,
+                            maxTotalBytes: Int? = nil) -> [Data] {
+        PromptRepository.shared.loadShowcaseImages(from: paths, maxImages: maxImages, maxTotalBytes: maxTotalBytes)
     }
-    
-    /// Importa datos desde un archivo JSON (Soporta formato antiguo y nuevo BackupPackage)
+
+    func applyShowcaseImages(_ images: [Data], to entity: PromptEntity,
+                             promptId: UUID, clearExisting: Bool) {
+        PromptRepository.shared.applyShowcaseImages(images, to: entity,
+                                                     promptId: promptId, clearExisting: clearExisting)
+    }
+
+    // MARK: - Prompt CRUD (delegates, then refreshes state)
+
+    func fetchPrompt(byId id: UUID, includeImages: Bool) async -> Prompt? {
+        await PromptRepository.shared.fetchPrompt(byId: id, includeImages: includeImages)
+    }
+
+    func fetchShowcaseImages(byId id: UUID) async -> [Data] {
+        await PromptRepository.shared.fetchShowcaseImages(byId: id)
+    }
+
+    func fetchShowcaseImagePaths(byId id: UUID) async -> [String] {
+        await PromptRepository.shared.fetchShowcaseImagePaths(byId: id)
+    }
+
+    func createPrompt(_ prompt: Prompt) -> Bool {
+        let ok = PromptRepository.shared.createPrompt(prompt)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func updatePrompt(_ prompt: Prompt) -> Bool {
+        let ok = PromptRepository.shared.updatePrompt(prompt)
+        if ok { applyUpdatedPromptToState(prompt) }
+        return ok
+    }
+
+    func updateShowcaseImages(promptId: UUID, images: [Data]) async -> Bool {
+        let ok = await PromptRepository.shared.updateShowcaseImages(promptId: promptId, images: images)
+        if ok { DispatchQueue.main.async { self.loadPrompts() } }
+        return ok
+    }
+
+    func deletePrompt(_ prompt: Prompt) -> Bool {
+        let ok = PromptRepository.shared.deletePrompt(withId: prompt.id)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func deletePrompts(withIds ids: [UUID]) -> Bool {
+        let ok = PromptRepository.shared.deletePrompts(withIds: ids)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func movePrompts(withIds ids: [UUID], toFolder folderName: String?) -> Bool {
+        let ok = PromptRepository.shared.movePrompts(withIds: ids, toFolder: folderName)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func markPromptsFavorite(withIds ids: [UUID]) -> Bool {
+        let ok = PromptRepository.shared.markPromptsFavorite(withIds: ids)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func restorePrompt(_ prompt: Prompt) -> Bool {
+        let ok = PromptRepository.shared.restorePrompt(withId: prompt.id)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func permanentlyDeletePrompt(_ prompt: Prompt) -> Bool {
+        let ok = PromptRepository.shared.permanentlyDeletePrompt(withId: prompt.id)
+        if ok { loadPrompts() }
+        return ok
+    }
+
+    func emptyTrash() {
+        let ids = trashedPrompts.map { $0.id }
+        _ = PromptRepository.shared.deletePrompts(withIds: ids)
+        // Hard-delete each permanently
+        for prompt in trashedPrompts {
+            _ = PromptRepository.shared.permanentlyDeletePrompt(withId: prompt.id)
+        }
+        loadPrompts()
+    }
+
+    // MARK: - Folder CRUD (delegates, then refreshes state)
+
+    func reorderFolders(_ folders: [Folder]) {
+        self.folders = folders
+        PromptRepository.shared.reorderFolders(folders)
+    }
+
+    func createFolder(_ folder: Folder) -> Bool {
+        let ok = PromptRepository.shared.createFolder(folder)
+        if ok { loadFolders() }
+        return ok
+    }
+
+    func updateFolder(_ folder: Folder, oldName: String? = nil) -> Bool {
+        let ok = PromptRepository.shared.updateFolder(folder, oldName: oldName)
+        if ok {
+            loadFolders()
+            if oldName != nil && oldName != folder.name { loadPrompts() }
+        }
+        return ok
+    }
+
+    func deleteFolder(_ folder: Folder) -> Bool {
+        let ok = PromptRepository.shared.deleteFolder(withId: folder.id, name: folder.name)
+        if ok { loadFolders(); loadPrompts() }
+        return ok
+    }
+
+    // MARK: - Export / Import (delegates to PromptExportService)
+
+    func exportAllPrompts() -> String            { exportService.exportAllPrompts() }
+    func exportAllPromptsAsJSON() -> Data?        { exportService.exportAllPromptsAsJSON() }
+    func exportAllPromptsAsCSV() -> Data?         { exportService.exportAllPromptsAsCSV() }
+    func exportBackupZip(to url: URL) -> Bool     { exportService.exportBackupZip(to: url) }
+    func importBackupZip(from url: URL) -> (success: Int, failed: Int, foldersCreated: Int) {
+        exportService.importBackupZip(from: url)
+    }
     func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        
-        var promptsToImport: [Prompt] = []
-        var foldersToImport: [Folder] = []
-        var foldersCreated = 0
-        
-        do {
-            // Intentar decodificar como BackupPackage (Nuevo Formato)
-            let package = try decoder.decode(BackupPackage.self, from: data)
-            promptsToImport = package.prompts
-            foldersToImport = package.folders
-            print("📦 Detectado formato BackupPackage v\(package.version)")
-        } catch {
-            // Intentar decodificar como [Prompt] (Formato Antiguo)
-            do {
-                promptsToImport = try decoder.decode([Prompt].self, from: data)
-                print("📄 Detectado formato de lista de prompts (Legacy)")
-            } catch {
-                print("❌ Error decodificando archivo de importación: \(error)")
-                return (0, 0, 0)
-            }
-        }
-        
-        // Detectar Carpetas
-        for folder in foldersToImport {
-            // Evitar duplicados por nombre o ID
-            if !folders.contains(where: { $0.id == folder.id || $0.name == folder.name }) {
-                if createFolder(folder) {
-                    foldersCreated += 1
-                }
-            }
-        }
-        
-        // 2. Importar Prompts
-        var successCount = 0
-        var failedCount = 0
-        
-        for prompt in promptsToImport {
-            // Evitar duplicados exactos por ID
-            if prompts.contains(where: { $0.id == prompt.id }) {
-                failedCount += 1
-                continue
-            }
-            
-            if createPrompt(prompt) {
-                successCount += 1
-            } else {
-                failedCount += 1
-            }
-        }
-        
+        exportService.importPromptsFromData(data)
+    }
+
+    // MARK: - Reset
+
+    func resetAllData() {
+        PromptRepository.shared.resetAllData(dataController: dataController)
+        seedDefaultFolders()
+        seedDefaultPrompts()
         loadFolders()
         loadPrompts()
-        return (successCount, failedCount, foldersCreated)
+        print("⚠️ Base de datos restablecida completamente")
     }
-    
-    /// Restablece toda la base de datos (BORRADO TOTAL)
-    func resetAllData() {
-        let context = dataController.viewContext
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = PromptEntity.fetchRequest()
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        
-        do {
-            try context.execute(deleteRequest)
-            dataController.save()
-            loadPrompts()
-            print("⚠️ Base de datos restablecida a cero")
-        } catch {
-            print("❌ Error al restablecer base de datos: \(error)")
-        }
-    }
-    
-    // MARK: - Operaciones de Uso
-    
-    /// Registra uso de prompt (contadores y fechas) sin copiar al clipboard
+
+    // MARK: - Usage Tracking
+
     func recordPromptUse(_ prompt: Prompt) {
-        var updatedPrompt = prompt
-        updatedPrompt.recordUse()
-        _ = updatePrompt(updatedPrompt)
-    }
-    
-    /// Registra uso de prompt y lo copia al clipboard (Versión estándar)
-    func usePrompt(_ prompt: Prompt) {
-        recordPromptUse(prompt)
-        clipboardService.copyToClipboard(prompt.content)
-    }
-    
-    /// Copia prompt con variables de plantilla (Legacy/Internal)
-    func usePromptWithVariables(_ prompt: Prompt, variables: [String: String]) {
-        var processedContent = prompt.content
-        for (key, value) in variables {
-            processedContent = processedContent.replacingOccurrences(of: "{{\(key)}}", with: value)
-        }
-        clipboardService.copyToClipboard(processedContent)
-        recordPromptUse(prompt)
-    }
-    
-    // MARK: - Estadísticas
-    
-    /// Obtiene prompts más usados
-    func getMostUsedPrompts(limit: Int = 10) -> [Prompt] {
-        return prompts.sorted { $0.useCount > $1.useCount }
-            .prefix(limit)
-            .map { $0 }
-    }
-    
-    /// Obtiene prompts recientemente modificados
-    func getRecentlyModifiedPrompts(limit: Int = 10) -> [Prompt] {
-        return prompts.sorted { $0.modifiedAt > $1.modifiedAt }
-            .prefix(limit)
-            .map { $0 }
-    }
-    
-    /// Obtiene estadísticas generales
-    func getStatistics() -> (total: Int, favorites: Int, totalUses: Int) {
-        let total = prompts.count
-        let favorites = prompts.filter { $0.isFavorite }.count
-        let totalUses = prompts.reduce(0) { $0 + $1.useCount }
+        var updated = prompt
+        updated.recordUse()
         
-        return (total, favorites, totalUses)
+        // 1. Actualizar el estado en memoria para reflejar cambios inmediatos en la UI
+        applyUpdatedPromptToState(updated)
+        
+        // 2. Ejecutar la persistencia en background para no bloquear el Main Thread (Fase 11)
+        PromptRepository.shared.recordPromptUseBackground(promptId: prompt.id)
     }
-}
 
-// MARK: - Estructuras de Soporte para Transferencia
+    func usePrompt(_ prompt: Prompt, contentOverride: String? = nil) {
+        recordPromptUse(prompt)
+        clipboardService.copyToClipboard(contentOverride ?? prompt.content)
+    }
 
-/// Paquete completo de copia de seguridad
-struct BackupPackage: Codable {
-    var version: String
-    var prompts: [Prompt]
-    var folders: [Folder]
+    func usePromptWithVariables(_ prompt: Prompt, variables: [String: String]) {
+        var content = prompt.content
+        for (key, value) in variables { content = content.replacingOccurrences(of: "{{\(key)}}", with: value) }
+        clipboardService.copyToClipboard(content)
+        recordPromptUse(prompt)
+    }
+
+    // MARK: - Convenience Queries
+
+    func getFavoritePrompts() -> [Prompt] {
+        prompts.filter { $0.isFavorite }.sorted { $0.useCount > $1.useCount }
+    }
+
+    func getPromptsInFolder(_ folder: String) -> [Prompt] {
+        prompts.filter { $0.folder == folder }.sorted { $0.modifiedAt > $1.modifiedAt }
+    }
+
+    func getAllPrompts() -> [Prompt] { prompts }
+
+    func getMostUsedPrompts(limit: Int = 10) -> [Prompt] {
+        Array(prompts.sorted { $0.useCount > $1.useCount }.prefix(limit))
+    }
+
+    func getRecentlyModifiedPrompts(limit: Int = 10) -> [Prompt] {
+        Array(prompts.sorted { $0.modifiedAt > $1.modifiedAt }.prefix(limit))
+    }
+
+    func getStatistics() -> (total: Int, favorites: Int, totalUses: Int) {
+        (prompts.count, prompts.filter { $0.isFavorite }.count, prompts.reduce(0) { $0 + $1.useCount })
+    }
+
+    // MARK: - Private State Helpers
+
+    /// Actualiza el estado en memoria sin forzar una recarga total de CoreData.
+    private func applyUpdatedPromptToState(_ updated: Prompt) {
+        let apply = { [weak self] in
+            guard let self else { return }
+            var touched = false
+
+            if updated.isInTrash {
+                if let i = self.prompts.firstIndex(where: { $0.id == updated.id }) {
+                    self.prompts.remove(at: i); touched = true
+                }
+                if let i = self.trashedPrompts.firstIndex(where: { $0.id == updated.id }) {
+                    self.trashedPrompts[i] = updated
+                } else {
+                    self.trashedPrompts.append(updated)
+                }
+                self.trashedPrompts.sort { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+                self.promptLookup.removeValue(forKey: updated.id)
+                self.searchEngine.removePromptIndices(for: updated.id)
+            } else {
+                if let i = self.prompts.firstIndex(where: { $0.id == updated.id }) {
+                    self.prompts[i] = updated; touched = true
+                } else {
+                    self.prompts.append(updated); touched = true
+                }
+                self.promptLookup[updated.id] = updated
+                self.searchEngine.upsertPromptIndices(with: updated)
+                if let i = self.trashedPrompts.firstIndex(where: { $0.id == updated.id }) {
+                    self.trashedPrompts.remove(at: i); touched = true
+                }
+            }
+
+            if !touched { self.loadPrompts(); return }
+
+            self.filterPrompts(query: self.searchQuery)
+            let prev = self.promptLookup[updated.id]
+            if prev?.customShortcut != updated.customShortcut {
+                ShortcutManager.shared.registerPromptHotkeys(prompts: self.prompts)
+            }
+        }
+
+        Thread.isMainThread ? apply() : DispatchQueue.main.async(execute: apply)
+    }
 }

@@ -28,6 +28,46 @@ public class PromptEntity: NSManagedObject {
             UserDefaults.standard.set(dict, forKey: Self.trashKey)
         }
     }
+    
+    // MARK: - App Associations
+    static let appAssociationsKey = "promptAppAssociations"
+    
+    var targetAppBundleIDs: [String] {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: Self.appAssociationsKey) as? [String: [String]] ?? [:]
+            return dict[id.uuidString] ?? []
+        }
+        set {
+            var dict = UserDefaults.standard.dictionary(forKey: Self.appAssociationsKey) as? [String: [String]] ?? [:]
+            if newValue.isEmpty {
+                dict.removeValue(forKey: id.uuidString)
+            } else {
+                dict[id.uuidString] = newValue
+            }
+            UserDefaults.standard.set(dict, forKey: Self.appAssociationsKey)
+        }
+    }
+    
+    // MARK: - Branching (Linking)
+    static let parentIDsKey = "promptParentIDs"
+    var parentID: UUID? {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: Self.parentIDsKey) as? [String: String] ?? [:]
+            if let uuidString = dict[id.uuidString] {
+                return UUID(uuidString: uuidString)
+            }
+            return nil
+        }
+        set {
+            var dict = UserDefaults.standard.dictionary(forKey: Self.parentIDsKey) as? [String: String] ?? [:]
+            if let uuid = newValue {
+                dict[id.uuidString] = uuid.uuidString
+            } else {
+                dict.removeValue(forKey: id.uuidString)
+            }
+            UserDefaults.standard.set(dict, forKey: Self.parentIDsKey)
+        }
+    }
 }
 
 extension PromptEntity {
@@ -50,6 +90,17 @@ extension PromptEntity {
     @NSManaged public var image1: Data?
     @NSManaged public var image2: Data?
     @NSManaged public var image3: Data?
+    @NSManaged public var image1Path: String?
+    @NSManaged public var image2Path: String?
+    @NSManaged public var image3Path: String?
+    @NSManaged public var thumb1: Data?
+    @NSManaged public var thumb2: Data?
+    @NSManaged public var thumb3: Data?
+    @NSManaged public var showcaseImageCount: Int16
     @NSManaged public var versionHistoryData: Data?
+    @NSManaged public var negativePrompt: String?
+    @NSManaged public var alternativePrompt: String?
+    @NSManaged public var customShortcut: String?
+    @NSManaged public var alternativesData: Data?
 
 }

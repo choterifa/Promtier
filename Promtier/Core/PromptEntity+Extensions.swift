@@ -9,6 +9,11 @@
 import Foundation
 import CoreData
 
+private struct StoredAlternativeItem: Codable {
+    let prompt: String
+    let description: String?
+}
+
 
 
 // IMPORTAR MODELOS PARA CONVERSIÓN
@@ -33,12 +38,55 @@ extension PromptEntity {
         prompt.icon = icon
         prompt.promptDescription = promptDescription
         prompt.deletedAt = deletedAt
+        prompt.negativePrompt = negativePrompt
+        prompt.alternativePrompt = alternativePrompt
+        prompt.customShortcut = customShortcut
+        prompt.targetAppBundleIDs = targetAppBundleIDs
+        prompt.parentID = parentID
         
-        var images: [Data] = []
-        if let img1 = image1 { images.append(img1) }
-        if let img2 = image2 { images.append(img2) }
-        if let img3 = image3 { images.append(img3) }
-        prompt.showcaseImages = images
+        if let altData = alternativesData,
+           let items = try? JSONDecoder().decode([StoredAlternativeItem].self, from: altData) {
+            prompt.alternatives = items.map { $0.prompt }
+            prompt.alternativeDescriptions = items.map { ($0.description ?? "") }
+        } else if let altData = alternativesData,
+                  let alts = try? JSONDecoder().decode([String].self, from: altData) {
+            prompt.alternatives = alts
+            prompt.alternativeDescriptions = Array(repeating: "", count: alts.count)
+        } else {
+            prompt.alternatives = []
+            prompt.alternativeDescriptions = []
+        }
+
+        // Nuevo esquema: paths + thumbnails en Core Data (las imágenes completas viven en disco).
+        let storedPaths = [image1Path, image2Path, image3Path]
+        let storedThumbs = [thumb1, thumb2, thumb3]
+        var validPaths: [String] = []
+        var validThumbs: [Data] = []
+
+        for index in storedPaths.indices {
+            guard let path = storedPaths[index], !path.isEmpty else { continue }
+            validPaths.append(path)
+            if let thumb = storedThumbs[index] {
+                validThumbs.append(thumb)
+            }
+        }
+
+        prompt.showcaseImagePaths = validPaths
+        prompt.showcaseThumbnails = validThumbs
+        prompt.showcaseImages = [] // Lazy-load cuando se necesite
+
+        // Mantener conteo consistente incluso si aún no se migró.
+        let storedCount = Int(showcaseImageCount)
+        if !prompt.showcaseImagePaths.isEmpty {
+            prompt.showcaseImageCount = prompt.showcaseImagePaths.count
+        } else if storedCount > 0 {
+            // Mantener el conteo para permitir fallback lazy (fetch/migración on-demand).
+            prompt.showcaseImageCount = storedCount
+        } else {
+            // Fallback legacy (antes de migración a disco)
+            let legacyCount = [image1, image2, image3].compactMap { $0 }.count
+            prompt.showcaseImageCount = legacyCount
+        }
         
         if let historyData = versionHistoryData,
            let history = try? JSONDecoder().decode([PromptSnapshot].self, from: historyData) {
@@ -57,16 +105,38 @@ extension PromptEntity {
         icon = prompt.icon
         promptDescription = prompt.promptDescription
         deletedAt = prompt.deletedAt
+        negativePrompt = prompt.negativePrompt
+        alternativePrompt = prompt.alternativePrompt
+        customShortcut = prompt.customShortcut
+        targetAppBundleIDs = prompt.targetAppBundleIDs
+        parentID = prompt.parentID
         
-        // Limpiar y reasignar imágenes
-        image1 = prompt.showcaseImages.indices.contains(0) ? prompt.showcaseImages[0] : nil
-        image2 = prompt.showcaseImages.indices.contains(1) ? prompt.showcaseImages[1] : nil
-        image3 = prompt.showcaseImages.indices.contains(2) ? prompt.showcaseImages[2] : nil
+        let descriptions = Array(prompt.alternativeDescriptions.prefix(prompt.alternatives.count))
+        let items = prompt.alternatives.enumerated().map { index, text in
+            StoredAlternativeItem(prompt: text, description: index < descriptions.count ? descriptions[index] : nil)
+        }
+
+        if let altData = try? JSONEncoder().encode(items) {
+            alternativesData = altData
+        } else if let altData = try? JSONEncoder().encode(prompt.alternatives) {
+            // Fallback defensivo en caso de fallo serializando la estructura nueva
+            alternativesData = altData
+        }
+
+        // NOTA: Las imágenes ahora se guardan en disco (ImageStore).
+        // Este método solo actualiza conteo cuando el caller provee imágenes explícitas.
+        // La asignación de paths/thumbs se maneja desde PromptService.
+        if !prompt.showcaseImages.isEmpty || prompt.showcaseImageCount == 0 {
+            showcaseImageCount = Int16(min(prompt.showcaseImages.count, 3))
+        }
         
         isFavorite = prompt.isFavorite
         useCount = Int32(prompt.useCount)
         modifiedAt = prompt.modifiedAt
         lastUsedAt = prompt.lastUsedAt
+        
+        // Sincronizar campo legacy con el primer elemento para retrocompatibilidad
+        alternativePrompt = prompt.alternatives.first
         
         if let historyData = try? JSONEncoder().encode(prompt.versionHistory) {
             versionHistoryData = historyData
@@ -92,6 +162,9 @@ extension PromptEntity {
     static func fetchAll(in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
         
+        // Optimización de Memoria (Evitar picos de RAM cargando demasiadas entidades)
+        request.fetchBatchSize = 25
+        
         // CONFIGURABLE: Ordenamiento por defecto
         request.sortDescriptors = [
             NSSortDescriptor(keyPath: \PromptEntity.useCount, ascending: false),
@@ -104,6 +177,7 @@ extension PromptEntity {
     /// Busca prompts por texto en título, contenido o etiquetas
     static func searchPrompts(query: String, in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.fetchBatchSize = 25
         
         if query.isEmpty {
             return fetchAll(in: context)
@@ -132,6 +206,7 @@ extension PromptEntity {
     /// Obtiene solo los favoritos
     static func fetchFavorites(in context: NSManagedObjectContext) -> NSFetchRequest<PromptEntity> {
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
+        request.fetchBatchSize = 25
         request.predicate = NSPredicate(format: "isFavorite == YES")
         
         // CONFIGURABLE: Ordenamiento de favoritos

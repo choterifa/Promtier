@@ -125,10 +125,10 @@ enum AppLanguage: String, CaseIterable {
     case spanish = "es"
     case english = "en"
     
-    var displayName: String {
+    var displayName: LocalizedStringKey {
         switch self {
-        case .spanish: return "Español"
-        case .english: return "English"
+        case .spanish: return "spanish"
+        case .english: return "english"
         }
     }
     
@@ -143,45 +143,60 @@ enum AppLanguage: String, CaseIterable {
 // MARK: - Predefined Categories
 
 enum PredefinedCategory: String, CaseIterable {
-    case iaModels = "IA/Modelos"
-    case code = "Código"
-    case creative = "Creativo"
-    case work = "Trabajo"
-    case personal = "Personal"
-    case study = "Estudio"
+    case chatGPT = "ChatGPT"
+    case claude = "Claude"
+    case cursor = "Cursor"
+    case midjourney = "Midjourney"
+    case imagesPrompts = "Images Prompts"
+    case vibeCoding = "Vibe Coding"
+    case windsurf = "Windsurf"
     
-    var displayName: String { rawValue }
+    var displayName: String {
+        let language = PreferencesManager.shared.language
+        switch self {
+        case .chatGPT: return "cat_chatgpt".localized(for: language)
+        case .claude: return "cat_claude".localized(for: language)
+        case .cursor: return "cat_cursor".localized(for: language)
+        case .midjourney: return "cat_midjourney".localized(for: language)
+        case .imagesPrompts: return "cat_images_prompts".localized(for: language)
+        case .vibeCoding: return "cat_vibe_coding".localized(for: language)
+        case .windsurf: return "cat_windsurf".localized(for: language)
+        }
+    }
     
     var color: Color {
         switch self {
-        case .iaModels: return Color.blue
-        case .code: return Color.green
-        case .creative: return Color.purple
-        case .work: return Color.orange
-        case .personal: return Color.pink
-        case .study: return Color.yellow
+        case .chatGPT: return Color.green
+        case .claude: return Color(hex: "#8B5CF6") // Claude Purple
+        case .cursor: return Color.blue
+        case .midjourney: return Color.orange
+        case .vibeCoding: return Color.pink
+        case .imagesPrompts: return Color.red
+        case .windsurf: return Color.cyan
         }
     }
     
     var hexColor: String {
         switch self {
-        case .iaModels: return "#007AFF"
-        case .code: return "#34C759"
-        case .creative: return "#AF52DE"
-        case .work: return "#FF9500"
-        case .personal: return "#FF2D92"
-        case .study: return "#FFCC00"
+        case .chatGPT: return "#34C759"
+        case .claude: return "#8B5CF6"
+        case .cursor: return "#007AFF"
+        case .midjourney: return "#FF9500"
+        case .vibeCoding: return "#FF2D92"
+        case .imagesPrompts: return "#FF3B30"
+        case .windsurf: return "#32ADE6"
         }
     }
     
     var icon: String {
         switch self {
-        case .iaModels: return "brain.head.profile"
-        case .code: return "chevron.left.forwardslash.chevron.right"
-        case .creative: return "paintbrush.pointed"
-        case .work: return "briefcase"
-        case .personal: return "heart"
-        case .study: return "book"
+        case .chatGPT: return "bubble.left.and.bubble.right.fill"
+        case .claude: return "sparkles"
+        case .cursor: return "terminal.fill"
+        case .midjourney: return "paintbrush.fill"
+        case .vibeCoding: return "music.note"
+        case .imagesPrompts: return "photo.on.rectangle.angled.fill"
+        case .windsurf: return "wind"
         }
     }
     

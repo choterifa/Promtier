@@ -10,13 +10,18 @@ import AppKit
 import Carbon
 
 struct ShortcutRecorderView: View {
-    @EnvironmentObject var preferences: PreferencesManager
+    let label: String
+    @Binding var hotkeyCode: Int
+    @Binding var hotkeyModifiers: Int
+    let defaultKeyCode: Int
+    let defaultModifiers: Int
+    
     @State private var isRecording = false
     @State private var localMonitor: Any?
     
     var body: some View {
         HStack(spacing: 12) {
-            Text("Atajo de apertura")
+            Text(label)
                 .font(.system(size: 14, weight: .medium))
             
             Spacer()
@@ -60,8 +65,19 @@ struct ShortcutRecorderView: View {
             
             if !isRecording {
                 Button(action: {
-                    preferences.hotkeyCode = 35 // P
-                    preferences.hotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                    hotkeyCode = -1
+                    hotkeyModifiers = 0
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .help("Sin atajo")
+                
+                Button(action: {
+                    hotkeyCode = defaultKeyCode
+                    hotkeyModifiers = defaultModifiers
                 }) {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 12))
@@ -69,25 +85,49 @@ struct ShortcutRecorderView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Restablecer atajo")
+            } else {
+                Button(action: {
+                    stopRecording()
+                }) {
+                    Text("Cancelar")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
     
     
     private var shortcutString: String {
-        return ShortcutFormatter.format(keyCode: preferences.hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(preferences.hotkeyModifiers)))
+        return ShortcutFormatter.format(keyCode: hotkeyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(hotkeyModifiers)))
     }
+    
+    @State private var globalMonitorId: UUID?
     
     private func startRecording() {
         isRecording = true
         
         // Monitor local para capturar teclas
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged, .leftMouseDown]) { event in
+            if event.type == .leftMouseDown {
+                stopRecording()
+                return event
+            }
+            
             if event.type == .flagsChanged {
                 return event
             }
             
             let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            
+            // Delete / Backspace para borrar
+            if event.keyCode == 51 {
+                hotkeyCode = -1
+                hotkeyModifiers = 0
+                stopRecording()
+                return nil
+            }
             
             // Requerir al menos un modificador (Cmd, Opt, Ctrl, Shift)
             if modifiers.isEmpty && event.keyCode != 53 { // 53 is Escape
@@ -101,11 +141,15 @@ struct ShortcutRecorderView: View {
             }
             
             // Guardar el atajo
-            preferences.hotkeyCode = Int(event.keyCode)
-            preferences.hotkeyModifiers = Int(modifiers.rawValue)
+            hotkeyCode = Int(event.keyCode)
+            hotkeyModifiers = Int(modifiers.rawValue)
             
             stopRecording()
             return nil
+        }
+        
+        globalMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { _ in
+            stopRecording()
         }
     }
     
@@ -115,12 +159,17 @@ struct ShortcutRecorderView: View {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
         }
+        if let id = globalMonitorId {
+            GlobalHotkeyManager.shared.unsubscribeFromGlobalEvents(id: id)
+            globalMonitorId = nil
+        }
     }
 }
 
 // MARK: - Helper de Formateo
 struct ShortcutFormatter {
     static func format(keyCode: Int, modifiers: NSEvent.ModifierFlags) -> String {
+        if keyCode == -1 { return "Sin atajo" }
         var str = ""
         
         if modifiers.contains(.control) { str += "⌃" }
@@ -145,36 +194,171 @@ struct ShortcutFormatter {
         case 125: return "↓"
         case 126: return "↑"
         default:
-            // Simplificado: obtener carácter legible para la UI según el Key Code
-            switch keyCode {
-            case 0: return "A"
-            case 1: return "S"
-            case 2: return "D"
-            case 3: return "F"
-            case 4: return "H"
-            case 5: return "G"
-            case 6: return "Z"
-            case 7: return "X"
-            case 8: return "C"
-            case 9: return "V"
-            case 11: return "B"
-            case 12: return "Q"
-            case 13: return "W"
-            case 14: return "E"
-            case 15: return "R"
-            case 16: return "Y"
-            case 17: return "T"
-            case 31: return "O"
-            case 32: return "U"
-            case 34: return "I"
-            case 35: return "P"
-            case 37: return "L"
-            case 38: return "J"
-            case 40: return "K"
-            case 45: return "N"
-            case 46: return "M"
-            default: return String(format: "%X", keyCode)
+            return translateKeyCode(keyCode)
+        }
+    }
+    
+    private static func translateKeyCode(_ keyCode: Int) -> String {
+        // La traducción de key codes a caracteres legibles debe hacerse usando CGEvent
+        // para que macOS aplique el layout de teclado actual (español, inglés, etc.).
+        let source = CGEventSource(stateID: .combinedSessionState)
+        if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true) {
+            let nsEvent = NSEvent(cgEvent: cgEvent)
+            if let chars = nsEvent?.charactersIgnoringModifiers, !chars.isEmpty {
+                return chars.uppercased()
             }
+        }
+        
+        // Si falla la traducción, devolvemos el código en decimal (no hexadecimal) para evitar confusión
+        return "\(keyCode)"
+    }
+}
+
+// MARK: - Grabador de atajos reutilizable (para prompts individuales)
+struct ReusableShortcutRecorderView: View {
+    let title: String
+    @Binding var shortcutString: String?
+    @State private var isRecording = false
+    @State private var localMonitor: Any?
+    @State private var isHovering = false
+    @State private var isHoveringClear = false
+    
+    private var formattedShortcut: String {
+        guard let shortcut = shortcutString, let (keyCode, modifiers) = parseShortcut(shortcut) else { return "Ninguno" }
+        return ShortcutFormatter.format(keyCode: keyCode, modifiers: modifiers)
+    }
+    
+    private func parseShortcut(_ shortcut: String) -> (Int, NSEvent.ModifierFlags)? {
+        let parts = shortcut.split(separator: ":")
+        guard parts.count == 2,
+              let keyCode = Int(parts[0]),
+              let modifiersValue = UInt(parts[1]) else { return nil }
+        return (keyCode, NSEvent.ModifierFlags(rawValue: modifiersValue))
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+            
+            Spacer()
+            
+            Button(action: {
+                if isRecording {
+                    stopRecording()
+                } else {
+                    startRecording()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    if isRecording {
+                        Text("Presiona...")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 8, height: 8)
+                            .opacity(isRecording ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.6).repeatForever(), value: isRecording)
+                    } else {
+                        Text(formattedShortcut)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isRecording ? Color.blue.opacity(0.15) : Color.primary.opacity(isHovering ? 0.1 : 0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(isRecording ? Color.blue : (isHovering ? Color.primary.opacity(0.2) : Color.clear), lineWidth: 1)
+                        )
+                )
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHovering = hovering
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            
+            if !isRecording && shortcutString != nil {
+                Button(action: {
+                    shortcutString = nil
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(isHoveringClear ? .red : .secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHoveringClear = hovering
+                    }
+                }
+                .help("Eliminar atajo")
+            } else if isRecording {
+                Button(action: {
+                    stopRecording()
+                }) {
+                    Text("Cancelar")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
+    @State private var globalMonitorId: UUID?
+    
+    private func startRecording() {
+        isRecording = true
+        
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged, .leftMouseDown]) { event in
+            if event.type == .leftMouseDown {
+                stopRecording()
+                return event
+            }
+            
+            if event.type == .flagsChanged { return event }
+            
+            if event.keyCode == 51 { // Backspace
+                shortcutString = nil
+                stopRecording()
+                return nil
+            }
+            
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if modifiers.isEmpty && event.keyCode != 53 { return event }
+            
+            if event.keyCode == 53 { // Escape
+                stopRecording()
+                return nil
+            }
+            
+            shortcutString = "\(event.keyCode):\(modifiers.rawValue)"
+            stopRecording()
+            return nil
+        }
+        
+        globalMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { _ in
+            stopRecording()
+        }
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        if let monitor = localMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMonitor = nil
+        }
+        if let id = globalMonitorId {
+            GlobalHotkeyManager.shared.unsubscribeFromGlobalEvents(id: id)
+            globalMonitorId = nil
         }
     }
 }

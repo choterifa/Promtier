@@ -19,7 +19,49 @@ class ClipboardService: ObservableObject {
     
     @Published var history: [String] = []
     
-    private init() {}
+    // CONTEXTO: Rastrear el origen del contenido del portapapeles
+    @Published var lastSourceAppBundleID: String?
+    private var lastPasteboardChangeCount: Int = NSPasteboard.general.changeCount
+    private var monitorTimer: AnyCancellable?
+    
+    private init() {
+        startMonitoring()
+    }
+    
+    private func startMonitoring() {
+        // Reducido a 2.5s para ahorrar muchisima batería (App Nap friendly)
+        monitorTimer = Timer.publish(every: 2.5, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.checkPasteboard()
+            }
+        
+        // Comprobar forzosamente cada vez que la app pase a primer plano
+        NotificationCenter.default.addObserver(forName: NSApplication.willBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.checkPasteboard()
+        }
+    }
+    
+    private func checkPasteboard() {
+        let pasteboard = NSPasteboard.general
+        guard pasteboard.changeCount != lastPasteboardChangeCount else { return }
+        lastPasteboardChangeCount = pasteboard.changeCount
+        
+        // PROTECCION PRIVACIDAD: Ignorar portapapeles velados (como 1Password o Llavero de iCloud)
+        if let types = pasteboard.types {
+            if types.contains(NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")) ||
+               types.contains(NSPasteboard.PasteboardType("com.agilebits.onepassword")) {
+                self.lastSourceAppBundleID = nil
+                return
+            }
+        }
+        
+        // Si el cambio ocurrió mientras otra app era la activa, registrar su bundleID
+        if let frontmostApp = NSWorkspace.shared.frontmostApplication,
+           frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+            self.lastSourceAppBundleID = frontmostApp.bundleIdentifier
+        }
+    }
     
     // MARK: - Métodos principales
     
@@ -28,79 +70,38 @@ class ClipboardService: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        
-        // Agregar al historial si está habilitado
-        if addToHistory {
-            self.addToHistory(text)
+
+        finalizeCopy(plainText: text, addToHistory: addToHistory)
+    }
+
+    /// Copia rich text al clipboard conservando un fallback de texto plano
+    func copyRichTextToClipboard(_ attributedText: NSAttributedString, addToHistory: Bool = true) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+
+        let fullRange = NSRange(location: 0, length: attributedText.length)
+        if let rtfData = try? attributedText.data(
+            from: fullRange,
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        ) {
+            pasteboard.setData(rtfData, forType: .rtf)
         }
-        
-        // CONFIGURABLE: Notificación visual (opcional)
-        showCopyNotification()
-        
-        // AUTO-PASTE: Magia de pegado si está habilitada
-        if PreferencesManager.shared.autoPaste {
-            performAutoPaste()
-        }
+        pasteboard.setString(attributedText.string, forType: .string)
+
+        finalizeCopy(plainText: attributedText.string, addToHistory: addToHistory)
     }
     
-    /// Ejecuta el pegado automático mediante CoreGraphics (Simulación de Teclado)
-    private func performAutoPaste() {
-        // Asegurar que el proceso tiene permisos antes de intentar
-        guard ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: false) else {
-            print("⚠️ Auto-Paste cancelado: Sin permisos de accesibilidad")
-            return
-        }
-        
-        // 1. Forzar que la aplicación se oculte para devolver el foco de forma inmediata y fiable
-        DispatchQueue.main.async {
-            if MenuBarManager.shared.isPopoverShown {
-                MenuBarManager.shared.closePopover()
-            }
-            
-            // Ocultar la app asegura que macOS devuelva el foco a la aplicación anterior al 100%
-            NSApp.hide(nil)
-            
-            // 2. Esperar un margen de seguridad (0.5s) para que la transición de foco se complete
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                // Usar .hidSystemState para ignorar estados de teclas de la sesión actual y ser más fiel al hardware
-                let source = CGEventSource(stateID: .hidSystemState)
-                
-                // Definir códigos de tecla nativos (Virtual Key Codes de Carbon)
-                let kVK_Command: CGKeyCode = 55
-                let kVK_ANSI_V: CGKeyCode = 9
-                
-                // Crear eventos
-                let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
-                let vDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: true)
-                vDown?.flags = .maskCommand
-                
-                let vUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: false)
-                vUp?.flags = .maskCommand
-                
-                let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
-                
-                // Ejecutar secuencia con micro-retrasos
-                cmdDown?.post(tap: .cghidEventTap)
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                    vDown?.post(tap: .cghidEventTap)
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                        vUp?.post(tap: .cghidEventTap)
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            cmdUp?.post(tap: .cghidEventTap)
-                            print("✅ Auto-Paste (Robust CGEvent) ejecutado satisfactoriamente")
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    /// Obtiene el contenido actual del clipboard
+    /// Obtiene el contenido actual del clipboard, con sanitización de seguridad
     func getClipboardContent() -> String? {
-        return NSPasteboard.general.string(forType: .string)
+        guard let content = NSPasteboard.general.string(forType: .string) else { return nil }
+        
+        // 🛡️ Seguridad/Auditoría: Validar y truncar para evitar desbordes de memoria o caídas (Ej: más de 500,000 caracteres)
+        let maxLimit = 500_000
+        if content.count > maxLimit {
+            return String(content.prefix(maxLimit))
+        }
+        
+        return content
     }
     
     // MARK: - Historial
@@ -135,11 +136,8 @@ class ClipboardService: ObservableObject {
     
     /// Muestra notificación visual de copia exitosa
     private func showCopyNotification() {
-        // CONFIGURABLE: Usar print para notificación simple (evita deprecated APIs)
-        print("📋 Prompt copiado al clipboard")
-        
-        // CONFIGURABLE: Alternativa futura con UserNotifications framework
-        // Por ahora, usamos notificación simple para compatibilidad
+        // Mantener silencioso para no ensuciar la consola; el feedback visual/sonoro
+        // vive en la UI y los haptics.
     }
     
     // MARK: - Utilidades
@@ -152,5 +150,14 @@ class ClipboardService: ObservableObject {
     /// Obtiene longitud del contenido actual
     func getContentLength() -> Int {
         return getClipboardContent()?.count ?? 0
+    }
+
+    private func finalizeCopy(plainText: String, addToHistory: Bool) {
+        if addToHistory {
+            self.addToHistory(plainText)
+        }
+
+        showCopyNotification()
+
     }
 }

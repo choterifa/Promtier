@@ -17,463 +17,224 @@ struct PreferencesView: View {
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var menuBarManager: MenuBarManager
     
-    @StateObject private var shortcutManager = ShortcutManager.shared
-    
     @State private var selectedTab: Int = 0
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
+    @State private var showingPremiumUpsell = false
+    @State private var hoveredTab: Int? = nil
     
-    private let tabs = [
-        (title: "Apariencia", icon: "paintbrush.fill"),
-        (title: "General", icon: "gearshape.fill"),
-        (title: "Atajos", icon: "keyboard.fill"),
-        (title: "Snippets", icon: "text.quote"),
-        (title: "Datos", icon: "externaldrive.fill"),
-        (title: "Soporte", icon: "questionmark.circle.fill")
+    private let tabs: [(title: LocalizedStringKey, icon: String)] = [
+        (title: "appearance_tab", icon: "paintbrush.fill"),
+        (title: "general_tab", icon: "gearshape.fill"),
+        (title: "shortcuts_tab", icon: "keyboard.fill"),
+        (title: "ai_tab", icon: "sparkles"),
+        (title: "snippets_tab", icon: "text.quote"),
+        (title: "data_tab", icon: "externaldrive.fill"),
+        (title: "support_tab", icon: "questionmark.circle.fill"),
+        (title: "trash_tab", icon: "trash.fill")
     ]
     
-    private var tabsContent: some View {
-        HStack(spacing: 2) {
+    private var sidebarContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Header del Sidebar
+            Text("settings".localized(for: preferences.language).uppercased())
+                .font(.system(size: 10 * preferences.fontSize.scale, weight: .bold))
+                .foregroundColor(.secondary)
+                .tracking(1.2)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .padding(.top, 32)
+            
             ForEach(0..<tabs.count, id: \.self) { index in
-                Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedTab = index } }) {
-                    HStack(spacing: 6) {
+                Button(action: { 
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { 
+                        selectedTab = index 
+                    } 
+                    HapticService.shared.playImpact()
+                }) {
+                    HStack(spacing: 12) {
                         Image(systemName: tabs[index].icon)
-                            .font(.system(size: 13 * preferences.fontSize.scale, weight: .semibold))
+                            .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
+                            .foregroundColor(selectedTab == index ? .white : .blue)
+                            .frame(width: 24, height: 24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(selectedTab == index ? Color.white.opacity(0.15) : Color.blue.opacity(0.1))
+                            )
+                        
                         Text(tabs[index].title)
-                            .font(.system(size: 12 * preferences.fontSize.scale, weight: .medium))
-                            .fixedSize(horizontal: true, vertical: false)
+                            .font(.system(size: 13 * preferences.fontSize.scale, weight: selectedTab == index ? .bold : .medium))
+                            .foregroundColor(selectedTab == index ? .white : .primary)
+                        
+                        Spacer()
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
                     .contentShape(Rectangle())
                     .background(
-                        ZStack {
-                            if selectedTab == index {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue)
-                                    .shadow(color: .blue.opacity(0.3), radius: 4, y: 2)
-                            } else {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.clear)
-                            }
-                        }
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedTab == index ? Color.blue : (hoveredTab == index ? Color.primary.opacity(0.06) : Color.clear))
+                            .shadow(color: selectedTab == index ? Color.blue.opacity(0.3) : .clear, radius: 4, y: 2)
                     )
-                    .foregroundColor(selectedTab == index ? .white : .primary)
                 }
                 .buttonStyle(.plain)
+                .onHover { h in withAnimation(.spring(response: 0.3)) { hoveredTab = h ? index : nil } }
+                .padding(.horizontal, 12)
             }
+            
+            Spacer()
         }
-        .padding(6)
+        .frame(width: 198)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(0.05))
+            ZStack {
+                Color(NSColor.windowBackgroundColor).opacity(0.98)
+                Color.primary.opacity(0.02)
+                
+                Rectangle()
+                    .fill(Color.primary.opacity(0.05))
+                    .frame(width: 1)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
         )
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header Premium
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Configuración")
-                        .font(.system(size: 24 * preferences.fontSize.scale, weight: .bold))
-                    Text("Personaliza tu experiencia en Promtier")
-                        .font(.system(size: 13 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
+        HStack(spacing: 0) {
+            // Sidebar Izquierdo
+            sidebarContent
+            
+            // Contenido Derecho
+            VStack(spacing: 0) {
+                // Header del Contenido
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(tabs[selectedTab].title)
+                            .font(.system(size: 26 * preferences.fontSize.scale, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text("settings_subtitle".localized(for: preferences.language))
+                            .font(.system(size: 13 * preferences.fontSize.scale))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("\("close".localized(for: preferences.language)) (Esc)")
                 }
+                .padding(.horizontal, 40)
+                .padding(.top, 40)
+                .padding(.bottom, 24)
                 
-                Spacer()
+                Divider()
+                    .padding(.horizontal, 40)
                 
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 24))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Cerrar (Esc)")
-            }
-            .padding(.horizontal, 32)
-            .padding(.top, 32)
-            .padding(.bottom, 24)
-            
-            // Selector de pestañas personalizado (Segmented Premium)
-            // Selector de pestañas personalizado (Segmented Premium)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    tabsContent
-                    Spacer(minLength: 0)
-                }
-                .frame(minWidth: max(0, preferences.windowWidth - 64))
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 24)
-            
-            Divider()
-                .padding(.horizontal, 32)
-            
-            // Contenido de la pestaña
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    if selectedTab == 3 && !preferences.isPremiumActive {
-                        PremiumUpsellView(featureName: "Snippets Reutilizables")
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 40)
-                    } else {
-                        switch selectedTab {
-                        case 0: AppearanceTab()
-                        case 1: BehaviorTab()
-                        case 2: ShortcutsTab()
-                        case 3: SnippetsManagerTab()
-                        case 4: DataTab(
-                            showingResetAlert: $showingResetAlert,
-                            onClose: onClose
-                        )
-                        case 5: SupportTab()
-                        default: EmptyView()
+                // Scroll de opciones
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        if selectedTab == 4 && !preferences.isPremiumActive {
+                            premiumLockedSnippets
+                        } else {
+                            activeTabContent
                         }
                     }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 32)
             }
+            .frame(maxWidth: .infinity)
+            .background(Color(NSColor.windowBackgroundColor))
         }
         .onAppear {
-            // Inicializar estados temporales en el manager para el HUD
             preferences.previewWidth = preferences.windowWidth
             preferences.previewHeight = preferences.windowHeight
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            ZStack {
-                Color(NSColor.windowBackgroundColor)
-                
-                // Decoración sutil de fondo
-                Circle()
-                    .fill(Color.blue.opacity(0.03))
-                    .frame(width: 400, height: 400)
-                    .blur(radius: 60)
-                    .offset(x: 200, y: -200)
-            }
-        )
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
-        .alert("Restablecer Todo", isPresented: $showingResetAlert) {
-            Button("Cancelar", role: .cancel) { }
-            Button("Restablecer a Fábrica", role: .destructive) {
+        .sheet(isPresented: $showingPremiumUpsell) { PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language)) }
+        .alert("reset_all".localized(for: preferences.language), isPresented: $showingResetAlert) {
+            Button("cancel".localized(for: preferences.language), role: .cancel) { }
+            Button("reset_factory".localized(for: preferences.language), role: .destructive) {
                 preferences.resetToDefaults()
                 promptService.resetAllData()
             }
         } message: {
-            Text("Se perderán permanentemente todos tus ajustes y prompts de la biblioteca.")
+            Text("reset_message".localized(for: preferences.language))
+        }
+    }
+    
+    @ViewBuilder
+    private var activeTabContent: some View {
+        switch selectedTab {
+        case 0: AppearanceTab()
+        case 1: BehaviorTab()
+        case 2: ShortcutsTab()
+        case 3: AITab()
+        case 4: SnippetsManagerTab()
+        case 5: DataTab(showingResetAlert: $showingResetAlert, onClose: onClose)
+        case 6: SupportTab()
+        case 7: TrashView()
+        default: EmptyView()
+        }
+    }
+    
+    private var premiumLockedSnippets: some View {
+        ZStack {
+            SnippetsManagerTab()
+                .blur(radius: 6)
+                .disabled(true)
+                .allowsHitTesting(false)
+            
+            VStack(spacing: 16) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                
+                Button(action: { showingPremiumUpsell = true }) {
+                    Text("unlock_premium".localized(for: preferences.language))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(Color.purple)
+                        .cornerRadius(10)
+                        .shadow(color: .purple.opacity(0.3), radius: 4, y: 2)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
+
+// MARK: - Componentes de Glosario
+
+
 
 // MARK: - Componentes de Estilo
 
-struct SettingsSection<Content: View>: View {
-    let title: String
-    let icon: String
-    let content: Content
-    
-    @EnvironmentObject var preferences: PreferencesManager
-    
-    init(title: String, icon: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.icon = icon
-        self.content = content()
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .foregroundColor(.blue)
-                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .bold))
-                Text(title.uppercased())
-                    .font(.system(size: 11 * preferences.fontSize.scale, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .tracking(1)
-            }
-            
-            VStack(spacing: 1) {
-                content
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.primary.opacity(0.03))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-            )
-        }
-    }
-}
 
-struct SettingsRow<Content: View>: View {
-    let label: String
-    let subtitle: String?
-    let icon: String?
-    let iconColor: Color?
-    let content: Content
-    
-    @EnvironmentObject var preferences: PreferencesManager
-    
-    init(_ label: String, subtitle: String? = nil, icon: String? = nil, iconColor: Color? = nil, @ViewBuilder content: () -> Content) {
-        self.label = label
-        self.subtitle = subtitle
-        self.icon = icon
-        self.iconColor = iconColor
-        self.content = content()
-    }
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            if let icon = icon {
-                Image(systemName: icon)
-                    .font(.system(size: 18 * preferences.fontSize.scale))
-                    .foregroundColor(iconColor ?? .blue)
-                    .frame(width: 28 * preferences.fontSize.scale)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 12 * preferences.fontSize.scale))
-                        .foregroundColor(.secondary)
-                }
-            }
-            Spacer()
-            content
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity) // Forzar que ocupe todo el ancho
-        .contentShape(Rectangle())
-    }
-}
+
+
 
 // MARK: - Tabs Rediseñados
 
-struct AppearanceTab: View {
-    @EnvironmentObject var preferences: PreferencesManager
-    
-    var body: some View {
-        VStack(spacing: 32) {
-            SettingsSection(title: "Interfaz", icon: "display") {
-                SettingsRow("Apariencia", subtitle: "Selecciona el modo visual de la app") {
-                    Picker("", selection: $preferences.appearance) {
-                        Text("Claro").tag(AppAppearance.light)
-                        Text("Oscuro").tag(AppAppearance.dark)
-                        Text("Sistema").tag(AppAppearance.system)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Tamaño de Fuente", subtitle: "Ajusta el texto de tus prompts") {
-                    Picker("", selection: $preferences.fontSize) {
-                        Text("S").tag(FontSize.small)
-                        Text("M").tag(FontSize.medium)
-                        Text("L").tag(FontSize.large)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 120)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Prioridad en Preview", subtitle: "Orden de elementos en la vista rápida") {
-                    Picker("", selection: $preferences.previewImagesFirst) {
-                        Text("Imágenes Primero").tag(true)
-                        Text("Texto Primero").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 240)
-                }
-                
-                if preferences.isPremiumActive {
-                    Divider().padding(.leading, 20)
-                    
-                    SettingsRow("Efectos Visuales", subtitle: "Efectos especiales al copiar y guardar prompts") {
-                        Toggle("", isOn: $preferences.visualEffectsEnabled)
-                            .toggleStyle(.switch)
-                    }
-                }
-            }
-            
-            SettingsSection(title: "Ventana", icon: "macwindow.badge.plus") {
-                SettingsRow("Ancho", subtitle: "\(Int(preferences.previewWidth))px") {
-                    Slider(value: $preferences.previewWidth, in: 500...900, step: 10, onEditingChanged: { editing in
-                        preferences.isResizingVisible = editing
-                        if !editing {
-                            preferences.windowWidth = preferences.previewWidth
-                        }
-                    })
-                    .frame(width: 150)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Alto", subtitle: "\(Int(preferences.previewHeight))px") {
-                    Slider(value: $preferences.previewHeight, in: 450...750, step: 10, onEditingChanged: { editing in
-                        preferences.isResizingVisible = editing
-                        if !editing {
-                            preferences.windowHeight = preferences.previewHeight
-                        }
-                    })
-                    .frame(width: 150)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Restablecer tamaño", subtitle: "Volver al tamaño por defecto (690 × 540)") {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            preferences.previewWidth  = 690
-                            preferences.previewHeight = 540
-                            preferences.windowWidth   = 690
-                            preferences.windowHeight  = 540
-                        }
-                    }) {
-                        Label("Resetear", systemImage: "arrow.counterclockwise")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-}
 
-struct BehaviorTab: View {
-    @EnvironmentObject var preferences: PreferencesManager
-    @ObservedObject private var shortcutManager = ShortcutManager.shared
-    
-    var body: some View {
-        VStack(spacing: 32) {
-            SettingsSection(title: "Interacción", icon: "hand.tap.fill") {
-                SettingsRow("Sonidos", subtitle: "Feedback auditivo al copiar") {
-                    Toggle("", isOn: $preferences.soundEnabled)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Consejos Visuales", subtitle: "Muestra ocasionalmente consejos sobre atajos (Ghost Tips)", icon: "sparkles", iconColor: .blue) {
-                    Toggle("", isOn: $preferences.ghostTipsEnabled)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Cerrar al copiar", subtitle: "Cierra la ventana automáticamente", icon: "xmark.square.fill", iconColor: .red) {
-                    Toggle("", isOn: $preferences.closeOnCopy)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Pegado Instantáneo", subtitle: "Pega automáticamente el prompt en la aplicación activa después de copiarlo.", icon: "wand.and.stars", iconColor: .orange) {
-                    Toggle("", isOn: $preferences.autoPaste)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Accesibilidad", subtitle: shortcutManager.isAccessibilityGranted ? "Permisos concedidos ✅" : "Permisos requeridos ⚠️", icon: "lock.shield", iconColor: shortcutManager.isAccessibilityGranted ? .green : .orange) {
-                    Button(shortcutManager.isAccessibilityGranted ? "Verificado" : "Configurar") {
-                        shortcutManager.checkAccessibilityPermissions(forceDialog: true, ignoreSuppression: true)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(shortcutManager.isAccessibilityGranted)
-                }
-            }
-            
-            SettingsSection(title: "Haptic Feedback (Trackpad) 🫨", icon: "hand.tap.fill") {
-                SettingsRow("Haptic Feedback", subtitle: "Retroalimentación táctil en el trackpad") {
-                    Toggle("", isOn: $preferences.hapticFeedbackEnabled)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Probar Vibración", subtitle: "Haz clic en los botones para probar el trackpad") {
-                    HStack(spacing: 12) {
-                        Button("Suave") {
-                            HapticService.shared.playLight()
-                        }
-                        .buttonStyle(.bordered)
-                        
-                        Button("Medio") {
-                            HapticService.shared.playAlignment()
-                        }
-                        .buttonStyle(.bordered)
-                        
-                        Button("Fuerte 🪄") {
-                            HapticService.shared.playStrong()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .controlSize(.small)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                Text("Nota: Requiere un MacBook con Force Touch o Magic Trackpad. Revisa en Ajustes del Sistema > Trackpad que la retroalimentación esté activada.")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-            }
-            
-            SettingsSection(title: "Inteligencia", icon: "sparkles") {
-                SettingsRow("Apple Intelligence", subtitle: "Mostrar herramientas de IA (Writing Tools) en el editor") {
-                    Toggle("", isOn: $preferences.appleIntelligenceEnabled)
-                        .toggleStyle(.switch)
-                }
-            }
-            
-            SettingsSection(title: "Sistema", icon: "macwindow") {
-                SettingsRow("Inicio Automático", subtitle: "Abrir Promtier al iniciar sesión") {
-                    Toggle("", isOn: $preferences.launchAtLogin)
-                        .toggleStyle(.switch)
-                }
-                
-                Divider().padding(.leading, 20)
-                
-                SettingsRow("Actualizaciones", subtitle: "Buscar nuevas versiones de Promtier", icon: "arrow.clockwise.circle", iconColor: .blue) {
-                    Button("Buscar ahora") {
-                        UpdateProvider.shared.checkForUpdates()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            
-            SettingsSection(title: "Promtier Premium 💎", icon: "crown.fill") {
-                SettingsRow("Activar Funciones Premium", subtitle: "Simular estado Premium para pruebas del creador", icon: "sparkles", iconColor: .purple) {
-                    Toggle("", isOn: $preferences.isPremiumActive)
-                        .toggleStyle(.switch)
-                }
-            }
-        }
-    }
-}
+
+
+
+
+
+
 
 struct ShortcutsTab: View {
     @EnvironmentObject var preferences: PreferencesManager
@@ -481,8 +242,8 @@ struct ShortcutsTab: View {
     var body: some View {
         VStack(spacing: 32) {
             // Atajo global configurable
-            SettingsSection(title: "Atajo Global", icon: "command") {
-                SettingsRow("Atajos Globales", subtitle: "Habilitar combinaciones en todo el sistema") {
+            SettingsSection(title: "shortcuts", icon: "command") {
+                SettingsRow("global_shortcuts", subtitle: "global_shortcuts_subtitle") {
                     Toggle("", isOn: $preferences.globalShortcutEnabled)
                         .toggleStyle(.switch)
                 }
@@ -490,67 +251,135 @@ struct ShortcutsTab: View {
                 if preferences.globalShortcutEnabled {
                     Divider().padding(.leading, 20)
                     VStack(spacing: 12) {
-                        ShortcutRecorderView()
+                        ShortcutRecorderView(
+                            label: "Atajo de apertura (App)",
+                            hotkeyCode: $preferences.hotkeyCode,
+                            hotkeyModifiers: $preferences.hotkeyModifiers,
+                            defaultKeyCode: 35,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Omni-Search (Spotlight)",
+                            hotkeyCode: $preferences.omniHotkeyCode,
+                            hotkeyModifiers: $preferences.omniHotkeyModifiers,
+                            defaultKeyCode: 49,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Fast Add (Floating Editor)",
+                            hotkeyCode: $preferences.fastAddHotkeyCode,
+                            hotkeyModifiers: $preferences.fastAddHotkeyModifiers,
+                            defaultKeyCode: 3,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "Nueva Categoría (Folder Manager)",
+                            hotkeyCode: $preferences.categoryHotkeyCode,
+                            hotkeyModifiers: $preferences.categoryHotkeyModifiers,
+                            defaultKeyCode: 45,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
+                        )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        ShortcutRecorderView(
+                            label: "AI Quick Draft (Borrador)",
+                            hotkeyCode: $preferences.aiDraftHotkeyCode,
+                            hotkeyModifiers: $preferences.aiDraftHotkeyModifiers,
+                            defaultKeyCode: 2,
+                            defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+                        )
                     }
                     .padding(20)
                 }
             }
             
             // Lista principal
-            SettingsSection(title: "Navegación de Lista", icon: "list.bullet") {
-                ShortcutRow(label: "Mover selección arriba",     shortcut: "↑")
+            SettingsSection(title: "list_navigation", icon: "list.bullet") {
+                ShortcutRow(label: "move_up",     shortcut: "↑")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Mover selección abajo",      shortcut: "↓")
+                ShortcutRow(label: "move_down",      shortcut: "↓")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Abrir Vista Previa",         shortcut: "Espacio")
+                ShortcutRow(label: "preview",         shortcut: "Espacio")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Copiar prompt seleccionado", shortcut: "⌘C")
+                ShortcutRow(label: "edit_from_preview", shortcut: "E")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Editar prompt seleccionado", shortcut: "↩ Enter")
+                ShortcutRow(label: "copy", shortcut: "⌘C")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Mostrar/Ocultar Sidebar",    shortcut: "⌘B")
+                ShortcutRow(label: "edit", shortcut: "Double Tap / ↩ Enter")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Nuevo Prompt",               shortcut: "⌘N")
+                ShortcutRow(label: "toggle_sidebar",    shortcut: "⌘B")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "new_prompt",               shortcut: "⌘N")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "gallery_toggle",           shortcut: "⌘G")
+            }
+
+            SettingsSection(title: "omni_search_shortcuts", icon: "magnifyingglass") {
+                ShortcutRow(label: "move_up", shortcut: "↑")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "move_down", shortcut: "↓")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "copy_and_close", shortcut: "↩ Enter")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "copy", shortcut: "⌘C")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "edit_prompt", shortcut: "⌘E")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "close_window", shortcut: "Esc")
             }
             
             // Editor de prompt
-            SettingsSection(title: "Editor de Prompt", icon: "square.and.pencil") {
-                ShortcutRow(label: "Guardar prompt",                  shortcut: "⌘S")
+            SettingsSection(title: "prompt_editor", icon: "square.and.pencil") {
+                ShortcutRow(label: "save_prompt",                  shortcut: "⌘S")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Apertura de Snippets (/)",        shortcut: "/")
+                ShortcutRow(label: "open_snippets",        shortcut: "/")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Navegar snippet arriba",          shortcut: "↑")
+                // ShortcutRow(label: "snippet_up",          shortcut: "↑")
+                // Divider().padding(.leading, 20)
+                // ShortcutRow(label: "snippet_down",           shortcut: "↓")
+                // Divider().padding(.leading, 20)
+                // ShortcutRow(label: "insert_snippet", shortcut: "↩ / Esc")
+                // Divider().padding(.leading, 20)
+                ShortcutRow(label: "insert_variable",               shortcut: "⌥V")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Navegar snippet abajo",           shortcut: "↓")
+                ShortcutRow(label: "focus_negative",               shortcut: "⌥N")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Insertar snippet / Cerrar menú", shortcut: "↩ / Esc")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "Insertar variable",               shortcut: "⌥V")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "Modo Zen (pantalla completa)",    shortcut: "⌘⇧Z")
+                ShortcutRow(label: "focus_alternative",               shortcut: "⌥A")
             }
             
             // Variables
-            SettingsSection(title: "Rellenar Variables", icon: "curlybraces") {
-                ShortcutRow(label: "Avanzar al siguiente campo",  shortcut: "↩ Enter")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "Copiar prompt final",         shortcut: "⌘↩")
-                Divider().padding(.leading, 20)
-                ShortcutRow(label: "Cancelar / Cerrar panel",     shortcut: "Esc")
-            }
+            // SettingsSection(title: "fill_variables", icon: "curlybraces") {
+            //     ShortcutRow(label: "next_field",  shortcut: "↩ Enter")
+            //     Divider().padding(.leading, 20)
+            //     ShortcutRow(label: "copy_final_prompt",         shortcut: "⌘↩")
+            //     Divider().padding(.leading, 20)
+            //     ShortcutRow(label: "cancel_close",     shortcut: "Esc")
+            // }
             
             // Ventana
-            SettingsSection(title: "Ventana", icon: "macwindow") {
-                ShortcutRow(label: "Abrir / Cerrar Promtier",  shortcut: "Atajo Global")
+            SettingsSection(title: "window", icon: "macwindow") {
+                ShortcutRow(label: "toggle_promtier",  shortcut: "Atajo Global")
                 Divider().padding(.leading, 20)
-                ShortcutRow(label: "Cerrar ventana",           shortcut: "Esc")
+                ShortcutRow(label: "global_shortcut_copy",  shortcut: "Atajo por Prompt")
+                Divider().padding(.leading, 20)
+                ShortcutRow(label: "close_window",           shortcut: "Esc")
             }
         }
     }
 }
 
 private struct ShortcutRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let shortcut: String
     @EnvironmentObject var preferences: PreferencesManager
     
@@ -578,37 +407,46 @@ struct DataTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     @EnvironmentObject var menuBarManager: MenuBarManager
-    
+
     @Binding var showingResetAlert: Bool
     var onClose: () -> Void
-    
+
     @State private var importStatus: String?
     @State private var exportFormat: ExportFormat = .json
-    
+    @State private var showingiCloudRestartAlert = false    
     enum ExportFormat: String, CaseIterable, Identifiable {
         case json = "JSON"
         case csv  = "CSV"
+        case zip  = "ZIP"
         var id: String { rawValue }
-        var icon: String { self == .json ? "doc.text" : "tablecells" }
+        var icon: String {
+            switch self {
+            case .json: return "doc.text"
+            case .csv: return "tablecells"
+            case .zip: return "doc.zipper"
+            }
+        }
         var subtitle: String {
-            self == .json
-                ? "Backup completo con carpetas (recomendado)"
-                : "Solo prompts — compatible con Excel / Sheets"
+            switch self {
+            case .json: return "export_json_subtitle"
+            case .csv: return "export_csv_subtitle"
+            case .zip: return "export_zip_subtitle"
+            }
         }
     }
     
     var body: some View {
         VStack(spacing: 32) {
-            SettingsSection(title: "Exportar", icon: "square.and.arrow.up") {
+            SettingsSection(title: "export", icon: "square.and.arrow.up") {
                 // Selector de formato
-                SettingsRow("Formato", subtitle: "Elige el formato de exportación") {
+                SettingsRow("format", subtitle: "export_format_subtitle") {
                     Picker("", selection: $exportFormat) {
                         ForEach(ExportFormat.allCases) { fmt in
                             Text(fmt.rawValue).tag(fmt)
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 130)
+                    .frame(width: 190)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -618,8 +456,8 @@ struct DataTab: View {
                     menuBarManager.closePopover()
                     exportData(as: exportFormat)
                 }) {
-                    SettingsRow(exportFormat.subtitle,
-                                subtitle: "Guardar archivo .\(exportFormat.rawValue.lowercased())",
+                    SettingsRow(LocalizedStringKey(exportFormat.subtitle.localized(for: preferences.language)),
+                                subtitle: LocalizedStringKey("save_as_file".localized(for: preferences.language)),
                                 icon: exportFormat.icon,
                                 iconColor: .blue) {
                         Image(systemName: "square.and.arrow.up")
@@ -629,13 +467,13 @@ struct DataTab: View {
                 }.buttonStyle(.plain)
             }
             
-            SettingsSection(title: "Importar", icon: "square.and.arrow.down") {
+            SettingsSection(title: "import", icon: "square.and.arrow.down") {
                 Button(action: {
                     onClose()
                     menuBarManager.closePopover()
                     importData()
                 }) {
-                    SettingsRow("Importar Biblioteca", subtitle: "Carga desde un archivo JSON (formato Promtier)") {
+                    SettingsRow("import_library", subtitle: "import_subtitle") {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 16))
                             .foregroundColor(.blue)
@@ -650,17 +488,25 @@ struct DataTab: View {
                     .padding(.top, -16)
             }
             
-            SettingsSection(title: "Cloud", icon: "icloud.fill") {
-                SettingsRow("iCloud Sync", subtitle: "Sincroniza entre tus Macs") {
-                    Toggle("", isOn: $preferences.icloudSyncEnabled)
-                        .toggleStyle(.switch)
+            SettingsSection(title: "cloud", icon: "icloud.fill") {
+                SettingsRow("icloud_sync", subtitle: "sync_macs") {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.icloudSyncEnabled },
+                        set: { newValue in
+                            preferences.icloudSyncEnabled = newValue
+                            Task {
+                                await DataController.shared.toggleCloudSync(enabled: newValue)
+                                HapticService.shared.playSuccess()
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
                 }
-            }
-            
+            }            
             Button(action: { showingResetAlert = true }) {
                 HStack {
                     Image(systemName: "arrow.counterclockwise")
-                    Text("Restablecer todos los ajustes y datos")
+                    Text("reset_all")
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.red)
@@ -676,44 +522,59 @@ struct DataTab: View {
                 )
             }
             .buttonStyle(.plain)
-        }
-    }
-    
+            .padding(.top, 10)
+            }
+            }
     /// Lógica de exportación nativa — soporta JSON y CSV
     private func exportData(as format: ExportFormat) {
-        let data: Data?
-        let filename: String
-        let contentType: UTType
         let timestamp = Int(Date().timeIntervalSince1970)
-        
-        switch format {
-        case .json:
-            data = promptService.exportAllPromptsAsJSON()
-            filename = "promtier_backup_\(timestamp).json"
-            contentType = .json
-        case .csv:
-            data = promptService.exportAllPromptsAsCSV()
-            filename = "promtier_prompts_\(timestamp).csv"
-            contentType = .commaSeparatedText
-        }
-        
-        guard let exportData = data else { return }
-        
+
         DispatchQueue.main.async {
             let savePanel = NSSavePanel()
-            savePanel.allowedContentTypes = [contentType]
-            savePanel.nameFieldStringValue = filename
-            savePanel.title = "Exportar Biblioteca"
+            switch format {
+            case .json:
+                savePanel.allowedContentTypes = [.json]
+                savePanel.nameFieldStringValue = "promtier_backup_\(timestamp).json"
+            case .csv:
+                savePanel.allowedContentTypes = [.commaSeparatedText]
+                savePanel.nameFieldStringValue = "promtier_prompts_\(timestamp).csv"
+            case .zip:
+                savePanel.allowedContentTypes = [.zip]
+                savePanel.nameFieldStringValue = "promtier_backup_\(timestamp).zip"
+            }
+            savePanel.title = "import_library".localized(for: preferences.language)
             
             NSApp.activate(ignoringOtherApps: true)
             
             savePanel.begin { response in
                 if response == .OK, let url = savePanel.url {
-                    do {
-                        try exportData.write(to: url)
-                        print("✅ Exportado: \(url.path)")
-                    } catch {
-                        print("❌ Error guardando: \(error)")
+                    switch format {
+                    case .json:
+                        guard let exportData = promptService.exportAllPromptsAsJSON() else { return }
+                        do {
+                            try exportData.write(to: url)
+                            print("✅ Exportado: \(url.path)")
+                        } catch {
+                            print("❌ Error guardando: \(error)")
+                        }
+                    case .csv:
+                        guard let exportData = promptService.exportAllPromptsAsCSV() else { return }
+                        do {
+                            try exportData.write(to: url)
+                            print("✅ Exportado: \(url.path)")
+                        } catch {
+                            print("❌ Error guardando: \(error)")
+                        }
+                    case .zip:
+                        DispatchQueue.global(qos: .utility).async {
+                            let ok = promptService.exportBackupZip(to: url)
+                            DispatchQueue.main.async {
+                                withAnimation {
+                                    self.importStatus = ok ? "✅ Backup ZIP exportado" : "❌ Error exportando ZIP"
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.importStatus = nil }
+                            }
+                        }
                     }
                 }
             }
@@ -724,18 +585,23 @@ struct DataTab: View {
     private func importData() {
         DispatchQueue.main.async {
             let openPanel = NSOpenPanel()
-            openPanel.allowedContentTypes = [.json]
+            openPanel.allowedContentTypes = [.json, .zip]
             openPanel.allowsMultipleSelection = false
             openPanel.canChooseDirectories = false
-            openPanel.title = "Importar Biblioteca"
+            openPanel.title = "import_library".localized(for: preferences.language)
             
             NSApp.activate(ignoringOtherApps: true)
             
             openPanel.begin { response in
                 if response == .OK, let url = openPanel.url {
                     do {
-                        let data = try Data(contentsOf: url)
-                        let result = self.promptService.importPromptsFromData(data)
+                        let result: (success: Int, failed: Int, foldersCreated: Int)
+                        if url.pathExtension.lowercased() == "zip" {
+                            result = self.promptService.importBackupZip(from: url)
+                        } else {
+                            let data = try Data(contentsOf: url)
+                            result = self.promptService.importPromptsFromData(data)
+                        }
                         
                         DispatchQueue.main.async {
                             withAnimation {
@@ -765,14 +631,14 @@ struct ExportView: View {
         VStack(spacing: 0) {
             // Header moderno
             HStack(spacing: 20) {
-                Text("Exportar Datos")
+                Text("export_data")
                     .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button("Cerrar") {
+                Button("close") {
                     dismiss()
                 }
                 .foregroundColor(.primary)
@@ -806,13 +672,13 @@ struct ExportView: View {
                         .font(.system(size: 64))
                         .foregroundColor(.blue.opacity(0.8))
                     
-                    Text("Selecciona qué datos deseas exportar:")
+                    Text("export_select_data")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     // TODO: Implementar opciones de exportación
-                    Text("Opciones de exportación próximamente")
+                    Text("coming_soon")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
@@ -830,7 +696,7 @@ struct ExportView: View {
                 .padding(.horizontal, 24)
             
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button("cancel") {
                     dismiss()
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -849,7 +715,7 @@ struct ExportView: View {
                 
                 Spacer()
                 
-                Button("Exportar") {
+                Button("export") {
                     // TODO: Implementar exportación
                     dismiss()
                 }
@@ -878,14 +744,14 @@ struct ImportView: View {
         VStack(spacing: 0) {
             // Header moderno
             HStack(spacing: 20) {
-                Text("Importar Datos")
+                Text("import_data")
                     .font(.system(size: 19, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button("Cerrar") {
+                Button("close") {
                     dismiss()
                 }
                 .foregroundColor(.primary)
@@ -919,13 +785,13 @@ struct ImportView: View {
                         .font(.system(size: 64))
                         .foregroundColor(.blue.opacity(0.8))
                     
-                    Text("Arrastra un archivo JSON aquí o selecciónalo:")
+                    Text("import_drag_drop")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     // TODO: Implementar importación
-                    Text("Importación de archivos próximamente")
+                    Text("coming_soon")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
@@ -943,7 +809,7 @@ struct ImportView: View {
                 .padding(.horizontal, 24)
             
             HStack(spacing: 12) {
-                Button("Cancelar") {
+                Button("cancel") {
                     dismiss()
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -962,7 +828,7 @@ struct ImportView: View {
                 
                 Spacer()
                 
-                Button("Importar") {
+                Button("import") {
                     // TODO: Implementar importación
                     dismiss()
                 }
@@ -990,10 +856,10 @@ struct SupportTab: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        VStack(spacing: 32) {
-            SettingsSection(title: "Contacto y Ayuda", icon: "envelope.fill") {
+        VStack(spacing: 24) {
+            SettingsSection(title: "contact_help", icon: "envelope.fill") {
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Consulta Promtier") }) {
-                    SettingsRow("Soporte por Email", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
+                    SettingsRow("email_support", subtitle: "soporte@promtier.app", icon: "paperplane.fill", iconColor: .blue) {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1004,7 +870,7 @@ struct SupportTab: View {
                 Divider().padding(.leading, 60)
                 
                 Button(action: { openLink("mailto:soporte@promtier.app?subject=Reporte de Error - Promtier") }) {
-                    SettingsRow("Reportar un Problema", subtitle: "Envíanos detalles sobre un error", icon: "ant.fill", iconColor: .orange) {
+                    SettingsRow("report_problem", subtitle: "report_details", icon: "ant.fill", iconColor: .orange) {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1013,9 +879,9 @@ struct SupportTab: View {
                 .buttonStyle(.plain)
             }
             
-            SettingsSection(title: "Legal y Privacidad", icon: "doc.text.fill") {
+            SettingsSection(title: "legal_privacy", icon: "doc.text.fill") {
                 Button(action: { openLink("https://promtier.app/privacy") }) {
-                    SettingsRow("Política de Privacidad", subtitle: "Cómo manejamos tus datos", icon: "hand.raised.fill", iconColor: .green) {
+                    SettingsRow("privacy_policy", subtitle: "how_data_handled", icon: "hand.raised.fill", iconColor: .green) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
@@ -1026,13 +892,30 @@ struct SupportTab: View {
                 Divider().padding(.leading, 60)
                 
                 Button(action: { openLink("https://promtier.app/terms") }) {
-                    SettingsRow("Términos de Servicio", subtitle: "Condiciones de uso de la app", icon: "list.bullet.rectangle.portrait.fill", iconColor: .purple) {
+                    SettingsRow("terms_service", subtitle: "app_conditions", icon: "list.bullet.rectangle.portrait.fill", iconColor: .purple) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
+            }
+            
+            // Glosario de Iconos (Movido al final)
+            SettingsSection(title: "icon_glossary", icon: "info.circle.fill") {
+                VStack(spacing: 0) {
+                    GlossaryRow(icon: "curlybraces", color: .blue, title: "glossary_variable_title", description: "glossary_variables_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "cube.transparent.fill", color: .blue, title: "glossary_variable_indicator_title", description: "glossary_variable_indicator_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "slash.circle.fill", color: .orange, title: "snippets_tab", description: "glossary_snippets_trigger_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "clock.arrow.circlepath", color: .purple, title: "glossary_versions_indicator_title", description: "glossary_versions_indicator_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "circle.fill", color: .red, title: "glossary_negative_dot_title", description: "glossary_negative_dot_desc")
+                    Divider().padding(.leading, 50)
+                    GlossaryRow(icon: "circle.fill", color: .green, title: "glossary_alternative_dot_title", description: "glossary_alternative_dot_desc")
+                }
             }
             
             VStack(spacing: 8) {
@@ -1045,18 +928,18 @@ struct SupportTab: View {
                 Text("Promtier v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.system(size: 14, weight: .bold))
                 
-                Text("Creado con pasión por Valencia")
+                Text("created_with_passion")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                 
-                Button("Visitar Sitio Web") {
+                Button("visit_website") {
                     openLink("https://promtier.app")
                 }
                 .buttonStyle(.link)
                 .font(.system(size: 12))
                 .padding(.top, 4)
             }
-            .padding(.top, 16)
+            .padding(.top, 4)
         }
     }
     
