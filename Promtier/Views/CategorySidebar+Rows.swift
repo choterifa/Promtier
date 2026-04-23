@@ -97,7 +97,8 @@ struct FolderRow: View {
             isEditable: true,
             rawTitle: folder.name,
             onRename: onRename,
-            onDoubleClickRow: onEdit
+            onDoubleClickRow: onEdit,
+            onDeleteSwipe: onDelete
         )
         .padding(.leading, CGFloat(depth * 14))
         .transition(.move(edge: .leading).combined(with: .opacity))

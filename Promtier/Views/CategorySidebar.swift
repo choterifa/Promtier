@@ -499,6 +499,9 @@ struct SidebarItem: View {
     @State private var dragOffset: CGFloat = 0
     @State private var isSwiping: Bool = false
     
+    /// Offset máximo revelado al deslizar (ancho del botón de eliminar)
+    private let swipeRevealWidth: CGFloat = 70
+    
     var body: some View {
         ZStack(alignment: .trailing) {
             // Fondo rojo de eliminación (oculto en el espacio desplazado)
@@ -513,7 +516,7 @@ struct SidebarItem: View {
                     } label: {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.red)
-                            .frame(width: 60)
+                            .frame(width: 70)
                             .overlay(
                                 Image(systemName: "trash.fill")
                                     .font(.system(size: 12, weight: .bold))
@@ -627,30 +630,36 @@ struct SidebarItem: View {
                     )
             )
             .contentShape(Rectangle())
-            .offset(x: dragOffset)
-            .gesture(
-                DragGesture(minimumDistance: 15)
-                    .onChanged { value in
-                        guard onDeleteSwipe != nil else { return }
-                        if value.translation.width < 0 {
-                            dragOffset = max(-60, value.translation.width)
-                        } else if isSwiping && value.translation.width > 0 {
-                            dragOffset = min(0, -60 + value.translation.width)
+            // ── Swipe-to-delete via scrollWheel (macOS trackpad) ─────────────
+            // ORDEN IMPORTANTE: aplicar ANTES de .offset para que el overlay
+            // se desplace junto con el contenido. Si se aplica después, SwiftUI
+            // lo ancla a la posición original (donde aparece el botón de borrar)
+            // y bloquea los clics sobre él.
+            .trackpadHorizontalSwipe(
+                enabled: onDeleteSwipe != nil,
+                onChanged: { delta in
+                    if delta < 0 {
+                        dragOffset = max(-swipeRevealWidth, delta)
+                    } else if isSwiping {
+                        dragOffset = min(0, -swipeRevealWidth + delta)
+                    }
+                },
+                onEnded: { total, velocity in
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        let passedThreshold = total < -(swipeRevealWidth / 2)
+                        let fastSwipe = velocity < -200
+                        if passedThreshold || fastSwipe {
+                            dragOffset = -swipeRevealWidth
+                            isSwiping = true
+                            HapticService.shared.playLight()
+                        } else {
+                            dragOffset = 0
+                            isSwiping = false
                         }
                     }
-                    .onEnded { value in
-                        guard onDeleteSwipe != nil else { return }
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            if value.translation.width < -30 {
-                                dragOffset = -60
-                                isSwiping = true
-                            } else {
-                                dragOffset = 0
-                                isSwiping = false
-                            }
-                        }
-                    }
+                }
             )
+            .offset(x: dragOffset)
             .onTapGesture(count: 2) {
                 if !isSwiping {
                     onDoubleClickRow?()
