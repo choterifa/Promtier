@@ -491,7 +491,7 @@ final class PromptRepository {
     func movePrompts(withIds ids: [UUID], toFolder folderName: String?) -> Bool {
         let context = dataController.viewContext
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id IN %@", ids.map { $0 as CVarArg })
+        request.predicate = NSPredicate(format: "id IN %@", ids)
 
         guard let entities = try? context.fetch(request) else { return false }
         for entity in entities {
@@ -505,7 +505,7 @@ final class PromptRepository {
     func markPromptsFavorite(withIds ids: [UUID]) -> Bool {
         let context = dataController.viewContext
         let request: NSFetchRequest<PromptEntity> = PromptEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "id IN %@", ids.map { $0 as CVarArg })
+        request.predicate = NSPredicate(format: "id IN %@", ids)
 
         guard let entities = try? context.fetch(request) else { return false }
         for entity in entities {
