@@ -281,6 +281,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var doubleRightCommandForMagicSave: Bool {
+        didSet {
+            userDefaults.set(doubleRightCommandForMagicSave, forKey: "doubleRightCommandForMagicSave")
+        }
+    }
+    
     @Published var draftPresets: [DraftPreset] {
         didSet {
             if let data = try? JSONEncoder().encode(draftPresets) {
@@ -525,6 +531,7 @@ class PreferencesManager: ObservableObject {
         self.magicSaveHotkeyCode = userDefaults.object(forKey: "magicSaveHotkeyCode") as? Int ?? 1 // 'S' key
         self.magicSaveHotkeyModifiers = userDefaults.object(forKey: "magicSaveHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
         self.doubleRightOptionForAIDraft = userDefaults.object(forKey: "doubleRightOptionForAIDraft") == nil ? true : userDefaults.bool(forKey: "doubleRightOptionForAIDraft")
+        self.doubleRightCommandForMagicSave = userDefaults.object(forKey: "doubleRightCommandForMagicSave") == nil ? true : userDefaults.bool(forKey: "doubleRightCommandForMagicSave")
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.aiResponseLanguage = userDefaults.string(forKey: "aiResponseLanguage") ?? "auto"
@@ -728,6 +735,7 @@ class PreferencesManager: ObservableObject {
         self.aiDraftHotkeyCode = 2
         self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.doubleRightOptionForAIDraft = true
+        self.doubleRightCommandForMagicSave = true
         self.language = .english
         self.autoPaste = false
         self.clipboardSuggestions = true

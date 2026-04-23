@@ -32,8 +32,10 @@ final class GlobalHotkeyManager: ObservableObject {
     
     // Double tap detection
     private var lastOptionTapTime: Date = .distantPast
+    private var lastCommandTapTime: Date = .distantPast
     private let doubleTapThreshold: TimeInterval = 0.35
     private var lastOptionPressed: Bool = false
+    private var lastCommandPressed: Bool = false
     
     private init() {
         print("✅ GlobalHotkeyManager inicializado")
@@ -79,28 +81,48 @@ final class GlobalHotkeyManager: ObservableObject {
     }
 
     private func handleFlagsChanged(_ event: NSEvent) {
-        guard isEnabled && PreferencesManager.shared.doubleRightOptionForAIDraft else { return }
-        
+        guard isEnabled else { return }
+        let prefs = PreferencesManager.shared
         let flags = event.modifierFlags
-        let isOptionNow = flags.contains(.option)
-        let isRightNow = (flags.rawValue & 0x40) != 0 // NX_DEVICERIGHTOPTIONMASK
+        let now = Date()
         
-        if isOptionNow && isRightNow {
-            if !lastOptionPressed {
-                // Modifiers transitions: this is a PRESS
-                let now = Date()
-                if now.timeIntervalSince(lastOptionTapTime) < doubleTapThreshold {
-                    triggerAIDraft()
-                    lastOptionTapTime = .distantPast
-                } else {
-                    lastOptionTapTime = now
+        // 1. Right Option (AI Draft)
+        if prefs.doubleRightOptionForAIDraft {
+            let isOptionNow = flags.contains(.option)
+            let isRightOption = (flags.rawValue & 0x40) != 0 // NX_DEVICERIGHTOPTIONMASK
+            
+            if isOptionNow && isRightOption {
+                if !lastOptionPressed {
+                    if now.timeIntervalSince(lastOptionTapTime) < doubleTapThreshold {
+                        triggerAIDraft()
+                        lastOptionTapTime = .distantPast
+                    } else {
+                        lastOptionTapTime = now
+                    }
                 }
-            }
-            lastOptionPressed = true
-        } else {
-            // RELEASE or other modifiers changed
-            if !isOptionNow {
+                lastOptionPressed = true
+            } else if !isOptionNow {
                 lastOptionPressed = false
+            }
+        }
+        
+        // 2. Right Command (Magic Save)
+        if prefs.doubleRightCommandForMagicSave {
+            let isCommandNow = flags.contains(.command)
+            let isRightCommand = (flags.rawValue & 0x10) != 0 // NX_DEVICERIGHTCOMMANDMASK
+            
+            if isCommandNow && isRightCommand {
+                if !lastCommandPressed {
+                    if now.timeIntervalSince(lastCommandTapTime) < doubleTapThreshold {
+                        triggerMagicSave()
+                        lastCommandTapTime = .distantPast
+                    } else {
+                        lastCommandTapTime = now
+                    }
+                }
+                lastCommandPressed = true
+            } else if !isCommandNow {
+                lastCommandPressed = false
             }
         }
     }

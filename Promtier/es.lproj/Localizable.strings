@@ -125,6 +125,11 @@
 "accessibility_required" = "Permisos requeridos ⚠️";
 "accessibility_verified" = "Verificado";
 "accessibility_configure" = "Configurar";
+"shortcuts_gestures" = "Atajos y Gestos";
+"double_tap_right_command" = "Doble toque Command derecho";
+"double_tap_right_command_subtitle" = "Presiona dos veces Command derecho para Magic Save";
+"double_tap_right_option" = "Doble toque Option derecho";
+"double_tap_right_option_subtitle" = "Presiona dos veces Option derecho para AI Draft";
 "haptic_feedback" = "Feedback háptico";
 "haptic_feedback_subtitle" = "Retroalimentación táctil en el trackpad";
 "test_vibration" = "Probar Vibración";

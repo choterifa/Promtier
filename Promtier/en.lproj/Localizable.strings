@@ -104,6 +104,11 @@
 "accessibility_required" = "Permissions required ⚠️";
 "accessibility_verified" = "Verified";
 "accessibility_configure" = "Configure";
+"shortcuts_gestures" = "Shortcuts & Gestures";
+"double_tap_right_command" = "Double Tap Right Command";
+"double_tap_right_command_subtitle" = "Tap Right Command twice to trigger Magic Save";
+"double_tap_right_option" = "Double Tap Right Option";
+"double_tap_right_option_subtitle" = "Tap Right Option twice to trigger AI Draft";
 "haptic_feedback" = "Haptic Feedback";
 "haptic_feedback_subtitle" = "Tactile feedback on the trackpad";
 "test_vibration" = "Test Vibration";

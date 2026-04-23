@@ -133,6 +133,20 @@ struct BehaviorTab: View {
                 }
             }
             
+            SettingsSection(title: "shortcuts_gestures", icon: "keyboard") {
+                SettingsRow("double_tap_right_command", subtitle: "double_tap_right_command_subtitle", icon: "bolt.fill", iconColor: .orange) {
+                    Toggle("", isOn: $preferences.doubleRightCommandForMagicSave)
+                        .toggleStyle(.switch)
+                }
+                
+                Divider().padding(.leading, 20)
+                
+                SettingsRow("double_tap_right_option", subtitle: "double_tap_right_option_subtitle", icon: "sparkles", iconColor: .blue) {
+                    Toggle("", isOn: $preferences.doubleRightOptionForAIDraft)
+                        .toggleStyle(.switch)
+                }
+            }
+
             SettingsSection(title: "system", icon: "macwindow") {
                 SettingsRow("launch_at_login", subtitle: "launch_at_login_subtitle") {
                     Toggle("", isOn: $preferences.launchAtLogin)
