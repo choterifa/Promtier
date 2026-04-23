@@ -43,11 +43,17 @@ class FloatingOnboardingManager: NSObject, ObservableObject {
         isVisible = true
     }
     
-    func hide() {
+    func hide(openMainApp: Bool = false) {
         panel?.orderOut(nil)
         isVisible = false
         // Marcar como visto al cerrar
         PreferencesManager.shared.hasSeenOnboarding = true
+        
+        if openMainApp {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                MenuBarManager.shared.showWithState(.main)
+            }
+        }
     }
     
     private func createPanel() {

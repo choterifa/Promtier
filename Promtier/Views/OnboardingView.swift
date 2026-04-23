@@ -87,7 +87,7 @@ struct OnboardingView: View {
                         if manager.currentStep < totalSteps - 1 {
                             withAnimation { manager.currentStep += 1 }
                         } else {
-                            manager.hide()
+                            manager.hide(openMainApp: true)
                         }
                     }) {
                         HStack(spacing: 8) {
