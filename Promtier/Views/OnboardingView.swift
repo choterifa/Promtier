@@ -203,6 +203,12 @@ struct OnboardingView: View {
                 VStack(alignment: .leading) {
                     Text("BORRADOR").font(.system(size: 9, weight: .black)).opacity(0.5)
                     RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.04)).frame(width: 200, height: 140)
+                        .overlay(
+                            Text(draftTypingText)
+                                .font(.system(size: 11, design: .monospaced))
+                                .padding(12)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        )
                 }
                 
                 Image(systemName: "chevron.right").font(.title).foregroundColor(.blue.opacity(0.5))
@@ -211,6 +217,13 @@ struct OnboardingView: View {
                     Text("IA").font(.system(size: 9, weight: .black)).foregroundColor(.purple)
                     RoundedRectangle(cornerRadius: 12).fill(Color.purple.opacity(0.04)).frame(width: 200, height: 140)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.purple.opacity(0.4), lineWidth: 2))
+                        .overlay(
+                            Text(aiTypingText)
+                                .font(.system(size: 10, design: .monospaced))
+                                .padding(12)
+                                .foregroundColor(.purple)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        )
                 }
             }
             
@@ -218,6 +231,9 @@ struct OnboardingView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.blue.opacity(0.8))
                 .padding(.top, 10)
+        }
+        .onAppear {
+            startDraftAnimation()
         }
     }
 
@@ -640,6 +656,8 @@ struct OnboardingView: View {
     
     // MARK: - Estados de Animación
     @State private var omniTypingText: String = ""
+    @State private var draftTypingText: String = ""
+    @State private var aiTypingText: String = ""
     @State private var isCursorVisible: Bool = false
     @State private var magicPulse: Bool = false
     @State private var typingID = UUID()
@@ -665,6 +683,36 @@ struct OnboardingView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) {
                 if self.typingID == currentID {
                     omniTypingText.append(character)
+                }
+            }
+        }
+    }
+    
+    private func startDraftAnimation() {
+        let currentID = UUID()
+        self.typingID = currentID
+        
+        let draftText = "Crea un gato espacial"
+        let aiText = "Cinematic shot of a fluffy cat in a detailed galaxy suit, nebula clouds, 8k resolution, photorealistic"
+        
+        draftTypingText = ""
+        aiTypingText = ""
+        
+        // Fase 1: Escribir borrador
+        for (index, char) in draftText.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.08) {
+                if self.typingID == currentID {
+                    draftTypingText.append(char)
+                }
+            }
+        }
+        
+        // Fase 2: Escribir IA (con delay)
+        let delay = Double(draftText.count) * 0.08 + 0.5
+        for (index, char) in aiText.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay + Double(index) * 0.04) {
+                if self.typingID == currentID {
+                    aiTypingText.append(char)
                 }
             }
         }
