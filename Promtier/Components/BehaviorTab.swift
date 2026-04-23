@@ -9,7 +9,7 @@ struct BehaviorTab: View {
     var body: some View {
         VStack(spacing: 32) {
             SettingsSection(title: "interaction", icon: "hand.tap.fill") {
-                SettingsRow("include_subcategory_prompts", subtitle: "include_subcategory_prompts_subtitle", icon: "folder.tree.fill", iconColor: .blue) {
+                SettingsRow("include_subcategory_prompts", subtitle: "include_subcategory_prompts_subtitle", icon: "rectangle.stack.fill", iconColor: .blue) {
                     Toggle("", isOn: $preferences.includeSubcategoryPrompts)
                         .toggleStyle(.switch)
                 }
