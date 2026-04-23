@@ -296,18 +296,18 @@ struct FloatingAIDraftView: View {
 
         isTypewriterAnimating = true
         
-        // Ajustar velocidad: más caracteres por tick si el texto es largo
+        // Ajustar velocidad para que sea visible pero ágil
         let charsPerTick: Int
-        if totalChars <= 200 { charsPerTick = 4 }
-        else if totalChars <= 600 { charsPerTick = 8 }
-        else if totalChars <= 1200 { charsPerTick = 16 }
-        else { charsPerTick = 24 }
+        if totalChars <= 300 { charsPerTick = 2 }
+        else if totalChars <= 800 { charsPerTick = 5 }
+        else if totalChars <= 1500 { charsPerTick = 12 }
+        else { charsPerTick = 20 }
         
         var currentIndex = fullText.startIndex
         let startTime = Date()
 
-        typewriterTimer = Timer.scheduledTimer(withTimeInterval: 0.015, repeats: true) { timer in
-            // Autoterminar si la animación dura más de 1.2 segundos para no hacer esperar
+        typewriterTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { timer in
+            // Forzar finalización si pasa de 1.2 segundos
             if Date().timeIntervalSince(startTime) > 1.2 {
                 manager.responseText = fullText
                 timer.invalidate()
