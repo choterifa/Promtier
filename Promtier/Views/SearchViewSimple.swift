@@ -184,7 +184,7 @@ struct SearchViewSimple: View {
             
             // Atajos Personalizables (Globales)
             GhostTip(title: "gt_fast_add_title".localized(for: preferences.language), icon: "bolt.fill", shortcut: preferences.shortcutDisplayString(keyCode: preferences.fastAddHotkeyCode, modifiers: preferences.fastAddHotkeyModifiers)),
-            GhostTip(title: "AI Quick Draft", icon: "sparkles", shortcut: preferences.shortcutDisplayString(keyCode: preferences.aiDraftHotkeyCode, modifiers: preferences.aiDraftHotkeyModifiers)),
+            GhostTip(title: "AI Quick Draft", icon: "sparkles", shortcut: "\("double_tap_right_option".localized(for: preferences.language)) / \(preferences.shortcutDisplayString(keyCode: preferences.aiDraftHotkeyCode, modifiers: preferences.aiDraftHotkeyModifiers))"),
             GhostTip(title: "gt_create_category_title".localized(for: preferences.language), icon: "folder.badge.plus", shortcut: preferences.shortcutDisplayString(keyCode: preferences.categoryHotkeyCode, modifiers: preferences.categoryHotkeyModifiers)),
             
             GhostTip(title: "settings".localized(for: preferences.language), icon: "gearshape", shortcut: "Cmd + ,"),

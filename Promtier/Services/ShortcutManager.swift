@@ -29,6 +29,11 @@ final class GlobalHotkeyManager: ObservableObject {
     private static var isHandlerInstalled = false
     private var hasLoggedInitialAccessibilityState = false
     
+    // Double tap detection
+    private var lastOptionTapTime: Date = .distantPast
+    private let doubleTapThreshold: TimeInterval = 0.35
+    private var lastOptionPressed: Bool = false
+    
     private init() {
         print("✅ GlobalHotkeyManager inicializado")
         setupMonitors()
@@ -50,15 +55,51 @@ final class GlobalHotkeyManager: ObservableObject {
     
     private func setupMonitors() {
         // Monitor local (cuando la app está en foco)
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+            if event.type == .flagsChanged {
+                self?.handleFlagsChanged(event)
+                return event
+            }
             return self?.handleKeyEvent(event)
         }
         
         // Monitor global centralizado (para clics fuera de la app, etc.)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown]) { [weak self] event in
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown, .flagsChanged]) { [weak self] event in
             guard let self = self else { return }
+            
+            if event.type == .flagsChanged {
+                self.handleFlagsChanged(event)
+            }
+            
             for handler in self.eventSubscriptions.values {
                 handler(event)
+            }
+        }
+    }
+
+    private func handleFlagsChanged(_ event: NSEvent) {
+        guard isEnabled && PreferencesManager.shared.doubleRightOptionForAIDraft else { return }
+        
+        let flags = event.modifierFlags
+        let isOptionNow = flags.contains(.option)
+        let isRightNow = (flags.rawValue & 0x40) != 0 // NX_DEVICERIGHTOPTIONMASK
+        
+        if isOptionNow && isRightNow {
+            if !lastOptionPressed {
+                // Modifiers transitions: this is a PRESS
+                let now = Date()
+                if now.timeIntervalSince(lastOptionTapTime) < doubleTapThreshold {
+                    triggerAIDraft()
+                    lastOptionTapTime = .distantPast
+                } else {
+                    lastOptionTapTime = now
+                }
+            }
+            lastOptionPressed = true
+        } else {
+            // RELEASE or other modifiers changed
+            if !isOptionNow {
+                lastOptionPressed = false
             }
         }
     }
@@ -205,30 +246,34 @@ final class GlobalHotkeyManager: ObservableObject {
         } else if id == 103 {
             MenuBarManager.shared.showWithState(.newPrompt)
         } else if id == 104 {
-            let pasteboard = NSPasteboard.general
-            let oldChangeCount = pasteboard.changeCount
-            let source = CGEventSource(stateID: .hidSystemState)
-            let kVK_Command: CGKeyCode = 55
-            let kVK_ANSI_C: CGKeyCode = 8
-            
-            let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
-            let cDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: true)
-            cDown?.flags = .maskCommand
-            let cUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: false)
-            cUp?.flags = .maskCommand
-            let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
-            
-            cmdDown?.post(tap: .cghidEventTap)
-            cDown?.post(tap: .cghidEventTap)
-            cUp?.post(tap: .cghidEventTap)
-            cmdUp?.post(tap: .cghidEventTap)
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
-                FloatingAIDraftManager.shared.show(content: selection ?? "", autoImprove: selection != nil)
-            }
+            triggerAIDraft()
         } else if let promptId = promptHotkeyMap[id] {
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)
+        }
+    }
+
+    private func triggerAIDraft() {
+        let pasteboard = NSPasteboard.general
+        let oldChangeCount = pasteboard.changeCount
+        let source = CGEventSource(stateID: .hidSystemState)
+        let kVK_Command: CGKeyCode = 55
+        let kVK_ANSI_C: CGKeyCode = 8
+        
+        let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
+        let cDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: true)
+        cDown?.flags = .maskCommand
+        let cUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: false)
+        cUp?.flags = .maskCommand
+        let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
+        
+        cmdDown?.post(tap: .cghidEventTap)
+        cDown?.post(tap: .cghidEventTap)
+        cUp?.post(tap: .cghidEventTap)
+        cmdUp?.post(tap: .cghidEventTap)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
+            FloatingAIDraftManager.shared.show(content: selection ?? "", autoImprove: selection != nil)
         }
     }
     

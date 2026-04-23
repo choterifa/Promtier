@@ -300,6 +300,14 @@ struct ShortcutsTab: View {
                             defaultKeyCode: 2,
                             defaultModifiers: Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
                         )
+                        
+                        Divider().padding(.vertical, 4)
+                        
+                        SettingsRow("Gestos Extra: AI Quick Draft", subtitle: "double_tap_right_option") {
+                            Toggle("", isOn: $preferences.doubleRightOptionForAIDraft)
+                                .toggleStyle(.switch)
+                        }
+                        .padding(.horizontal, 4)
                     }
                     .padding(20)
                 }

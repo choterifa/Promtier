@@ -260,6 +260,12 @@ class PreferencesManager: ObservableObject {
             ShortcutManager.shared.setupCarbonHotKey()
         }
     }
+
+    @Published var doubleRightOptionForAIDraft: Bool {
+        didSet {
+            userDefaults.set(doubleRightOptionForAIDraft, forKey: "doubleRightOptionForAIDraft")
+        }
+    }
     
     @Published var draftPresets: [DraftPreset] {
         didSet {
@@ -500,8 +506,9 @@ class PreferencesManager: ObservableObject {
         self.categoryHotkeyModifiers = userDefaults.object(forKey: "categoryHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
         self.newPromptHotkeyCode = userDefaults.object(forKey: "newPromptHotkeyCode") as? Int ?? 0
         self.newPromptHotkeyModifiers = userDefaults.object(forKey: "newPromptHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
-        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 34
+        self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 2
         self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.doubleRightOptionForAIDraft = userDefaults.object(forKey: "doubleRightOptionForAIDraft") == nil ? true : userDefaults.bool(forKey: "doubleRightOptionForAIDraft")
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english
         self.aiResponseLanguage = userDefaults.string(forKey: "aiResponseLanguage") ?? "auto"
@@ -704,6 +711,7 @@ class PreferencesManager: ObservableObject {
         self.newPromptHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.aiDraftHotkeyCode = 2
         self.aiDraftHotkeyModifiers = Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.doubleRightOptionForAIDraft = true
         self.language = .english
         self.autoPaste = false
         self.clipboardSuggestions = true
