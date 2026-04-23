@@ -260,6 +260,20 @@ class PreferencesManager: ObservableObject {
             ShortcutManager.shared.setupCarbonHotKey()
         }
     }
+    
+    @Published var magicSaveHotkeyCode: Int {
+        didSet {
+            userDefaults.set(magicSaveHotkeyCode, forKey: "magicSaveHotkeyCode")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
+    
+    @Published var magicSaveHotkeyModifiers: Int {
+        didSet {
+            userDefaults.set(magicSaveHotkeyModifiers, forKey: "magicSaveHotkeyModifiers")
+            ShortcutManager.shared.setupCarbonHotKey()
+        }
+    }
 
     @Published var doubleRightOptionForAIDraft: Bool {
         didSet {
@@ -508,6 +522,8 @@ class PreferencesManager: ObservableObject {
         self.newPromptHotkeyModifiers = userDefaults.object(forKey: "newPromptHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         self.aiDraftHotkeyCode = userDefaults.object(forKey: "aiDraftHotkeyCode") as? Int ?? 2
         self.aiDraftHotkeyModifiers = userDefaults.object(forKey: "aiDraftHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .shift]).rawValue)
+        self.magicSaveHotkeyCode = userDefaults.object(forKey: "magicSaveHotkeyCode") as? Int ?? 1 // 'S' key
+        self.magicSaveHotkeyModifiers = userDefaults.object(forKey: "magicSaveHotkeyModifiers") as? Int ?? Int(NSEvent.ModifierFlags([.command, .option]).rawValue)
         self.doubleRightOptionForAIDraft = userDefaults.object(forKey: "doubleRightOptionForAIDraft") == nil ? true : userDefaults.bool(forKey: "doubleRightOptionForAIDraft")
         
         self.language = AppLanguage(rawValue: userDefaults.string(forKey: "language") ?? "en") ?? .english

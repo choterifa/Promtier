@@ -21,6 +21,7 @@ final class GlobalHotkeyManager: ObservableObject {
     private var categoryHotKeyRef: EventHotKeyRef?
     private var newPromptHotKeyRef: EventHotKeyRef?
     private var aiDraftHotKeyRef: EventHotKeyRef?
+    private var magicSaveHotKeyRef: EventHotKeyRef?
     private var promptHotKeyRefs: [UInt32: EventHotKeyRef] = [:]
     private var promptHotkeyMap: [UInt32: UUID] = [:]
     private var nextHotKeyId: UInt32 = 2
@@ -135,12 +136,14 @@ final class GlobalHotkeyManager: ObservableObject {
         if let ref = categoryHotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = newPromptHotKeyRef { UnregisterEventHotKey(ref) }
         if let ref = aiDraftHotKeyRef { UnregisterEventHotKey(ref) }
+        if let ref = magicSaveHotKeyRef { UnregisterEventHotKey(ref) }
         hotKeyRef = nil
         omniHotKeyRef = nil
         fastAddHotKeyRef = nil
         categoryHotKeyRef = nil
         newPromptHotKeyRef = nil
         aiDraftHotKeyRef = nil
+        magicSaveHotKeyRef = nil
         
         let prefs = PreferencesManager.shared
         guard prefs.globalShortcutEnabled else { return }
@@ -163,6 +166,9 @@ final class GlobalHotkeyManager: ObservableObject {
         }
         if prefs.aiDraftHotkeyCode != -1 {
             aiDraftHotKeyRef = registerCarbonHotKey(keyCode: prefs.aiDraftHotkeyCode, modifiers: prefs.aiDraftHotkeyModifiers, id: 104)
+        }
+        if prefs.magicSaveHotkeyCode != -1 {
+            magicSaveHotKeyRef = registerCarbonHotKey(keyCode: prefs.magicSaveHotkeyCode, modifiers: prefs.magicSaveHotkeyModifiers, id: 105)
         }
         
         // Instalar el manejador de eventos una sola vez globalmente
@@ -247,6 +253,8 @@ final class GlobalHotkeyManager: ObservableObject {
             MenuBarManager.shared.showWithState(.newPrompt)
         } else if id == 104 {
             triggerAIDraft()
+        } else if id == 105 {
+            triggerMagicSave()
         } else if let promptId = promptHotkeyMap[id] {
             NotificationCenter.default.post(name: NSNotification.Name("PromtierCustomShortcutPressed"), object: promptId)
         }
@@ -280,6 +288,61 @@ final class GlobalHotkeyManager: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
             manager.show(content: selection ?? "", autoImprove: selection != nil)
+        }
+    }
+
+    private func triggerMagicSave() {
+        // 1. Comprobar permisos de accesibilidad primero
+        guard checkAccessibilityPermissions(forceDialog: false) else {
+            NotificationService.shared.sendNotification(
+                title: "Permisos Requeridos",
+                body: "Activa 'Accesibilidad' para Promtier en Ajustes del Sistema para usar Magic Save."
+            )
+            // Abrir ajustes si es posible
+            let pre = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            if let url = URL(string: pre) {
+                NSWorkspace.shared.open(url)
+            }
+            return
+        }
+
+        let pasteboard = NSPasteboard.general
+        let oldChangeCount = pasteboard.changeCount
+        let source = CGEventSource(stateID: .hidSystemState)
+        
+        let kVK_Command: CGKeyCode = 55
+        let kVK_ANSI_C: CGKeyCode = 8
+        
+        // Simular Cmd+C con un poco más de precisión en los flags
+        let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
+        let cDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: true)
+        cDown?.flags = .maskCommand
+        
+        let cUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_C, keyDown: false)
+        cUp?.flags = .maskCommand
+        
+        let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
+        
+        // Ejecución de la secuencia
+        cmdDown?.post(tap: .cghidEventTap)
+        cDown?.post(tap: .cghidEventTap)
+        
+        // Pequeño micro-delay entre pulsaciones para mayor realismo
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            cUp?.post(tap: .cghidEventTap)
+            cmdUp?.post(tap: .cghidEventTap)
+        }
+        
+        // Aumentamos el delay de lectura a 0.3s para dar margen a apps lentas (browsers)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil {
+                MagicSaveService.shared.executeMagicSave(capturedText: selection)
+            } else {
+                NotificationService.shared.sendNotification(
+                    title: "Magic Save",
+                    body: "No se capturó selección. Asegúrate de que el texto esté resaltado."
+                )
+            }
         }
     }
     

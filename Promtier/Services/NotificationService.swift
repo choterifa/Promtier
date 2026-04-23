@@ -19,20 +19,19 @@ class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     }
     
     func sendAIDraftNotification(title: String, body: String) {
-        // Solo enviar si la ventana no es la frontal o si el usuario quiere ser notificado
-        // Para esta tarea, asumimos que el usuario la quiere siempre que termine la IA
-        
+        sendNotification(title: title, body: body)
+    }
+
+    func sendNotification(title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
         
-        // Añadir una acción para abrir la app (opcional, por defecto al hacer click abre)
-        
         let request = UNNotificationRequest(
-            identifier: "AIDraftReady-\(UUID().uuidString)",
+            identifier: "PromtierNotification-\(UUID().uuidString)",
             content: content,
-            trigger: nil // Inmediato
+            trigger: nil
         )
         
         UNUserNotificationCenter.current().add(request)
