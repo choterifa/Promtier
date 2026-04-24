@@ -426,6 +426,8 @@ func exportAllPrompts() -> String {
         if overwrite {
             print("⚠️ Ejecutando restauración total (overwrite mode)")
             dataController.deleteAll()
+            // Limpiar todas las imágenes para evitar huérfanos en disco e iCloud
+            ImageStore.shared.wipeAll()
             // Recargar para limpiar el estado en memoria
             loadFolders()
             loadPrompts()

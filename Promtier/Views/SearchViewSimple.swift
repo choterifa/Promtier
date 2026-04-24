@@ -565,17 +565,7 @@ struct SearchViewSimple: View {
                         isPerformanceCardMode: isPerformanceCardMode,
                         categoryColor: categoryColor(for:),
                         resolvedIcon: resolvedIcon(for:),
-                        onSelect: { prompt in 
-                            isSearchFocused = false
-                            isNavigatingWithKeys = true
-                            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                            let latest = latestPrompt(for: prompt)
-                            selectedPrompt = latest
-                            prewarmPreviewAssets(for: latest)
-                            if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
-                            if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-                            NSApp.keyWindow?.makeKeyAndOrderFront(nil)
-                        },
+                        onSelect: { prompt in onSelectPrompt(prompt) },
                         onDoubleTap: { prompt in 
                             isNavigatingWithKeys = false
                             selectedPrompt = latestPrompt(for: prompt)
@@ -732,19 +722,15 @@ struct SearchViewSimple: View {
 
     @ViewBuilder
     func previewPopoverIfSelected<Content: View>(for prompt: Prompt, @ViewBuilder content: () -> Content) -> some View {
-        if showingPreview && selectedPrompt?.id == prompt.id {
-            content()
-                .popover(isPresented: selectedPreviewPopoverBinding(for: prompt.id), arrowEdge: .top) {
-                    PromptPreviewView(
-                        prompt: selectedPrompt ?? prompt,
-                        prefetchedShowcasePaths: (prefetchedPreviewPromptId == prompt.id) ? prefetchedPreviewPaths : nil,
-                        isFullScreenImageOpen: $isFullScreenImageOpen,
-                        onUse: { usePrompt(prompt) }
-                    )
-                }
-        } else {
-            content()
-        }
+        content()
+            .popover(isPresented: selectedPreviewPopoverBinding(for: prompt.id), arrowEdge: .top) {
+                PromptPreviewView(
+                    prompt: selectedPrompt ?? prompt,
+                    prefetchedShowcasePaths: (prefetchedPreviewPromptId == prompt.id) ? prefetchedPreviewPaths : nil,
+                    isFullScreenImageOpen: $isFullScreenImageOpen,
+                    onUse: { usePrompt(prompt) }
+                )
+            }
     }
 
     

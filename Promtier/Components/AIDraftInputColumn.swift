@@ -7,6 +7,9 @@ struct AIDraftInputColumn: View {
     @FocusState.Binding var isDraftFocused: Bool
     let wordCount: Int
     
+    @State private var localContent: String = ""
+    @State private var textSyncTask: Task<Void, Never>? = nil
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -25,14 +28,14 @@ struct AIDraftInputColumn: View {
             .padding(.leading, 24).padding(.trailing, 16)
 
             ZStack(alignment: .topLeading) {
-                if manager.content.isEmpty {
+                if localContent.isEmpty {
                     Text("Pega o escribe tu borrador aquí...")
                         .foregroundColor(.secondary.opacity(0.4))
                         .font(.system(size: 14 * preferences.fontSize.scale))
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .allowsHitTesting(false)
                 }
-                TextEditor(text: $manager.content)
+                TextEditor(text: $localContent)
                     .font(.system(size: 14 * preferences.fontSize.scale))
                     .lineSpacing(5)
                     .scrollContentBackground(.hidden)
@@ -46,7 +49,7 @@ struct AIDraftInputColumn: View {
 
             HStack {
                 HStack(spacing: 4) {
-                    Text("\(manager.content.count) carácteres")
+                    Text("\(localContent.count) carácteres")
                     Text("•")
                     Text("\(wordCount) palabras")
                 }
@@ -60,5 +63,21 @@ struct AIDraftInputColumn: View {
             .padding(.bottom, 20)
         }
         .frame(width: 370)
+        .onAppear {
+            localContent = manager.content
+        }
+        .onChange(of: manager.content) { _, new in
+            if localContent != new { localContent = new }
+        }
+        .onChange(of: localContent) { _, new in
+            if manager.content != new {
+                textSyncTask?.cancel()
+                textSyncTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                    guard !Task.isCancelled else { return }
+                    if manager.content != new { manager.content = new }
+                }
+            }
+        }
     }
 }

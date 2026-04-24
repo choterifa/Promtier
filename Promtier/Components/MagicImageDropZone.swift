@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 public struct MagicImageDropZone: View {
     @Binding var isDraggingImage: Bool
+    @State private var showUnsupportedAlert: Bool = false
     var onImageDropped: (Data) -> Void
     
     public init(isDraggingImage: Binding<Bool>, onImageDropped: @escaping (Data) -> Void) {
@@ -22,27 +23,47 @@ public struct MagicImageDropZone: View {
                 .foregroundColor(isDraggingImage ? .blue : .secondary)
         }
         .frame(width: 38, height: 38)
-        .help("Arrastra y suelta una imagen aquí adentro para analizarla mágicamente")
-        .onDrop(of: [.image, .fileURL], isTargeted: $isDraggingImage) { providers in
+        .help("Arrastra y suelta una imagen o PDF aquí adentro para analizarlo mágicamente")
+        .alert("Formato no soportado", isPresented: $showUnsupportedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Solo se admiten imágenes y archivos PDF para extraer el prompt. Por favor, intenta con un formato válido (JPG, PNG, PDF, etc).")
+        }
+        .onDrop(of: [.image, .pdf, .fileURL], isTargeted: $isDraggingImage) { providers in
+            var handled = false
             for provider in providers {
-                if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                    provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                        guard let data = data else { return }
+                if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) || provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
+                    let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) ? UTType.pdf.identifier : UTType.image.identifier
+                    provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
+                        guard let data = data, (NSImage(data: data) != nil || typeIdentifier == UTType.pdf.identifier) else {
+                            DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                            return
+                        }
                         DispatchQueue.main.async { onImageDropped(data) }
                     }
-                    return true
+                    handled = true
+                    break
                 } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                     provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
-                        guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else { return }
-                        guard let imgData = try? Data(contentsOf: url) else { return }
-                        if NSImage(data: imgData) != nil {
-                            DispatchQueue.main.async { onImageDropped(imgData) }
+                        guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else {
+                            DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                            return
                         }
+                        let ext = url.pathExtension.lowercased()
+                        guard let fileData = try? Data(contentsOf: url), (NSImage(data: fileData) != nil || ext == "pdf") else {
+                            DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                            return
+                        }
+                        DispatchQueue.main.async { onImageDropped(fileData) }
                     }
-                    return true
+                    handled = true
+                    break
                 }
             }
-            return false
+            if !handled {
+                DispatchQueue.main.async { self.showUnsupportedAlert = true }
+            }
+            return handled
         }
     }
 }

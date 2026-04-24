@@ -49,8 +49,12 @@ struct FloatingZenEditorView: View {
     
     enum ZenField { case title, description, content }
     
+    @State private var localTitle: String = ""
+    @State private var localContent: String = ""
+    @State private var textSyncTask: Task<Void, Never>? = nil
+
     private var canSave: Bool {
-        !manager.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !localTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     private var isMagicAvailable: Bool {
@@ -74,7 +78,7 @@ struct FloatingZenEditorView: View {
                 VStack(spacing: 0) {
                     // ── Title ──
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("Escribe el título...", text: $manager.title, axis: .vertical)
+                        TextField("Escribe el título...", text: $localTitle, axis: .vertical)
                             .font(.system(size: 20, weight: .bold))
                             .textFieldStyle(.plain)
                             .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 80, alignment: .leading)
@@ -124,7 +128,7 @@ struct FloatingZenEditorView: View {
                         .padding(.top, 8)
                         
                         ZStack(alignment: .topLeading) {
-                            if manager.content.isEmpty {
+                            if localContent.isEmpty {
                                 Text("Pega o escribe el contenido del prompt aquí...")
                                     .font(.system(size: 14 * preferences.fontSize.scale))
                                     .foregroundColor(.secondary.opacity((isGhostMode && !isMouseInside) ? 0.8 : 0.4))
@@ -133,7 +137,7 @@ struct FloatingZenEditorView: View {
                                     .allowsHitTesting(false)
                             }
                             
-                            TextEditor(text: $manager.content)
+                            TextEditor(text: $localContent)
                                 .font(.system(size: 14 * preferences.fontSize.scale))
                                 .lineSpacing(4)
                                 .focused($focusedField, equals: .content)
@@ -251,11 +255,15 @@ struct FloatingZenEditorView: View {
         .onAppear {
             focusedField = .title
             rebuildFolderColorMap(from: promptService.folders)
+            localTitle = manager.title
+            localContent = manager.content
         }
         .onReceive(promptService.$folders) { folders in
             rebuildFolderColorMap(from: folders)
         }
+        .onChange(of: manager.title) { _, new in if localTitle != new { localTitle = new } }
         .onChange(of: manager.content) { oldValue, newValue in
+            if localContent != newValue { localContent = newValue }
             // Scroll logic simplified
             
             // Animación "Hey úsame" (pulseMagic) al pegar contenido en el prompt
@@ -277,6 +285,18 @@ struct FloatingZenEditorView: View {
                 }
                 pulseMagicResetWorkItem = resetWorkItem
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: resetWorkItem)
+            }
+        }
+        .onChange(of: localTitle) { _, new in if manager.title != new { manager.title = new } }
+        .onChange(of: localContent) { _, new in
+            if manager.content != new {
+                // Debounce sync back to manager to avoid main thread stutter on heavy view
+                textSyncTask?.cancel()
+                textSyncTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 50_000_000)
+                    guard !Task.isCancelled else { return }
+                    if manager.content != new { manager.content = new }
+                }
             }
         }
         .alert("¿Descartar cambios?", isPresented: $showDiscardAlert) {

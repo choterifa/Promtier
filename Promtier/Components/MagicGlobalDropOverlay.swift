@@ -1,10 +1,12 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import PDFKit
 
 public struct MagicGlobalDropOverlay: ViewModifier {
     @State private var isDragging: Bool = false
     @State private var droppedImage: NSImage? = nil
     @State private var isPulsing: Bool = false
+    @State private var showUnsupportedAlert: Bool = false
     
     let isProcessing: Bool
     let onImageDropped: (Data) -> Void
@@ -17,7 +19,7 @@ public struct MagicGlobalDropOverlay: ViewModifier {
             // Usamos un color con opacidad mínima para que SwiftUI lo considere una superficie válida de drop
             // pero que no bloquee la interacción normal del usuario con el editor inferior.
             Color.white.opacity(0.00001)
-                .onDrop(of: [.image, .fileURL], isTargeted: $isDragging) { providers in
+                .onDrop(of: [.image, .pdf, .fileURL], isTargeted: $isDragging) { providers in
                     handleDropProviders(providers)
                 }
                 // El truco maestro: solo permitimos que esta capa reciba eventos de 'hit testing' 
@@ -31,6 +33,11 @@ public struct MagicGlobalDropOverlay: ViewModifier {
                 visualOverlayContent
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
+        }
+        .alert("Formato no soportado", isPresented: $showUnsupportedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Solo se admiten imágenes y archivos PDF para extraer texto mágico. Por favor, intenta con un formato válido (JPG, PNG, PDF, etc).")
         }
         .onChange(of: isProcessing) { _, processing in
             if processing {
@@ -69,7 +76,7 @@ public struct MagicGlobalDropOverlay: ViewModifier {
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                         )
                     
-                    Text("Analizando imagen con IA...")
+                    Text("Analizando archivo con IA...")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.primary)
                 } else {
@@ -99,32 +106,81 @@ public struct MagicGlobalDropOverlay: ViewModifier {
             }
         }
 
+        var handled = false
         for provider in providers {
-            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, _ in
-                    guard let data = data, let img = NSImage(data: data) else { return }
+            if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) || provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) {
+                let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.pdf.identifier) ? UTType.pdf.identifier : UTType.image.identifier
+                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
+                    guard let data = data else {
+                        DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                        return
+                    }
+                    
+                    var displayImage: NSImage? = NSImage(data: data)
+                    if displayImage == nil, typeIdentifier == UTType.pdf.identifier {
+                        if let pdfDocument = PDFDocument(data: data), let page = pdfDocument.page(at: 0), let pageData = page.dataRepresentation {
+                            displayImage = NSImage(data: pageData)
+                        } else {
+                            displayImage = NSImage(systemSymbolName: "doc.richtext", accessibilityDescription: nil)
+                        }
+                    }
+                    
+                    guard let finalImg = displayImage else {
+                        DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                        return
+                    }
+                    
                     DispatchQueue.main.async {
-                        self.droppedImage = img
+                        self.droppedImage = finalImg
                         self.isPulsing = true
                         onImageDropped(data)
                     }
                 }
+                handled = true
                 return true
             } else if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
-                    guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else { return }
+                    guard let data = data, let urlString = String(data: data, encoding: .utf8), let url = URL(string: urlString) else {
+                        DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                        return
+                    }
                     let ext = url.pathExtension.lowercased()
                     if ext == "json" || ext == "zip" { return }
-                    guard let imgData = try? Data(contentsOf: url), let img = NSImage(data: imgData) else { return }
+                    
+                    guard let fileData = try? Data(contentsOf: url) else {
+                        DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                        return
+                    }
+                    
+                    var displayImage: NSImage? = NSImage(data: fileData)
+                    if displayImage == nil && ext == "pdf" {
+                        if let pdfDocument = PDFDocument(data: fileData), let page = pdfDocument.page(at: 0), let pageData = page.dataRepresentation {
+                            displayImage = NSImage(data: pageData)
+                        } else {
+                            displayImage = NSImage(systemSymbolName: "doc.richtext", accessibilityDescription: nil)
+                        }
+                    }
+                    
+                    guard let finalImg = displayImage else {
+                        DispatchQueue.main.async { self.showUnsupportedAlert = true }
+                        return
+                    }
+                    
                     DispatchQueue.main.async {
-                        self.droppedImage = img
+                        self.droppedImage = finalImg
                         self.isPulsing = true
-                        onImageDropped(imgData)
+                        onImageDropped(fileData)
                     }
                 }
+                handled = true
                 return true
             }
         }
+        
+        if !handled {
+            DispatchQueue.main.async { self.showUnsupportedAlert = true }
+        }
+        
         return false
     }
 }
