@@ -1023,7 +1023,7 @@ struct SearchViewSimple: View {
     }
 
     func coordinateSelectionAndPrewarm(forcePrimaryPrewarm: Bool = false) {
-        ensureValidSelection(autoselectFirst: true)
+        ensureValidSelection(autoselectFirst: false)
 
         let shouldPrewarm = showingPreview || forcePrimaryPrewarm
         guard shouldPrewarm else { return }
