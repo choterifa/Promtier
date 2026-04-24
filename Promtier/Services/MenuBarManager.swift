@@ -387,6 +387,7 @@ class MenuBarManager: NSObject, ObservableObject {
                             self.promptService.usePrompt(prompt, contentOverride: resolved)
                             if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                             HapticService.shared.playAlignment()
+                            self.showHUDAndPaste(message: "Prompt copiado", icon: "checkmark.circle.fill")
                         } else {
                             self.showPopover()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -397,9 +398,34 @@ class MenuBarManager: NSObject, ObservableObject {
                         self.promptService.usePrompt(prompt)
                         if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                         HapticService.shared.playAlignment()
+                        self.showHUDAndPaste(message: "Prompt copiado", icon: "checkmark.circle.fill")
                     }
                 }
                 .store(in: &self.cancellables)
+        }
+    }
+    
+    private func showHUDAndPaste(message: String, icon: String) {
+        HUDManager.shared.showHUD(message: message, icon: icon)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            let source = CGEventSource(stateID: .hidSystemState)
+            let kVK_Command: CGKeyCode = 55
+            let kVK_ANSI_V: CGKeyCode = 9
+
+            let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: true)
+            let vDown = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: true)
+            vDown?.flags = .maskCommand
+
+            let vUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_ANSI_V, keyDown: false)
+            vUp?.flags = .maskCommand
+
+            let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: kVK_Command, keyDown: false)
+
+            cmdDown?.post(tap: .cghidEventTap)
+            vDown?.post(tap: .cghidEventTap)
+            vUp?.post(tap: .cghidEventTap)
+            cmdUp?.post(tap: .cghidEventTap)
         }
     }
     
@@ -686,5 +712,96 @@ struct PopoverContainerView: View {
         SearchViewSimple()
             .environment(\.locale, Locale(identifier: preferencesManager.language.rawValue))
             .environmentObject(ImageStore.shared)
+    }
+}
+
+class HUDManager {
+    static let shared = HUDManager()
+    private var window: NSPanel?
+    private var timer: Timer?
+
+    private init() {}
+
+    @MainActor
+    func showHUD(message: String, icon: String = "checkmark.circle.fill") {
+        if window == nil {
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 220, height: 60),
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isFloatingPanel = true
+            panel.level = .screenSaver
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = true
+            panel.ignoresMouseEvents = true
+            panel.animationBehavior = .alertPanel
+            
+            self.window = panel
+        }
+        
+        let hudView = HUDView(message: message, icon: icon)
+        let controller = NSHostingController(rootView: hudView)
+        
+        window?.contentViewController = controller
+        
+        if let screen = NSScreen.main {
+            let screenRect = screen.visibleFrame
+            let windowRect = window!.frame
+            let newOrigin = NSPoint(
+                x: screenRect.midX - windowRect.width / 2,
+                y: screenRect.minY + 100 // A bit above the bottom
+            )
+            window?.setFrameOrigin(newOrigin)
+        }
+        
+        window?.orderFrontRegardless()
+        
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                self?.hideHUD()
+            }
+        }
+    }
+    
+    @MainActor
+    func hideHUD() {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            self.window?.animator().alphaValue = 0
+        }, completionHandler: {
+            self.window?.orderOut(nil)
+            self.window?.alphaValue = 1
+        })
+    }
+}
+
+struct HUDView: View {
+    let message: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(.green)
+            Text(message)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.primary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(NSColor.windowBackgroundColor).opacity(0.95))
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+        )
     }
 }
