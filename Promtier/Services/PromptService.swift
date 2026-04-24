@@ -114,13 +114,6 @@ class PromptService: ObservableObject {
                 self?.filterPrompts(query: self?.searchQuery ?? "", categoryOverride: cat)
             }
             .store(in: &cancellables)
-
-        // IMPORTANTE: Reflejar cambios de app activa instantáneamente
-        $activeAppBundleID
-            .sink { [weak self] _ in
-                self?.filterPrompts(query: self?.searchQuery ?? "")
-            }
-            .store(in: &cancellables)
     }
 
     // MARK: - Seeding (Startup, done once per version)
@@ -267,9 +260,7 @@ class PromptService: ObservableObject {
             activeAppBundleID: activeAppBundleID,
             promptSortMode: promptSortMode
         ) { [weak self] filtered in
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                self?.filteredPrompts = filtered
-            }
+            self?.filteredPrompts = filtered
         }
     }
 

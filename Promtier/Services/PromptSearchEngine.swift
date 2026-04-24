@@ -157,6 +157,12 @@ final class PromptSearchEngine {
             
             if Task.isCancelled { return }
             
+            // --- Smart Boost based on Active Application ---
+            if let activeApp = safeActiveApp, !activeApp.isEmpty, query.isEmpty {
+                let matched = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+                filtered = matched + others
+            }
             
             // Filtrar por texto si hay consulta - MOTOR DE BÚSQUEDA AVANZADO
             if !query.isEmpty {
@@ -284,6 +290,7 @@ final class PromptSearchEngine {
                 case .name:
                     filtered.sort { $0.title.localizedCompare($1.title) == .orderedAscending }
                 case .newest:
+                    // Priorizar los más recientemente modificados para que reflejen la actividad real
                     filtered.sort { $0.modifiedAt > $1.modifiedAt }
                 case .mostUsed:
                     filtered.sort { $0.useCount > $1.useCount }
@@ -293,19 +300,20 @@ final class PromptSearchEngine {
             // --- RECOMMENDED ALWAYS ON TOP ---
             // Un prompt es "Recomendado" solo si su array de aplicaciones asignadas
             // INCLUYE la aplicación activa actual en pantalla.
-            if let activeApp = safeActiveApp, !activeApp.isEmpty {
-                // Separamos los recomendados del resto
-                let recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
-                let others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
-                
-                // Consolidamos: Recomendados arriba, manteniendo su orden interno previo
-                filtered = recommended + others
+            let recommended: [Prompt]
+            let others: [Prompt]
+            if let activeApp = safeActiveApp {
+                recommended = filtered.filter { $0.targetAppBundleIDs.contains(activeApp) }
+                others = filtered.filter { !$0.targetAppBundleIDs.contains(activeApp) }
+            } else {
+                recommended = []
+                others = filtered
             }
+            let finalFiltered = recommended + others
             
             if !Task.isCancelled {
-                let finalResult = filtered
                 await MainActor.run {
-                    completion(finalResult)
+                    completion(finalFiltered)
                 }
             }
         }
