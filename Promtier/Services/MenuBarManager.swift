@@ -64,6 +64,7 @@ class MenuBarManager: NSObject, ObservableObject {
             updatePopoverBehavior()
         }
     }
+    @Published var externalPromptTrigger: Prompt? = nil
     
     // Estado de hover compartido para la sidebar y su tirador de redimensionamiento
     @Published var isSidebarHovered = false
@@ -373,6 +374,32 @@ class MenuBarManager: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.shortcutManager = ShortcutManager.shared
             print("✅ Atajos globales configurados")
+            
+            NotificationCenter.default.publisher(for: NSNotification.Name("PromtierCustomShortcutPressed"))
+                .sink { [weak self] notification in
+                    guard let self = self,
+                          let promptId = notification.object as? UUID,
+                          let prompt = self.promptService.prompts.first(where: { $0.id == promptId }) else { return }
+                    
+                    if prompt.hasTemplateVariables() || prompt.hasChains() {
+                        if prompt.isSmartOnly() && !prompt.hasChains() {
+                            let resolved = PlaceholderResolver.shared.resolveAll(in: prompt.content)
+                            self.promptService.usePrompt(prompt, contentOverride: resolved)
+                            if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
+                            HapticService.shared.playAlignment()
+                        } else {
+                            self.showPopover()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                self.externalPromptTrigger = prompt
+                            }
+                        }
+                    } else {
+                        self.promptService.usePrompt(prompt)
+                        if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
+                        HapticService.shared.playAlignment()
+                    }
+                }
+                .store(in: &self.cancellables)
         }
     }
     

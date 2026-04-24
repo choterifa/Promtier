@@ -234,7 +234,7 @@ final class GlobalHotkeyManager: ObservableObject {
         for (_, ref) in promptHotKeyRefs { UnregisterEventHotKey(ref) }
         promptHotKeyRefs.removeAll()
         promptHotkeyMap.removeAll()
-        nextHotKeyId = 2
+        nextHotKeyId = 1000
         
         for prompt in prompts {
             guard let shortcutStr = prompt.customShortcut else { continue }
