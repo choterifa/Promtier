@@ -53,6 +53,7 @@ struct EditorCard: View {
     @Binding var branchMessage: String?
     let editorID: String
 
+    @ObservedObject var viewModel: NewPromptViewModel
     let currentCategoryColor: Color
     
     var isAutocompleting: Bool = false
@@ -82,6 +83,7 @@ struct EditorCard: View {
          selectedRange: Binding<NSRange?>, aiResult: Binding<AIResult?>, 
          originalPrompt: Prompt? = nil, prompt: Prompt? = nil, 
          branchMessage: Binding<String?>, editorID: String, 
+         viewModel: NewPromptViewModel,
          currentCategoryColor: Color) {
         self._title = title
         self._content = content
@@ -116,6 +118,7 @@ struct EditorCard: View {
         self.prompt = prompt
         self._branchMessage = branchMessage
         self.editorID = editorID
+        self.viewModel = viewModel
         self.currentCategoryColor = currentCategoryColor
     }
 
@@ -158,7 +161,6 @@ struct EditorCard: View {
     @State private var showingInstructionAlert = false
     @State private var instructionInput = ""
     @State private var isDraggingMagicImage = false
-    @State private var isMagicImageProcessing = false
 
     // MARK: - EditorCard Body
 
@@ -177,9 +179,6 @@ struct EditorCard: View {
             }
         } message: {
             Text("Enter the instruction to apply to the selected text.")
-        }
-        .magicGlobalDropOverlay(isProcessing: isMagicImageProcessing) { data in
-            extractMagicPrompt(from: data)
         }
     }
 
@@ -514,54 +513,7 @@ struct EditorCard: View {
     // MARK: - EditorCard Magic Image
 
     private func extractMagicPrompt(from data: Data) {
-        guard (!preferences.openAIApiKey.isEmpty && preferences.openAIEnabled) || (!preferences.geminiAPIKey.isEmpty && preferences.geminiEnabled) else { 
-            title = "IA no configurada"
-            return 
-        }
-        content = ""
-        isMagicImageProcessing = true
-        
-        Task {
-            do {
-                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
-                let systemPrompt = """
-                You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
-                
-                # INSTRUCTION FOR YOU:
-                \(instruction)
-                
-                # IMPORTANT:
-                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
-                """
-                
-                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
-                
-                await MainActor.run {
-                    self.isMagicImageProcessing = false
-                    
-                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let components = rawResponse.components(separatedBy: "PROMPT:")
-                    
-                    if components.count == 2 {
-                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        self.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
-                            self.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
-                        }
-                    } else {
-                        self.content = rawResponse
-                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
-                            self.title = "Prompt de Imagen"
-                        }
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    self.isMagicImageProcessing = false
-                    self.content = "Error generando prompt: \(error.localizedDescription)"
-                }
-            }
-        }
+        viewModel.extractMagicPrompt(from: data, preferences: preferences)
     }
 }
 

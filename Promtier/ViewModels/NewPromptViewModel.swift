@@ -43,6 +43,7 @@ final class NewPromptViewModel: ObservableObject {
     @Published var magicCommand: String = ""
     @Published var magicTarget: MagicTarget = .content
     @Published var isGeneratingAlternativeDirect: Bool = false
+    @Published var isMagicImageProcessing: Bool = false
 
     private var draftHash: Int = 0
     
@@ -668,5 +669,56 @@ final class NewPromptViewModel: ObservableObject {
         Alternative prompt:
         \(alternativeText)
         """
+    }
+
+    func extractMagicPrompt(from data: Data, preferences: PreferencesManager) {
+        guard (!preferences.openAIApiKey.isEmpty && preferences.openAIEnabled) || (!preferences.geminiAPIKey.isEmpty && preferences.geminiEnabled) else { 
+            title = "IA no configurada"
+            return 
+        }
+        content = ""
+        isMagicImageProcessing = true
+        
+        Task {
+            do {
+                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
+                let systemPrompt = """
+                You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
+                
+                # INSTRUCTION FOR YOU:
+                \(instruction)
+                
+                # IMPORTANT:
+                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
+                """
+                
+                let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
+                
+                await MainActor.run {
+                    self.isMagicImageProcessing = false
+                    
+                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let components = rawResponse.components(separatedBy: "PROMPT:")
+                    
+                    if components.count == 2 {
+                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
+                            self.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                        }
+                    } else {
+                        self.content = rawResponse
+                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
+                            self.title = "Prompt de Imagen"
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isMagicImageProcessing = false
+                    self.content = "Error generando prompt: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }

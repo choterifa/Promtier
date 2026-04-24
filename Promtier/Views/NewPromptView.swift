@@ -419,6 +419,7 @@ struct NewPromptView: View {
                 prompt: prompt,
                 branchMessage: vmBinding(\.branchMessage),
                 editorID: "main",
+                viewModel: viewModel,
                 currentCategoryColor: currentCategoryColor
             )
             .frame(minHeight: geometry.size.height * 0.98)
@@ -900,6 +901,9 @@ struct NewPromptView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(backgroundView)
+        .magicGlobalDropOverlay(isProcessing: viewModel.isMagicImageProcessing) { data in
+            viewModel.extractMagicPrompt(from: data, preferences: preferences)
+        }
         .sheet(item: fullScreenImageSheetItem) { item in
             FullScreenImageView(imageData: item.value)
                 .onDisappear {

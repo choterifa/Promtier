@@ -148,13 +148,14 @@ struct HighlightedEditor: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = PassThroughScrollView()
+        scrollView.unregisterDraggedTypes() // Deshabilitar en el scrollview también
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
         scrollView.autohidesScrollers = true
         scrollView.scrollerStyle = .overlay
 
         let textView = PromtierTextView(frame: .zero)
-        textView.unregisterDraggedTypes() // Deshabilitar drags nativos para permitir MagicGlobalDropOverlay 
+        textView.unregisterDraggedTypes() // Deshabilitar drags nativos
         textView.editorID = editorID
         textView.onPaste = onPaste
         textView.delegate = context.coordinator
