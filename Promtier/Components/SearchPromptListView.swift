@@ -7,7 +7,7 @@ struct SearchPromptListView: View {
     @Binding var selectedPrompt: Prompt?
     @Binding var showingPreview: Bool
     var isSearchFocused: FocusState<Bool>.Binding
-    @Binding var isNavigatingWithKeys: Bool
+    @Binding var isUserNavigating: Bool
     
     var isPerformanceCardMode: Bool
     var categoryColor: (Prompt) -> Color
@@ -111,7 +111,7 @@ struct SearchPromptListView: View {
                     isSearchFocused.wrappedValue = false
                 }
                 .onChange(of: selectedPrompt?.id) { _, newId in
-                    guard let id = newId, isNavigatingWithKeys else { return }
+                    guard let id = newId, isUserNavigating else { return }
                     proxy.scrollTo(id, anchor: .center)
                 }
             }

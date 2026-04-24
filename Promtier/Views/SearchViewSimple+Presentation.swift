@@ -147,7 +147,7 @@ extension SearchViewSimple {
 
     func onSelectPrompt(_ prompt: Prompt) {
         isSearchFocused = false
-        isNavigatingWithKeys = false
+        markUserNavigationActivity()
         let latest = latestPrompt(for: prompt)
         selectedPrompt = latest
         prewarmPreviewAssets(for: latest)
@@ -157,7 +157,7 @@ extension SearchViewSimple {
     }
 
     func onDoubleTapPrompt(_ prompt: Prompt) {
-        isNavigatingWithKeys = false
+        isUserNavigating = false
         selectedPrompt = latestPrompt(for: prompt)
         withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
     }

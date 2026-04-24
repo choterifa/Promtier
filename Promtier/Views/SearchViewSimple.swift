@@ -122,7 +122,7 @@ struct SearchViewSimple: View {
     @State var selectedPrompt: Prompt?
     @State var showingPreview = false
     @State var fillingVariablesFor: Prompt?
-    @State var isNavigatingWithKeys: Bool = false
+    @State var isUserNavigating: Bool = false
     @State var showParticles: Bool = false
     @State var isDraggingFile: Bool = false
     @State var importMessage: String? = nil
@@ -468,7 +468,7 @@ struct SearchViewSimple: View {
                 secondaryImagePrewarmTask?.cancel()
                 keyboardPreviewRefreshTask?.cancel()
                 keyboardNavigationIdleTask?.cancel()
-                isNavigatingWithKeys = false
+                isUserNavigating = false
             }
         }
         .onChange(of: promptService.filteredPrompts.map(\.id)) { _, _ in
@@ -561,13 +561,13 @@ struct SearchViewSimple: View {
                         selectedPrompt: $selectedPrompt,
                         showingPreview: $showingPreview,
                         isSearchFocused: $isSearchFocused,
-                        isNavigatingWithKeys: $isNavigatingWithKeys,
+                        isUserNavigating: $isUserNavigating,
                         isPerformanceCardMode: isPerformanceCardMode,
                         categoryColor: categoryColor(for:),
                         resolvedIcon: resolvedIcon(for:),
                         onSelect: { prompt in onSelectPrompt(prompt) },
                         onDoubleTap: { prompt in 
-                            isNavigatingWithKeys = false
+                            isUserNavigating = false
                             selectedPrompt = latestPrompt(for: prompt)
                             withAnimation(.spring()) { menuBarManager.activeViewState = .newPrompt }
                         },
@@ -687,14 +687,14 @@ struct SearchViewSimple: View {
         return false
     }
 
-    private func markKeyboardNavigationActivity() {
-        isNavigatingWithKeys = true
+    func markUserNavigationActivity() {
+        isUserNavigating = true
         keyboardNavigationIdleTask?.cancel()
         keyboardNavigationIdleTask = Task(priority: .utility) {
             try? await Task.sleep(nanoseconds: InteractionThrottle.keyboardNavigationIdleDelayNanos)
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                isNavigatingWithKeys = false
+                isUserNavigating = false
             }
         }
     }
@@ -797,7 +797,7 @@ struct SearchViewSimple: View {
             if isSearchFocused { return event }
             // Evita toggles en ráfaga cuando el usuario mantiene presionada la tecla.
             if event.isARepeat { return nil }
-            isNavigatingWithKeys = false
+            isUserNavigating = false
             
             // Si hay un preview abierto, lo cerramos
             if showingPreview {
@@ -848,7 +848,7 @@ struct SearchViewSimple: View {
         if keyCode == 126 { // Up
             guard !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            markKeyboardNavigationActivity()
+            markUserNavigationActivity()
             isSearchFocused = false
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
@@ -866,7 +866,7 @@ struct SearchViewSimple: View {
         if keyCode == 125 { // Down
             guard !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            markKeyboardNavigationActivity()
+            markUserNavigationActivity()
             isSearchFocused = false
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }) {
@@ -884,7 +884,7 @@ struct SearchViewSimple: View {
         if keyCode == 123 { // Left
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            markKeyboardNavigationActivity()
+            markUserNavigationActivity()
             isSearchFocused = false
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
@@ -897,7 +897,7 @@ struct SearchViewSimple: View {
         if keyCode == 124 { // Right
             guard preferences.isGridView, !promptService.filteredPrompts.isEmpty else { return event }
             if shouldThrottleKeyboardNavigation(for: event) { return nil }
-            markKeyboardNavigationActivity()
+            markUserNavigationActivity()
             isSearchFocused = false
             if let currentPrompt = selectedPrompt,
                let currentIndex = promptService.filteredPrompts.firstIndex(where: { $0.id == currentPrompt.id }),
@@ -1009,7 +1009,7 @@ struct SearchViewSimple: View {
         guard let selectedPrompt else { return }
         guard showingPreview else { return }
 
-        if isNavigatingWithKeys {
+        if isUserNavigating {
             scheduleKeyboardPreviewRefresh(for: selectedPrompt)
             return
         }

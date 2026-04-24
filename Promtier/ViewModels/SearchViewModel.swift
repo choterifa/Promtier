@@ -7,7 +7,7 @@ final class SearchViewModel: ObservableObject {
     @Published var selectedPrompt: Prompt?
     @Published var showingPreview = false
     @Published var fillingVariablesFor: Prompt?
-    @Published var isNavigatingWithKeys: Bool = false
+    @Published var isUserNavigating: Bool = false
     @Published var showParticles: Bool = false
     
     // Import state
