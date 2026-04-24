@@ -115,10 +115,11 @@ class PromptService: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // IMPORTANTE: Reflejar cambios de app activa instantáneamente
+        // La animación de re-sort solo aplica al cambio de app activa,
+        // no al cambio de categoría ni a la búsqueda.
         $activeAppBundleID
             .sink { [weak self] _ in
-                self?.filterPrompts(query: self?.searchQuery ?? "")
+                self?.filterPrompts(query: self?.searchQuery ?? "", animateReorder: true)
             }
             .store(in: &cancellables)
     }
@@ -257,7 +258,11 @@ class PromptService: ObservableObject {
 
     // MARK: - Filtering
 
-    private func filterPrompts(query: String, categoryOverride: String? = "USE_CURRENT") {
+    private func filterPrompts(
+        query: String,
+        categoryOverride: String? = "USE_CURRENT",
+        animateReorder: Bool = false
+    ) {
         searchEngine.filterPrompts(
             prompts: prompts,
             folders: folders,
@@ -267,7 +272,11 @@ class PromptService: ObservableObject {
             activeAppBundleID: activeAppBundleID,
             promptSortMode: promptSortMode
         ) { [weak self] filtered in
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+            if animateReorder {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                    self?.filteredPrompts = filtered
+                }
+            } else {
                 self?.filteredPrompts = filtered
             }
         }
