@@ -155,7 +155,6 @@ class OmniSearchManager: NSObject, ObservableObject {
         newPanel.delegate = self
         newPanel.hidesOnDeactivate = true 
         newPanel.isReleasedWhenClosed = false
-        newPanel.acceptsMouseMovedEvents = true
         
         let view = OmniSearchView()
             .environmentObject(self)

@@ -28,10 +28,9 @@ struct OmniSearchView: View {
     @EnvironmentObject var promptService: PromptService
     
     @State private var query: String = ""
-    @State private var selectedIndex: Int = 0
+    @State private var selectedPromptId: UUID?
         @State private var filteredResults: [OmniSearchResultItem] = []
     @State private var debouncedSearchTask: Task<Void, Never>? = nil
-    @State private var visibleResultIndices: Set<Int> = []
     @State private var folderColorByNameCache: [String: Color] = [:]
     @FocusState private var isFocused: Bool
     
@@ -52,12 +51,13 @@ struct OmniSearchView: View {
                         manager.hide()
                     }
                     .onChange(of: query) { _, _ in
-                        selectedIndex = 0
                         scheduleSearch()
                     }
                     .onSubmit {
-                        if !filteredResults.isEmpty {
-                            copyAndClose(filteredResults[selectedIndex].prompt)
+                        if let id = selectedPromptId, let item = filteredResults.first(where: { $0.id == id }) {
+                            copyAndClose(item.prompt)
+                        } else if let first = filteredResults.first {
+                            copyAndClose(first.prompt)
                         }
                     }
                 
@@ -99,34 +99,29 @@ struct OmniSearchView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 6) {
-                            ForEach(Array(filteredResults.enumerated()), id: \.element.prompt.id) { index, result in
+                            ForEach(filteredResults, id: \.id) { result in
                                 OmniSearchRow(
                                     item: result,
-                                    isSelected: selectedIndex == index,
+                                    isSelected: selectedPromptId == result.id,
                                     onSelect: {
-                                        selectedIndex = index
+                                        selectedPromptId = result.id
                                         isFocused = false
                                     },
                                     onCopy: {
                                         copyAndClose(result.prompt)
-                                    },
-                                    onVisibilityChange: { isVisible in
-                                        if isVisible {
-                                            visibleResultIndices.insert(index)
-                                        } else {
-                                            visibleResultIndices.remove(index)
-                                        }
                                     }
                                 )
-                                .id(index)
+                                .id(result.id)
                             }
                         }
                         .padding(12)
                     }
                     .background(Color.black.opacity(0.001))
                     .frame(maxHeight: 380)
-                    .onChange(of: selectedIndex) { _, newValue in
-                        proxy.scrollTo(newValue, anchor: .center)
+                    .onChange(of: selectedPromptId) { _, newValue in
+                        if let id = newValue {
+                            proxy.scrollTo(id, anchor: .center)
+                        }
                     }
                 }
             } else if !query.isEmpty {
@@ -209,36 +204,47 @@ struct OmniSearchView: View {
             switch event.command {
             case .opened:
                 query = ""
-                selectedIndex = 0
                 runSearch()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     isFocused = true
                 }
 
             case .moveDown:
-                let count = filteredResults.count
-                guard count > 0 else { return }
-                if selectedIndex < count - 1 {
-                    selectedIndex += 1
+                guard !filteredResults.isEmpty else { return }
+                if let currentId = selectedPromptId, let idx = filteredResults.firstIndex(where: { $0.id == currentId }) {
+                    if idx < filteredResults.count - 1 {
+                        selectedPromptId = filteredResults[idx + 1].id
+                        HapticService.shared.playLight()
+                    }
+                } else {
+                    selectedPromptId = filteredResults.first?.id
                     HapticService.shared.playLight()
                 }
 
             case .moveUp:
-                let count = filteredResults.count
-                guard count > 0 else { return }
-                if selectedIndex > 0 {
-                    selectedIndex -= 1
+                guard !filteredResults.isEmpty else { return }
+                if let currentId = selectedPromptId, let idx = filteredResults.firstIndex(where: { $0.id == currentId }) {
+                    if idx > 0 {
+                        selectedPromptId = filteredResults[idx - 1].id
+                        HapticService.shared.playLight()
+                    }
+                } else {
+                    selectedPromptId = filteredResults.first?.id
                     HapticService.shared.playLight()
                 }
 
             case .submit, .copy:
-                if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
-                    copyAndClose(filteredResults[selectedIndex].prompt)
+                if let id = selectedPromptId, let item = filteredResults.first(where: { $0.id == id }) {
+                    copyAndClose(item.prompt)
+                } else if let first = filteredResults.first {
+                    copyAndClose(first.prompt)
                 }
 
             case .edit:
-                if !filteredResults.isEmpty && selectedIndex < filteredResults.count {
-                    openEditorAndClose(filteredResults[selectedIndex].prompt)
+                if let id = selectedPromptId, let item = filteredResults.first(where: { $0.id == id }) {
+                    openEditorAndClose(item.prompt)
+                } else if let first = filteredResults.first {
+                    openEditorAndClose(first.prompt)
                 }
             }
         }
@@ -287,13 +293,12 @@ struct OmniSearchView: View {
             
             filteredResults = newFilteredResults
             
-            let currentValidIndices = Set(filteredResults.indices)
-            visibleResultIndices = visibleResultIndices.intersection(currentValidIndices)
-
-            if filteredResults.isEmpty {
-                selectedIndex = 0
-            } else if selectedIndex >= filteredResults.count {
-                selectedIndex = max(0, filteredResults.count - 1)
+            if !filteredResults.isEmpty {
+                if selectedPromptId == nil || !filteredResults.contains(where: { $0.id == selectedPromptId }) {
+                    selectedPromptId = filteredResults.first?.id
+                }
+            } else {
+                selectedPromptId = nil
             }
         }
     }
@@ -360,10 +365,8 @@ struct OmniSearchRow: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onCopy: () -> Void
-    let onVisibilityChange: (Bool) -> Void
     
     @EnvironmentObject var preferences: PreferencesManager
-    @State private var isHovered = false
     
     var body: some View {
         Button(action: onSelect) {
@@ -468,9 +471,6 @@ struct OmniSearchRow: View {
                                 RoundedRectangle(cornerRadius: 18)
                                     .stroke(item.categoryColor.opacity(0.25), lineWidth: 1.2)
                             )
-                    } else if isHovered {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Color.primary.opacity(0.04))
                     }
                 }
             )
@@ -481,17 +481,6 @@ struct OmniSearchRow: View {
             onCopy()
         }
         .focusable(false)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovered = hovering
-            }
-        }
-        .onAppear {
-            onVisibilityChange(true)
-        }
-        .onDisappear {
-            onVisibilityChange(false)
-        }
     }
 }
 

@@ -120,7 +120,12 @@
 "add_app" = "Añadir Aplicación...";
 "remove_app" = "Eliminar";
 "manage_allowed_apps" = "Gestiona las apps que activan sugerencias";
+"permissions" = "Permisos";
 "accessibility" = "Accesibilidad";
+"accessibility_subtitle" = "Permite a Promtier automatizar acciones como Magic Save";
+"accessibility_description" = "La accesibilidad es necesaria para capturar el texto seleccionado al usar 'Magic Save' y para otras automatizaciones del sistema.";
+"grant_access" = "Conceder Acceso";
+"granted" = "Concedido";
 "accessibility_granted" = "Permisos concedidos ✅";
 "accessibility_required" = "Permisos requeridos ⚠️";
 "accessibility_verified" = "Verificado";
