@@ -10,6 +10,12 @@ import SwiftUI
 import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Forzar modo accesorio (sin ventana principal) lo antes posible
+        // para evitar el "flash" de una ventana cuadrada al arrancar.
+        NSApp.setActivationPolicy(.accessory)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Solicitar permisos de notificación
         NotificationService.shared.requestPermissions()
