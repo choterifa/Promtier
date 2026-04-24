@@ -367,7 +367,8 @@ struct PromptCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.blue, lineWidth: isTargetedForDrop ? 2 : 0)
         )
-    }        }
+    }
+}
 
 #Preview {
     VStack(spacing: 12) {
