@@ -30,8 +30,19 @@ final class ImageStore: ObservableObject, @unchecked Sendable {
         return base.appendingPathComponent(bundleId, isDirectory: true)
     }
 
+    /// Técnica Experta: Ubicación dinámica basada en el estado de iCloud
+    nonisolated private var currentBaseURL: URL {
+        if PreferencesManager.shared.icloudSyncEnabled,
+           let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: nil) {
+            return cloudURL.appendingPathComponent("Documents", isDirectory: true)
+                .appendingPathComponent("Images", isDirectory: true)
+        } else {
+            return appSupportBaseURL.appendingPathComponent("Images", isDirectory: true)
+        }
+    }
+
     nonisolated private var imagesBaseURL: URL {
-        appSupportBaseURL.appendingPathComponent("Images", isDirectory: true)
+        return currentBaseURL
     }
 
     nonisolated func ensureDirectories() throws {
@@ -40,6 +51,54 @@ final class ImageStore: ObservableObject, @unchecked Sendable {
 
     nonisolated func url(forRelativePath relativePath: String) -> URL {
         imagesBaseURL.appendingPathComponent(relativePath, isDirectory: false)
+    }
+
+    /// Migración Experta: Mueve todas las imágenes entre Local e iCloud cuando cambia el estado
+    func migrateStorage(toCloud: Bool) {
+        let fm = FileManager.default
+        let localURL = appSupportBaseURL.appendingPathComponent("Images", isDirectory: true)
+        
+        guard let cloudContainerURL = fm.url(forUbiquityContainerIdentifier: nil) else {
+            print("⚠️ iCloud no disponible para migración")
+            return
+        }
+        
+        let cloudURL = cloudContainerURL.appendingPathComponent("Documents", isDirectory: true)
+            .appendingPathComponent("Images", isDirectory: true)
+        
+        let source = toCloud ? localURL : cloudURL
+        let destination = toCloud ? cloudURL : localURL
+        
+        guard fm.fileExists(atPath: source.path) else { return }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                if !fm.fileExists(atPath: destination.deletingLastPathComponent().path) {
+                    try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                }
+                
+                let coordinator = NSFileCoordinator()
+                var error: NSError?
+                
+                coordinator.coordinate(writingItemAt: source, options: .forMoving, writingItemAt: destination, options: .forReplacing, error: &error) { newSource, newDest in
+                    do {
+                        if fm.fileExists(atPath: newDest.path) {
+                            try fm.removeItem(at: newDest)
+                        }
+                        try fm.moveItem(at: newSource, to: newDest)
+                        print("✅ Imágenes migradas exitosamente a \(toCloud ? "iCloud" : "Local")")
+                    } catch {
+                        print("❌ Error en bloque de migración: \(error)")
+                    }
+                }
+                
+                if let error = error {
+                    print("❌ Error coordinando migración: \(error)")
+                }
+            } catch {
+                print("❌ Fallo crítico en migración: \(error)")
+            }
+        }
     }
 
     // MARK: - Save

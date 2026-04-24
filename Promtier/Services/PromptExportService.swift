@@ -422,7 +422,15 @@ func exportAllPrompts() -> String {
     }
     
     /// Importa datos desde un archivo JSON (Soporta formato antiguo y nuevo BackupPackage)
-    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
+    func importPromptsFromData(_ data: Data, overwrite: Bool = false) -> (success: Int, failed: Int, foldersCreated: Int) {
+        if overwrite {
+            print("⚠️ Ejecutando restauración total (overwrite mode)")
+            dataController.deleteAll()
+            // Recargar para limpiar el estado en memoria
+            loadFolders()
+            loadPrompts()
+        }
+        
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
@@ -517,9 +525,7 @@ func exportAllPrompts() -> String {
         loadPrompts()
         return (successCount, failedCount, foldersCreated)
     }
-    
-    /// Restablece toda la base de datos (BORRADO TOTAL)
-    }
+}
 
 struct BackupPackage: Codable {
     var version: String

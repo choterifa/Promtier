@@ -334,6 +334,8 @@ class PreferencesManager: ObservableObject {
     @Published var icloudSyncEnabled: Bool {
         didSet {
             userDefaults.set(icloudSyncEnabled, forKey: "icloudSyncEnabled")
+            // Migrar imágenes físicamente al cambiar el estado
+            ImageStore.shared.migrateStorage(toCloud: icloudSyncEnabled)
         }
     }
     

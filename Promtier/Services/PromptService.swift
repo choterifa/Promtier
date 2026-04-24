@@ -402,8 +402,8 @@ class PromptService: ObservableObject {
     func importBackupZip(from url: URL) -> (success: Int, failed: Int, foldersCreated: Int) {
         exportService.importBackupZip(from: url)
     }
-    func importPromptsFromData(_ data: Data) -> (success: Int, failed: Int, foldersCreated: Int) {
-        exportService.importPromptsFromData(data)
+    func importPromptsFromData(_ data: Data, overwrite: Bool = false) -> (success: Int, failed: Int, foldersCreated: Int) {
+        exportService.importPromptsFromData(data, overwrite: overwrite)
     }
 
     // MARK: - Reset
