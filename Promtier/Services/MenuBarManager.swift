@@ -387,7 +387,7 @@ class MenuBarManager: NSObject, ObservableObject {
                             self.promptService.usePrompt(prompt, contentOverride: resolved)
                             if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                             HapticService.shared.playAlignment()
-                            self.showHUDAndPaste(message: "Prompt copiado", icon: "checkmark.circle.fill")
+                            self.showHUDAndPaste(message: "¡Copiado!", icon: "checkmark.circle.fill")
                         } else {
                             self.showPopover()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -398,7 +398,7 @@ class MenuBarManager: NSObject, ObservableObject {
                         self.promptService.usePrompt(prompt)
                         if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                         HapticService.shared.playAlignment()
-                        self.showHUDAndPaste(message: "Prompt copiado", icon: "checkmark.circle.fill")
+                        self.showHUDAndPaste(message: "¡Copiado!", icon: "checkmark.circle.fill")
                     }
                 }
                 .store(in: &self.cancellables)
@@ -726,7 +726,7 @@ class HUDManager {
     func showHUD(message: String, icon: String = "checkmark.circle.fill") {
         if window == nil {
             let panel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 220, height: 60),
+                contentRect: NSRect(x: 0, y: 0, width: 300, height: 100),
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
@@ -735,7 +735,7 @@ class HUDManager {
             panel.level = .screenSaver
             panel.backgroundColor = .clear
             panel.isOpaque = false
-            panel.hasShadow = true
+            panel.hasShadow = false // Sombra manejada por SwiftUI para que sea más fina
             panel.ignoresMouseEvents = true
             panel.animationBehavior = .alertPanel
             
@@ -744,20 +744,32 @@ class HUDManager {
         
         let hudView = HUDView(message: message, icon: icon)
         let controller = NSHostingController(rootView: hudView)
+        controller.view.layer?.backgroundColor = NSColor.clear.cgColor
         
         window?.contentViewController = controller
+        window?.setContentSize(NSSize(width: 280, height: 80))
         
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let windowRect = window!.frame
-            let newOrigin = NSPoint(
+            let targetOrigin = NSPoint(
                 x: screenRect.midX - windowRect.width / 2,
-                y: screenRect.minY + 100 // A bit above the bottom
+                y: screenRect.minY + 100
             )
-            window?.setFrameOrigin(newOrigin)
+            
+            // Empezar 20px más abajo para la animación
+            let startOrigin = NSPoint(x: targetOrigin.x, y: targetOrigin.y - 20)
+            window?.setFrameOrigin(startOrigin)
+            window?.alphaValue = 0
+            window?.orderFrontRegardless()
+            
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.45
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                window?.animator().setFrameOrigin(targetOrigin)
+                window?.animator().alphaValue = 1
+            }
         }
-        
-        window?.orderFrontRegardless()
         
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
@@ -770,8 +782,14 @@ class HUDManager {
     @MainActor
     func hideHUD() {
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.3
+            context.duration = 0.35
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             self.window?.animator().alphaValue = 0
+            // Deslizar ligeramente hacia abajo al salir
+            if let frame = self.window?.frame {
+                let newOrigin = NSPoint(x: frame.origin.x, y: frame.origin.y - 10)
+                self.window?.animator().setFrameOrigin(newOrigin)
+            }
         }, completionHandler: {
             self.window?.orderOut(nil)
             self.window?.alphaValue = 1
@@ -782,26 +800,45 @@ class HUDManager {
 struct HUDView: View {
     let message: String
     let icon: String
+    @State private var animateIcon = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.green)
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.15))
+                    .frame(width: 30, height: 30)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.green)
+                    .scaleEffect(animateIcon ? 1.0 : 0.5)
+                    .opacity(animateIcon ? 1.0 : 0)
+            }
+            
             Text(message)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 15, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+                .padding(.trailing, 4)
+                .fixedSize()
+                .layoutPriority(1)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(NSColor.windowBackgroundColor).opacity(0.95))
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-        )
+        .padding(.horizontal, 22)
+        .padding(.vertical, 12)
+        .frame(minWidth: 140)
+        .background {
+            Capsule()
+                .fill(Color(NSColor.windowBackgroundColor))
+                .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
+        }
+        .overlay {
+            Capsule()
+                .stroke(Color.primary.opacity(0.15), lineWidth: 1)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                animateIcon = true
+            }
+        }
     }
 }
