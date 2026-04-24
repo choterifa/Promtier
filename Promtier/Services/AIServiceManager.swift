@@ -19,6 +19,10 @@ class AIServiceManager: AIServiceProtocol {
     
     private init() {}
     
+    // Almacena hasta cuándo está deshabilitado temporalmente un servicio por fallas o saturación
+    private var cooldowns: [AIService: Date] = [:]
+    private let cooldownDuration: TimeInterval = 10 * 60 // 10 minutos
+    
     enum AIError: LocalizedError {
         case serviceDisabled
         case invalidAPIKey(String)
@@ -48,19 +52,35 @@ class AIServiceManager: AIServiceProtocol {
         }()
         
         DispatchQueue.main.async {
-            self.onFallbackOccurred?("⚠️ \(serviceName) falló (\(error)). Probando alternativa...")
+            self.onFallbackOccurred?("⚠️ \(serviceName) falló (\(error)). Probando alternativa... (\(serviceName) desactivado temporalmente)")
         }
     }
 
     func generate(prompt: String, imageData: Data? = nil, useFallback: Bool = true) async throws -> String {
         let prefs = PreferencesManager.shared
         
+        // Limpiar cooldowns expirados
+        let now = Date()
+        for (srv, expiration) in cooldowns {
+            if now > expiration {
+                cooldowns.removeValue(forKey: srv)
+            }
+        }
+        
         // Define el orden de intento basado en la preferencia
-        var servicesToTry: [AIService] = [prefs.preferredAIService]
+        var allServicesToTry: [AIService] = [prefs.preferredAIService]
         
         if useFallback {
             let allServices: [AIService] = [.openai, .gemini, .openrouter]
-            servicesToTry += allServices.filter { $0 != prefs.preferredAIService }
+            allServicesToTry += allServices.filter { $0 != prefs.preferredAIService }
+        }
+        
+        // Filtrar servicios en cooldown
+        var servicesToTry = allServicesToTry.filter { cooldowns[$0] == nil }
+        
+        // Si todos están en cooldown, intentamos el preferido de todas formas para no bloquear la app
+        if servicesToTry.isEmpty {
+            servicesToTry = [prefs.preferredAIService]
         }
         
         var lastError: Error?
@@ -85,24 +105,27 @@ class AIServiceManager: AIServiceProtocol {
                 lastError = error
             } catch let error as OpenAIAPIError {
                 lastError = error
-                // Si es un error de saturación o servidor, probamos el siguiente. Si es 401 (Auth), probamos otro (podría estar mal la key)
+                // Si es un error de saturación o servidor, probamos el siguiente.
                 let code = error.statusCode ?? 0
                 if code == 429 || code >= 500 {
+                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
                     reportFallback(service: service, error: "\(code)")
-                    print("⚠️ Fallback: \(service) falló por saturación (\(code)). Probando alternativa...")
+                    print("⚠️ Fallback: \(service) falló por saturación (\(code)). Puesto en cooldown. Probando alternativa...")
                     continue
                 }
             } catch let error as NSError {
                 lastError = error
                 if error.domain == "GeminiAPI" && (error.code == 429 || error.code >= 500) {
+                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
                     reportFallback(service: service, error: "\(error.code)")
-                    print("⚠️ Fallback: Gemini falló por saturación (\(error.code)). Probando alternativa...")
+                    print("⚠️ Fallback: Gemini falló por saturación (\(error.code)). Puesto en cooldown. Probando alternativa...")
                     continue
                 }
                 // Si es error de red o timeout, intentamos fallback
                 if error.domain == NSURLErrorDomain {
+                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
                     reportFallback(service: service, error: "Red")
-                    print("⚠️ Fallback: Error de red con \(service). Probando alternativa...")
+                    print("⚠️ Fallback: Error de red con \(service). Puesto en cooldown. Probando alternativa...")
                     continue
                 }
             }

@@ -23,33 +23,13 @@ struct OmniSearchResultItem {
 }
 
 struct OmniSearchView: View {
-    private struct SearchItemPayload {
-        let title: String
-        let subtitle: String
-        let iconName: String
-        let categoryName: String?
-        let hasVariables: Bool
-        let hasNegative: Bool
-        let hasAlternatives: Bool
-    }
-
-    private struct SearchIndexEntry {
-        let prompt: Prompt
-        let titleLower: String
-        let contentLower: String
-        let descLower: String
-        let folderLower: String
-        let payload: SearchItemPayload
-    }
-
     @EnvironmentObject var manager: OmniSearchManager
     @EnvironmentObject var preferences: PreferencesManager
     @EnvironmentObject var promptService: PromptService
     
     @State private var query: String = ""
     @State private var selectedIndex: Int = 0
-    @State private var indexedPrompts: [SearchIndexEntry] = []
-    @State private var filteredResults: [OmniSearchResultItem] = []
+        @State private var filteredResults: [OmniSearchResultItem] = []
     @State private var debouncedSearchTask: Task<Void, Never>? = nil
     @State private var visibleResultIndices: Set<Int> = []
     @State private var folderColorByNameCache: [String: Color] = [:]
@@ -209,7 +189,6 @@ struct OmniSearchView: View {
         )
         .onAppear {
             rebuildFolderColorCache(from: promptService.folders)
-            rebuildSearchIndex(from: promptService.prompts)
             runSearch()
 
             // Delay extra para asegurar que la ventana es KEY antes de enfocar el TextField
@@ -217,8 +196,7 @@ struct OmniSearchView: View {
                 isFocused = true
             }
         }
-        .onReceive(promptService.$prompts) { prompts in
-            rebuildSearchIndex(from: prompts)
+        .onReceive(promptService.$prompts) { _ in
             runSearch()
         }
         .onReceive(promptService.$folders) { folders in
@@ -280,36 +258,6 @@ struct OmniSearchView: View {
         }
     }
 
-    private func rebuildSearchIndex(from prompts: [Prompt]) {
-        indexedPrompts = prompts.map { prompt in
-            let subtitle: String
-            if let desc = prompt.promptDescription, !desc.isEmpty {
-                subtitle = desc
-            } else {
-                subtitle = prompt.content
-            }
-
-            let payload = SearchItemPayload(
-                title: prompt.title,
-                subtitle: subtitle,
-                iconName: prompt.icon ?? "doc.text.fill",
-                categoryName: prompt.folder,
-                hasVariables: prompt.hasTemplateVariables(),
-                hasNegative: !(prompt.negativePrompt?.isEmpty ?? true),
-                hasAlternatives: !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true)
-            )
-
-            return SearchIndexEntry(
-                prompt: prompt,
-                titleLower: prompt.title.lowercased(),
-                contentLower: prompt.content.lowercased(),
-                descLower: (prompt.promptDescription ?? "").lowercased(),
-                folderLower: (prompt.folder ?? "").lowercased(),
-                payload: payload
-            )
-        }
-    }
-
     private func rebuildFolderColorCache(from folders: [Folder]) {
         folderColorByNameCache = Dictionary(uniqueKeysWithValues: folders.map { folder in
             (folder.name, Color(hex: folder.displayColor))
@@ -321,103 +269,68 @@ struct OmniSearchView: View {
         let activeApp = promptService.activeAppBundleID
         let folderColorByName = folderColorByNameCache
 
-        if trimmedQuery.isEmpty {
-            let entries = Array(
-                indexedPrompts
-                    .sorted(by: { lhs, rhs in
-                        let lhsRecommended = activeApp != nil && lhs.prompt.targetAppBundleIDs.contains(activeApp!)
-                        let rhsRecommended = activeApp != nil && rhs.prompt.targetAppBundleIDs.contains(activeApp!)
-
-                        if lhsRecommended && !rhsRecommended { return true }
-                        if !lhsRecommended && rhsRecommended { return false }
-
-                        return lhs.prompt.createdAt > rhs.prompt.createdAt
-                    })
-                    .prefix(12)
-            )
-
-            filteredResults = entries.map { entry in
-                makeSearchResultItem(entry: entry, activeApp: activeApp, folderColorByName: folderColorByName)
+        promptService.searchEngine.filterPrompts(
+            prompts: promptService.prompts,
+            folders: promptService.folders,
+            query: trimmedQuery,
+            categoryOverride: "all", // Buscar en todas las categorías
+            selectedCategory: nil,
+            activeAppBundleID: activeApp,
+            promptSortMode: trimmedQuery.isEmpty ? .mostUsed : promptService.promptSortMode
+        ) { results in
+            
+            let topResults = Array(results.prefix(12))
+            
+            let newFilteredResults = topResults.map { prompt in
+                makeSearchResultItem(prompt: prompt, activeApp: activeApp, folderColorByName: folderColorByName)
             }
-        } else {
-            let searchTerms = trimmedQuery
-                .lowercased()
-                .components(separatedBy: .whitespacesAndNewlines)
-                .filter { !$0.isEmpty }
+            
+            filteredResults = newFilteredResults
+            
+            let currentValidIndices = Set(filteredResults.indices)
+            visibleResultIndices = visibleResultIndices.intersection(currentValidIndices)
 
-            let scored = indexedPrompts.compactMap { entry -> (SearchIndexEntry, Int)? in
-                var score = 0
-
-                for term in searchTerms {
-                    if entry.titleLower.contains(term) {
-                        score += 500
-                        if entry.titleLower.hasPrefix(term) { score += 100 }
-                    }
-                    if entry.descLower.contains(term) { score += 40 }
-                    if entry.contentLower.contains(term) { score += 20 }
-                    if entry.folderLower.contains(term) { score += 10 }
-                }
-
-                guard score > 0 else { return nil }
-
-                if let activeApp, entry.prompt.targetAppBundleIDs.contains(activeApp) {
-                    score += 1000
-                }
-
-                if entry.prompt.createdAt > Date().addingTimeInterval(-86400 * 7) {
-                    score += 5
-                }
-
-                return (entry, score)
+            if filteredResults.isEmpty {
+                selectedIndex = 0
+            } else if selectedIndex >= filteredResults.count {
+                selectedIndex = max(0, filteredResults.count - 1)
             }
-
-            let entries = Array(
-                scored
-                    .sorted(by: { $0.1 > $1.1 })
-                    .prefix(12)
-            )
-
-            filteredResults = entries.map { entry, _ in
-                makeSearchResultItem(entry: entry, activeApp: activeApp, folderColorByName: folderColorByName)
-            }
-        }
-
-        let currentValidIndices = Set(filteredResults.indices)
-        visibleResultIndices = visibleResultIndices.intersection(currentValidIndices)
-
-        if filteredResults.isEmpty {
-            selectedIndex = 0
-        } else if selectedIndex >= filteredResults.count {
-            selectedIndex = max(0, filteredResults.count - 1)
         }
     }
 
     private func makeSearchResultItem(
-        entry: SearchIndexEntry,
+        prompt: Prompt,
         activeApp: String?,
         folderColorByName: [String: Color]
     ) -> OmniSearchResultItem {
         let color: Color
-        if let folderName = entry.payload.categoryName, let mapped = folderColorByName[folderName] {
+        if let folderName = prompt.folder, let mapped = folderColorByName[folderName] {
             color = mapped
-        } else if let folderName = entry.payload.categoryName {
+        } else if let folderName = prompt.folder {
             color = PredefinedCategory.fromString(folderName)?.color ?? .blue
         } else {
             color = .blue
         }
 
-        let isRecommended = activeApp != nil && entry.prompt.targetAppBundleIDs.contains(activeApp!)
+        let isRecommended = activeApp != nil && prompt.targetAppBundleIDs.contains(activeApp!)
+        
+        let subtitle: String
+        if let desc = prompt.promptDescription, !desc.isEmpty {
+            subtitle = desc
+        } else {
+            subtitle = prompt.content
+        }
 
         return OmniSearchResultItem(
-            id: entry.prompt.id,
-            prompt: entry.prompt,
-            title: entry.payload.title,
-            subtitle: entry.payload.subtitle,
-            iconName: entry.payload.iconName,
-            categoryName: entry.payload.categoryName,
-            hasVariables: entry.payload.hasVariables,
-            hasNegative: entry.payload.hasNegative,
-            hasAlternatives: entry.payload.hasAlternatives,
+            id: prompt.id,
+            prompt: prompt,
+            title: prompt.title,
+            subtitle: subtitle,
+            iconName: prompt.icon ?? "doc.text.fill",
+            categoryName: prompt.folder,
+            hasVariables: prompt.hasTemplateVariables(),
+            hasNegative: !(prompt.negativePrompt?.isEmpty ?? true),
+            hasAlternatives: !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true),
             categoryColor: color,
             isRecommended: isRecommended
         )

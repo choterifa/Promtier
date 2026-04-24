@@ -148,6 +148,8 @@ final class PromptSearchEngine {
                     
                 case "uncategorized":
                     filtered = filtered.filter { $0.folder == nil || $0.folder == "" }
+                case "all":
+                    break
                 default:
                     filtered = filtered.filter { $0.folder == category }
                 }
