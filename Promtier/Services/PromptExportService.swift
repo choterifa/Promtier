@@ -89,10 +89,25 @@ func exportAllPrompts() -> String {
                 }
             }
 
+            let prefs = PreferencesManager.shared
             let package = BackupPackage(
-                version: "2.3",
+                version: "3.1", // Incrementamos versión por nuevos campos
                 prompts: allPrompts,
-                folders: allFolders
+                folders: allFolders,
+                appSettings: [
+                    "appearance": prefs.appearance.rawValue,
+                    "fontSize": prefs.fontSize.rawValue,
+                    "closeOnCopy": String(prefs.closeOnCopy),
+                    "autoPaste": String(prefs.autoPaste),
+                    "soundEnabled": String(prefs.soundEnabled),
+                    "language": prefs.language.rawValue,
+                    "isGridView": String(prefs.isGridView),
+                    "showSidebar": String(prefs.showSidebar),
+                    "hotkeyCode": String(prefs.hotkeyCode),
+                    "hotkeyModifiers": String(prefs.hotkeyModifiers)
+                ],
+                snippets: prefs.snippets,
+                aiDraftPresets: prefs.draftPresets
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
@@ -460,6 +475,44 @@ func exportAllPrompts() -> String {
             }
         }
         
+        // 3. Importar Snippets y Presets (Novedad v3.1)
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let package = try decoder.decode(BackupPackage.self, from: data)
+            
+            let prefs = PreferencesManager.shared
+            
+            // Importar Snippets (solo si no existen por título)
+            if let importedSnippets = package.snippets {
+                for snippet in importedSnippets {
+                    if !prefs.snippets.contains(where: { $0.title == snippet.title }) {
+                        prefs.snippets.append(snippet)
+                    }
+                }
+            }
+            
+            // Importar Presets de AI Draft
+            if let importedPresets = package.aiDraftPresets {
+                for preset in importedPresets {
+                    if !prefs.draftPresets.contains(where: { $0.title == preset.title }) {
+                        prefs.draftPresets.append(preset)
+                    }
+                }
+            }
+            
+            // Importar Settings (Opcional, podrías preguntar al usuario, pero por ahora lo aplicamos)
+            if let settings = package.appSettings {
+                if let app = settings["appearance"] { prefs.appearance = AppAppearance(rawValue: app) ?? .system }
+                if let lang = settings["language"] { prefs.language = AppLanguage(rawValue: lang) ?? .english }
+                // etc...
+            }
+            
+        } catch {
+            // Si falla esta parte no es crítica, los prompts ya se importaron
+            print("ℹ️ Backup no contenía metadatos extendidos o formato antiguo.")
+        }
+        
         loadFolders()
         loadPrompts()
         return (successCount, failedCount, foldersCreated)
@@ -472,4 +525,9 @@ struct BackupPackage: Codable {
     var version: String
     var prompts: [Prompt]
     var folders: [Folder]
+    
+    // Nuevos campos para respaldo integral (Opcionales para compatibilidad)
+    var appSettings: [String: String]? // Preferencias serializadas
+    var snippets: [Snippet]?
+    var aiDraftPresets: [DraftPreset]?
 }

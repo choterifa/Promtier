@@ -100,7 +100,7 @@ struct PromptCard: View {
 
     @Environment(\.colorScheme) var colorScheme
 
-    var body: some View {
+    private var mainCardContent: some View {
         HStack(spacing: 16) {
             // Checkbox para selección en lote
             if batchService.isSelectionModeActive {
@@ -264,25 +264,28 @@ struct PromptCard: View {
                     .opacity(effectiveHover || isSelected ? 1 : 0)
             }
         }
-        .padding(.leading, 18)
-        .padding(.trailing, 10)
-        .padding(.vertical, 14)
-        .frame(minHeight: 82)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(cardBackgroundColor)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(glowFillColor)
-                        .blur(radius: glowBlurRadius)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(glowStrokeColor, lineWidth: glowStrokeLineWidth)
-                )
-        )
-        // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: cardShadowColor, radius: cardShadowRadius, y: cardShadowY)
+    }
+
+    var body: some View {
+        mainCardContent
+            .padding(.leading, 18)
+            .padding(.trailing, 10)
+            .padding(.vertical, 14)
+            .frame(minHeight: 82)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(cardBackgroundColor)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(glowFillColor)
+                            .blur(radius: glowBlurRadius)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(glowStrokeColor, lineWidth: glowStrokeLineWidth)
+                    )
+            )
+            .shadow(color: cardShadowColor, radius: cardShadowRadius, y: cardShadowY)
         .contentShape(Rectangle())
         .onAppear {
             refreshHighlightedContentCacheIfNeeded()

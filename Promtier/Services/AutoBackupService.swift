@@ -101,9 +101,3 @@ class AutoBackupService {
     }
 }
 
-extension PromptService {
-    /// Puente para acceder al exportador desde el servicio de backup
-    func exportAllPromptsAsJSON() -> Data? {
-        return self.exportService.exportAllPromptsAsJSON()
-    }
-}
