@@ -18,9 +18,8 @@ class SoundService {
     private init() {}
     
     // MARK: - Copiar un prompt
-    // "Glass" → campanita cristalina, satisfactoria y corta ✅
     func playCopySound() {
-        playSystem("Glass", volume: 0.45)
+        playMagicSound()
     }
     
     // "Submarine" → sonido de burbuja profundo, para copias secundarias ✅

@@ -385,7 +385,7 @@ class MenuBarManager: NSObject, ObservableObject {
                         if prompt.isSmartOnly() && !prompt.hasChains() {
                             let resolved = PlaceholderResolver.shared.resolveAll(in: prompt.content)
                             self.promptService.usePrompt(prompt, contentOverride: resolved)
-                            if self.preferencesManager.soundEnabled { SoundService.shared.playMagicSound() }
+                            if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                             HapticService.shared.playAlignment()
                             self.showHUDAndPaste(message: "¡Copiado!", icon: "checkmark.circle.fill")
                         } else {
@@ -396,7 +396,7 @@ class MenuBarManager: NSObject, ObservableObject {
                         }
                     } else {
                         self.promptService.usePrompt(prompt)
-                        if self.preferencesManager.soundEnabled { SoundService.shared.playMagicSound() }
+                        if self.preferencesManager.soundEnabled { SoundService.shared.playCopySound() }
                         HapticService.shared.playAlignment()
                         self.showHUDAndPaste(message: "¡Copiado!", icon: "checkmark.circle.fill")
                     }
