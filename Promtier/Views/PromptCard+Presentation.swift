@@ -53,8 +53,7 @@ extension PromptCard {
     }
 
     var shortcutDisplay: String? {
-        guard let shortcut = prompt.customShortcut, !shortcut.isEmpty else { return nil }
-        return "/\(shortcut)"
+        return ShortcutFormatter.format(shortcutString: prompt.customShortcut)
     }
 
     // MARK: - Recommendation

@@ -166,54 +166,6 @@ struct ShortcutRecorderView: View {
     }
 }
 
-// MARK: - Helper de Formateo
-struct ShortcutFormatter {
-    static func format(keyCode: Int, modifiers: NSEvent.ModifierFlags) -> String {
-        if keyCode == -1 { return "Sin atajo" }
-        var str = ""
-        
-        if modifiers.contains(.control) { str += "⌃" }
-        if modifiers.contains(.option) { str += "⌥" }
-        if modifiers.contains(.shift) { str += "⇧" }
-        if modifiers.contains(.command) { str += "⌘" }
-        
-        str += keyName(for: keyCode)
-        
-        return str.isEmpty ? "Ninguno" : str
-    }
-    
-    private static func keyName(for keyCode: Int) -> String {
-        switch keyCode {
-        case 36: return "↩"
-        case 48: return "⇥"
-        case 49: return "Space"
-        case 51: return "⌫"
-        case 53: return "⎋"
-        case 123: return "←"
-        case 124: return "→"
-        case 125: return "↓"
-        case 126: return "↑"
-        default:
-            return translateKeyCode(keyCode)
-        }
-    }
-    
-    private static func translateKeyCode(_ keyCode: Int) -> String {
-        // La traducción de key codes a caracteres legibles debe hacerse usando CGEvent
-        // para que macOS aplique el layout de teclado actual (español, inglés, etc.).
-        let source = CGEventSource(stateID: .combinedSessionState)
-        if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true) {
-            let nsEvent = NSEvent(cgEvent: cgEvent)
-            if let chars = nsEvent?.charactersIgnoringModifiers, !chars.isEmpty {
-                return chars.uppercased()
-            }
-        }
-        
-        // Si falla la traducción, devolvemos el código en decimal (no hexadecimal) para evitar confusión
-        return "\(keyCode)"
-    }
-}
-
 // MARK: - Grabador de atajos reutilizable (para prompts individuales)
 struct ReusableShortcutRecorderView: View {
     let title: String

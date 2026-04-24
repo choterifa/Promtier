@@ -883,38 +883,8 @@ class PreferencesManager: ObservableObject {
     /// Devuelve una cadena legible para el atajo (ej: "⌘⇧N")
     func shortcutDisplayString(keyCode: Int, modifiers: Int) -> String {
         if keyCode == -1 { return "" }
-        var result = ""
-        let flags = NSEvent.ModifierFlags(rawValue: UInt(modifiers))
-        
-        if flags.contains(.control) { result += "⌃" }
-        if flags.contains(.option) { result += "⌥" }
-        if flags.contains(.shift) { result += "⇧" }
-        if flags.contains(.command) { result += "⌘" }
-        
-        // Convertir keyCode a carácter legible usando CGEvent (más robusto)
-        let keyStr: String
-        switch keyCode {
-        case 36: keyStr = "↩"
-        case 48: keyStr = "⇥"
-        case 49: keyStr = "Space"
-        case 51: keyStr = "⌫"
-        case 53: keyStr = "⎋"
-        case 123: keyStr = "←"
-        case 124: keyStr = "→"
-        case 125: keyStr = "↓"
-        case 126: keyStr = "↑"
-        default:
-            let source = CGEventSource(stateID: .combinedSessionState)
-            if let cgEvent = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(keyCode), keyDown: true),
-               let nsEvent = NSEvent(cgEvent: cgEvent),
-               let chars = nsEvent.charactersIgnoringModifiers, !chars.isEmpty {
-                keyStr = chars.uppercased()
-            } else {
-                keyStr = "\(keyCode)"
-            }
-        }
-        
-        return result + keyStr
+        let formatted = ShortcutFormatter.format(keyCode: keyCode, modifiers: NSEvent.ModifierFlags(rawValue: UInt(modifiers)))
+        return formatted == "Ninguno" ? "" : formatted
     }
 }
 
