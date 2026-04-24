@@ -273,23 +273,28 @@ struct PromptCard: View {
                 .fill(cardBackgroundColor)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.15 : 0.05) : (isSelected || effectiveHover ? themeColor.opacity(0.08) : Color.clear))
-                        .blur(radius: isRecommended ? (isGlowAnimating ? 15 : 8) : (preferences.isHaloEffectEnabled && effectiveHover ? 12 : 0))
+                        .fill(glowFillColor)
+                        .blur(radius: glowBlurRadius)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(isRecommended ? themeColor.opacity(isGlowAnimating ? 0.8 : 0.3) : cardBorderColor, lineWidth: isRecommended ? 1.5 : (isSelected ? 1.5 : 1))
+                        .stroke(glowStrokeColor, lineWidth: glowStrokeLineWidth)
                 )
         )
         // Eliminado scaleEffect para mayor estabilidad visual
-        .shadow(color: isRecommended ? themeColor.opacity(isGlowAnimating ? 0.4 : 0.1) : .black.opacity(effectiveHover ? 0.05 : (isPerformanceMode ? 0.01 : 0.0)), radius: isRecommended ? 8 : (isPerformanceMode ? 4 : 8), y: isRecommended ? 0 : (isPerformanceMode ? 2 : 4))
+        .shadow(color: cardShadowColor, radius: cardShadowRadius, y: cardShadowY)
         .contentShape(Rectangle())
         .onAppear {
             refreshHighlightedContentCacheIfNeeded()
             if isRecommended {
-                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                    isGlowAnimating = true
-                }
+                startGlowAnimation()
+            }
+        }
+        .onChange(of: isRecommended) { _, recommended in
+            if recommended {
+                startGlowAnimation()
+            } else {
+                stopGlowAnimation()
             }
         }
         .task(id: highlightedContentRefreshToken) {
@@ -364,7 +369,20 @@ struct PromptCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.blue, lineWidth: isTargetedForDrop ? 2 : 0)
         )
-    }        }
+    }
+
+    private func startGlowAnimation() {
+        withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+            isGlowAnimating = true
+        }
+    }
+    
+    private func stopGlowAnimation() {
+        withAnimation(.easeInOut(duration: 0.5)) {
+            isGlowAnimating = false
+        }
+    }
+}
 
 #Preview {
     VStack(spacing: 12) {

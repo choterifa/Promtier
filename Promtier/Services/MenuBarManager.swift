@@ -112,6 +112,7 @@ class MenuBarManager: NSObject, ObservableObject {
             self.setupGlobalHotkey()
             self.setupThemeObserver()
             self.setupDimensionObserver()
+            self.setupActiveAppObserver() // Nuevo observador dinámico
             
             // RESTAURACIÓN DE ESTADO: Recuperar última vista guardada
             if let lastViewRaw = UserDefaults.standard.string(forKey: "lastNavigatedViewState"),
@@ -124,6 +125,36 @@ class MenuBarManager: NSObject, ObservableObject {
                 self.activeViewState = .newPrompt
                 self.isModalActive = false
             }
+        }
+    }
+
+    private func setupActiveAppObserver() {
+        // Observar cambios de aplicación activa en tiempo real
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            
+            if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+               let bundleID = app.bundleIdentifier,
+               bundleID != Bundle.main.bundleIdentifier {
+                
+                // Solo actualizamos si realmente cambió para evitar re-sorts innecesarios
+                if self.promptService.activeAppBundleID != bundleID {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        self.promptService.activeAppBundleID = bundleID
+                    }
+                }
+            }
+        }
+        
+        // Cargar el inicial
+        if let frontApp = NSWorkspace.shared.frontmostApplication,
+           let bundleID = frontApp.bundleIdentifier,
+           bundleID != Bundle.main.bundleIdentifier {
+            self.promptService.activeAppBundleID = bundleID
         }
     }
     
@@ -176,11 +207,7 @@ class MenuBarManager: NSObject, ObservableObject {
             closeFloatingWindows()
 
             // Sugerir desde el portapapeles si está habilitado y estamos en la vista principal
-            if activeViewState == .main {                // CAPTURAR APP ACTIVA PARA CONTEXTO
-                if let frontApp = NSWorkspace.shared.frontmostApplication,
-                   frontApp.bundleIdentifier != Bundle.main.bundleIdentifier {
-                    promptService.activeAppBundleID = frontApp.bundleIdentifier
-                }
+            if activeViewState == .main {
                 checkClipboardForPromptSuggestion()
             }
             
