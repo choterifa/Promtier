@@ -186,6 +186,9 @@ class MenuBarManager: NSObject, ObservableObject {
     @objc func togglePopover() {
         guard let button = statusItem?.button else { return }
         
+        // AUTO-BACKUP: Verificar si toca hacer copia de seguridad silenciosa
+        AutoBackupService.shared.performAutoBackupIfNeeded()
+        
         let isRightClick = NSApp.currentEvent?.type == .rightMouseUp
         
         if isRightClick {
