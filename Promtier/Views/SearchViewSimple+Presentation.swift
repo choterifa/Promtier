@@ -147,7 +147,7 @@ extension SearchViewSimple {
 
     func onSelectPrompt(_ prompt: Prompt) {
         isSearchFocused = false
-        markUserNavigationActivity()
+        isUserNavigating = false // Detener cualquier auto-scroll al usar el ratón
         let latest = latestPrompt(for: prompt)
         selectedPrompt = latest
         prewarmPreviewAssets(for: latest)

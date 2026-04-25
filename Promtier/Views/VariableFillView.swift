@@ -195,8 +195,11 @@ struct VariableFillView: View {
     var body: some View {
         Group {
             if hasPremiumVariables && !preferences.isPremiumActive {
-                PremiumUpsellView(featureName: "advanced_variables".localized(for: preferences.language), onCancel: onCancel)
-                    .cornerRadius(24)
+                Color.clear
+                    .onAppear {
+                        PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
+                        onCancel()
+                    }
             } else {
                 mainContainer
             }

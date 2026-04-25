@@ -200,6 +200,36 @@ struct CategorySidebar: View {
             }
             
             Spacer()
+            
+            if !preferences.isPremiumActive {
+                Button(action: {
+                    PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Obtener Pro")
+                            .font(.system(size: 11, weight: .bold))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(hex: "#FF5E3A"), Color(hex: "#FF2A6D")]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .shadow(color: Color(hex: "#FF2A6D").opacity(0.3), radius: 4, x: 0, y: 2)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
         }
         .onHover { hovering in
             menuBarManager.setSidebarHovered(hovering)

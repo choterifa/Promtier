@@ -149,17 +149,7 @@ struct NewPromptOverlaysManager: View {
     private var snippetOverlay: some View {
         VStack {
             Spacer()
-            if !preferences.isPremiumActive {
-                PremiumUpsellView(
-                    featureName: "quick_snippets".localized(for: preferences.language),
-                    onCancel: {
-                        withAnimation { showSnippets = false }
-                    }
-                )
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
-                .padding(.bottom, 24)
-            } else {
+            if preferences.isPremiumActive {
                 SnippetsPopupList(
                     query: snippetSearchQuery,
                     selectedIndex: $snippetSelectedIndex,
@@ -179,17 +169,7 @@ struct NewPromptOverlaysManager: View {
     private var variablesOverlay: some View {
         VStack {
             Spacer()
-            if !preferences.isPremiumActive {
-                PremiumUpsellView(
-                    featureName: "dynamic_variables".localized(for: preferences.language),
-                    onCancel: {
-                        withAnimation { showVariables = false }
-                    }
-                )
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
-                .padding(.bottom, 24)
-            } else {
+            if preferences.isPremiumActive {
                 VariablesPopupList(
                     selectedIndex: $variablesSelectedIndex,
                     triggerSelection: $triggerVariablesSelection,

@@ -68,7 +68,7 @@ class MenuBarManager: NSObject, ObservableObject {
     
     // Estado de hover compartido para la sidebar y su tirador de redimensionamiento
     @Published var isSidebarHovered = false
-    
+
     // CONTROL DE FRECUENCIA: Último texto sugerido (para no repetir el banner si el popover se abre varias veces)
     private var lastSuggestedText: String? = nil
     private var lastSuggestedCount: Int = 0

@@ -755,13 +755,6 @@ struct NewPromptView: View {
         )
     }
 
-    var premiumSheetItem: Binding<IdentifiableString?> {
-        Binding(
-            get: { showingPremiumFor.map { IdentifiableString(value: $0) } },
-            set: { showingPremiumFor = $0?.value }
-        )
-    }
-
     private struct DraftState: Equatable {
         let title: String
         let content: String
@@ -915,16 +908,31 @@ struct NewPromptView: View {
                 }
         }
         .overlay { overlays }
-                .sheet(item: premiumSheetItem) { item in
-                    PremiumUpsellView(featureName: item.value)
-                }
-                .sheet(item: $diffComparison) { comparison in
+                                .sheet(item: $diffComparison) { comparison in
                     DiffView(
                         text1: comparison.text1,
                         text2: comparison.text2,
                         title1: comparison.title1,
                         title2: comparison.title2
                     )
+                }
+                .onChange(of: showingPremiumFor) { _, newValue in
+                    if newValue != nil {
+                        PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
+                        showingPremiumFor = nil
+                    }
+                }
+                .onChange(of: showSnippets) { _, newValue in
+                    if newValue && !preferences.isPremiumActive {
+                        showSnippets = false
+                        PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
+                    }
+                }
+                .onChange(of: showVariables) { _, newValue in
+                    if newValue && !preferences.isPremiumActive {
+                        showVariables = false
+                        PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
+                    }
                 }
                 .sheet(isPresented: $showingVersionHistory) {
                     if let snapHistory = originalPrompt?.versionHistory {
@@ -1264,17 +1272,7 @@ struct NewPromptView: View {
     var snippetOverlay: some View {
         VStack {
             Spacer()
-            if !preferences.isPremiumActive {
-                PremiumUpsellView(
-                    featureName: "quick_snippets".localized(for: preferences.language),
-                    onCancel: {
-                        withAnimation { showSnippets = false }
-                    }
-                )
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
-                .padding(.bottom, 24)
-            } else {
+            if preferences.isPremiumActive {
                 SnippetsPopupList(
                     query: snippetSearchQuery,
                     selectedIndex: $snippetSelectedIndex,
@@ -1294,17 +1292,7 @@ struct NewPromptView: View {
     var variablesOverlay: some View {
         VStack {
             Spacer()
-            if !preferences.isPremiumActive {
-                PremiumUpsellView(
-                    featureName: "dynamic_variables".localized(for: preferences.language),
-                    onCancel: {
-                        withAnimation { showVariables = false }
-                    }
-                )
-                .cornerRadius(24)
-                .shadow(color: Color.black.opacity(0.15), radius: 30, x: 0, y: 15)
-                .padding(.bottom, 24)
-            } else {
+            if preferences.isPremiumActive {
                 VariablesPopupList(
                     selectedIndex: $variablesSelectedIndex,
                     triggerSelection: $triggerVariablesSelection,

@@ -23,7 +23,6 @@ struct PreferencesView: View {
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingResetAlert = false
-    @State private var showingPremiumUpsell = false
     @State private var hoveredTab: Int? = nil
     
     private let tabs: [(title: LocalizedStringKey, icon: String)] = [
@@ -162,7 +161,6 @@ struct PreferencesView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingExportSheet) { ExportView() }
         .sheet(isPresented: $showingImportSheet) { ImportView() }
-        .sheet(isPresented: $showingPremiumUpsell) { PremiumUpsellView(featureName: "snippets_tab".localized(for: preferences.language)) }
         .alert("reset_all".localized(for: preferences.language), isPresented: $showingResetAlert) {
             Button("cancel".localized(for: preferences.language), role: .cancel) { }
             Button("reset_factory".localized(for: preferences.language), role: .destructive) {
@@ -202,7 +200,7 @@ struct PreferencesView: View {
                     .foregroundColor(.white)
                     .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
                 
-                Button(action: { showingPremiumUpsell = true }) {
+                Button(action: { PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro") }) {
                     Text("unlock_premium".localized(for: preferences.language))
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
