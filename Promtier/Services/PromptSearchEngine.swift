@@ -286,7 +286,10 @@ final class PromptSearchEngine {
                 case .newest:
                     filtered.sort { $0.modifiedAt > $1.modifiedAt }
                 case .mostUsed:
-                    filtered.sort { $0.useCount > $1.useCount }
+                    filtered.sort {
+                        if $0.isFavorite != $1.isFavorite { return $0.isFavorite }
+                        return $0.useCount > $1.useCount
+                    }
                 }
             }
             

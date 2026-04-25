@@ -20,6 +20,8 @@ struct OmniSearchResultItem {
     let hasAlternatives: Bool
     let categoryColor: Color
     let isRecommended: Bool
+    let useCount: Int
+    let isFavorite: Bool
 }
 
 struct OmniSearchView: View {
@@ -337,7 +339,9 @@ struct OmniSearchView: View {
             hasNegative: !(prompt.negativePrompt?.isEmpty ?? true),
             hasAlternatives: !prompt.alternatives.isEmpty || !(prompt.alternativePrompt?.isEmpty ?? true),
             categoryColor: color,
-            isRecommended: isRecommended
+            isRecommended: isRecommended,
+            useCount: prompt.useCount,
+            isFavorite: prompt.isFavorite
         )
     }
     
@@ -391,6 +395,24 @@ struct OmniSearchRow: View {
                         
                         // Indicadores rápidos (Badges)
                         HStack(spacing: 5) {
+                            if item.isFavorite {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.yellow)
+                                    .help("Favorito")
+                            }
+                            
+                            if item.useCount > 0 {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "doc.on.doc.fill")
+                                        .font(.system(size: 9))
+                                    Text("\(item.useCount)")
+                                        .font(.system(size: 10, weight: .bold))
+                                }
+                                .foregroundColor(.secondary)
+                                .help("Veces copiado")
+                            }
+
                             if item.hasVariables {
                                 Image(systemName: "curlybraces")
                                     .font(.system(size: 10, weight: .black))
