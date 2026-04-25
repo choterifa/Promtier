@@ -134,7 +134,7 @@ class FolderManagerViewModel: ObservableObject {
                 }
 
                 do {
-                    let fullResponse = try await AIServiceManager.shared.generate(prompt: magicPrompt, imageData: nil, useFallback: true)
+                    let fullResponse = try await AIServiceManager.shared.generate(prompt: magicPrompt, imageData: nil)
                     
                     let cleanResponse = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                         .replacingOccurrences(of: "```json", with: "")
@@ -164,7 +164,7 @@ class FolderManagerViewModel: ObservableObject {
 
              Task.detached {
                  do {
-                     let fullResponse = try await AIServiceManager.shared.generate(prompt: iconPrompt, imageData: nil, useFallback: true)
+                     let fullResponse = try await AIServiceManager.shared.generate(prompt: iconPrompt, imageData: nil)
                      let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
                      
                      if allowedIcons.contains(result) {

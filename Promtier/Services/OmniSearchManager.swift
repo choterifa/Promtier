@@ -153,11 +153,9 @@ class OmniSearchManager: NSObject, ObservableObject {
         newPanel.backgroundColor = .clear
         newPanel.hasShadow = true
         newPanel.delegate = self
-        newPanel.hidesOnDeactivate = true 
         newPanel.isReleasedWhenClosed = false
-        
-        let view = OmniSearchView()
-            .environmentObject(self)
+
+        let view = OmniSearchView()            .environmentObject(self)
             .environmentObject(PreferencesManager.shared)
             .environmentObject(PromptService.shared)
         

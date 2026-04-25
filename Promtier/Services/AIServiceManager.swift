@@ -11,7 +11,7 @@ struct PromptMetadataResponse {
     let title: String
     let description: String
     let content: String
-    let negativePrompt: String?
+    let negativePrompt: String? 
 }
 
 class AIServiceManager: AIServiceProtocol {
@@ -19,119 +19,39 @@ class AIServiceManager: AIServiceProtocol {
     
     private init() {}
     
-    // Almacena hasta cuándo está deshabilitado temporalmente un servicio por fallas o saturación
-    private var cooldowns: [AIService: Date] = [:]
-    private let cooldownDuration: TimeInterval = 10 * 60 // 10 minutos
-    
     enum AIError: LocalizedError {
         case serviceDisabled
         case invalidAPIKey(String)
         case configurationError
-        case allServicesFailed(String)
         
         var errorDescription: String? {
             switch self {
             case .serviceDisabled: return "El servicio de IA seleccionado está desactivado en Preferencias."
             case .invalidAPIKey(let service): return "Falta la clave API para \(service)."
             case .configurationError: return "Error de configuración en el servicio de IA."
-            case .allServicesFailed(let msg): return "Servicios saturados o fallaron: \(msg)"
             }
-        }
-    }
-    
-    // MARK: - UI Callbacks
-    var onFallbackOccurred: ((String) -> Void)?
-    
-    private func reportFallback(service: AIService, error: String) {
-        let serviceName = {
-            switch service {
-            case .openai: return "OpenAI"
-            case .gemini: return "Gemini"
-            case .openrouter: return "OpenRouter"
-            }
-        }()
-        
-        DispatchQueue.main.async {
-            self.onFallbackOccurred?("⚠️ \(serviceName) falló (\(error)). Probando alternativa... (\(serviceName) desactivado temporalmente)")
         }
     }
 
-    func generate(prompt: String, imageData: Data? = nil, useFallback: Bool = true) async throws -> String {
+    func generate(prompt: String, imageData: Data? = nil) async throws -> String {
         let prefs = PreferencesManager.shared
         
-        // Limpiar cooldowns expirados
-        let now = Date()
-        for (srv, expiration) in cooldowns {
-            if now > expiration {
-                cooldowns.removeValue(forKey: srv)
-            }
+        switch prefs.preferredAIService {
+        case .openai:
+            guard prefs.openAIEnabled else { throw AIError.serviceDisabled }
+            guard !prefs.openAIApiKey.isEmpty else { throw AIError.invalidAPIKey("OpenAI") }
+            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false, imageData: imageData)
+            
+        case .openrouter:
+            guard prefs.openRouterEnabled else { throw AIError.serviceDisabled }
+            guard !prefs.openRouterAPIKey.isEmpty else { throw AIError.invalidAPIKey("OpenRouter") }
+            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true, imageData: imageData)
+            
+        case .gemini:
+            guard prefs.geminiEnabled else { throw AIError.serviceDisabled }
+            guard !prefs.geminiAPIKey.isEmpty else { throw AIError.invalidAPIKey("Google Gemini") }
+            return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
         }
-        
-        // Define el orden de intento basado en la preferencia
-        var allServicesToTry: [AIService] = [prefs.preferredAIService]
-        
-        if useFallback {
-            let allServices: [AIService] = [.openai, .gemini, .openrouter]
-            allServicesToTry += allServices.filter { $0 != prefs.preferredAIService }
-        }
-        
-        // Filtrar servicios en cooldown
-        var servicesToTry = allServicesToTry.filter { cooldowns[$0] == nil }
-        
-        // Si todos están en cooldown, intentamos el preferido de todas formas para no bloquear la app
-        if servicesToTry.isEmpty {
-            servicesToTry = [prefs.preferredAIService]
-        }
-        
-        var lastError: Error?
-        
-        for service in servicesToTry {
-            do {
-                switch service {
-                case .openai:
-                    guard prefs.openAIEnabled, !prefs.openAIApiKey.isEmpty else { throw AIError.serviceDisabled }
-                    return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false, imageData: imageData)
-                    
-                case .openrouter:
-                    guard prefs.openRouterEnabled, !prefs.openRouterAPIKey.isEmpty else { throw AIError.serviceDisabled }
-                    return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true, imageData: imageData)
-                    
-                case .gemini:
-                    guard prefs.geminiEnabled, !prefs.geminiAPIKey.isEmpty else { throw AIError.serviceDisabled }
-                    return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
-                }
-            } catch let error as AIError {
-                if case .serviceDisabled = error { continue }
-                lastError = error
-            } catch let error as OpenAIAPIError {
-                lastError = error
-                // Si es un error de saturación o servidor, probamos el siguiente.
-                let code = error.statusCode ?? 0
-                if code == 429 || code >= 500 {
-                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
-                    reportFallback(service: service, error: "\(code)")
-                    print("⚠️ Fallback: \(service) falló por saturación (\(code)). Puesto en cooldown. Probando alternativa...")
-                    continue
-                }
-            } catch let error as NSError {
-                lastError = error
-                if error.domain == "GeminiAPI" && (error.code == 429 || error.code >= 500) {
-                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
-                    reportFallback(service: service, error: "\(error.code)")
-                    print("⚠️ Fallback: Gemini falló por saturación (\(error.code)). Puesto en cooldown. Probando alternativa...")
-                    continue
-                }
-                // Si es error de red o timeout, intentamos fallback
-                if error.domain == NSURLErrorDomain {
-                    cooldowns[service] = Date().addingTimeInterval(cooldownDuration)
-                    reportFallback(service: service, error: "Red")
-                    print("⚠️ Fallback: Error de red con \(service). Puesto en cooldown. Probando alternativa...")
-                    continue
-                }
-            }
-        }
-        
-        throw lastError ?? AIError.allServicesFailed("No hay servicios disponibles.")
     }
     
     // MARK: - Generación de Metadatos Comunes

@@ -75,17 +75,6 @@ final class NewPromptViewModel: ObservableObject {
         normalizeAlternativeDescriptions()
         
         updateDraftHash()
-
-        AIServiceManager.shared.onFallbackOccurred = { [weak self] message in
-            withAnimation {
-                self?.branchMessage = message
-            }
-        }
-    }
-    
-    deinit {
-        // Limpiamos el callback para evitar memory leaks o actualizaciones en objetos muertos
-        AIServiceManager.shared.onFallbackOccurred = nil
     }
     
     
@@ -108,7 +97,6 @@ final class NewPromptViewModel: ObservableObject {
                 case .serviceDisabled: return "error_service_disabled"
                 case .invalidAPIKey: return "error_invalid_key"
                 case .configurationError: return "error_config"
-                case .allServicesFailed: return "error_api_saturation"
                 }
             }
             return "error_generic_ai"

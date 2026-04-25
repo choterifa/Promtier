@@ -69,25 +69,18 @@ class OpenAIService: ObservableObject {
 
     /// Lista de modelos sugeridos (curados). Se usa como fallback si no hay fetch dinámico.
     static let suggestedChatModels: [String] = [
-        "gpt-5.2",
-        "gpt-5-mini",
-        "gpt-5-nano",
-        "gpt-5",
         "gpt-4o",
         "gpt-4o-mini",
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
         "o3-mini",
         "o1",
         "o1-mini",
-        "o4-mini",
         "gpt-4-turbo"
     ]
 
     /// Intenta obtener los modelos disponibles desde la cuenta (API Key).
-    func listModelIDs(apiKey: String) async throws -> [String] {
-        guard let url = URL(string: "https://api.openai.com/v1/models") else {
+    func listModelIDs(apiKey: String, isOpenRouter: Bool = false) async throws -> [String] {
+        let urlString = isOpenRouter ? "https://openrouter.ai/api/v1/models" : "https://api.openai.com/v1/models"
+        guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
         }
 
@@ -100,18 +93,34 @@ class OpenAIService: ObservableObject {
             throw URLError(.badServerResponse)
         }
         guard (200...299).contains(http.statusCode) else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("OpenAI/OpenRouter API Error: HTTP \(http.statusCode) - \(errorString)")
+            }
             throw URLError(.badServerResponse)
         }
 
-        let decoded = try JSONDecoder().decode(OpenAIModelListResponse.self, from: data)
+        do {
+            let decoded = try JSONDecoder().decode(OpenAIModelListResponse.self, from: data)
 
-        // Filtrado simple: mostrar solo modelos de texto/chat razonables
-        let allowedPrefixes = ["gpt-", "o1", "o3", "o4"]
-        let ids = decoded.data
-            .map { $0.id }
-            .filter { id in allowedPrefixes.contains(where: { id.hasPrefix($0) }) }
-            .sorted()
-        return ids
+            if isOpenRouter {
+                let orModels = decoded.data.map { $0.id }.sorted()
+                print("OpenRouter Models Fetched: \(orModels.count) valid models found.")
+                return orModels
+            }
+
+            // Filtrado simple para OpenAI
+            let allowedPrefixes = ["gpt-", "o1", "o3", "o4"]
+            let ids = decoded.data
+                .map { $0.id }
+                .filter { id in allowedPrefixes.contains(where: { id.hasPrefix($0) }) }
+                .sorted()
+                
+            print("OpenAI Models Fetched: \(ids.count) valid models found.")
+            return ids
+        } catch {
+            print("Decode Error for OpenAI/OpenRouter models: \(error)")
+            throw error
+        }
     }
     
     /// Genera una respuesta basada en un prompt de forma asíncrona

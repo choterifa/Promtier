@@ -236,7 +236,6 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
         newPanel.hasShadow = false // Shadow is managed by SwiftUI now
         newPanel.delegate = self
         newPanel.isMovableByWindowBackground = true
-        newPanel.hidesOnDeactivate = true // Cierra al hacer click fuera
         newPanel.center()
         
         let view = FloatingAIDraftView()
@@ -252,5 +251,10 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
 extension FloatingAIDraftManager: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         isVisible = false
+    }
+    
+    func windowDidResignKey(_ notification: Notification) {
+        // Cerrar si pierde el foco (clic fuera) para evitar que vuelva a aparecer al activar la app
+        hide()
     }
 }

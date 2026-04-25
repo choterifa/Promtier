@@ -44,8 +44,16 @@ struct ConnectionStatusDot: View {
 struct AITab: View {
     @EnvironmentObject var preferences: PreferencesManager
     @State private var openAIAvailableModels: [String] = []
+    @State private var geminiAvailableModels: [String] = []
+    @State private var openRouterAvailableModels: [String] = []
+    
     @State private var isRefreshingOpenAIModels = false
+    @State private var isRefreshingGeminiModels = false
+    @State private var isRefreshingOpenRouterModels = false
+    
     @State private var openAIModelsError: String?
+    @State private var geminiModelsError: String?
+    @State private var openRouterModelsError: String?
     
     @State private var openAITestStatus: ConnectionStatus = .idle
     @State private var geminiTestStatus: ConnectionStatus = .idle
@@ -133,14 +141,14 @@ struct AITab: View {
                                 .font(.system(.body, design: .monospaced))
 
                             Menu {
-                                Section("Suggested") {
-                                    ForEach(OpenAIService.suggestedChatModels, id: \.self) { model in
-                                        Button(model) { preferences.openAIDefaultModel = model }
+                                if openAIAvailableModels.isEmpty {
+                                    Section("Suggested") {
+                                        ForEach(OpenAIService.suggestedChatModels, id: \.self) { model in
+                                            Button(model) { preferences.openAIDefaultModel = model }
+                                        }
                                     }
-                                }
-
-                                if !openAIAvailableModels.isEmpty {
-                                    Section("From your account") {
+                                } else {
+                                    Section("Available Models") {
                                         ForEach(openAIAvailableModels, id: \.self) { model in
                                             Button(model) { preferences.openAIDefaultModel = model }
                                         }
@@ -269,18 +277,21 @@ struct AITab: View {
                                     .frame(width: 200)
 
                                 Menu {
-                                    Section("Gemini 2.5") {
-                                        Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
-                                        Button("gemini-2.5-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
-                                    }
-                                    Section("Gemini 2.0") {
-                                        Button("gemini-2.0-pro-exp-02-05") { preferences.geminiDefaultModel = "gemini-2.0-pro-exp-02-05" }
-                                        Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
-                                        Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
-                                    }
-                                    Section("Gemini 1.5") {
-                                        Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
-                                        Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
+                                    if geminiAvailableModels.isEmpty {
+                                        Section("Suggested") {
+                                            Button("gemini-2.5-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
+                                            Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
+                                            Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
+                                            Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
+                                            Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
+                                            Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
+                                        }
+                                    } else {
+                                        Section("Available Models") {
+                                            ForEach(geminiAvailableModels, id: \.self) { model in
+                                                Button(model) { preferences.geminiDefaultModel = model }
+                                            }
+                                        }
                                     }
                                 } label: {
                                     Image(systemName: "list.bullet.indent")
@@ -370,7 +381,53 @@ struct AITab: View {
                                 TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                    .frame(width: 320)
+                                    .frame(width: 250)
+
+                                Menu {
+                                    if openRouterAvailableModels.isEmpty {
+                                        Section("Suggested") {
+                                            Button("openai/gpt-4o") { preferences.openRouterDefaultModel = "openai/gpt-4o" }
+                                            Button("anthropic/claude-3.5-sonnet") { preferences.openRouterDefaultModel = "anthropic/claude-3.5-sonnet" }
+                                            Button("google/gemini-2.5-flash") { preferences.openRouterDefaultModel = "google/gemini-2.5-flash" }
+                                            Button("meta-llama/llama-3.1-70b-instruct") { preferences.openRouterDefaultModel = "meta-llama/llama-3.1-70b-instruct" }
+                                        }
+                                    } else {
+                                        Section("Available Models") {
+                                            ForEach(openRouterAvailableModels, id: \.self) { model in
+                                                Button(model) { preferences.openRouterDefaultModel = model }
+                                            }
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "list.bullet.indent")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(4)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(4)
+                                }
+                                .menuStyle(.button)
+                                .buttonStyle(.plain)
+                                .fixedSize()
+                                .help("openrouter_model_presets".localized(for: preferences.language))
+                                
+                                Button(action: {
+                                    Task { await refreshOpenRouterModels() }
+                                }) {
+                                    if isRefreshingOpenRouterModels {
+                                        ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
+                                    } else {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .padding(4)
+                                            .background(Color.primary.opacity(0.05))
+                                            .cornerRadius(4)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .help("refresh_models".localized(for: preferences.language))
+                                .disabled(isRefreshingOpenRouterModels || preferences.openRouterAPIKey.isEmpty)
                             }
                             Link(LocalizedStringKey("openrouter_explore_models".localized(for: preferences.language)), destination: URL(string: "https://openrouter.ai/models")!)
                                 .font(.system(size: 10))
@@ -413,6 +470,49 @@ struct AITab: View {
         }
     }
 
+
+    @MainActor
+    private func refreshGeminiModels() async {
+        guard !preferences.geminiAPIKey.isEmpty else { return }
+        isRefreshingGeminiModels = true
+        geminiModelsError = nil
+        defer { isRefreshingGeminiModels = false }
+
+        do {
+            let models = try await GeminiService.shared.listModelIDs(apiKey: preferences.geminiAPIKey)
+            geminiAvailableModels = models
+            if !models.contains(preferences.geminiDefaultModel) {
+                if let fromAccount = models.first {
+                    preferences.geminiDefaultModel = fromAccount
+                }
+            }
+        } catch {
+            geminiModelsError = "Gemini models: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    private func refreshOpenRouterModels() async {
+        guard !preferences.openRouterAPIKey.isEmpty else { return }
+        isRefreshingOpenRouterModels = true
+        openRouterModelsError = nil
+        defer { isRefreshingOpenRouterModels = false }
+
+        do {
+            let models = try await OpenAIService.shared.listModelIDs(apiKey: preferences.openRouterAPIKey, isOpenRouter: true)
+            openRouterAvailableModels = models
+            if !models.contains(preferences.openRouterDefaultModel) {
+                if let fromAccount = models.first {
+                    preferences.openRouterDefaultModel = fromAccount
+                } else if let suggested = OpenAIService.suggestedChatModels.first {
+                    preferences.openRouterDefaultModel = suggested
+                }
+            }
+        } catch {
+            openRouterModelsError = "OpenRouter models: \(error.localizedDescription)"
+        }
+    }
+    
     @MainActor
     private func handleOpenAIKeyChanged() async {
         guard !preferences.openAIApiKey.isEmpty else {
