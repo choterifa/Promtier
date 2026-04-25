@@ -107,7 +107,6 @@ struct OmniSearchView: View {
                                     isSelected: selectedPromptId == result.id,
                                     onSelect: {
                                         selectedPromptId = result.id
-                                        isFocused = false
                                     },
                                     onCopy: {
                                         copyAndClose(result.prompt)
