@@ -153,7 +153,6 @@ extension SearchViewSimple {
         prewarmPreviewAssets(for: latest)
         if showingPreview { refreshPreviewPrefetchIfNeeded(for: latest) }
         if preferences.soundEnabled { SoundService.shared.playInteractionSound() }
-        NSApp.keyWindow?.makeKeyAndOrderFront(nil)
     }
 
     func onDoubleTapPrompt(_ prompt: Prompt) {
