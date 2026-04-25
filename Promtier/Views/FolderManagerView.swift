@@ -481,9 +481,6 @@ struct FolderManagerView: View {
                     .labelsHidden()
                     .opacity(0.011)
                     .frame(width: 28, height: 28)
-                    .onTapGesture {
-                        NSColorPanel.shared.makeKeyAndOrderFront(nil)
-                    }
             }
         }
         .padding(.top, 4)

@@ -656,16 +656,19 @@ class MenuBarManager: NSObject, ObservableObject {
     /// Actualiza el comportamiento del popover basado en el estado
     private func updatePopoverBehavior() {
         guard let popover = popover else { return }
-        
+
         if isModalActive {
             // BLOQUEO: Reservado para flujos que sí requieren mantener el popover fijo
-            popover.behavior = .applicationDefined
+            if popover.behavior != .applicationDefined {
+                popover.behavior = .applicationDefined
+            }
         } else {
             // NORMAL: Se cierra automáticamente al perder el foco
-            popover.behavior = .transient
+            if popover.behavior != .transient {
+                popover.behavior = .transient
+            }
         }
     }
-
     // MARK: - Event Monitoring
 
     /// Gestiona el estado de hover de la sidebar con retrasos premium para evitar triggers accidentales

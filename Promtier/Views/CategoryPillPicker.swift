@@ -299,10 +299,6 @@ struct CategoryPillPicker: View {
                         .labelsHidden()
                         .opacity(0.011) // Invísimble pero interactivo
                         .frame(width: 24, height: 24)
-                        .onTapGesture {
-                            // Asegurar que el el NSColorPanel se mueva al frente
-                            NSColorPanel.shared.makeKeyAndOrderFront(nil)
-                        }
                 }
             }
             

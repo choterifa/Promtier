@@ -16,6 +16,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
+    // MARK: - Remote Notifications (Silence Warnings)
+    func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // Implementación vacía para evitar el warning "Giving up waiting to register for remote notifications"
+    }
+
+    func application(_ application: NSApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        // Implementación vacía para evitar el warning "Giving up waiting to register for remote notifications"
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Solicitar permisos de notificación
         NotificationService.shared.requestPermissions()
