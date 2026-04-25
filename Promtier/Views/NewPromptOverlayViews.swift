@@ -3,6 +3,7 @@ import SwiftUI
 struct NewPromptBranchMessageOverlay: View {
     let message: String
     let language: AppLanguage
+    var onSettings: (() -> Void)? = nil
 
     var body: some View {
         VStack {
@@ -20,17 +21,35 @@ struct NewPromptBranchMessageOverlay: View {
                     )
                     .padding(.bottom, 40)
             } else {
-                Text(message)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        Capsule()
-                            .fill(message.hasPrefix("❌") ? Color.red : Color.purple)
-                            .shadow(radius: 10)
-                    )
-                    .padding(.bottom, 40)
+                HStack(spacing: 12) {
+                    Text(message)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    if message.contains("404") || message.contains("not found") || message.contains("available") {
+                        Button(action: { onSettings?() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "gearshape.fill")
+                                Text("Ajustes")
+                            }
+                            .font(.system(size: 11, weight: .bold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(4)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.white)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(message.hasPrefix("❌") ? Color.red : Color.purple)
+                        .shadow(radius: 10)
+                )
+                .padding(.bottom, 40)
             }
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))

@@ -44,6 +44,7 @@ final class NewPromptViewModel: ObservableObject {
     @Published var magicTarget: MagicTarget = .content
     @Published var isGeneratingAlternativeDirect: Bool = false
     @Published var isMagicImageProcessing: Bool = false
+    @Published var showingAIPrefs: Bool = false
 
     private var draftHash: Int = 0
     

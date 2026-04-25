@@ -281,10 +281,6 @@ struct AITab: View {
                                         Section("Suggested") {
                                             Button("gemini-2.5-flash • Recomendado") { preferences.geminiDefaultModel = "gemini-2.5-flash" }
                                             Button("gemini-2.5-pro") { preferences.geminiDefaultModel = "gemini-2.5-pro" }
-                                            Button("gemini-2.0-flash") { preferences.geminiDefaultModel = "gemini-2.0-flash" }
-                                            Button("gemini-2.0-flash-lite") { preferences.geminiDefaultModel = "gemini-2.0-flash-lite" }
-                                            Button("gemini-1.5-pro") { preferences.geminiDefaultModel = "gemini-1.5-pro" }
-                                            Button("gemini-1.5-flash") { preferences.geminiDefaultModel = "gemini-1.5-flash" }
                                         }
                                     } else {
                                         Section("Available Models") {

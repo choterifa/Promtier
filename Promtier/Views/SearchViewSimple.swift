@@ -146,14 +146,10 @@ struct SearchViewSimple: View {
     @State var keyboardNavigationIdleTask: Task<Void, Never>? = nil
     @State var keyboardPreviewRefreshTask: Task<Void, Never>? = nil
     
-    @State var dragStartedSidebarWidth: CGFloat = 0
-    @State var isSidebarDragging: Bool = false
-    
     @State var isPlusHovered = false
     @State var isBatchHovered = false
     @State var isSettingsHovered = false
     @State var isViewToggleHovered = false
-    @State var isSidebarResizerHovered = false
     
     // Ghost Tips logic
     var selectedPromptCategoryColor: Color {
@@ -504,37 +500,7 @@ struct SearchViewSimple: View {
                         .environmentObject(promptService)
                         .transition(.move(edge: .leading).combined(with: .opacity))
                         .overlay(alignment: .trailing) {
-                            // Hit area profesional: exactamente en el borde, cursor inmediato
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(width: 6)
-                                .contentShape(Rectangle())
-                                .offset(x: 3) // sobresale 3px hacia el contenido para quedar centrado en la línea divisoria
-                                .onHover { inside in
-                                    isSidebarResizerHovered = inside
-                                    if inside {
-                                        NSCursor.resizeLeftRight.push()
-                                    } else {
-                                        NSCursor.pop()
-                                    }
-                                    menuBarManager.setSidebarHovered(inside)
-                                }
-                                .gesture(
-                                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
-                                        .onChanged { value in
-                                            if !isSidebarDragging {
-                                                isSidebarDragging = true
-                                                dragStartedSidebarWidth = preferences.sidebarWidth
-                                                // Ensure cursor doesn't reset when dragging fast
-                                            }
-                                            let proposed = dragStartedSidebarWidth + value.translation.width
-                                            preferences.sidebarWidth = min(300, max(201, proposed))
-                                        }
-                                        .onEnded { _ in
-                                            isSidebarDragging = false
-                                            dragStartedSidebarWidth = 0
-                                        }
-                                )
+                            SidebarResizer()
                         }
                 }
                 

@@ -130,6 +130,10 @@ struct NewPromptView: View {
         get { viewModel.showingMagicOptions }
         nonmutating set { viewModel.showingMagicOptions = newValue }
     }
+    var showingAIPrefs: Bool {
+        get { viewModel.showingAIPrefs }
+        nonmutating set { viewModel.showingAIPrefs = newValue }
+    }
     var branchMessage: String? {
         get { viewModel.branchMessage }
         nonmutating set { viewModel.branchMessage = newValue }
@@ -1039,14 +1043,22 @@ struct NewPromptView: View {
             if let msg = branchMessage {
                 NewPromptBranchMessageOverlay(
                     message: msg,
-                    language: preferences.language
+                    language: preferences.language,
+                    onSettings: {
+                        viewModel.showingAIPrefs = true
+                    }
                 )
             }
         }
+    .sheet(isPresented: $viewModel.showingAIPrefs) {
+        PreferencesView(onClose: {
+            viewModel.showingAIPrefs = false
+        })
+        .frame(width: 850, height: 600)
+    }
     }
 
-    var snippetsOverlayLayer: some View {
-        ZStack {
+    var snippetsOverlayLayer: some View {        ZStack {
             Color.black.opacity(0.001)
                 .ignoresSafeArea()
                 .onTapGesture { dismissSnippetsOverlay() }
