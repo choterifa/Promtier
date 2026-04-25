@@ -135,7 +135,7 @@ class OpenAIService: ObservableObject {
         if isOpenRouter {
             request.addValue("Promtier App", forHTTPHeaderField: "HTTP-Referer")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
 
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
             return true

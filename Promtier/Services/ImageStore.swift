@@ -32,7 +32,7 @@ final class ImageStore: ObservableObject, @unchecked Sendable {
 
     /// Técnica Experta: Ubicación dinámica basada en el estado de iCloud
     nonisolated private var currentBaseURL: URL {
-        if PreferencesManager.shared.icloudSyncEnabled,
+        if UserDefaults.standard.bool(forKey: "icloudSyncEnabled"),
            let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: nil) {
             return cloudURL.appendingPathComponent("Documents", isDirectory: true)
                 .appendingPathComponent("Images", isDirectory: true)
