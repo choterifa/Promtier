@@ -184,6 +184,7 @@ struct OmniSearchView: View {
                     .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
             }
         )
+        .padding(24)
         .onAppear {
             rebuildFolderColorCache(from: promptService.folders)
             runSearch()

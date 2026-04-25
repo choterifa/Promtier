@@ -98,7 +98,7 @@ class OmniSearchManager: NSObject, ObservableObject {
         // Centrar en pantalla (Centro real 0.5)
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
-            let panelSize = panel?.frame.size ?? NSSize(width: 650, height: 450)
+            let panelSize = panel?.frame.size ?? NSSize(width: 698, height: 498)
             let newFrame = NSRect(
                 x: screenRect.origin.x + (screenRect.width - panelSize.width) / 2,
                 y: screenRect.origin.y + (screenRect.height - panelSize.height) * 0.6,
@@ -138,7 +138,7 @@ class OmniSearchManager: NSObject, ObservableObject {
     
     private func createPanel() {
         let newPanel = OmniSearchPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 650, height: 450),
+            contentRect: NSRect(x: 0, y: 0, width: 698, height: 498),
             styleMask: [.borderless], 
             backing: .buffered,
             defer: false
@@ -151,7 +151,7 @@ class OmniSearchManager: NSObject, ObservableObject {
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         newPanel.isOpaque = false
         newPanel.backgroundColor = .clear
-        newPanel.hasShadow = true
+        newPanel.hasShadow = false
         newPanel.delegate = self
         newPanel.isReleasedWhenClosed = false
 
