@@ -4,7 +4,6 @@ struct AIDraftOutputColumn: View {
     @EnvironmentObject var manager: FloatingAIDraftManager
     @EnvironmentObject var preferences: PreferencesManager
     
-    let wordCount: Int
     let onSave: () -> Void
     let onRefill: () -> Void
     let onRetry: (String) -> Void
@@ -13,7 +12,7 @@ struct AIDraftOutputColumn: View {
         VStack(alignment: .leading, spacing: 0) {
             headerRow
             contentArea
-            footerRow
+                .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity)
         .background(Color.purple.opacity(0.015))
@@ -193,22 +192,5 @@ struct AIDraftOutputColumn: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private var footerRow: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Text("\(manager.responseText.count) carácteres")
-                Text("•")
-                Text("\(wordCount) palabras")
-            }
-            .font(.system(size: 9, weight: .medium))
-            .foregroundColor(.secondary.opacity(0.5))
-
-            Spacer()
-        }
-        .padding(.horizontal, 32)
-        .padding(.top, 8)
-        .padding(.bottom, 20)
     }
 }

@@ -5,7 +5,6 @@ struct AIDraftInputColumn: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     @FocusState.Binding var isDraftFocused: Bool
-    let wordCount: Int
     
     @State private var localContent: String = ""
     @State private var textSyncTask: Task<Void, Never>? = nil
@@ -46,21 +45,7 @@ struct AIDraftInputColumn: View {
             .background(RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.04)))
             .padding(.leading, 24).padding(.trailing, 16)
             .padding(.top, 10)
-
-            HStack {
-                HStack(spacing: 4) {
-                    Text("\(localContent.count) carácteres")
-                    Text("•")
-                    Text("\(wordCount) palabras")
-                }
-                .font(.system(size: 9, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.5))
-
-                Spacer()
-            }
-            .padding(.horizontal, 32)
-            .padding(.top, 8)
-            .padding(.bottom, 20)
+            .padding(.bottom, 12)
         }
         .frame(width: 370)
         .onAppear {

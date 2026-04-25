@@ -22,11 +22,8 @@ struct FloatingAIDraftView: View {
     @State private var toastIcon: String = "checkmark.circle.fill"
     @State private var toastTimer: Timer?
     @State private var typewriterTimer: Timer?
-    @State private var contentWordCountTask: Task<Void, Never>?
     @State private var lastToastShownAt: Date = .distantPast
     @State private var isTypewriterAnimating: Bool = false
-    @State private var contentWordCount: Int = 0
-    @State private var responseWordCount: Int = 0
     
     // Preset Editor State
     @State private var showPresetEditor: Bool = false
@@ -52,7 +49,7 @@ struct FloatingAIDraftView: View {
             
             HStack(spacing: 0) {
                 if !manager.isFullSize {
-                    AIDraftInputColumn(isDraftFocused: $isDraftFocused, wordCount: contentWordCount)
+                    AIDraftInputColumn(isDraftFocused: $isDraftFocused)
                         .transition(.move(edge: .leading).combined(with: .opacity))
                     
                     Rectangle()
@@ -62,7 +59,6 @@ struct FloatingAIDraftView: View {
                 }
                 
                 AIDraftOutputColumn(
-                    wordCount: responseWordCount,
                     onSave: { saveResultAsPrompt() },
                     onRefill: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -96,21 +92,18 @@ struct FloatingAIDraftView: View {
         .shadow(color: .black.opacity(0.2), radius: 25, y: 12)
         .onAppear {
             isDraftFocused = true
-            refreshWordCounts()
             checkAutoImprove()
             setupKeyboardMonitor()
         }
         .onDisappear {
             cleanup()
         }
-        .onChange(of: manager.content) { _, _ in scheduleContentWordCountRefresh() }
+        .onChange(of: manager.content) { _, _ in }
         .onChange(of: manager.responseText) { _, _ in
-            if !isTypewriterAnimating { responseWordCount = countWords(in: manager.responseText) }
         }
         .onChange(of: manager.isVisible) { _, visible in
             if visible {
                 isDraftFocused = true
-                refreshWordCounts()
                 checkAutoImprove()
                 setupKeyboardMonitor()
             } else {
@@ -133,28 +126,7 @@ struct FloatingAIDraftView: View {
         toastTimer = nil
         typewriterTimer?.invalidate()
         typewriterTimer = nil
-        contentWordCountTask?.cancel()
-        contentWordCountTask = nil
         isTypewriterAnimating = false
-    }
-
-    private func countWords(in text: String) -> Int {
-        text.split(whereSeparator: { $0.isWhitespace }).count
-    }
-
-    private func refreshWordCounts() {
-        contentWordCount = countWords(in: manager.content)
-        responseWordCount = countWords(in: manager.responseText)
-    }
-
-    private func scheduleContentWordCountRefresh() {
-        let snapshot = manager.content
-        contentWordCountTask?.cancel()
-        contentWordCountTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 80_000_000)
-            guard !Task.isCancelled else { return }
-            contentWordCount = countWords(in: snapshot)
-        }
     }
 
     private func setupKeyboardMonitor() {
@@ -258,7 +230,6 @@ struct FloatingAIDraftView: View {
         typewriterTimer?.invalidate()
         typewriterTimer = nil
         manager.responseText = ""
-        responseWordCount = 0
         if imageData != nil { isMagicImageProcessing = true }
         customCommand = ""
         HapticService.shared.playImpact()
@@ -283,14 +254,12 @@ struct FloatingAIDraftView: View {
         typewriterTimer = nil
         isTypewriterAnimating = false
         manager.responseText = ""
-        responseWordCount = 0
 
         let totalChars = fullText.count
         
         // Si es extremadamente largo, mostrar todo de golpe
         if totalChars > 2500 {
             manager.responseText = fullText
-            responseWordCount = countWords(in: fullText)
             return
         }
 
@@ -313,7 +282,6 @@ struct FloatingAIDraftView: View {
                 timer.invalidate()
                 typewriterTimer = nil
                 isTypewriterAnimating = false
-                responseWordCount = countWords(in: fullText)
                 return
             }
 
@@ -322,15 +290,10 @@ struct FloatingAIDraftView: View {
                 let chunk = fullText[currentIndex..<nextIndex]
                 manager.responseText += String(chunk)
                 currentIndex = nextIndex
-                
-                if manager.responseText.count % 50 == 0 || currentIndex == fullText.endIndex {
-                    responseWordCount = countWords(in: manager.responseText)
-                }
             } else {
                 timer.invalidate()
                 typewriterTimer = nil
                 isTypewriterAnimating = false
-                responseWordCount = countWords(in: fullText)
             }
         }
     }

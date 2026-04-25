@@ -90,11 +90,11 @@ struct AITab: View {
                             if showOpenAIKey {
                                 TextField("sk-...", text: $preferences.openAIApiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                    .frame(width: 300)
                             } else {
                                 SecureField("sk-...", text: $preferences.openAIApiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                    .frame(width: 300)
                             }
                             
                             Button(action: { showOpenAIKey.toggle() }) {
@@ -107,29 +107,7 @@ struct AITab: View {
                             }
                             .buttonStyle(.plain)
                             .help(showOpenAIKey ? "Ocultar" : "Mostrar")
-
                         }
-                    }
-
-                    HStack(spacing: 14) {
-                        Spacer()
-                        
-                        Button(action: { testOpenAIConnection() }) {
-                            HStack(spacing: 5) {
-                                ConnectionStatusDot(status: openAITestStatus)
-                                Text(openAITestStatus == .idle ? "Probar" : (openAITestStatus == .testing ? "Probando..." : (openAITestStatus == .success ? "Conectado" : "Error")))
-                                    .font(.system(size: 10, weight: .bold))
-                            }
-                            .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, -6)
-
-                        Link("Get API Key", destination: URL(string: "https://platform.openai.com/api-keys")!)
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.blue)
-                            .padding(.trailing, 10)
-                            .padding(.top, -6)
                     }
 
                     Divider().padding(.leading, 20)
@@ -139,6 +117,7 @@ struct AITab: View {
                             TextField("gpt-4o", text: $preferences.openAIDefaultModel)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(.body, design: .monospaced))
+                                .frame(width: 300)
 
                             Menu {
                                 if openAIAvailableModels.isEmpty {
@@ -186,6 +165,23 @@ struct AITab: View {
                             .disabled(isRefreshingOpenAIModels || preferences.openAIApiKey.isEmpty)
                         }
                     }
+
+                    HStack(spacing: 16) {
+                        Spacer()
+                        
+                        Button(action: { testOpenAIConnection() }) {
+                            ConnectionStatusDot(status: openAITestStatus)
+                        }
+                        .buttonStyle(.plain)
+                        .help(openAITestStatus == .idle ? "Probar conexión" : (openAITestStatus == .testing ? "Probando..." : (openAITestStatus == .success ? "Conectado" : "Error de conexión")))
+
+                        Link("Get API Key", destination: URL(string: "https://platform.openai.com/api-keys")!)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 10)
+                    }
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
                 }
                 .disabled(!preferences.openAIEnabled)
                 .opacity(preferences.openAIEnabled ? 1 : 0.55)
@@ -226,11 +222,11 @@ struct AITab: View {
                                 if showGeminiKey {
                                     TextField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
                                         .textFieldStyle(.roundedBorder)
-                                        .frame(width: 220)
+                                        .frame(width: 300)
                                 } else {
                                     SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
                                         .textFieldStyle(.roundedBorder)
-                                        .frame(width: 220)
+                                        .frame(width: 300)
                                 }
                                 
                                 Button(action: { showGeminiKey.toggle() }) {
@@ -247,34 +243,13 @@ struct AITab: View {
                             }
                         }
 
-                        HStack(spacing: 14) {
-                            Spacer()
-                            
-                            Button(action: { testGeminiConnection() }) {
-                                HStack(spacing: 5) {
-                                    ConnectionStatusDot(status: geminiTestStatus)
-                                    Text(geminiTestStatus == .idle ? "Probar" : (geminiTestStatus == .testing ? "Probando..." : (geminiTestStatus == .success ? "Conectado" : "Error")))
-                                        .font(.system(size: 10, weight: .bold))
-                                }
-                                .foregroundColor(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            .padding(.top, -10)
-
-                            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/app/apikey")!)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.blue)
-                                .padding(.trailing, 10)
-                                .padding(.top, -10)
-                        }
-
                         SettingsRow(LocalizedStringKey("gemini_model_id".localized(for: preferences.language)),
                                     subtitle: LocalizedStringKey("gemini_model_subtitle".localized(for: preferences.language))) {
                             HStack(spacing: 8) {
                                 TextField("gemini-2.5-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                    .frame(width: 200)
+                                    .frame(width: 300)
 
                                 Menu {
                                     if geminiAvailableModels.isEmpty {
@@ -302,6 +277,23 @@ struct AITab: View {
                                 .fixedSize()
                             }
                         }
+
+                        HStack(spacing: 16) {
+                            Spacer()
+                            
+                            Button(action: { testGeminiConnection() }) {
+                                ConnectionStatusDot(status: geminiTestStatus)
+                            }
+                            .buttonStyle(.plain)
+                            .help(geminiTestStatus == .idle ? "Probar conexión" : (geminiTestStatus == .testing ? "Probando..." : (geminiTestStatus == .success ? "Conectado" : "Error de conexión")))
+
+                            Link("Get API Key", destination: URL(string: "https://aistudio.google.com/app/apikey")!)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.blue)
+                                .padding(.trailing, 10)
+                        }
+                        .padding(.top, 6)
+                        .padding(.bottom, 8)
                     }
                     .padding(.leading, 20)
                 }
@@ -332,11 +324,11 @@ struct AITab: View {
                             if showOpenRouterKey {
                                 TextField("sk-or-...", text: $preferences.openRouterAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                    .frame(width: 300)
                             } else {
                                 SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 220)
+                                    .frame(width: 300)
                             }
                             
                             Button(action: { showOpenRouterKey.toggle() }) {
@@ -349,24 +341,7 @@ struct AITab: View {
                             }
                             .buttonStyle(.plain)
                             .help(showOpenRouterKey ? "Ocultar" : "Mostrar")
-
                         }
-                    }
-
-                    HStack(spacing: 12) {
-                        Spacer()
-                        
-                        Button(action: { testOpenRouterConnection() }) {
-                            HStack(spacing: 6) {
-                                ConnectionStatusDot(status: openRouterTestStatus)
-                                Text(openRouterTestStatus == .idle ? "Probar" : (openRouterTestStatus == .testing ? "Probando..." : (openRouterTestStatus == .success ? "Conectado" : "Error")))
-                                    .font(.system(size: 10, weight: .bold))
-                            }
-                            .foregroundColor(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, -4)
-                        .padding(.trailing, 10)
                     }
 
                     Divider().padding(.leading, 20)
@@ -377,7 +352,7 @@ struct AITab: View {
                                 TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                    .frame(width: 250)
+                                    .frame(width: 300)
 
                                 Menu {
                                     if openRouterAvailableModels.isEmpty {
@@ -430,6 +405,23 @@ struct AITab: View {
                                 .foregroundColor(.blue)
                         }
                     }
+
+                    HStack(spacing: 16) {
+                        Spacer()
+                        
+                        Button(action: { testOpenRouterConnection() }) {
+                            ConnectionStatusDot(status: openRouterTestStatus)
+                        }
+                        .buttonStyle(.plain)
+                        .help(openRouterTestStatus == .idle ? "Probar conexión" : (openRouterTestStatus == .testing ? "Probando..." : (openRouterTestStatus == .success ? "Conectado" : "Error de conexión")))
+
+                        Link("OpenRouter AI", destination: URL(string: "https://openrouter.ai/keys")!)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 10)
+                    }
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
                 }
                 .disabled(!preferences.openRouterEnabled)
                 .opacity(preferences.openRouterEnabled ? 1 : 0.5)

@@ -305,7 +305,14 @@ struct PromptCard: View {
         }
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
-            if batchService.isSelectionModeActive {
+            let isCmdPressed = NSEvent.modifierFlags.contains(.command)
+            
+            if batchService.isSelectionModeActive || isCmdPressed {
+                if !batchService.isSelectionModeActive {
+                    withAnimation(.spring(response: 0.3)) {
+                        batchService.isSelectionModeActive = true
+                    }
+                }
                 batchService.toggleSelection(for: prompt.id)
                 HapticService.shared.playLight()
             } else {
