@@ -31,7 +31,7 @@ class PremiumUpsellWindowManager: NSObject, NSWindowDelegate {
         
         let newWindow = UpsellPanel(
             contentRect: NSRect(x: 0, y: 0, width: 380, height: 580),
-            styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -39,9 +39,8 @@ class PremiumUpsellWindowManager: NSObject, NSWindowDelegate {
         newWindow.delegate = self
         newWindow.isReleasedWhenClosed = false
         
-        newWindow.titlebarAppearsTransparent = true
-        newWindow.titleVisibility = .hidden
         newWindow.isMovableByWindowBackground = true
+        newWindow.hasShadow = true
         newWindow.isFloatingPanel = true
         newWindow.level = .floating
         newWindow.backgroundColor = .clear
