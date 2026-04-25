@@ -60,6 +60,20 @@ class LocalModelDownloadManager: NSObject, ObservableObject, URLSessionDownloadD
         }
     }
     
+    func getDownloadedModels() -> [LocalModel] {
+        return LocalModel.availableModels.filter { modelStates[$0.id] == .downloaded }
+    }
+    
+    func getBestDownloadedModel() -> LocalModel? {
+        let downloaded = getDownloadedModels()
+        // Priorizar el recomendado (Phi-3)
+        if let recommended = downloaded.first(where: { $0.recommended }) {
+            return recommended
+        }
+        // Sino, el primero disponible
+        return downloaded.first
+    }
+    
     func downloadModel(_ model: LocalModel) {
         guard modelStates[model.id] != .downloaded, downloadTasks[model.id] == nil else { return }
         

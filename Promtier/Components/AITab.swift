@@ -549,6 +549,23 @@ struct AITab: View {
             
             Divider().padding(.vertical, 8)
             
+            HStack {
+                Toggle(isOn: $preferences.localFallbackEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Respaldo Local Inteligente (Fallback)")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("Si tu API principal falla o no hay internet, usaremos tu mejor modelo descargado automáticamente.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+            
             Button(action: { showLocalModelsSheet = true }) {
                 HStack {
                     Image(systemName: "square.and.arrow.down.on.square.fill")
