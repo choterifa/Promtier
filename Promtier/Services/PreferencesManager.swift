@@ -16,6 +16,7 @@ enum AIService: String, Codable, CaseIterable {
     case gemini = "gemini"
     case openai = "openai"
     case openrouter = "openrouter"
+    case ollama = "ollama"
 }
 
 struct DraftPreset: Codable, Identifiable, Equatable {
@@ -465,6 +466,25 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    // MARK: Ollama Config
+    @Published var ollamaEnabled: Bool {
+        didSet {
+            userDefaults.set(ollamaEnabled, forKey: "ollamaEnabled")
+        }
+    }
+    
+    @Published var ollamaBaseURL: String {
+        didSet {
+            userDefaults.set(ollamaBaseURL, forKey: "ollamaBaseURL")
+        }
+    }
+    
+    @Published var ollamaDefaultModel: String {
+        didSet {
+            userDefaults.set(ollamaDefaultModel, forKey: "ollamaDefaultModel")
+        }
+    }
+    
     /// Carpetas pineadas en el sidebar (máx. 3), persistidas por nombre
     @Published var pinnedFolderNames: [String] {
         didSet {
@@ -578,6 +598,10 @@ class PreferencesManager: ObservableObject {
         
         self.openRouterDefaultModel = userDefaults.string(forKey: "openRouterDefaultModel") ?? "anthropic/claude-3-opus"
         
+        self.ollamaEnabled = userDefaults.object(forKey: "ollamaEnabled") as? Bool ?? false
+        self.ollamaBaseURL = userDefaults.string(forKey: "ollamaBaseURL") ?? "http://localhost:11434"
+        self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? ""
+        
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
         
@@ -635,15 +659,19 @@ class PreferencesManager: ObservableObject {
         switch preferredAIService {
         case .openrouter:
             if !openRouterEnabled { 
-                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : .openai)
+                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : .openai))
             }
         case .openai:
             if !openAIEnabled {
-                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : .openai)
+                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : .openai))
             }
         case .gemini:
             if !geminiEnabled {
-                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : .openai)
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (ollamaEnabled ? .ollama : .openai))
+            }
+        case .ollama:
+            if !ollamaEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (geminiEnabled ? .gemini : .openai))
             }
         }
         
@@ -651,12 +679,19 @@ class PreferencesManager: ObservableObject {
         if preferredAIService == .openrouter {
             openAIEnabled = false
             geminiEnabled = false
+            ollamaEnabled = false
         } else if preferredAIService == .openai {
             openRouterEnabled = false
             geminiEnabled = false
+            ollamaEnabled = false
         } else if preferredAIService == .gemini {
             openRouterEnabled = false
             openAIEnabled = false
+            ollamaEnabled = false
+        } else if preferredAIService == .ollama {
+            openRouterEnabled = false
+            openAIEnabled = false
+            geminiEnabled = false
         }
     }
     
@@ -771,6 +806,10 @@ class PreferencesManager: ObservableObject {
         userDefaults.removeObject(forKey: "openRouterAPIKey_local")
         KeychainHelper.standard.delete(service: "com.valencia.promtier", account: "openRouterAPIKey")
         self.openRouterDefaultModel = "anthropic/claude-3-opus"
+        
+        self.ollamaEnabled = false
+        self.ollamaBaseURL = "http://localhost:11434"
+        self.ollamaDefaultModel = ""
         
         self.preferredAIService = .openai
         self.openAIEnabled = true

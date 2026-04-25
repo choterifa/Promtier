@@ -46,18 +46,22 @@ struct AITab: View {
     @State private var openAIAvailableModels: [String] = []
     @State private var geminiAvailableModels: [String] = []
     @State private var openRouterAvailableModels: [String] = []
+    @State private var ollamaAvailableModels: [String] = []
     
     @State private var isRefreshingOpenAIModels = false
     @State private var isRefreshingGeminiModels = false
     @State private var isRefreshingOpenRouterModels = false
+    @State private var isRefreshingOllamaModels = false
     
     @State private var openAIModelsError: String?
     @State private var geminiModelsError: String?
     @State private var openRouterModelsError: String?
+    @State private var ollamaModelsError: String?
     
     @State private var openAITestStatus: ConnectionStatus = .idle
     @State private var geminiTestStatus: ConnectionStatus = .idle
     @State private var openRouterTestStatus: ConnectionStatus = .idle
+    @State private var ollamaTestStatus: ConnectionStatus = .idle
     
     @State private var showOpenAIKey = false
     @State private var showGeminiKey = false
@@ -427,6 +431,121 @@ struct AITab: View {
                 .opacity(preferences.openRouterEnabled ? 1 : 0.5)
             }
             
+            SettingsSection(title: "Ollama (Local)", icon: "cpu") {
+                SettingsRow(
+                    "Servicio Ollama",
+                    subtitle: "Usar modelos de IA locales con Ollama"
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.ollamaEnabled },
+                        set: { newValue in
+                            preferences.ollamaEnabled = newValue
+                            if newValue {
+                                preferences.geminiEnabled = false
+                                preferences.openAIEnabled = false
+                                preferences.openRouterEnabled = false
+                                preferences.preferredAIService = .ollama
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                }
+
+                VStack(spacing: 1) {
+                    SettingsRow("Base URL") {
+                        HStack(spacing: 8) {
+                            TextField("http://localhost:11434", text: $preferences.ollamaBaseURL)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 300)
+                        }
+                    }
+
+                    Divider().padding(.leading, 20)
+
+                    SettingsRow("Modelo") {
+                        HStack(spacing: 8) {
+                            TextField("llama3", text: $preferences.ollamaDefaultModel)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(width: 300)
+
+                            Menu {
+                                if ollamaAvailableModels.isEmpty {
+                                    Section("Suggested") {
+                                        Button("llama3") { preferences.ollamaDefaultModel = "llama3" }
+                                        Button("mistral") { preferences.ollamaDefaultModel = "mistral" }
+                                        Button("gemma") { preferences.ollamaDefaultModel = "gemma" }
+                                    }
+                                } else {
+                                    Section("Available Models") {
+                                        ForEach(ollamaAvailableModels, id: \.self) { model in
+                                            Button(model) { preferences.ollamaDefaultModel = model }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "list.bullet.indent")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .padding(4)
+                                    .background(Color.primary.opacity(0.05))
+                                    .cornerRadius(4)
+                            }
+                            .menuStyle(.button)
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                            .help("Seleccionar modelo local")
+                            
+                            Button(action: {
+                                Task { await refreshOllamaModels() }
+                            }) {
+                                if isRefreshingOllamaModels {
+                                    ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(4)
+                                        .background(Color.primary.opacity(0.05))
+                                        .cornerRadius(4)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .help("Actualizar modelos")
+                            .disabled(isRefreshingOllamaModels)
+                        }
+                    }
+
+                    HStack(spacing: 16) {
+                        Spacer()
+                        
+                        Button(action: { testOllamaConnection() }) {
+                            ConnectionStatusDot(status: ollamaTestStatus)
+                        }
+                        .buttonStyle(.plain)
+                        .help(ollamaTestStatus == .idle ? "Probar conexión" : (ollamaTestStatus == .testing ? "Probando..." : (ollamaTestStatus == .success ? "Conectado" : "Error de conexión")))
+
+                        Link("Descargar Ollama", destination: URL(string: "https://ollama.com")!)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 10)
+                    }
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
+                }
+                .disabled(!preferences.ollamaEnabled)
+                .opacity(preferences.ollamaEnabled ? 1 : 0.5)
+            }
+            .overlay(alignment: .bottomLeading) {
+                if let ollamaModelsError, !ollamaModelsError.isEmpty {
+                    Text(ollamaModelsError)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 40)
+                        .padding(.bottom, 10)
+                }
+            }
+            
             Text(LocalizedStringKey("security_notice".localized(for: preferences.language)))
                 .font(.system(size: 11))
                 .foregroundColor(.secondary.opacity(0.6))
@@ -546,6 +665,37 @@ struct AITab: View {
                 await MainActor.run { openRouterTestStatus = success ? .success : .failure("Invalid Key") }
             } catch {
                 await MainActor.run { openRouterTestStatus = .failure(error.localizedDescription) }
+            }
+        }
+    }
+    
+    @MainActor
+    private func refreshOllamaModels() async {
+        isRefreshingOllamaModels = true
+        ollamaModelsError = nil
+        defer { isRefreshingOllamaModels = false }
+
+        do {
+            let models = try await OllamaService.shared.listModelIDs(baseURL: preferences.ollamaBaseURL)
+            ollamaAvailableModels = models
+            if !models.contains(preferences.ollamaDefaultModel) {
+                if let fromAccount = models.first {
+                    preferences.ollamaDefaultModel = fromAccount
+                }
+            }
+        } catch {
+            ollamaModelsError = "Ollama models: \(error.localizedDescription)"
+        }
+    }
+    
+    private func testOllamaConnection() {
+        ollamaTestStatus = .testing
+        Task {
+            do {
+                let success = try await OllamaService.shared.testConnection(baseURL: preferences.ollamaBaseURL)
+                await MainActor.run { ollamaTestStatus = success ? .success : .failure("No connection") }
+            } catch {
+                await MainActor.run { ollamaTestStatus = .failure(error.localizedDescription) }
             }
         }
     }

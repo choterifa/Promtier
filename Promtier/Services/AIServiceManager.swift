@@ -51,6 +51,10 @@ class AIServiceManager: AIServiceProtocol {
             guard prefs.geminiEnabled else { throw AIError.serviceDisabled }
             guard !prefs.geminiAPIKey.isEmpty else { throw AIError.invalidAPIKey("Google Gemini") }
             return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
+            
+        case .ollama:
+            guard prefs.ollamaEnabled else { throw AIError.serviceDisabled }
+            return try await OllamaService.shared.generate(prompt: prompt, model: prefs.ollamaDefaultModel, baseURL: prefs.ollamaBaseURL, imageData: imageData)
         }
     }
     
