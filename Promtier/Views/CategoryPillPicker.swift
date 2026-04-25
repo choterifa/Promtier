@@ -170,7 +170,7 @@ struct CategoryPillPicker: View {
                     scrollTo(currentActiveId)
                 }
             }
-            .onChange(of: selectedCategory) { 
+            .onChange(of: selectedCategory) { oldValue, newValue in
                 // Desplazar automáticamente cuando cambie la categoría (p. ej. por la IA)
                 scrollTo(currentActiveId)
             }
