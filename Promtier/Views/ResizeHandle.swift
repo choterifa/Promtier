@@ -7,6 +7,7 @@ struct ResizeHandle: View {
     @State private var isDragging: Bool = false
     @State private var dragStartSize: CGSize = .zero
     @State private var isHovered: Bool = false
+    @State private var hasPushedCursor: Bool = false
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -34,13 +35,19 @@ struct ResizeHandle: View {
                 .onHover { inside in
                     isHovered = inside
                     if inside {
-                        NSCursor.crosshair.push()
+                        if !hasPushedCursor {
+                            NSCursor.crosshair.push()
+                            hasPushedCursor = true
+                        }
                     } else if !isDragging {
-                        NSCursor.pop()
+                        if hasPushedCursor {
+                            NSCursor.pop()
+                            hasPushedCursor = false
+                        }
                     }
                 }
                 .gesture(
-                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
                         .onChanged { value in
                             if !isDragging {
                                 // Capturamos el tamaño INICIAL solo una vez
@@ -50,6 +57,11 @@ struct ResizeHandle: View {
                                     height: preferences.windowHeight
                                 )
                                 HapticService.shared.playLight()
+                                
+                                if !hasPushedCursor {
+                                    NSCursor.crosshair.push()
+                                    hasPushedCursor = true
+                                }
                             }
 
                             // Delta puro: rastreo perfecto sin importar velocidad del mouse
@@ -73,8 +85,12 @@ struct ResizeHandle: View {
                         .onEnded { _ in
                             isDragging = false
                             dragStartSize = .zero
+                            
                             if !isHovered {
-                                NSCursor.pop()
+                                if hasPushedCursor {
+                                    NSCursor.pop()
+                                    hasPushedCursor = false
+                                }
                             }
                             HapticService.shared.playAlignment()
                         }
