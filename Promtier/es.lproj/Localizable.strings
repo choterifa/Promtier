@@ -241,6 +241,8 @@
 "favorites" = "Favoritos";
 "uncategorized" = "Sin categoría";
 "manage_categories" = "Gestionar Categorías";
+"parent_category" = "Categoría Padre";
+"none" = "Ninguno";
 "customize_workflow" = "Personaliza tu flujo de trabajo";
 "show_categories" = "Mostrar Categorías";
 "hide_categories" = "Ocultar Categorías";

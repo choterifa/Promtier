@@ -215,6 +215,8 @@
 "favorites" = "Favorites";
 "uncategorized" = "Uncategorized";
 "manage_categories" = "Manage Categories";
+"parent_category" = "Parent Category";
+"none" = "None";
 "customize_workflow" = "Customize your workflow";
 "show_categories" = "Show Categories";
 "hide_categories" = "Hide Categories";

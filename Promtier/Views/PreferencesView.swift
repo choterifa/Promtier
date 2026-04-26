@@ -982,11 +982,20 @@ struct SupportTab: View {
             }
             
             VStack(spacing: 8) {
-                Image("AppIconPlaceholder") // O el logo de la app si está disponible
-                    .resizable()
-                    .frame(width: 64, height: 64)
-                    .cornerRadius(14)
-                    .opacity(0.8)
+                if let appIcon = NSApp.applicationIconImage {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 64, height: 64)
+                        .cornerRadius(14)
+                        .opacity(0.8)
+                } else {
+                    Image(systemName: "square.stack.3d.up.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 64, height: 64)
+                        .foregroundColor(.accentColor)
+                        .opacity(0.8)
+                }
                 
                 Text("Promtier v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.system(size: 14, weight: .bold))
