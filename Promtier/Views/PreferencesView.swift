@@ -392,21 +392,35 @@ private struct ShortcutRow: View {
     @EnvironmentObject var preferences: PreferencesManager
     
     var body: some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.system(size: 13 * preferences.fontSize.scale))
-                .foregroundColor(.primary)
-            Spacer()
-            Text(shortcut)
-                .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold, design: .monospaced))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.blue.opacity(0.1))
-                .foregroundColor(.blue)
-                .cornerRadius(7)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                Text(label)
+                    .font(.system(size: 13 * preferences.fontSize.scale))
+                    .foregroundColor(.primary)
+                Spacer(minLength: 20)
+                shortcutBadge
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text(label)
+                    .font(.system(size: 13 * preferences.fontSize.scale))
+                    .foregroundColor(.primary)
+                shortcutBadge
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+    }
+    
+    private var shortcutBadge: some View {
+        Text(shortcut)
+            .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold, design: .monospaced))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.blue.opacity(0.1))
+            .foregroundColor(.blue)
+            .cornerRadius(7)
+            .fixedSize(horizontal: true, vertical: false)
     }
 }
 
