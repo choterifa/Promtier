@@ -18,29 +18,18 @@ struct SettingsRow<Content: View>: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            let isNarrow = geometry.size.width < 400 // Umbral para hacer wrap
-            
-            Group {
-                if isNarrow {
-                    VStack(alignment: .leading, spacing: 12) {
-                        labelAndIcon
-                        content
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                } else {
-                    HStack(spacing: 12) {
-                        labelAndIcon
-                        Spacer(minLength: 8)
-                        content
-                    }
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                labelAndIcon
+                
+                Spacer(minLength: 16)
+                
+                // El contenido (Picker, Toggle, etc)
+                content
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
         }
-        .frame(minHeight: 60) // Altura mínima aproximada
-        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
     }
