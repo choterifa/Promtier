@@ -83,6 +83,7 @@ struct AITab: View {
                                 preferences.geminiEnabled = false
                                 preferences.openRouterEnabled = false
                                 preferences.ollamaEnabled = false
+                                preferences.localEnabled = false
                                 preferences.preferredAIService = .openai
                             }
                         }
@@ -215,6 +216,7 @@ struct AITab: View {
                                 preferences.openAIEnabled = false
                                 preferences.openRouterEnabled = false
                                 preferences.ollamaEnabled = false
+                                preferences.localEnabled = false
                                 preferences.preferredAIService = .gemini
                             }
                         }
@@ -319,6 +321,7 @@ struct AITab: View {
                                 preferences.geminiEnabled = false
                                 preferences.openAIEnabled = false
                                 preferences.ollamaEnabled = false
+                                preferences.localEnabled = false
                                 preferences.preferredAIService = .openrouter
                             }
                         }
@@ -448,6 +451,7 @@ struct AITab: View {
                                 preferences.geminiEnabled = false
                                 preferences.openAIEnabled = false
                                 preferences.openRouterEnabled = false
+                                preferences.localEnabled = false
                                 preferences.preferredAIService = .ollama
                             }
                         }
@@ -549,9 +553,30 @@ struct AITab: View {
                         .padding(.bottom, 10)
                 }
             }
-            
-            Divider().padding(.vertical, 8)
-            
+
+            SettingsSection(title: "Local (Apple Silicon)", icon: "laptopcomputer") {
+                SettingsRow(
+                    "Modelos Nativos Llama.cpp",
+                    subtitle: "Usar modelos de IA offline, sin depender de internet."
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { preferences.localEnabled },
+                        set: { newValue in
+                            preferences.localEnabled = newValue
+                            if newValue {
+                                preferences.geminiEnabled = false
+                                preferences.openAIEnabled = false
+                                preferences.openRouterEnabled = false
+                                preferences.ollamaEnabled = false
+                                preferences.preferredAIService = .local
+                            }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                }
+            }
+
+            Divider().padding(.vertical, 8)            
             HStack {
                 Toggle(isOn: $preferences.localFallbackEnabled) {
                     VStack(alignment: .leading, spacing: 2) {

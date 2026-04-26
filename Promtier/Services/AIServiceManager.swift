@@ -60,6 +60,14 @@ class AIServiceManager: AIServiceProtocol {
                 let model = prefs.ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !model.isEmpty else { throw AIError.invalidModel("Ollama") }
                 return try await OllamaService.shared.generate(prompt: prompt, model: model, baseURL: prefs.ollamaBaseURL, imageData: imageData)
+                
+            case .local:
+                guard prefs.localEnabled else { throw AIError.serviceDisabled }
+                guard let fallbackModel = LocalModelDownloadManager.shared.getBestDownloadedModel() else {
+                    throw AIError.invalidModel("Local (llama.cpp)")
+                }
+                let modelURL = LocalModelDownloadManager.shared.modelsDirectoryURL.appendingPathComponent(fallbackModel.filename)
+                return try await LocalLLMService.shared.generate(prompt: prompt, modelUrl: modelURL)
             }
         } catch {
             // FALLBACK A MODELO LOCAL

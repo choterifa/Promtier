@@ -324,24 +324,23 @@ struct FloatingAIDraftView: View {
             }
             .buttonStyle(.plain)
             
-            Text("Quick Draft")
-                .foregroundColor(.primary.opacity(0.85))
-                .padding(.horizontal, 4)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Quick Draft")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.primary.opacity(0.9))
+                Text("EDITOR INTELIGENTE")
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundColor(.blue.opacity(0.7))
+                    .tracking(1.0)
+            }
             
             Spacer()
             
             HStack(spacing: 8) {
+                presetsMenu
+                
                 if !manager.history.isEmpty {
                     historyMenu
-                }
-                
-                CopiarButton(isEnabled: !manager.content.isEmpty) {
-                    let textToCopy = manager.responseText.isEmpty ? manager.content : manager.responseText
-                    guard !textToCopy.isEmpty else { return }
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(textToCopy, forType: .string)
-                    HapticService.shared.playSuccess()
-                    manager.hide()
                 }
             }
         }
@@ -382,32 +381,65 @@ struct FloatingAIDraftView: View {
     
     private var footerBar: some View {
         VStack(spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    defaultActionButtons
-                    customPresetButtons
-                    addPresetButton
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-            }
-            
-            Divider().opacity(0.1)
-            
-            HStack {
+            HStack(spacing: 12) {
                 MagicImageDropZone(isDraggingImage: $isDraggingImage) { data in generatePromptFromImage(data: data) }
+                
                 customCommandInput
+                
                 SendDraftButton(isEnabled: isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) { runAI(instruction: customCommand) }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 14)
             .background(Color.primary.opacity(0.01))
             .overlay(Divider(), alignment: .top)
         }
     }
 
-    private var defaultActionButtons: some View {
-        let actions = [
+    private var presetsMenu: some View {
+        Menu {
+            Section("Acciones IA") {
+                ForEach(defaultActions, id: \.0) { action in
+                    Button(action: { runAI(instruction: action.2) }) {
+                        Label(action.0, systemImage: action.1)
+                    }
+                    .disabled(!isAIAvailable || manager.isGenerating || manager.content.isEmpty)
+                }
+            }
+            
+            if !preferences.draftPresets.isEmpty {
+                Section("Mis Presets") {
+                    ForEach(preferences.draftPresets) { preset in
+                        Button(action: { runAI(instruction: preset.instruction) }) {
+                            Label(preset.title, systemImage: preset.icon)
+                        }
+                        .disabled(!isAIAvailable || manager.isGenerating || manager.content.isEmpty)
+                    }
+                }
+            }
+            
+            Divider()
+            
+            Button(action: { newPresetTitle = ""; newPresetInstruction = ""; showPresetEditor = true }) {
+                Label("Nuevo Preset...", systemImage: "plus.circle")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                Text("Acciones")
+            }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(Color.blue))
+            .shadow(color: Color.blue.opacity(0.3), radius: 4, y: 2)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showPresetEditor) { presetEditorView }
+    }
+
+    private var defaultActions: [(String, String, String)] {
+        [
             ("Mejorar", "sparkles", "Optimiza este prompt para que sea más efectivo, añadiendo claridad técnica y mejores instrucciones."),
             ("Traductor", "globe", "Traduce entre español e inglés de forma inteligente, manteniendo el contexto técnico de IA."),
             ("Estructurar", "list.bullet.indent", "Añade estructura al prompt usando encabezados, listas de puntos y secciones claras (Markdown)."),
@@ -415,32 +447,18 @@ struct FloatingAIDraftView: View {
             ("Senior Dev", "eye.fill", "Actúa como un desarrollador senior y analiza este prompt buscando errores de lógica o mejores prácticas técnicas."),
             ("Tabla", "tablecells.fill", "Transforma toda la información relevante de este prompt en una tabla formateada en Markdown.")
         ]
-        
-        return ForEach(actions, id: \.0) { action in
-            QuickDraftActionButton(title: action.0, icon: action.1) { runAI(instruction: action.2) }
-                .disabled(!isAIAvailable || manager.isGenerating || manager.content.isEmpty)
-        }
     }
 
-    private var customPresetButtons: some View {
-        ForEach(preferences.draftPresets) { preset in
-            QuickDraftActionButton(title: preset.title, icon: preset.icon) { runAI(instruction: preset.instruction) }
-                .disabled(!isAIAvailable || manager.isGenerating || manager.content.isEmpty)
-                .contextMenu {
-                    Button(role: .destructive, action: {
-                        if let index = preferences.draftPresets.firstIndex(where: { $0.id == preset.id }) { preferences.draftPresets.remove(at: index) }
-                    }) { Label("Eliminar Preset", systemImage: "trash") }
-                }
+    private var customCommandInput: some View {
+        HStack {
+            Image(systemName: "terminal").font(.system(size: 10)).foregroundColor(.secondary)
+            TextField("Escribe una instrucción para la IA...", text: $customCommand).textFieldStyle(.plain).font(.system(size: 12)).onSubmit { if !customCommand.isEmpty { runAI(instruction: customCommand) } }
+            if !customCommand.isEmpty {
+                Button(action: { customCommand = "" }) { Image(systemName: "xmark.circle.fill").foregroundColor(.secondary.opacity(0.5)) }.buttonStyle(.plain)
+            }
         }
-    }
-
-    private var addPresetButton: some View {
-        Button(action: { newPresetTitle = ""; newPresetInstruction = ""; showPresetEditor = true }) {
-            Image(systemName: "plus.circle.fill").font(.system(size: 18)).foregroundColor(.blue.opacity(0.8)).padding(.horizontal, 4)
-        }
-        .buttonStyle(.plain)
-        .help("Crear nuevo preset personalizado")
-        .popover(isPresented: $showPresetEditor) { presetEditorView }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Capsule().fill(Color.primary.opacity(0.04)).overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1)))
     }
 
     private var presetEditorView: some View {
@@ -501,17 +519,5 @@ struct FloatingAIDraftView: View {
         }
         .buttonStyle(.plain)
         .disabled(newPresetTitle.isEmpty || newPresetInstruction.isEmpty)
-    }
-
-    private var customCommandInput: some View {
-        HStack {
-            Image(systemName: "terminal").font(.system(size: 10)).foregroundColor(.secondary)
-            TextField("Escribe una instrucción para la IA...", text: $customCommand).textFieldStyle(.plain).font(.system(size: 12)).onSubmit { if !customCommand.isEmpty { runAI(instruction: customCommand) } }
-            if !customCommand.isEmpty {
-                Button(action: { customCommand = "" }) { Image(systemName: "xmark.circle.fill").foregroundColor(.secondary.opacity(0.5)) }.buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Capsule().fill(Color.primary.opacity(0.04)).overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1)))
     }
 }

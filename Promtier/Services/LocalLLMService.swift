@@ -7,8 +7,8 @@
 
 import Foundation
 
-#if canImport(llama)
-import llama
+#if canImport(LlamaSwift)
+import LlamaSwift
 #endif
 
 class LocalLLMService {
@@ -18,7 +18,7 @@ class LocalLLMService {
     
     /// Genera una respuesta usando el modelo local almacenado en `modelUrl`
     func generate(prompt: String, modelUrl: URL) async throws -> String {
-        #if canImport(llama)
+        #if canImport(LlamaSwift)
         
         // --- CÓDIGO REAL DE LLAMA.CPP ---
         // Este bloque se activará cuando instales el Swift Package de llama.cpp
@@ -43,14 +43,92 @@ class LocalLLMService {
                     return
                 }
                 
-                // Aquí iría el bucle de inferencia de llama.cpp
-                // (Se ha omitido la implementación verbosa del tokenizador y loop por brevedad)
-                // Al terminar:
+                // --- BUCLE DE INFERENCIA DE LLAMA.CPP ---
+                llama_backend_init()
                 
+                // Preparar tokens (estimando tamaño)
+                let n_prompt_max = Int32(4096)
+                var prompt_tokens = [llama_token](repeating: 0, count: Int(n_prompt_max))
+                let vocab = llama_model_get_vocab(model)
+                let n_prompt = llama_tokenize(vocab, prompt, Int32(prompt.utf8.count), &prompt_tokens, n_prompt_max, true, true)
+                
+                if n_prompt < 0 {
+                    llama_free(context)
+                    llama_free_model(model)
+                    llama_backend_free()
+                    continuation.resume(throwing: NSError(domain: "LocalLLM", code: 3, userInfo: [NSLocalizedDescriptionKey: "Error tokenizando"]))
+                    return
+                }
+                
+                // Función auxiliar local para el batch
+                func add_to_batch(_ b: inout llama_batch, _ t: llama_token, _ p: llama_pos, _ seq: [llama_seq_id], _ logits: Bool) {
+                    let idx = Int(b.n_tokens)
+                    b.token[idx] = t
+                    b.pos[idx] = p
+                    b.n_seq_id[idx] = Int32(seq.count)
+                    for (i, s) in seq.enumerated() {
+                        b.seq_id[idx]![i] = s
+                    }
+                    b.logits[idx] = logits ? 1 : 0
+                    b.n_tokens += 1
+                }
+                
+                // Inicializar batch
+                var batch = llama_batch_init(n_prompt, 0, 1)
+                for i in 0..<Int(n_prompt) {
+                    add_to_batch(&batch, prompt_tokens[i], Int32(i), [0], false)
+                }
+                batch.logits[Int(n_prompt) - 1] = 1 // Queremos logits del último token
+                
+                if llama_decode(context, batch) != 0 {
+                    llama_batch_free(batch)
+                    llama_free(context)
+                    llama_free_model(model)
+                    llama_backend_free()
+                    continuation.resume(throwing: NSError(domain: "LocalLLM", code: 4, userInfo: [NSLocalizedDescriptionKey: "Error decodificando"]))
+                    return
+                }
+                
+                // Inicializar sampler simple (Greedy)
+                let sampler = llama_sampler_init_greedy()
+                
+                var responseStr = ""
+                var n_cur = n_prompt
+                let n_predict = Int32(128) // Límite para no colgar eternamente
+                
+                while n_cur < n_prompt + n_predict {
+                    let new_token_id = llama_sampler_sample(sampler, context, -1)
+                    
+                    if llama_vocab_is_eog(vocab, new_token_id) {
+                        break
+                    }
+                    
+                    // Convertir a string
+                    var buf = [CChar](repeating: 0, count: 16)
+                    let n_chars = llama_token_to_piece(vocab, new_token_id, &buf, Int32(buf.count), 0, false)
+                    if n_chars > 0 {
+                        let str = String(cString: buf)
+                        responseStr += str
+                    }
+                    
+                    // Preparar siguiente decode
+                    batch.n_tokens = 0
+                    add_to_batch(&batch, new_token_id, n_cur, [0], true)
+                    
+                    if llama_decode(context, batch) != 0 {
+                        break
+                    }
+                    
+                    n_cur += 1
+                }
+                
+                llama_sampler_free(sampler)
+                llama_batch_free(batch)
                 llama_free(context)
                 llama_free_model(model)
+                llama_backend_free()
                 
-                continuation.resume(returning: "Este es el resultado generado localmente desde \(modelUrl.lastPathComponent) usando llama.cpp nativo en Metal.")
+                continuation.resume(returning: responseStr.trimmingCharacters(in: .whitespacesAndNewlines))
             }
         }
         

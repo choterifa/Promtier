@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		ED5F63EF2F9E9FE4000BA7D1 /* LlamaSwift in Frameworks */ = {isa = PBXBuildFile; productRef = ED5F63EE2F9E9FE4000BA7D1 /* LlamaSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		ED3FA0A22F6753F800F7DC00 /* Promtier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Promtier.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED5F63EF2F9E9FE4000BA7D1 /* LlamaSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,6 +78,7 @@
 			);
 			name = Promtier;
 			packageProductDependencies = (
+				ED5F63EE2F9E9FE4000BA7D1 /* LlamaSwift */,
 			);
 			productName = Promtier;
 			productReference = ED3FA0A22F6753F800F7DC00 /* Promtier.app */;
@@ -104,6 +110,7 @@
 			mainGroup = ED3FA0992F6753F800F7DC00;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				ED5F63ED2F9E9FE4000BA7D1 /* XCRemoteSwiftPackageReference "llama" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ED3FA0A32F6753F800F7DC00 /* Products */;
@@ -396,6 +403,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ED5F63ED2F9E9FE4000BA7D1 /* XCRemoteSwiftPackageReference "llama" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mattt/llama.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8941.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ED5F63EE2F9E9FE4000BA7D1 /* LlamaSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED5F63ED2F9E9FE4000BA7D1 /* XCRemoteSwiftPackageReference "llama" */;
+			productName = LlamaSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = ED3FA09A2F6753F800F7DC00 /* Project object */;
 }

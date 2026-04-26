@@ -17,6 +17,7 @@ enum AIService: String, Codable, CaseIterable {
     case openai = "openai"
     case openrouter = "openrouter"
     case ollama = "ollama"
+    case local = "local"
 }
 
 struct DraftPreset: Codable, Identifiable, Equatable {
@@ -473,6 +474,13 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    // MARK: Local Config
+    @Published var localEnabled: Bool {
+        didSet {
+            userDefaults.set(localEnabled, forKey: "localEnabled")
+        }
+    }
+    
     @Published var localFallbackEnabled: Bool {
         didSet {
             userDefaults.set(localFallbackEnabled, forKey: "localFallbackEnabled")
@@ -607,9 +615,9 @@ class PreferencesManager: ObservableObject {
         self.ollamaEnabled = userDefaults.object(forKey: "ollamaEnabled") as? Bool ?? false
         self.ollamaBaseURL = userDefaults.string(forKey: "ollamaBaseURL") ?? "http://localhost:11434"
         self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? ""
-        
-        self.localFallbackEnabled = userDefaults.object(forKey: "localFallbackEnabled") as? Bool ?? true
-        
+
+        self.localEnabled = userDefaults.object(forKey: "localEnabled") as? Bool ?? false
+        self.localFallbackEnabled = userDefaults.object(forKey: "localFallbackEnabled") as? Bool ?? true        
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true
         
@@ -666,43 +674,55 @@ class PreferencesManager: ObservableObject {
         // Asegurarse de que si preferredAIService se configuró, el respectivo toggle esté activo
         switch preferredAIService {
         case .openrouter:
-            if !openRouterEnabled { 
-                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : .openai))
+            if !openRouterEnabled {
+                preferredAIService = openAIEnabled ? .openai : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : (localEnabled ? .local : .openai)))
             }
         case .openai:
             if !openAIEnabled {
-                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : .openai))
+                preferredAIService = openRouterEnabled ? .openrouter : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : (localEnabled ? .local : .openai)))
             }
         case .gemini:
             if !geminiEnabled {
-                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (ollamaEnabled ? .ollama : .openai))
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (ollamaEnabled ? .ollama : (localEnabled ? .local : .openai)))
             }
         case .ollama:
             if !ollamaEnabled {
-                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (geminiEnabled ? .gemini : .openai))
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (geminiEnabled ? .gemini : (localEnabled ? .local : .openai)))
+            }
+        case .local:
+            if !localEnabled {
+                preferredAIService = openRouterEnabled ? .openrouter : (openAIEnabled ? .openai : (geminiEnabled ? .gemini : (ollamaEnabled ? .ollama : .openai)))
             }
         }
-        
+
         // Ahora si preferredAIService es valido, apagamos el resto
         if preferredAIService == .openrouter {
             openAIEnabled = false
             geminiEnabled = false
             ollamaEnabled = false
+            localEnabled = false
         } else if preferredAIService == .openai {
             openRouterEnabled = false
             geminiEnabled = false
             ollamaEnabled = false
+            localEnabled = false
         } else if preferredAIService == .gemini {
             openRouterEnabled = false
             openAIEnabled = false
             ollamaEnabled = false
+            localEnabled = false
         } else if preferredAIService == .ollama {
             openRouterEnabled = false
             openAIEnabled = false
             geminiEnabled = false
+            localEnabled = false
+        } else if preferredAIService == .local {
+            openRouterEnabled = false
+            openAIEnabled = false
+            geminiEnabled = false
+            ollamaEnabled = false
         }
     }
-
     func isAIServiceConfigured(_ service: AIService) -> Bool {
         switch service {
         case .openai:
@@ -714,6 +734,8 @@ class PreferencesManager: ObservableObject {
         case .ollama:
             let model = ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
             return ollamaEnabled && !model.isEmpty
+        case .local:
+            return localEnabled && LocalModelDownloadManager.shared.getBestDownloadedModel() != nil
         }
     }
 
@@ -840,6 +862,8 @@ class PreferencesManager: ObservableObject {
         self.ollamaEnabled = false
         self.ollamaBaseURL = "http://localhost:11434"
         self.ollamaDefaultModel = ""
+        
+        self.localEnabled = false
         
         self.preferredAIService = .openai
         self.openAIEnabled = true
