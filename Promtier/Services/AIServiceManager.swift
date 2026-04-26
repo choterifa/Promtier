@@ -24,6 +24,7 @@ class AIServiceManager: AIServiceProtocol {
         case invalidAPIKey(String)
         case invalidModel(String)
         case configurationError
+        case premiumRequired
         
         var errorDescription: String? {
             switch self {
@@ -31,12 +32,25 @@ class AIServiceManager: AIServiceProtocol {
             case .invalidAPIKey(let service): return "Falta la clave API para \(service)."
             case .invalidModel(let service): return "Falta configurar el modelo para \(service)."
             case .configurationError: return "Error de configuración en el servicio de IA."
+            case .premiumRequired: return "Esta función de IA es exclusiva de Promtier Premium."
             }
         }
     }
 
     func generate(prompt: String, imageData: Data? = nil) async throws -> String {
         let prefs = PreferencesManager.shared
+        
+        guard prefs.isPremiumActive else {
+            // Trigger upsell window on main thread
+            DispatchQueue.main.async {
+                PremiumUpsellWindowManager.shared.show(featureName: "AI Generation")
+                NotificationService.shared.sendNotification(
+                    title: "Premium Requerido",
+                    body: "Las funciones de Inteligencia Artificial son exclusivas de Promtier Premium."
+                )
+            }
+            throw AIError.premiumRequired
+        }
         
         do {
             switch prefs.preferredAIService {
@@ -126,7 +140,19 @@ class AIServiceManager: AIServiceProtocol {
         
         let fullResponse = try await generate(prompt: systemPrompt)
         
-        let parts = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
+        // Limpieza de respuesta para modelos locales "habladores"
+        let cleanResponse = fullResponse.replacingOccurrences(of: "```", with: "")
+        let lines = cleanResponse.components(separatedBy: .newlines)
+        
+        var targetLine = cleanResponse
+        for line in lines {
+            if line.components(separatedBy: "|").count >= 3 {
+                targetLine = line
+                break
+            }
+        }
+        
+        let parts = targetLine.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
         if parts.count >= 4 {
             let neg = parts[3].trimmingCharacters(in: .whitespacesAndNewlines)
             return PromptMetadataResponse(
@@ -142,12 +168,12 @@ class AIServiceManager: AIServiceProtocol {
                 content: parts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespacesAndNewlines),
                 negativePrompt: nil
             )
-        } else if !fullResponse.contains("|") {
-            // Fallback
+        } else {
+            // Fallback total
             return PromptMetadataResponse(
                 title: title.isEmpty ? "Prompt" : title,
                 description: "Descripción generada automáticamente.",
-                content: fullResponse.trimmingCharacters(in: .whitespacesAndNewlines),
+                content: targetLine.trimmingCharacters(in: .whitespacesAndNewlines),
                 negativePrompt: nil
             )
         }

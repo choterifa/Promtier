@@ -11,25 +11,34 @@ struct LocalModelsView: View {
     @StateObject private var downloadManager = LocalModelDownloadManager.shared
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Modelos Locales (Offline)")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Modelos Locales (Offline)")
+                    .font(.system(size: 18, weight: .bold))
+                
+                Text("Descarga modelos de IA optimizados para Apple Silicon. Se ejecutan 100% en tu Mac de forma privada y sin coste por token. Úsalos como respaldo o como servicio principal.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
             
-            Text("Descarga modelos de IA optimizados para Apple Silicon. Se ejecutan 100% en tu Mac de forma privada y sin coste por token. Úsalos como respaldo cuando las APIs de la nube fallen.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Divider().opacity(0.1)
             
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     ForEach(LocalModel.availableModels) { model in
                         LocalModelRow(model: model, state: downloadManager.modelStates[model.id] ?? .notDownloaded)
                     }
                 }
-                .padding(.trailing, 8)
-                .padding(.bottom, 20)
+                .padding(24)
             }
         }
-        .padding()
+        .background(Color(NSColor.windowBackgroundColor).ignoresSafeArea())
     }
 }
 
@@ -125,10 +134,10 @@ struct LocalModelRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(0.03))
+                .fill(Color.black.opacity(0.2))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
                 )
         )
     }

@@ -99,6 +99,7 @@ final class NewPromptViewModel: ObservableObject {
                 case .invalidAPIKey: return "error_invalid_key"
                 case .invalidModel: return "error_config"
                 case .configurationError: return "error_config"
+                case .premiumRequired: return "error_premium_required"
                 }
             }
             return "error_generic_ai"
@@ -662,10 +663,15 @@ final class NewPromptViewModel: ObservableObject {
     }
 
     func extractMagicPrompt(from data: Data, preferences: PreferencesManager) {
+        guard preferences.isPremiumActive else {
+            showingPremiumFor = "ai_magic"
+            return
+        }
         guard preferences.isPreferredAIServiceConfigured else {
             title = "IA no configurada"
-            return 
+            return
         }
+        
         content = ""
         isMagicImageProcessing = true
         

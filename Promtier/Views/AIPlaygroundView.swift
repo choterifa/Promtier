@@ -145,6 +145,11 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
+        guard preferences.isPremiumActive else {
+            error = "Requiere Promtier Premium"
+            PremiumUpsellWindowManager.shared.show(featureName: "AI Playground")
+            return
+        }
         guard preferences.isPreferredAIServiceConfigured else { return }
         
         responseText = ""

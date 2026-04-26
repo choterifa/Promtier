@@ -314,6 +314,19 @@ final class GlobalHotkeyManager: ObservableObject {
     }
 
     private func triggerMagicSave() {
+        // 0. Validar Premium
+        guard PreferencesManager.shared.isPremiumActive else {
+            NotificationService.shared.sendNotification(
+                title: "Premium Requerido",
+                body: "El Guardado Mágico con IA es una función exclusiva de Promtier Premium."
+            )
+            // Opcional: mostrar ventana de upsell si la UI lo permite
+            DispatchQueue.main.async {
+                PremiumUpsellWindowManager.shared.show(featureName: "Magic Save")
+            }
+            return
+        }
+        
         // 1. Comprobar permisos de accesibilidad primero
         guard checkAccessibilityPermissions(forceDialog: false) else {
             NotificationService.shared.sendNotification(

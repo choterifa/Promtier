@@ -226,6 +226,14 @@ struct FloatingAIDraftView: View {
     }
     
     private func runSingleAI(instruction: String, content: String, imageData: Data? = nil) {
+        guard preferences.isPremiumActive else {
+            showToast(message: "Requiere Promtier Premium", icon: "lock.fill", hideAfter: 3.0, minInterval: 0, force: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                PremiumUpsellWindowManager.shared.show(featureName: "AI Draft")
+            }
+            return
+        }
+        
         typewriterTimer?.invalidate()
         typewriterTimer = nil
         manager.responseText = ""
