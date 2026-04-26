@@ -435,7 +435,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	                    queue: .main
 	                ) { [weak self, weak textView] _ in
 	                    guard let self, let textView else { return }
-	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.02)
+	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.05)
 	                }
 	                observerTokens.append(scrollToken)
 	            }
@@ -498,7 +498,7 @@ struct HighlightedEditor: NSViewRepresentable {
                 )
             }
 
-            // Serializar a Markdown con debounce (mejor pegado y docs grandes)
+            // Serializar a Markdown en background (mejor pegado y docs grandes)
             scheduleMarkdownSerialization(for: textView)
 
             // Typing Pulse Effect: Thick border while typing, resets after 5s of inactivity
@@ -1070,7 +1070,8 @@ struct HighlightedEditor: NSViewRepresentable {
             markdownSerializeWorkItem?.cancel()
 
             let plainCount = textView.string.utf16.count
-            let delay: TimeInterval = pendingLargeEdit || plainCount > 12_000 ? 0.4 : 0.15
+            // Incrementar debounce delay para reducir lag en escritura/scroll
+            let delay: TimeInterval = pendingLargeEdit || plainCount > 12_000 ? 0.6 : 0.4
             let token = UUID()
             markdownSerializationToken = token
 

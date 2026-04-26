@@ -7,7 +7,8 @@ extension NSAttributedString.Key {
 
 final class MarkdownRTFConverter {
     private static let boldRegex = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
-    private static let italicRegex = try! NSRegularExpression(pattern: "(?<![\\*_])\\*([^\\*\\n]+)\\*(?!\\*)|(?<!_)_([^_\\n]+)_(?!_)")
+    // Match standard markdown italic (*word* or _word_), ensuring it only triggers on word boundaries to avoid catching mid-word asterisks like in 'App-v*.dmg'.
+    private static let italicRegex = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
     private static let strikethroughRegex = try! NSRegularExpression(pattern: "~~([^~]+)~~")
     private static let inlineCodeRegex = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
     private static let bulletListRegex = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
