@@ -72,33 +72,23 @@ final class PromptPreviewTextCache: @unchecked Sendable {
         scale: CGFloat,
         interfaceStyle: PromptPreviewInterfaceStyle
     ) -> NSAttributedString {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 6
         let accentColor = NSColor(
-            calibratedRed: themeColor.red,
-            green: themeColor.green,
-            blue: themeColor.blue,
-            alpha: themeColor.alpha
+            calibratedRed: themeColor.red, green: themeColor.green, blue: themeColor.blue, alpha: themeColor.alpha
         )
         let bodyColor: NSColor = interfaceStyle == .dark
             ? NSColor.white.withAlphaComponent(0.9)
             : NSColor.black.withAlphaComponent(0.88)
 
         let baseFont = NSFont.systemFont(ofSize: 16 * scale, weight: .regular)
-        let attributed = NSMutableAttributedString(
-            string: text,
-            attributes: [
-                .font: baseFont,
-                .foregroundColor: bodyColor,
-                .paragraphStyle: paragraph
-            ]
-        )
+        
+        // Usar el convertidor de Markdown para procesar negritas, cursivas, etc.
+        let attributed = MarkdownRTFConverter.parseMarkdown(text, baseFont: baseFont, textColor: bodyColor)
 
-        let nsText = text as NSString
+        let nsText = attributed.string as NSString
         let fullRange = NSRange(location: 0, length: nsText.length)
 
         if let bracketRegex = bracketRegex {
-            for match in bracketRegex.matches(in: text, options: [], range: fullRange) {
+            for match in bracketRegex.matches(in: attributed.string, options: [], range: fullRange) {
                 attributed.addAttribute(.foregroundColor, value: accentColor.withAlphaComponent(0.8), range: match.range)
             }
         }
@@ -106,7 +96,7 @@ final class PromptPreviewTextCache: @unchecked Sendable {
         if let variableRegex = variableRegex {
             let variableFont = NSFont.systemFont(ofSize: 16 * scale, weight: .bold)
             let variableColor = NSColor.systemBlue
-            for match in variableRegex.matches(in: text, options: [], range: fullRange).reversed() {
+            for match in variableRegex.matches(in: attributed.string, options: [], range: fullRange).reversed() {
                 attributed.addAttributes([
                     .foregroundColor: variableColor,
                     .font: variableFont,
