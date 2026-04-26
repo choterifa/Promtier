@@ -18,6 +18,35 @@ struct SettingsRow<Content: View>: View {
     }
     
     var body: some View {
+        GeometryReader { geometry in
+            let isNarrow = geometry.size.width < 400 // Umbral para hacer wrap
+            
+            Group {
+                if isNarrow {
+                    VStack(alignment: .leading, spacing: 12) {
+                        labelAndIcon
+                        content
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                } else {
+                    HStack(spacing: 12) {
+                        labelAndIcon
+                        Spacer(minLength: 8)
+                        content
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minHeight: 60) // Altura mínima aproximada
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+    }
+    
+    @ViewBuilder
+    private var labelAndIcon: some View {
         HStack(spacing: 12) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -29,18 +58,15 @@ struct SettingsRow<Content: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
+                    .multilineTextAlignment(.leading)
+                
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.system(size: 12 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
                 }
             }
-            Spacer()
-            content
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity) // Forzar que ocupe todo el ancho
-        .contentShape(Rectangle())
     }
 }
