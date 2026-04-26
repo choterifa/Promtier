@@ -139,25 +139,43 @@ struct PremiumUpsellView: View {
                         PremiumFeatureCard(
                             icon: "wand.and.stars.inverse",
                             title: "Autocompletado Mágico",
-                            description: "La IA genera el título y descripción automáticamente basándose en tu prompt."
+                            description: "La IA genera títulos y descripciones automáticamente basándose en tus prompts."
                         )
                         
                         PremiumFeatureCard(
-                            icon: "text.quote",
+                            icon: "clock.arrow.2.circlepath",
+                            title: "Historial de Versiones",
+                            description: "Accede a versiones anteriores de tus prompts y restaura cambios en cualquier momento."
+                        )
+                        
+                        PremiumFeatureCard(
+                            icon: "doc.on.doc",
                             title: "Snippets Rápidos",
                             description: "Guarda fragmentos de texto y utilízalos en cualquier prompt rápidamente."
                         )
                         
                         PremiumFeatureCard(
-                            icon: "slider.horizontal.3",
-                            title: "Variables Dinámicas",
-                            description: "Rellena espacios en blanco de forma interactiva con soporte para múltiples variables."
+                            icon: "text.magnifyingglass",
+                            title: "Búsqueda Semántica",
+                            description: "Encuentra prompts por su significado, no solo por palabras clave exactas."
                         )
                         
                         PremiumFeatureCard(
-                            icon: "cpu",
-                            title: "Modelos de IA Avanzados",
-                            description: "Accede a las últimas actualizaciones y capacidades con Promtier Pro."
+                            icon: "slider.horizontal.3",
+                            title: "Variables Dinámicas",
+                            description: "Crea formularios interactivos para rellenar tus prompts en segundos."
+                        )
+                        
+                        PremiumFeatureCard(
+                            icon: "command",
+                            title: "OmniSearch Inteligente",
+                            description: "Acceso instantáneo a todos tus prompts desde cualquier aplicación con un atajo global."
+                        )
+                        
+                        PremiumFeatureCard(
+                            icon: "icloud.and.arrow.up",
+                            title: "Sincronización Total",
+                            description: "Mantén todos tus prompts seguros y sincronizados entre tus dispositivos Mac."
                         )
                     }
                     .padding(.horizontal, 24)
