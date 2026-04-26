@@ -24,21 +24,17 @@ final class MarkdownRTFConverter {
 
         applyInlineMarkdown(regex: inlineCodeRegex, markerLength: 1, to: attributed) { innerRange in
             let font = NSFont.monospacedSystemFont(ofSize: max(11, baseFont.pointSize - 1), weight: .regular)
-            let background: NSColor
             let foreground: NSColor
 
             if NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
-                background = NSColor(calibratedRed: 0.2, green: 0.22, blue: 0.28, alpha: 1.0)
                 foreground = NSColor(calibratedRed: 0.88, green: 0.78, blue: 0.96, alpha: 1.0)
             } else {
-                background = NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.97, alpha: 1.0)
                 foreground = NSColor(calibratedRed: 0.46, green: 0.24, blue: 0.58, alpha: 1.0)
             }
 
             attributed.addAttributes([
                 .font: font,
                 .foregroundColor: foreground,
-                .backgroundColor: background,
                 .promtierInlineCode: true
             ], range: innerRange)
         }

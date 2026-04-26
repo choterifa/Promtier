@@ -84,11 +84,9 @@ class AIServiceManager: AIServiceProtocol {
                 return try await LocalLLMService.shared.generate(prompt: prompt, modelUrl: modelURL)
             }
         } catch {
-            // FALLBACK A MODELO LOCAL
-            if prefs.localFallbackEnabled, 
-               let fallbackModel = LocalModelDownloadManager.shared.getBestDownloadedModel() {
-                print("⚠️ [AIServiceManager] Error con API remota: \(error.localizedDescription). Iniciando Fallback Local...")
-                
+            // FALLBACK A MODELO LOCAL (Automático si está disponible)
+            if let fallbackModel = LocalModelDownloadManager.shared.getBestDownloadedModel() {
+                print("⚠️ [AIServiceManager] Error con API remota: \(error.localizedDescription). Iniciando Fallback Local...")                
                 let modelURL = LocalModelDownloadManager.shared.modelsDirectoryURL.appendingPathComponent(fallbackModel.filename)
                 
                 // Disparamos una notificación para que la UI pueda mostrar un indicador visual si lo desea

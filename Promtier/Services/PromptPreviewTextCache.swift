@@ -99,8 +99,7 @@ final class PromptPreviewTextCache: @unchecked Sendable {
             for match in variableRegex.matches(in: attributed.string, options: [], range: fullRange).reversed() {
                 attributed.addAttributes([
                     .foregroundColor: variableColor,
-                    .font: variableFont,
-                    .backgroundColor: variableColor.withAlphaComponent(0.08)
+                    .font: variableFont
                 ], range: match.range)
             }
         }

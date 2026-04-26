@@ -554,10 +554,10 @@ struct AITab: View {
                 }
             }
 
-            SettingsSection(title: "Local (Apple Silicon)", icon: "laptopcomputer") {
+            SettingsSection(title: "Modelos Locales (Descargables)", icon: "laptopcomputer") {
                 SettingsRow(
-                    "Modelos Nativos Llama.cpp",
-                    subtitle: "Usar modelos de IA offline, sin depender de internet."
+                    "Usar Modelos Locales",
+                    subtitle: "Ejecutar IA de forma privada y sin internet."
                 ) {
                     Toggle("", isOn: Binding(
                         get: { preferences.localEnabled },
@@ -577,27 +577,11 @@ struct AITab: View {
             }
 
             Divider().padding(.vertical, 8)            
-            HStack {
-                Toggle(isOn: $preferences.localFallbackEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Respaldo Local Inteligente (Fallback)")
-                            .font(.system(size: 13, weight: .bold))
-                        Text("Si tu API principal falla o no hay internet, usaremos tu mejor modelo descargado automáticamente.")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .toggleStyle(SwitchToggleStyle(tint: .blue))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
             
             Button(action: { showLocalModelsSheet = true }) {
                 HStack {
                     Image(systemName: "square.and.arrow.down.on.square.fill")
-                    Text("Descargar Modelos Nativos (Apple Silicon)")
+                    Text("Descargar Modelos Locales")
                 }
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.white)

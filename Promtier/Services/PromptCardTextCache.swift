@@ -114,12 +114,10 @@ final class PromptCardTextCache: @unchecked Sendable {
         if let variableRegex = variableRegex {
             let variableFont = NSFont.systemFont(ofSize: 13 * scale, weight: .bold)
             let variableColor = NSColor.systemBlue
-            let variableBg = variableColor.withAlphaComponent(0.08)
             for match in variableRegex.matches(in: text, options: [], range: fullRange).reversed() {
                 attributed.addAttributes([
                     .foregroundColor: variableColor,
-                    .font: variableFont,
-                    .backgroundColor: variableBg
+                    .font: variableFont
                 ], range: match.range)
             }
         }

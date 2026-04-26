@@ -435,7 +435,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	                    queue: .main
 	                ) { [weak self, weak textView] _ in
 	                    guard let self, let textView else { return }
-	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.10)
+	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.02)
 	                }
 	                observerTokens.append(scrollToken)
 	            }
@@ -1177,15 +1177,13 @@ struct HighlightedEditor: NSViewRepresentable {
             let variableColor = parent.isHaloEffectEnabled ? NSColor.systemBlue : parent.themeColor
             for match in variableMatches {
                 layoutManager.addTemporaryAttributes([
-                    .foregroundColor: variableColor,
-                    .backgroundColor: variableColor.withAlphaComponent(0.1)
+                    .foregroundColor: variableColor
                 ], forCharacterRange: match.range)
             }
 
             for match in chainMatches {
                 layoutManager.addTemporaryAttributes([
                     .foregroundColor: parent.themeColor,
-                    .backgroundColor: parent.themeColor.withAlphaComponent(0.06),
                     .underlineStyle: NSUnderlineStyle.single.rawValue
                 ], forCharacterRange: match.range)
             }
@@ -1203,7 +1201,7 @@ struct HighlightedEditor: NSViewRepresentable {
             var charRange = layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
 
             // Buffer para que al scroll el highlight "entre" sin saltos
-            let buffer = 1200
+            let buffer = 4000
             let start = max(0, charRange.location - buffer)
             let end = min(fullRange.length, charRange.location + charRange.length + buffer)
             charRange = NSRange(location: start, length: max(0, end - start))
