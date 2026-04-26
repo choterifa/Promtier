@@ -22,12 +22,14 @@ class AIServiceManager: AIServiceProtocol {
     enum AIError: LocalizedError {
         case serviceDisabled
         case invalidAPIKey(String)
+        case invalidModel(String)
         case configurationError
         
         var errorDescription: String? {
             switch self {
             case .serviceDisabled: return "El servicio de IA seleccionado está desactivado en Preferencias."
             case .invalidAPIKey(let service): return "Falta la clave API para \(service)."
+            case .invalidModel(let service): return "Falta configurar el modelo para \(service)."
             case .configurationError: return "Error de configuración en el servicio de IA."
             }
         }
@@ -54,7 +56,9 @@ class AIServiceManager: AIServiceProtocol {
             
         case .ollama:
             guard prefs.ollamaEnabled else { throw AIError.serviceDisabled }
-            return try await OllamaService.shared.generate(prompt: prompt, model: prefs.ollamaDefaultModel, baseURL: prefs.ollamaBaseURL, imageData: imageData)
+            let model = prefs.ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !model.isEmpty else { throw AIError.invalidModel("Ollama") }
+            return try await OllamaService.shared.generate(prompt: prompt, model: model, baseURL: prefs.ollamaBaseURL, imageData: imageData)
         }
     }
     

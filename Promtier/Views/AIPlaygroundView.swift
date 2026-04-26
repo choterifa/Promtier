@@ -30,7 +30,7 @@ struct AIPlaygroundView: View {
                 
                 
 
-                if preferences.openAIEnabled || preferences.geminiEnabled || preferences.openRouterEnabled {
+                if preferences.isPreferredAIServiceConfigured {
                     HStack(spacing: 8) {
                         Text(preferences.preferredAIService.rawValue.capitalized)
                             .font(.system(size: 12, weight: .medium))
@@ -145,9 +145,7 @@ struct AIPlaygroundView: View {
     }
     
     private func generateResponse() {
-        let isAnyEnabled = preferences.openAIEnabled || preferences.geminiEnabled || preferences.openRouterEnabled
-        
-        guard isAnyEnabled else { return }
+        guard preferences.isPreferredAIServiceConfigured else { return }
         
         responseText = ""
         isGenerating = true

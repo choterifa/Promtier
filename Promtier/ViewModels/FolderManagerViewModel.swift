@@ -117,8 +117,7 @@ class FolderManagerViewModel: ObservableObject {
             return
         }
         
-        let isAIAvailable = (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
-                            (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)
+        let isAIAvailable = preferences.isPreferredAIServiceConfigured
                             
         // Auto-Magic Icon/Color
         if editingFolder == nil && selectedIcon == "folder.fill" && selectedColor == .blue && isAIAvailable {
