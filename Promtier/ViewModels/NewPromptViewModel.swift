@@ -97,6 +97,7 @@ final class NewPromptViewModel: ObservableObject {
                 switch aiError {
                 case .serviceDisabled: return "error_service_disabled"
                 case .invalidAPIKey: return "error_invalid_key"
+                case .invalidModel: return "error_config"
                 case .configurationError: return "error_config"
                 }
             }
@@ -661,7 +662,7 @@ final class NewPromptViewModel: ObservableObject {
     }
 
     func extractMagicPrompt(from data: Data, preferences: PreferencesManager) {
-        guard (!preferences.openAIApiKey.isEmpty && preferences.openAIEnabled) || (!preferences.geminiAPIKey.isEmpty && preferences.geminiEnabled) else { 
+        guard preferences.isPreferredAIServiceConfigured else {
             title = "IA no configurada"
             return 
         }

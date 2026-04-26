@@ -291,9 +291,7 @@ struct NewPromptView: View {
     }
 
     var isAIAvailable: Bool {
-        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOpenAI
+        preferences.isPreferredAIServiceConfigured
     }
     
     var zenBindingSelection: Binding<NSRange?> {
@@ -1326,4 +1324,3 @@ struct NewPromptView: View {
         .environmentObject(PromptService())
         .environmentObject(PreferencesManager.shared)
 }
-

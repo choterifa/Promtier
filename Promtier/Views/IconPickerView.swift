@@ -56,9 +56,7 @@ struct IconPickerView: View {
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
                 
-                if let name = categoryName, !name.isEmpty,
-                   ((preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
-                    (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)) {
+                if let name = categoryName, !name.isEmpty, preferences.isPreferredAIServiceConfigured {
                     Button(action: {
                         magicIconSelection(for: name)
                     }) {

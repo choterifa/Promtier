@@ -81,6 +81,7 @@ struct AITab: View {
                             if newValue {
                                 preferences.geminiEnabled = false
                                 preferences.openRouterEnabled = false
+                                preferences.ollamaEnabled = false
                                 preferences.preferredAIService = .openai
                             }
                         }
@@ -212,6 +213,7 @@ struct AITab: View {
                             if newValue {
                                 preferences.openAIEnabled = false
                                 preferences.openRouterEnabled = false
+                                preferences.ollamaEnabled = false
                                 preferences.preferredAIService = .gemini
                             }
                         }
@@ -315,6 +317,7 @@ struct AITab: View {
                             if newValue {
                                 preferences.geminiEnabled = false
                                 preferences.openAIEnabled = false
+                                preferences.ollamaEnabled = false
                                 preferences.preferredAIService = .openrouter
                             }
                         }

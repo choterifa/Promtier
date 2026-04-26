@@ -37,8 +37,7 @@ struct FloatingAIDraftView: View {
     @State private var isMagicImageProcessing: Bool = false
     
     private var isAIAvailable: Bool {
-        (preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty) ||
-        (preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty)
+        preferences.isPreferredAIServiceConfigured
     }
     
     var body: some View {

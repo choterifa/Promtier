@@ -3,9 +3,7 @@ import SwiftUI
 
 enum EditorAIUtilities {
     static func isAIAvailable(for preferences: PreferencesManager) -> Bool {
-        let useGemini = preferences.geminiEnabled && !preferences.geminiAPIKey.isEmpty
-        let useOpenAI = preferences.openAIEnabled && !preferences.openAIApiKey.isEmpty
-        return useGemini || useOpenAI
+        preferences.isPreferredAIServiceConfigured
     }
 
     enum ActionExecutionResult {

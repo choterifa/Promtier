@@ -694,6 +694,28 @@ class PreferencesManager: ObservableObject {
             geminiEnabled = false
         }
     }
+
+    func isAIServiceConfigured(_ service: AIService) -> Bool {
+        switch service {
+        case .openai:
+            return openAIEnabled && !openAIApiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .openrouter:
+            return openRouterEnabled && !openRouterAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .gemini:
+            return geminiEnabled && !geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .ollama:
+            let model = ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
+            return ollamaEnabled && !model.isEmpty
+        }
+    }
+
+    var isPreferredAIServiceConfigured: Bool {
+        isAIServiceConfigured(preferredAIService)
+    }
+
+    var isAnyAIServiceConfigured: Bool {
+        AIService.allCases.contains { isAIServiceConfigured($0) }
+    }
     
     // MARK: - Métodos de Configuración
     
