@@ -201,14 +201,28 @@ struct PreferencesView: View {
                     .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
                 
                 Button(action: { PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro") }) {
-                    Text("unlock_premium".localized(for: preferences.language))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 10)
-                        .background(Color.purple)
-                        .cornerRadius(10)
-                        .shadow(color: .purple.opacity(0.3), radius: 4, y: 2)
+                    HStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                        Text("unlock_premium".localized(for: preferences.language))
+                    }
+                    .font(.system(size: 14, weight: .black, design: .serif))
+                    .foregroundColor(Color(hex: "#1A0516"))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(hex: "#F9D423"), Color(hex: "#E5A93C")]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: Color(hex: "#E5A93C").opacity(0.4), radius: 8, y: 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            .blendMode(.overlay)
+                    )
                 }
                 .buttonStyle(.plain)
             }

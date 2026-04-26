@@ -206,7 +206,7 @@ struct CategorySidebar: View {
                     PremiumUpsellWindowManager.shared.show(featureName: "Promtier Pro")
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
+                        Image(systemName: "crown.fill")
                             .font(.system(size: 11, weight: .bold))
                         Text("Obtener Pro")
                             .font(.system(size: 11, weight: .bold))
@@ -216,19 +216,21 @@ struct CategorySidebar: View {
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(hex: "#FF5E3A"), Color(hex: "#FF2A6D")]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(viewModel.isPremiumHovered ? Color.primary.opacity(0.08) : Color.primary.opacity(0.04))
                     )
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                    .shadow(color: Color(hex: "#FF2A6D").opacity(0.3), radius: 4, x: 0, y: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                    )
+                    .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
+                .onHover { isHovered in
+                    viewModel.isPremiumHovered = isHovered
+                }
             }
         }
         .onHover { hovering in

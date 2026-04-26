@@ -32,6 +32,7 @@ class CategorySidebarViewModel: ObservableObject {
     @Published var isSortMenuHovered = false
     @Published var isHeaderHovered = false
     @Published var isSystemSectionExpanded = true
+    @Published var isPremiumHovered = false
     
     func refreshCounters(with prompts: [Prompt], folders: [Folder], includeSubcategories: Bool) {
         var directCounts: [String: Int] = [:]
