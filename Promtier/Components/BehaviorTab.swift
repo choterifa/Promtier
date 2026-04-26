@@ -162,38 +162,37 @@ struct BehaviorTab: View {
             }
 
             SettingsSection(title: "permissions", icon: "lock.shield.fill") {
-                VStack(alignment: .leading, spacing: 12) {
-                    SettingsRow("accessibility", subtitle: "accessibility_subtitle", icon: "hand.tap.fill", iconColor: ShortcutManager.shared.isAccessibilityGranted ? .green : .red) {
-                        HStack(spacing: 8) {
-                            if ShortcutManager.shared.isAccessibilityGranted {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                Text("granted")
+                SettingsRow("accessibility", subtitle: "accessibility_subtitle", icon: "hand.tap.fill", iconColor: ShortcutManager.shared.isAccessibilityGranted ? .green : .red) {
+                    HStack(spacing: 8) {
+                        if ShortcutManager.shared.isAccessibilityGranted {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("granted")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.green)
+                        } else {
+                            Button(action: {
+                                ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
+                            }) {
+                                Text("grant_access")
                                     .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.green)
-                            } else {
-                                Button(action: {
-                                    ShortcutManager.shared.checkAccessibilityPermissions(forceDialog: true)
-                                }) {
-                                    Text("grant_access")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(Color.blue)
-                                        .cornerRadius(6)
-                                }
-                                .buttonStyle(.plain)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue)
+                                    .cornerRadius(6)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
-                    
-                    if !ShortcutManager.shared.isAccessibilityGranted {
-                        Text("accessibility_description")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 40)
-                    }
+                }
+                
+                if !ShortcutManager.shared.isAccessibilityGranted {
+                    Text("accessibility_description")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
                 }
             }
         }

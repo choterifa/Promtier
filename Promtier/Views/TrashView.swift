@@ -6,35 +6,36 @@ struct TrashView: View {
     @EnvironmentObject var menuBarManager: MenuBarManager
     
     @State private var showingEmptyConfirm = false
+    @State private var useVerticalHeader = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Header for the Tab Content area (optional, as PreferencesView already has a header)
-            // But we need the 'Empty' button somewhere.
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Los prompts se eliminan tras 7 días")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                if !promptService.trashedPrompts.isEmpty {
-                    Button(action: { showingEmptyConfirm = true }) {
-                        Label("Vaciar papelera", systemImage: "trash.slash.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(8)
+            Group {
+                if useVerticalHeader {
+                    VStack(alignment: .leading, spacing: 12) {
+                        headerText
+                        emptyButton
                     }
-                    .buttonStyle(.plain)
+                } else {
+                    HStack {
+                        headerText
+                        Spacer()
+                        emptyButton
+                    }
                 }
             }
             .padding(.bottom, 8)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            updateHeaderLayout(width: proxy.size.width)
+                        }
+                        .onChange(of: proxy.size.width) { _, width in
+                            updateHeaderLayout(width: width)
+                        }
+                }
+            )
 
             if promptService.trashedPrompts.isEmpty {
                 emptyState
@@ -69,6 +70,37 @@ struct TrashView: View {
         }
     }
     
+    private func updateHeaderLayout(width: CGFloat) {
+        let threshold: CGFloat = 420
+        if width < threshold && !useVerticalHeader {
+            useVerticalHeader = true
+        } else if width >= threshold && useVerticalHeader {
+            useVerticalHeader = false
+        }
+    }
+    
+    private var headerText: some View {
+        Text("Los prompts se eliminan tras 7 días")
+            .font(.system(size: 13))
+            .foregroundColor(.secondary)
+    }
+    
+    @ViewBuilder
+    private var emptyButton: some View {
+        if !promptService.trashedPrompts.isEmpty {
+            Button(action: { showingEmptyConfirm = true }) {
+                Label("Vaciar papelera", systemImage: "trash.slash.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
     // MARK: - Empty State
     
     private var emptyState: some View {
@@ -79,7 +111,7 @@ struct TrashView: View {
             Text("La papelera está vacía")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.secondary.opacity(0.5))
-            Text("Los prompts eliminados aparecerán aquí\ndurante 7 días antes de borrarse.")
+            Text("Los prompts eliminados aparecerán aquí durante 7 días antes de borrarse.")
                 .font(.system(size: 13))
                 .foregroundColor(.secondary.opacity(0.35))
                 .multilineTextAlignment(.center)
@@ -97,6 +129,7 @@ struct TrashItemRow: View {
     
     @EnvironmentObject var preferences: PreferencesManager
     @State private var isHovered = false
+    @State private var useVerticalLayout = false
     
     private var daysRemaining: Int {
         guard let d = prompt.deletedAt else { return 7 }
@@ -113,6 +146,53 @@ struct TrashItemRow: View {
     }
     
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if useVerticalLayout {
+                VStack(alignment: .leading, spacing: 12) {
+                    mainContent
+                    actions // Eliminado el HStack con Spacer para alinear a la izquierda
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(spacing: 14) {
+                    mainContent
+                    Spacer()
+                    actions
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isHovered ? Color.primary.opacity(0.04) : Color.clear)
+                
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            updateRowLayout(width: proxy.size.width)
+                        }
+                        .onChange(of: proxy.size.width) { _, width in
+                            updateRowLayout(width: width)
+                        }
+                }
+            }
+        )
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+    }
+    
+    private func updateRowLayout(width: CGFloat) {
+        let threshold: CGFloat = 480
+        if width < threshold && !useVerticalLayout {
+            useVerticalLayout = true
+        } else if width >= threshold && useVerticalLayout {
+            useVerticalLayout = false
+        }
+    }
+    
+    private var mainContent: some View {
         HStack(spacing: 14) {
             // Icon
             ZStack {
@@ -151,45 +231,35 @@ struct TrashItemRow: View {
                     .foregroundColor(urgencyColor)
                 }
             }
-            
-            Spacer()
-            
-            // Actions (visible on hover)
-            HStack(spacing: 8) {
-                Button(action: onRestore) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.uturn.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Restaurar")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.blue.opacity(0.1)))
-                    .foregroundColor(.blue)
-                }
-                .buttonStyle(.plain)
-                .opacity(isHovered ? 1 : 0)
-                
-                Button(action: onDelete) {
-                    Image(systemName: "trash.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.red.opacity(0.7))
-                        .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color.red.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
-                .opacity(isHovered ? 1 : 0)
-            }
-            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isHovered ? Color.primary.opacity(0.04) : Color.clear)
-        )
-        .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
+    }
+    
+    private var actions: some View {
+        HStack(spacing: 8) {
+            Button(action: onRestore) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.uturn.left")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Restaurar")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.blue.opacity(0.1)))
+                .foregroundColor(.blue)
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovered ? 1 : 0)
+            
+            Button(action: onDelete) {
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.red.opacity(0.7))
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.red.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovered ? 1 : 0)
+        }
     }
 }

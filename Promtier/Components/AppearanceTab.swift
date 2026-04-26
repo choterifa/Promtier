@@ -13,7 +13,7 @@ struct AppearanceTab: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 200)
+                    .frame(maxWidth: 200)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -25,7 +25,7 @@ struct AppearanceTab: View {
                         Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 200)
+                    .frame(maxWidth: 200)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -48,7 +48,7 @@ struct AppearanceTab: View {
                         Text("text_first".localized(for: preferences.language)).tag(false)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 240)
+                    .frame(maxWidth: 240)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -86,7 +86,7 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewWidth) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(width: 150)
+                    .frame(maxWidth: 150)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -101,7 +101,7 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewHeight) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(width: 150)
+                    .frame(maxWidth: 150)
                 }
                 
                 Divider().padding(.leading, 20)

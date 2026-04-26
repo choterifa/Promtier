@@ -17,21 +17,48 @@ struct SettingsRow<Content: View>: View {
         self.content = content()
     }
     
+    @State private var useVerticalLayout = false
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                labelAndIcon
-                
-                Spacer(minLength: 16)
-                
-                // El contenido (Picker, Toggle, etc)
-                content
+        VStack(alignment: .leading, spacing: 0) {
+            if useVerticalLayout {
+                VStack(alignment: .leading, spacing: 12) {
+                    labelAndIcon
+                    content
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                HStack(alignment: .center, spacing: 12) {
+                    labelAndIcon
+                    Spacer(minLength: 16)
+                    content
+                }
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        updateLayout(width: proxy.size.width)
+                    }
+                    .onChange(of: proxy.size.width) { _, width in
+                        updateLayout(width: width)
+                    }
+            }
+        )
         .contentShape(Rectangle())
+    }
+    
+    private func updateLayout(width: CGFloat) {
+        let threshold: CGFloat = 480 // Aumentado para dar más margen al texto
+        if width < threshold && !useVerticalLayout {
+            useVerticalLayout = true
+        } else if width >= threshold && useVerticalLayout {
+            useVerticalLayout = false
+        }
     }
     
     @ViewBuilder

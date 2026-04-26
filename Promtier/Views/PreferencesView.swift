@@ -391,22 +391,63 @@ private struct ShortcutRow: View {
     let shortcut: String
     @EnvironmentObject var preferences: PreferencesManager
     
+    @State private var useVerticalLayout = false
+    
     var body: some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.system(size: 13 * preferences.fontSize.scale))
-                .foregroundColor(.primary)
-            Spacer()
-            Text(shortcut)
-                .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold, design: .monospaced))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.blue.opacity(0.1))
-                .foregroundColor(.blue)
-                .cornerRadius(7)
+        VStack(alignment: .leading, spacing: 0) {
+            if useVerticalLayout {
+                VStack(alignment: .leading, spacing: 8) {
+                    labelView
+                    shortcutBadge
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(spacing: 12) {
+                    labelView
+                    Spacer()
+                    shortcutBadge
+                }
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        updateLayout(width: proxy.size.width)
+                    }
+                    .onChange(of: proxy.size.width) { _, width in
+                        updateLayout(width: width)
+                    }
+            }
+        )
+    }
+    
+    private func updateLayout(width: CGFloat) {
+        let threshold: CGFloat = 420 // Aumentado de 380 a 420 para evitar que el texto se corte
+        if width < threshold && !useVerticalLayout {
+            useVerticalLayout = true
+        } else if width >= threshold && useVerticalLayout {
+            useVerticalLayout = false
+        }
+    }
+    
+    private var labelView: some View {
+        Text(label)
+            .font(.system(size: 13 * preferences.fontSize.scale))
+            .foregroundColor(.primary)
+    }
+    
+    private var shortcutBadge: some View {
+        Text(shortcut)
+            .font(.system(size: 12 * preferences.fontSize.scale, weight: .semibold, design: .monospaced))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.blue.opacity(0.1))
+            .foregroundColor(.blue)
+            .cornerRadius(7)
     }
 }
 
@@ -454,7 +495,7 @@ struct DataTab: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 190)
+                    .frame(maxWidth: 190)
                 }
                 
                 Divider().padding(.leading, 20)

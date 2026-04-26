@@ -19,13 +19,57 @@ struct ShortcutRecorderView: View {
     @State private var isRecording = false
     @State private var localMonitor: Any?
     
+    @State private var useVerticalLayout = false
+    
     var body: some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-            
-            Spacer()
-            
+        VStack(alignment: .leading, spacing: 0) {
+            if useVerticalLayout {
+                VStack(alignment: .leading, spacing: 12) {
+                    labelView
+                    controlsView
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(spacing: 12) {
+                    labelView
+                    Spacer()
+                    controlsView
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        updateLayout(width: proxy.size.width)
+                    }
+                    .onChange(of: proxy.size.width) { _, width in
+                        updateLayout(width: width)
+                    }
+            }
+        )
+    }
+    
+    private func updateLayout(width: CGFloat) {
+        let threshold: CGFloat = 450 // Reducido para que en el tamaño por defecto se vea horizontal
+        if width < threshold && !useVerticalLayout {
+            useVerticalLayout = true
+        } else if width >= threshold && useVerticalLayout {
+            useVerticalLayout = false
+        }
+    }
+    
+    private var labelView: some View {
+        Text(label)
+            .font(.system(size: 14, weight: .medium))
+            .lineLimit(2)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    private var controlsView: some View {
+        HStack(spacing: 8) {
             Button(action: {
                 if isRecording {
                     stopRecording()
@@ -50,8 +94,8 @@ struct ShortcutRecorderView: View {
                             .foregroundColor(.primary)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(isRecording ? Color.blue.opacity(0.1) : Color.primary.opacity(0.05))
@@ -62,29 +106,32 @@ struct ShortcutRecorderView: View {
                 )
             }
             .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
             
             if !isRecording {
-                Button(action: {
-                    hotkeyCode = -1
-                    hotkeyModifiers = 0
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary.opacity(0.6))
+                HStack(spacing: 6) {
+                    Button(action: {
+                        hotkeyCode = -1
+                        hotkeyModifiers = 0
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Sin atajo")
+                    
+                    Button(action: {
+                        hotkeyCode = defaultKeyCode
+                        hotkeyModifiers = defaultModifiers
+                    }) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Restablecer atajo")
                 }
-                .buttonStyle(.plain)
-                .help("Sin atajo")
-                
-                Button(action: {
-                    hotkeyCode = defaultKeyCode
-                    hotkeyModifiers = defaultModifiers
-                }) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Restablecer atajo")
             } else {
                 Button(action: {
                     stopRecording()
