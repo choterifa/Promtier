@@ -36,6 +36,14 @@ struct PreferencesView: View {
         (title: "trash_tab", icon: "trash.fill")
     ]
     
+    private var sidebarWidth: CGFloat {
+        min(198, max(168, preferences.windowWidth * 0.32))
+    }
+    
+    private var contentHorizontalPadding: CGFloat {
+        preferences.windowWidth <= 560 ? 20 : 40
+    }
+    
     private var sidebarContent: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Header del Sidebar
@@ -86,7 +94,7 @@ struct PreferencesView: View {
             
             Spacer()
         }
-        .frame(width: 198)
+        .frame(width: sidebarWidth)
         .background(
             ZStack {
                 Color(NSColor.windowBackgroundColor).opacity(0.98)
@@ -130,12 +138,12 @@ struct PreferencesView: View {
                     .buttonStyle(.plain)
                     .help("\("close".localized(for: preferences.language)) (Esc)")
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, contentHorizontalPadding)
                 .padding(.top, 40)
                 .padding(.bottom, 24)
                 
                 Divider()
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, contentHorizontalPadding)
                 
                 // Scroll de opciones
                 ScrollView(showsIndicators: false) {
@@ -146,7 +154,7 @@ struct PreferencesView: View {
                             activeTabContent
                         }
                     }
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, contentHorizontalPadding)
                     .padding(.top, 24)
                     .padding(.bottom, 40)
                 }
@@ -154,6 +162,7 @@ struct PreferencesView: View {
             .frame(maxWidth: .infinity)
             .background(Color(NSColor.windowBackgroundColor))
         }
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             preferences.previewWidth = preferences.windowWidth
             preferences.previewHeight = preferences.windowHeight

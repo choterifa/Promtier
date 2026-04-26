@@ -112,77 +112,103 @@ struct TrashItemRow: View {
         daysRemaining <= 1 ? .red : (daysRemaining <= 3 ? .orange : .secondary)
     }
     
+    private var infoColumn: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(prompt.title)
+                .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
+                .foregroundColor(.primary.opacity(0.75))
+                .lineLimit(1)
+            
+            HStack(spacing: 8) {
+                if let folder = prompt.folder {
+                    Text(folder)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.secondary.opacity(0.07)))
+                }
+                
+                HStack(spacing: 3) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 8))
+                    Text(timeLabel)
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(urgencyColor)
+            }
+        }
+    }
+    
+    private var actionButtons: some View {
+        HStack(spacing: 8) {
+            Button(action: onRestore) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.uturn.left")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Restaurar")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(Color.blue.opacity(0.1)))
+                .foregroundColor(.blue)
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovered ? 1 : 0)
+            
+            Button(action: onDelete) {
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.red.opacity(0.7))
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.red.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            .opacity(isHovered ? 1 : 0)
+        }
+    }
+    
     var body: some View {
-        HStack(spacing: 14) {
-            // Icon
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.red.opacity(0.08))
-                    .frame(width: 34, height: 34)
-                Image(systemName: prompt.icon ?? "doc.text.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.red.opacity(0.6))
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.red.opacity(0.08))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: prompt.icon ?? "doc.text.fill")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.red.opacity(0.6))
+                }
+                
+                infoColumn
+                    .fixedSize(horizontal: true, vertical: false)
+                
+                Spacer(minLength: 8)
+                actionButtons
             }
             
-            // Info
-            VStack(alignment: .leading, spacing: 3) {
-                Text(prompt.title)
-                    .font(.system(size: 14 * preferences.fontSize.scale, weight: .semibold))
-                    .foregroundColor(.primary.opacity(0.75))
-                    .lineLimit(1)
-                
-                HStack(spacing: 8) {
-                    if let folder = prompt.folder {
-                        Text(folder)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.secondary.opacity(0.6))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(Color.secondary.opacity(0.07)))
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.red.opacity(0.08))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: prompt.icon ?? "doc.text.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.red.opacity(0.6))
                     }
                     
-                    // Countdown
-                    HStack(spacing: 3) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 8))
-                        Text(timeLabel)
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .foregroundColor(urgencyColor)
+                    infoColumn
                 }
-            }
-            
-            Spacer()
-            
-            // Actions (visible on hover)
-            HStack(spacing: 8) {
-                Button(action: onRestore) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.uturn.left")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("Restaurar")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.blue.opacity(0.1)))
-                    .foregroundColor(.blue)
-                }
-                .buttonStyle(.plain)
-                .opacity(isHovered ? 1 : 0)
                 
-                Button(action: onDelete) {
-                    Image(systemName: "trash.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.red.opacity(0.7))
-                        .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color.red.opacity(0.08)))
+                HStack {
+                    Spacer(minLength: 0)
+                    actionButtons
                 }
-                .buttonStyle(.plain)
-                .opacity(isHovered ? 1 : 0)
             }
-            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(

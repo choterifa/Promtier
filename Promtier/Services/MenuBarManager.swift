@@ -37,6 +37,7 @@ class MenuBarManager: NSObject, ObservableObject {
     private var ghostWindow: NSPanel?
     private var floatingZenWindow: NSPanel?
     private var eventMonitorId: UUID?
+    private var lastPopoverShownAt: Date = .distantPast
     
     @Published var isPopoverShown = false
     @Published var activeViewState: PopoverViewState = .main {
@@ -102,6 +103,8 @@ class MenuBarManager: NSObject, ObservableObject {
             .sink { [weak self] _ in
                 guard let self, self.popover?.isShown == true else { return }
                 if self.isModalActive { return }
+                // Ignorar falsos positivos justo al abrir (cambios de foco transitorios de AppKit).
+                if Date().timeIntervalSince(self.lastPopoverShownAt) < 0.35 { return }
                 self.closePopover()
             }
             .store(in: &cancellables)
@@ -280,6 +283,7 @@ class MenuBarManager: NSObject, ObservableObject {
         updatePopoverSize(width: preferencesManager.windowWidth, height: preferencesManager.windowHeight)
 
         popover?.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        lastPopoverShownAt = Date()
         
         // Asegurar foco inmediato para evitar el "doble click"
         if let window = popover?.contentViewController?.view.window {
@@ -707,6 +711,8 @@ class MenuBarManager: NSObject, ObservableObject {
         eventMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { [weak self] event in
             guard let self = self, let popover = self.popover, popover.isShown else { return }
             if self.isModalActive { return }
+            if Date().timeIntervalSince(self.lastPopoverShownAt) < 0.35 { return }
+            guard event.type == .leftMouseDown || event.type == .rightMouseDown else { return }
             self.closePopover()
         }    }
 

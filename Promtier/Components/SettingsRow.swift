@@ -17,7 +17,7 @@ struct SettingsRow<Content: View>: View {
         self.content = content()
     }
     
-    var body: some View {
+    private var labelColumn: some View {
         HStack(spacing: 12) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -35,12 +35,30 @@ struct SettingsRow<Content: View>: View {
                         .foregroundColor(.secondary)
                 }
             }
-            Spacer()
-            content
+        }
+    }
+    
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                labelColumn
+                    .layoutPriority(1)
+                Spacer(minLength: 8)
+                content
+                    .layoutPriority(0)
+            }
+            
+            VStack(alignment: .leading, spacing: 10) {
+                labelColumn
+                HStack {
+                    Spacer(minLength: 0)
+                    content
+                }
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        .frame(maxWidth: .infinity) // Forzar que ocupe todo el ancho
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
     }
 }

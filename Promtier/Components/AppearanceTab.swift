@@ -7,48 +7,79 @@ struct AppearanceTab: View {
         VStack(spacing: 32) {
             SettingsSection(title: "appearance", icon: "display") {
                 SettingsRow("language", subtitle: "language_subtitle") {
-                    Picker("", selection: $preferences.language) {
-                        ForEach(AppLanguage.allCases, id: \.self) { lang in
-                            Text(lang.displayName).tag(lang)
+                    ViewThatFits(in: .horizontal) {
+                        Picker("", selection: $preferences.language) {
+                            ForEach(AppLanguage.allCases, id: \.self) { lang in
+                                Text(lang.displayName).tag(lang)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        
+                        Picker("", selection: $preferences.language) {
+                            ForEach(AppLanguage.allCases, id: \.self) { lang in
+                                Text(lang.displayName).tag(lang)
+                            }
+                        }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
                 }
                 
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("appearance", subtitle: "appearance_subtitle") {
-                    Picker("", selection: $preferences.appearance) {
-                        Text("light".localized(for: preferences.language)).tag(AppAppearance.light)
-                        Text("dark".localized(for: preferences.language)).tag(AppAppearance.dark)
-                        Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
+                    ViewThatFits(in: .horizontal) {
+                        Picker("", selection: $preferences.appearance) {
+                            Text("light".localized(for: preferences.language)).tag(AppAppearance.light)
+                            Text("dark".localized(for: preferences.language)).tag(AppAppearance.dark)
+                            Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
+                        }
+                        .pickerStyle(.segmented)
+                        
+                        Picker("", selection: $preferences.appearance) {
+                            Text("light".localized(for: preferences.language)).tag(AppAppearance.light)
+                            Text("dark".localized(for: preferences.language)).tag(AppAppearance.dark)
+                            Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
+                        }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
                 }
                 
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("font_size", subtitle: "font_size_subtitle") {
-                    Picker("", selection: $preferences.fontSize) {
-                        Text("S").tag(FontSize.small)
-                        Text("M").tag(FontSize.medium)
-                        Text("L").tag(FontSize.large)
+                    ViewThatFits(in: .horizontal) {
+                        Picker("", selection: $preferences.fontSize) {
+                            Text("S").tag(FontSize.small)
+                            Text("M").tag(FontSize.medium)
+                            Text("L").tag(FontSize.large)
+                        }
+                        .pickerStyle(.segmented)
+                        
+                        Picker("", selection: $preferences.fontSize) {
+                            Text("S").tag(FontSize.small)
+                            Text("M").tag(FontSize.medium)
+                            Text("L").tag(FontSize.large)
+                        }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 120)
                 }
                 
                 Divider().padding(.leading, 20)
                 
                 SettingsRow("preview_priority", subtitle: "preview_priority_subtitle") {
-                    Picker("", selection: $preferences.previewImagesFirst) {
-                        Text("images_first".localized(for: preferences.language)).tag(true)
-                        Text("text_first".localized(for: preferences.language)).tag(false)
+                    ViewThatFits(in: .horizontal) {
+                        Picker("", selection: $preferences.previewImagesFirst) {
+                            Text("images_first".localized(for: preferences.language)).tag(true)
+                            Text("text_first".localized(for: preferences.language)).tag(false)
+                        }
+                        .pickerStyle(.segmented)
+                        
+                        Picker("", selection: $preferences.previewImagesFirst) {
+                            Text("images_first".localized(for: preferences.language)).tag(true)
+                            Text("text_first".localized(for: preferences.language)).tag(false)
+                        }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 240)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -75,7 +106,7 @@ struct AppearanceTab: View {
                 }
             }
             
-            SettingsSection(title: "window", icon: "macwindow.badge.plus") {
+                SettingsSection(title: "window", icon: "macwindow.badge.plus") {
                 SettingsRow("width", subtitle: "\(Int(preferences.previewWidth))px") {
                     Slider(value: $preferences.previewWidth, in: 500...900, step: 10, onEditingChanged: { editing in
                         preferences.isResizingVisible = editing
@@ -86,7 +117,6 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewWidth) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(width: 150)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -101,7 +131,6 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewHeight) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(width: 150)
                 }
                 
                 Divider().padding(.leading, 20)

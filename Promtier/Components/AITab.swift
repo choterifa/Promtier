@@ -66,6 +66,10 @@ struct AITab: View {
     @State private var showOpenAIKey = false
     @State private var showGeminiKey = false
     @State private var showOpenRouterKey = false
+    
+    private var fieldWidth: CGFloat {
+        min(240, max(130, preferences.windowWidth - 390))
+    }
 
     var body: some View {
         VStack(spacing: 22) {
@@ -95,11 +99,11 @@ struct AITab: View {
                             if showOpenAIKey {
                                 TextField("sk-...", text: $preferences.openAIApiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
                             } else {
                                 SecureField("sk-...", text: $preferences.openAIApiKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
                             }
                             
                             Button(action: { showOpenAIKey.toggle() }) {
@@ -122,7 +126,7 @@ struct AITab: View {
                             TextField("gpt-4o", text: $preferences.openAIDefaultModel)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(.body, design: .monospaced))
-                                .frame(width: 300)
+                                .frame(width: fieldWidth)
 
                             Menu {
                                 if openAIAvailableModels.isEmpty {
@@ -148,7 +152,6 @@ struct AITab: View {
                             }
                             .menuStyle(.button)
                             .buttonStyle(.plain)
-                            .fixedSize()
                             .help("openai_model_presets".localized(for: preferences.language))
 
                             Button(action: {
@@ -228,11 +231,11 @@ struct AITab: View {
                                 if showGeminiKey {
                                     TextField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
                                         .textFieldStyle(.roundedBorder)
-                                        .frame(width: 300)
+                                        .frame(width: fieldWidth)
                                 } else {
                                     SecureField("Ingresa tu API Key", text: $preferences.geminiAPIKey)
                                         .textFieldStyle(.roundedBorder)
-                                        .frame(width: 300)
+                                        .frame(width: fieldWidth)
                                 }
                                 
                                 Button(action: { showGeminiKey.toggle() }) {
@@ -255,7 +258,7 @@ struct AITab: View {
                                 TextField("gemini-2.5-flash", text: $preferences.geminiDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
 
                                 Menu {
                                     if geminiAvailableModels.isEmpty {
@@ -280,7 +283,6 @@ struct AITab: View {
                                 }
                                 .menuStyle(.button)
                                 .buttonStyle(.plain)
-                                .fixedSize()
                             }
                         }
 
@@ -331,11 +333,11 @@ struct AITab: View {
                             if showOpenRouterKey {
                                 TextField("sk-or-...", text: $preferences.openRouterAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
                             } else {
                                 SecureField("sk-or-...", text: $preferences.openRouterAPIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
                             }
                             
                             Button(action: { showOpenRouterKey.toggle() }) {
@@ -359,7 +361,7 @@ struct AITab: View {
                                 TextField("anthropic/claude-3-opus", text: $preferences.openRouterDefaultModel)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(.body, design: .monospaced))
-                                    .frame(width: 300)
+                                    .frame(width: fieldWidth)
 
                                 Menu {
                                     if openRouterAvailableModels.isEmpty {
@@ -386,7 +388,6 @@ struct AITab: View {
                                 }
                                 .menuStyle(.button)
                                 .buttonStyle(.plain)
-                                .fixedSize()
                                 .help("openrouter_model_presets".localized(for: preferences.language))
                                 
                                 Button(action: {
@@ -410,6 +411,8 @@ struct AITab: View {
                             Link(LocalizedStringKey("openrouter_explore_models".localized(for: preferences.language)), destination: URL(string: "https://openrouter.ai/models")!)
                                 .font(.system(size: 10))
                                 .foregroundColor(.blue)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
                         }
                     }
 
@@ -459,7 +462,7 @@ struct AITab: View {
                         HStack(spacing: 8) {
                             TextField("http://localhost:11434", text: $preferences.ollamaBaseURL)
                                 .textFieldStyle(.roundedBorder)
-                                .frame(width: 300)
+                                .frame(width: fieldWidth)
                         }
                     }
 
@@ -470,7 +473,7 @@ struct AITab: View {
                             TextField("llama3", text: $preferences.ollamaDefaultModel)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(.body, design: .monospaced))
-                                .frame(width: 300)
+                                .frame(width: fieldWidth)
 
                             Menu {
                                 if ollamaAvailableModels.isEmpty {
@@ -496,7 +499,6 @@ struct AITab: View {
                             }
                             .menuStyle(.button)
                             .buttonStyle(.plain)
-                            .fixedSize()
                             .help("Seleccionar modelo local")
                             
                             Button(action: {
