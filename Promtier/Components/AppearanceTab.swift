@@ -13,7 +13,7 @@ struct AppearanceTab: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
+                    .frame(width: 200)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -25,7 +25,7 @@ struct AppearanceTab: View {
                         Text("system".localized(for: preferences.language)).tag(AppAppearance.system)
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
+                    .frame(width: 200)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -37,7 +37,7 @@ struct AppearanceTab: View {
                         Text("L").tag(FontSize.large)
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 120)
+                    .frame(width: 120)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -48,7 +48,7 @@ struct AppearanceTab: View {
                         Text("text_first".localized(for: preferences.language)).tag(false)
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 240)
+                    .frame(width: 240)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -86,7 +86,7 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewWidth) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(maxWidth: 150)
+                    .frame(width: 150)
                 }
                 
                 Divider().padding(.leading, 20)
@@ -101,7 +101,7 @@ struct AppearanceTab: View {
                     .onChange(of: preferences.previewHeight) { _, _ in
                         HapticService.shared.playStrong()
                     }
-                    .frame(maxWidth: 150)
+                    .frame(width: 150)
                 }
                 
                 Divider().padding(.leading, 20)

@@ -18,29 +18,6 @@ struct SettingsRow<Content: View>: View {
     }
     
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            // Layout horizontal (estándar)
-            HStack(spacing: 12) {
-                labelAndIcon(isFixed: true)
-                Spacer(minLength: 8)
-                content
-            }
-            
-            // Layout vertical (cuando no hay espacio)
-            VStack(alignment: .leading, spacing: 12) {
-                labelAndIcon(isFixed: false)
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-    }
-    
-    @ViewBuilder
-    private func labelAndIcon(isFixed: Bool) -> some View {
         HStack(spacing: 12) {
             if let icon = icon {
                 Image(systemName: icon)
@@ -52,16 +29,18 @@ struct SettingsRow<Content: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 14 * preferences.fontSize.scale, weight: .medium))
-                    .multilineTextAlignment(.leading)
-                
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.system(size: 12 * preferences.fontSize.scale))
                         .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
                 }
             }
+            Spacer()
+            content
         }
-        .fixedSize(horizontal: isFixed, vertical: false)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity) // Forzar que ocupe todo el ancho
+        .contentShape(Rectangle())
     }
 }
