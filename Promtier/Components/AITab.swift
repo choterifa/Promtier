@@ -66,6 +66,7 @@ struct AITab: View {
     @State private var showOpenAIKey = false
     @State private var showGeminiKey = false
     @State private var showOpenRouterKey = false
+    @State private var showLocalModelsSheet = false
 
     var body: some View {
         VStack(spacing: 22) {
@@ -549,11 +550,57 @@ struct AITab: View {
                 }
             }
             
+            Divider().padding(.vertical, 8)
+            
+            HStack {
+                Toggle(isOn: $preferences.localFallbackEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Respaldo Local Inteligente (Fallback)")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("Si tu API principal falla o no hay internet, usaremos tu mejor modelo descargado automáticamente.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+            
+            Button(action: { showLocalModelsSheet = true }) {
+                HStack {
+                    Image(systemName: "square.and.arrow.down.on.square.fill")
+                    Text("Descargar Modelos Nativos (Apple Silicon)")
+                }
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .background(Color.blue)
+                .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+            
             Text(LocalizedStringKey("security_notice".localized(for: preferences.language)))
                 .font(.system(size: 11))
                 .foregroundColor(.secondary.opacity(0.6))
                 .multilineTextAlignment(.center)
                 .padding(.top, 10)
+        }
+        .sheet(isPresented: $showLocalModelsSheet) {
+            LocalModelsView()
+                .frame(width: 650, height: 550)
+                .overlay(alignment: .topTrailing) {
+                    Button(action: { showLocalModelsSheet = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary.opacity(0.5))
+                            .padding()
+                    }
+                    .buttonStyle(.plain)
+                }
         }
     }
 

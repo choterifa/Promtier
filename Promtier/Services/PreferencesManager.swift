@@ -473,6 +473,12 @@ class PreferencesManager: ObservableObject {
         }
     }
     
+    @Published var localFallbackEnabled: Bool {
+        didSet {
+            userDefaults.set(localFallbackEnabled, forKey: "localFallbackEnabled")
+        }
+    }
+    
     @Published var ollamaBaseURL: String {
         didSet {
             userDefaults.set(ollamaBaseURL, forKey: "ollamaBaseURL")
@@ -601,6 +607,8 @@ class PreferencesManager: ObservableObject {
         self.ollamaEnabled = userDefaults.object(forKey: "ollamaEnabled") as? Bool ?? false
         self.ollamaBaseURL = userDefaults.string(forKey: "ollamaBaseURL") ?? "http://localhost:11434"
         self.ollamaDefaultModel = userDefaults.string(forKey: "ollamaDefaultModel") ?? ""
+        
+        self.localFallbackEnabled = userDefaults.object(forKey: "localFallbackEnabled") as? Bool ?? true
         
         self.preferredAIService = AIService(rawValue: userDefaults.string(forKey: "preferredAIService") ?? "openai") ?? .openai
         self.openAIEnabled = userDefaults.object(forKey: "openAIEnabled") as? Bool ?? true

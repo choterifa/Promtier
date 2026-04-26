@@ -38,27 +38,44 @@ class AIServiceManager: AIServiceProtocol {
     func generate(prompt: String, imageData: Data? = nil) async throws -> String {
         let prefs = PreferencesManager.shared
         
-        switch prefs.preferredAIService {
-        case .openai:
-            guard prefs.openAIEnabled else { throw AIError.serviceDisabled }
-            guard !prefs.openAIApiKey.isEmpty else { throw AIError.invalidAPIKey("OpenAI") }
-            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false, imageData: imageData)
+        do {
+            switch prefs.preferredAIService {
+            case .openai:
+                guard prefs.openAIEnabled else { throw AIError.serviceDisabled }
+                guard !prefs.openAIApiKey.isEmpty else { throw AIError.invalidAPIKey("OpenAI") }
+                return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openAIDefaultModel, apiKey: prefs.openAIApiKey, isOpenRouter: false, imageData: imageData)
+                
+            case .openrouter:
+                guard prefs.openRouterEnabled else { throw AIError.serviceDisabled }
+                guard !prefs.openRouterAPIKey.isEmpty else { throw AIError.invalidAPIKey("OpenRouter") }
+                return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true, imageData: imageData)
+                
+            case .gemini:
+                guard prefs.geminiEnabled else { throw AIError.serviceDisabled }
+                guard !prefs.geminiAPIKey.isEmpty else { throw AIError.invalidAPIKey("Google Gemini") }
+                return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
+                
+            case .ollama:
+                guard prefs.ollamaEnabled else { throw AIError.serviceDisabled }
+                let model = prefs.ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !model.isEmpty else { throw AIError.invalidModel("Ollama") }
+                return try await OllamaService.shared.generate(prompt: prompt, model: model, baseURL: prefs.ollamaBaseURL, imageData: imageData)
+            }
+        } catch {
+            // FALLBACK A MODELO LOCAL
+            if prefs.localFallbackEnabled, 
+               let fallbackModel = LocalModelDownloadManager.shared.getBestDownloadedModel() {
+                print("⚠️ [AIServiceManager] Error con API remota: \(error.localizedDescription). Iniciando Fallback Local...")
+                
+                let modelURL = LocalModelDownloadManager.shared.modelsDirectoryURL.appendingPathComponent(fallbackModel.filename)
+                
+                // Disparamos una notificación para que la UI pueda mostrar un indicador visual si lo desea
+                NotificationCenter.default.post(name: NSNotification.Name("didFallbackToLocalModel"), object: fallbackModel.name)
+                
+                return try await LocalLLMService.shared.generate(prompt: prompt, modelUrl: modelURL)
+            }
             
-        case .openrouter:
-            guard prefs.openRouterEnabled else { throw AIError.serviceDisabled }
-            guard !prefs.openRouterAPIKey.isEmpty else { throw AIError.invalidAPIKey("OpenRouter") }
-            return try await OpenAIService.shared.generate(prompt: prompt, model: prefs.openRouterDefaultModel, apiKey: prefs.openRouterAPIKey, isOpenRouter: true, imageData: imageData)
-            
-        case .gemini:
-            guard prefs.geminiEnabled else { throw AIError.serviceDisabled }
-            guard !prefs.geminiAPIKey.isEmpty else { throw AIError.invalidAPIKey("Google Gemini") }
-            return try await GeminiService.shared.generate(prompt: prompt, model: prefs.geminiDefaultModel, imageData: imageData)
-            
-        case .ollama:
-            guard prefs.ollamaEnabled else { throw AIError.serviceDisabled }
-            let model = prefs.ollamaDefaultModel.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !model.isEmpty else { throw AIError.invalidModel("Ollama") }
-            return try await OllamaService.shared.generate(prompt: prompt, model: model, baseURL: prefs.ollamaBaseURL, imageData: imageData)
+            throw error
         }
     }
     
