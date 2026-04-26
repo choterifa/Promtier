@@ -27,7 +27,16 @@ final class MarkdownRTFConverter {
             let font = NSFont.monospacedSystemFont(ofSize: max(11, baseFont.pointSize - 1), weight: .regular)
             let foreground: NSColor
 
-            if NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+            var isDark = false
+            if Thread.isMainThread {
+                isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            } else {
+                DispatchQueue.main.sync {
+                    isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                }
+            }
+
+            if isDark {
                 foreground = NSColor(calibratedRed: 0.88, green: 0.78, blue: 0.96, alpha: 1.0)
             } else {
                 foreground = NSColor(calibratedRed: 0.46, green: 0.24, blue: 0.58, alpha: 1.0)

@@ -207,6 +207,8 @@ struct HighlightedEditor: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
+        context.coordinator.parent = self
+        
         guard let textView = nsView.documentView as? PromtierTextView else { return }
         
         // Limpiar estado de typing si pierde el foco
@@ -476,7 +478,9 @@ struct HighlightedEditor: NSViewRepresentable {
             // Evitar "Modifying state during view update" (updateNSView/makeNSView)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                self.parent.plainText = textView.string
+                if self.parent.plainText != textView.string {
+                    self.parent.plainText = textView.string
+                }
             }
             lastSerializedMarkdown = markdown
             syncTypingAttributes(for: textView)
