@@ -8,11 +8,23 @@
 import Foundation
 import Combine
 
-enum DownloadState: Equatable {
+enum DownloadState: Sendable {
     case notDownloaded
     case downloading(progress: Double)
     case downloaded
     case error(String)
+}
+
+extension DownloadState: Equatable {
+    nonisolated static func == (lhs: DownloadState, rhs: DownloadState) -> Bool {
+        switch (lhs, rhs) {
+        case (.notDownloaded, .notDownloaded): return true
+        case (.downloaded, .downloaded): return true
+        case let (.downloading(p1), .downloading(p2)): return p1 == p2
+        case let (.error(e1), .error(e2)): return e1 == e2
+        default: return false
+        }
+    }
 }
 
 class LocalModelDownloadManager: NSObject, ObservableObject, URLSessionDownloadDelegate {

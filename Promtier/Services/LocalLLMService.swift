@@ -32,13 +32,13 @@ class LocalLLMService {
                 var modelParams = llama_model_default_params()
                 modelParams.n_gpu_layers = 99 // Para usar Metal en Apple Silicon
                 
-                guard let model = llama_load_model_from_file(modelUrl.path.cString(using: .utf8), modelParams) else {
+                guard let model = llama_model_load_from_file(modelUrl.path.cString(using: .utf8), modelParams) else {
                     continuation.resume(throwing: NSError(domain: "LocalLLM", code: 1, userInfo: [NSLocalizedDescriptionKey: "No se pudo cargar el modelo"]))
                     return
                 }
                 
-                guard let context = llama_new_context_with_model(model, params) else {
-                    llama_free_model(model)
+                guard let context = llama_init_from_model(model, params) else {
+                    llama_model_free(model)
                     continuation.resume(throwing: NSError(domain: "LocalLLM", code: 2, userInfo: [NSLocalizedDescriptionKey: "No se pudo inicializar el contexto"]))
                     return
                 }
@@ -54,7 +54,7 @@ class LocalLLMService {
                 
                 if n_prompt < 0 {
                     llama_free(context)
-                    llama_free_model(model)
+                    llama_model_free(model)
                     llama_backend_free()
                     continuation.resume(throwing: NSError(domain: "LocalLLM", code: 3, userInfo: [NSLocalizedDescriptionKey: "Error tokenizando"]))
                     return
@@ -83,7 +83,7 @@ class LocalLLMService {
                 if llama_decode(context, batch) != 0 {
                     llama_batch_free(batch)
                     llama_free(context)
-                    llama_free_model(model)
+                    llama_model_free(model)
                     llama_backend_free()
                     continuation.resume(throwing: NSError(domain: "LocalLLM", code: 4, userInfo: [NSLocalizedDescriptionKey: "Error decodificando"]))
                     return
@@ -125,7 +125,7 @@ class LocalLLMService {
                 llama_sampler_free(sampler)
                 llama_batch_free(batch)
                 llama_free(context)
-                llama_free_model(model)
+                llama_model_free(model)
                 llama_backend_free()
                 
                 continuation.resume(returning: responseStr.trimmingCharacters(in: .whitespacesAndNewlines))
