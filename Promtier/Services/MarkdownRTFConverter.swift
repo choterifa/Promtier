@@ -6,15 +6,15 @@ extension NSAttributedString.Key {
 }
 
 public enum PromtierRegex {
-    nonisolated(unsafe) public static let bold = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
-    nonisolated(unsafe) public static let italic = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
-    nonisolated(unsafe) public static let strikethrough = try! NSRegularExpression(pattern: "~~([^~]+)~~")
-    nonisolated(unsafe) public static let inlineCode = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
-    nonisolated(unsafe) public static let bulletList = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
-    nonisolated(unsafe) public static let numberedList = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
-    nonisolated(unsafe) public static let variable = try! NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-    nonisolated(unsafe) public static let chain = try! NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
-    nonisolated(unsafe) public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
+    public static let bold = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
+    public static let italic = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
+    public static let strikethrough = try! NSRegularExpression(pattern: "~~([^~]+)~~")
+    public static let inlineCode = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
+    public static let bulletList = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
+    public static let numberedList = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
+    public static let variable = try! NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    public static let chain = try! NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
+    public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
 }
 
 final class MarkdownRTFConverter {

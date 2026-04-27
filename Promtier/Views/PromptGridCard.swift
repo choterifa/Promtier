@@ -456,15 +456,6 @@ struct PromptGridCard: View {
             }
         }
         .onDrag {
-            // No cerrar el popover inmediatamente para permitir categorización interna
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                if let window = NSApp.keyWindow, 
-                   window.className.contains("Popover"),
-                   !NSMouseInRect(NSEvent.mouseLocation, window.frame, false) {
-                    menuBarManager.closePopover()
-                }
-            }
-            
             let provider = NSItemProvider()
             let selectedIds = batchService.selectedPromptIds
             let draggedIds: [UUID]

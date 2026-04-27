@@ -707,7 +707,13 @@ class MenuBarManager: NSObject, ObservableObject {
         eventMonitorId = GlobalHotkeyManager.shared.subscribeToGlobalEvents { [weak self] event in
             guard let self = self, let popover = self.popover, popover.isShown else { return }
             if self.isModalActive { return }
-            self.closePopover()
+            
+            // Solo cerrar en clicks fuera de la app, ignorar eventos de teclado (keyDown, flagsChanged)
+            // para evitar que el popover se cierre si el usuario empieza a escribir o presiona Shift/Cmd
+            // antes de que la app gane foco completamente.
+            if event.type == .leftMouseDown || event.type == .rightMouseDown {
+                self.closePopover()
+            }
         }    }
 
     private func stopEventMonitoring() {
