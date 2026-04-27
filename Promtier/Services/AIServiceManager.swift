@@ -175,7 +175,5 @@ class AIServiceManager: AIServiceProtocol {
                 negativePrompt: nil
             )
         }
-        
-        throw URLError(.cannotParseResponse)
     }
 }

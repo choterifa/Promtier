@@ -146,8 +146,11 @@ struct HighlightedEditor: NSViewRepresentable {
         // Update callback
         textView.onPaste = onPaste
 
-        if context.coordinator.lastSerializedMarkdown != text {
-            context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
+        if context.coordinator.lastSeenTextBinding != text {
+            context.coordinator.lastSeenTextBinding = text
+            if context.coordinator.lastSerializedMarkdown != text {
+                context.coordinator.loadMarkdownIfNeeded(into: textView, markdown: text)
+            }
         }
 
         // Aplicar resultados de IA con soporte para Undo
@@ -273,6 +276,7 @@ struct HighlightedEditor: NSViewRepresentable {
 	        var parent: HighlightedEditor
 	        var observerTokens: [NSObjectProtocol] = []
 	        var lastSerializedMarkdown: String = ""
+	        var lastSeenTextBinding: String = ""
 	        var lastFontSize: CGFloat?
 	        private var isApplyingExternalUpdate = false
 	        private var highlightWorkItem: DispatchWorkItem?
@@ -475,6 +479,7 @@ struct HighlightedEditor: NSViewRepresentable {
             markdownSerializeWorkItem?.cancel()
             let markdown = serializedMarkdown(from: textView)
             lastSerializedMarkdown = markdown
+            lastSeenTextBinding = markdown
             parent.text = markdown
 
             DispatchQueue.main.async {
@@ -979,6 +984,7 @@ struct HighlightedEditor: NSViewRepresentable {
                     DispatchQueue.main.async {
                         guard self.markdownSerializationToken == token else { return }
                         self.lastSerializedMarkdown = markdown
+                        self.lastSeenTextBinding = markdown
                         self.parent.text = markdown
                     }
                 }

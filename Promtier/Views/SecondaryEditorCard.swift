@@ -208,7 +208,7 @@ struct SecondaryEditorCard<Actions: View>: View {
                     .padding(.trailing, 5)
                     .frame(maxWidth: .infinity, minHeight: 180)
 
-                    if text.isEmpty {
+                    if plainTextContent.isEmpty {
                         Text(placeholder)
                             .font(.system(size: 14 * preferences.fontSize.scale))
                             .foregroundColor(.secondary.opacity(0.7))
@@ -294,15 +294,6 @@ struct SecondaryEditorCard<Actions: View>: View {
             .onHover { hovering in
                 guard isHovering != hovering else { return }
                 isHovering = hovering
-            }
-            .onTapGesture {
-                if reduceMotion {
-                    isEditorFocused = true
-                } else {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isEditorFocused = true
-                    }
-                }
             }
         }
         .alert("Execute Command", isPresented: $showingInstructionAlert) {

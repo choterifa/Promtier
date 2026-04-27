@@ -86,19 +86,8 @@ extension NewPromptView {
             return
         }
 
-        if let original = originalPrompt {
-            let hasChanges = title != original.title ||
-                             content != original.content ||
-                             promptDescription != (original.promptDescription ?? "") ||
-                             selectedFolder != original.folder ||
-                             selectedIcon != original.icon ||
-                             showcaseImages != original.showcaseImages ||
-                             negativePrompt != (original.negativePrompt ?? "") ||
-                             alternatives != original.alternatives ||
-                             alternativeDescriptions != normalizedAlternativeDescriptions(from: original, for: original.alternatives) ||
-                             targetAppBundleIDs != original.targetAppBundleIDs ||
-                             customShortcut != original.customShortcut
-            if !hasChanges { return }
+        if !hasUnsavedChanges {
+            return
         }
 
         var draftPrompt = Prompt(

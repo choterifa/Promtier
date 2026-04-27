@@ -821,11 +821,11 @@ struct NewPromptView: View {
             // si el usuario realmente ha escrito un título o contenido explícito.
             let isTitleEmpty = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             let isContentTextEmpty = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let isDescEmpty = promptDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let isNegEmpty = negativePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let hasAlts = !alternatives.isEmpty && alternatives.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
             
-            if isTitleEmpty && isContentTextEmpty {
-                return false
-            }
-            return !isContentEmpty
+            return !isTitleEmpty || !isContentTextEmpty || !isDescEmpty || !isNegEmpty || hasAlts || !showcaseImages.isEmpty
         }
     }
 

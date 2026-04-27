@@ -420,15 +420,6 @@ struct EditorCard: View {
             guard isHovering != hovering else { return }
             isHovering = hovering
         }
-        .onTapGesture {
-            if reduceMotion {
-                isEditorFocused = true
-            } else {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isEditorFocused = true
-                }
-            }
-        }
     }
 
     private var promptIconButton: some View {

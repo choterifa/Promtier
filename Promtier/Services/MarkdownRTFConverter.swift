@@ -17,9 +17,9 @@ public enum PromtierRegex {
     public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
 }
 
-final class MarkdownRTFConverter {
+final class MarkdownRTFConverter: @unchecked Sendable {
 
-    static func parseMarkdown(_ markdown: String, baseFont: NSFont, textColor: NSColor) -> NSMutableAttributedString {
+    nonisolated static func parseMarkdown(_ markdown: String, baseFont: NSFont, textColor: NSColor) -> NSMutableAttributedString {
         let baseAttributes: [NSAttributedString.Key: Any] = [
             .font: baseFont,
             .foregroundColor: textColor,
@@ -64,7 +64,7 @@ final class MarkdownRTFConverter {
         return attributed
     }
 
-    static func generateMarkdown(from attributed: NSAttributedString) -> String {
+    nonisolated static func generateMarkdown(from attributed: NSAttributedString) -> String {
         var result = ""
         let nsString = attributed.string as NSString
         let fullRange = NSRange(location: 0, length: attributed.length)
@@ -77,7 +77,7 @@ final class MarkdownRTFConverter {
         return result
     }
 
-    static func applyParagraphStyles(to attributed: NSMutableAttributedString, baseFont: NSFont) {
+    nonisolated static func applyParagraphStyles(to attributed: NSMutableAttributedString, baseFont: NSFont) {
         let text = attributed.string as NSString
         let fullRange = NSRange(location: 0, length: text.length)
         let paragraph = defaultParagraphStyle()
@@ -101,7 +101,7 @@ final class MarkdownRTFConverter {
         }
     }
 
-    static func toggledFont(from font: NSFont, add trait: NSFontTraitMask) -> NSFont {
+    nonisolated static func toggledFont(from font: NSFont, add trait: NSFontTraitMask) -> NSFont {
         let hasTrait = font.fontDescriptor.symbolicTraits.contains(symbolicTrait(for: trait))
         if hasTrait {
             return NSFontManager.shared.convert(font, toNotHaveTrait: trait)
@@ -109,7 +109,7 @@ final class MarkdownRTFConverter {
         return NSFontManager.shared.convert(font, toHaveTrait: trait)
     }
 
-    private static func applyInlineMarkdown(
+    nonisolated private static func applyInlineMarkdown(
         regex: NSRegularExpression,
         markerLength: Int,
         to attributed: NSMutableAttributedString,
@@ -130,7 +130,7 @@ final class MarkdownRTFConverter {
         }
     }
 
-    private static func markdownChunk(for text: String, attributes: [NSAttributedString.Key: Any]) -> String {
+    nonisolated private static func markdownChunk(for text: String, attributes: [NSAttributedString.Key: Any]) -> String {
         guard !text.isEmpty else { return "" }
 
         let font = attributes[.font] as? NSFont
@@ -172,14 +172,14 @@ final class MarkdownRTFConverter {
         }.joined()
     }
 
-    static func defaultParagraphStyle() -> NSParagraphStyle {
+    nonisolated static func defaultParagraphStyle() -> NSParagraphStyle {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 5
         paragraph.paragraphSpacing = 10
         return paragraph
     }
 
-    private static func symbolicTrait(for trait: NSFontTraitMask) -> NSFontDescriptor.SymbolicTraits {
+    nonisolated private static func symbolicTrait(for trait: NSFontTraitMask) -> NSFontDescriptor.SymbolicTraits {
         switch trait {
         case .boldFontMask:
             return .bold
