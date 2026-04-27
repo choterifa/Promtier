@@ -37,7 +37,6 @@ struct PromptGridCard: View {
     @State private var highlightedContentCache: AttributedString = AttributedString("")
     @State private var highlightedContentCacheKey: String = ""
     @State private var plainSnippetCache: String = ""
-    @State private var lastTapTime: Date = .distantPast
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -422,7 +421,6 @@ struct PromptGridCard: View {
         }
         .onTapGesture {
             let isCmdPressed = NSEvent.modifierFlags.contains(.command)
-            let now = Date()
             
             if batchService.isSelectionModeActive || isCmdPressed {
                 if !batchService.isSelectionModeActive {
@@ -433,13 +431,8 @@ struct PromptGridCard: View {
                 batchService.toggleSelection(for: prompt.id)
                 HapticService.shared.playLight()
             } else {
-                if now.timeIntervalSince(lastTapTime) < 0.35 {
-                    onDoubleTap()
-                } else {
-                    onTap()
-                }
+                onTap()
             }
-            lastTapTime = now
         }
         .onHover { hovering in
             if hoverEffectsEnabled {

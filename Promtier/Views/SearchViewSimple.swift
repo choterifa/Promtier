@@ -138,6 +138,8 @@ struct SearchViewSimple: View {
     @State var previewPrefetchTask: Task<Void, Never>? = nil
     @State var lastPrewarmedPreviewKey: String? = nil
     @State var lastSecondaryImagePrewarmKey: String? = nil
+    @State var lastTapTime: Date = .distantPast
+    @State var lastTappedPromptId: UUID? = nil
     @State var prefetchedPreviewPaths: [String] = []
     @State var prefetchedPreviewPromptId: UUID? = nil
     @State var previewPathsCache: [UUID: [String]] = [:]

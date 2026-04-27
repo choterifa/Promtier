@@ -97,7 +97,6 @@ struct PromptCard: View {
     @State var highlightedContentCache: AttributedString = AttributedString("")
     @State var highlightedContentCacheKey: String = ""
     @State var plainSnippetCache: String = ""
-    @State private var lastTapTime: Date = .distantPast
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -307,7 +306,6 @@ struct PromptCard: View {
         // USAR BUTTON PARA RESPUESTA INSTANTÁNEA (Sin delay de doble clic)
         .onTapGesture {
             let isCmdPressed = NSEvent.modifierFlags.contains(.command)
-            let now = Date()
             
             if batchService.isSelectionModeActive || isCmdPressed {
                 if !batchService.isSelectionModeActive {
@@ -318,14 +316,8 @@ struct PromptCard: View {
                 batchService.toggleSelection(for: prompt.id)
                 HapticService.shared.playLight()
             } else {
-                // Manual double tap detection to avoid gesture cancellation bugs
-                if now.timeIntervalSince(lastTapTime) < 0.35 {
-                    onDoubleTap()
-                } else {
-                    onTap()
-                }
+                onTap()
             }
-            lastTapTime = now
         }
         .onHover { hovering in
             if hoverEffectsEnabled {

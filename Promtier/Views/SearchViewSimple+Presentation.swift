@@ -146,6 +146,18 @@ extension SearchViewSimple {
     // MARK: - Selection Action Helpers
 
     func onSelectPrompt(_ prompt: Prompt) {
+        let now = Date()
+        let timeDiff = now.timeIntervalSince(lastTapTime)
+        let isSamePrompt = lastTappedPromptId == prompt.id
+        
+        lastTapTime = now
+        lastTappedPromptId = prompt.id
+        
+        if timeDiff < 0.35 && isSamePrompt {
+            onDoubleTapPrompt(prompt)
+            return
+        }
+
         isSearchFocused = false
         isUserNavigating = false // Detener cualquier auto-scroll al usar el ratón
         let latest = latestPrompt(for: prompt)
