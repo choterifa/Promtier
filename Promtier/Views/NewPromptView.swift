@@ -1178,33 +1178,10 @@ struct NewPromptView: View {
 
 
     var backgroundView: some View {
-        ZStack {
-            Color(NSColor.windowBackgroundColor)
-
-            if preferences.isHaloEffectEnabled {
-                // Círculos decorativos para efecto mesh (Neón sutil y dinámico)
-                Circle()
-                    .fill(currentCategoryColor.opacity(0.18))
-                    .frame(width: 500, height: 500)
-                    .blur(radius: 90)
-                    .offset(x: 220, y: -150)
-                    .animation(.easeInOut(duration: 0.4), value: selectedFolder)
-
-                Circle()
-                    .fill(currentCategoryColor.opacity(0.12))
-                    .frame(width: 400, height: 400)
-                    .blur(radius: 100)
-                    .offset(x: -250, y: 200)
-                    .animation(.easeInOut(duration: 0.4), value: selectedFolder)
-            }
-
-            // Brillo ambiental central que cambia con la categoría
-            Circle()
-                .fill(currentCategoryColor.opacity(0.05))
-                .frame(width: 600, height: 600)
-                .blur(radius: 120)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedFolder)
-        }
+        DynamicMeshBackgroundView(
+            categoryColor: currentCategoryColor,
+            isHaloEffectEnabled: preferences.isHaloEffectEnabled
+        )
     }
 
     var normalizedPromptDescription: String? {
@@ -1337,6 +1314,46 @@ struct NewPromptView: View {
 
 
 
+
+struct DynamicMeshBackgroundView: View {
+    let categoryColor: Color
+    let isHaloEffectEnabled: Bool
+    
+    @State private var isAnimating = false
+    
+    var body: some View {
+        ZStack {
+            Color(NSColor.windowBackgroundColor)
+            
+            if isHaloEffectEnabled {
+                Circle()
+                    .fill(categoryColor.opacity(0.18))
+                    .frame(width: 500, height: 500)
+                    .blur(radius: 90)
+                    .offset(x: isAnimating ? 180 : 220, y: isAnimating ? -110 : -150)
+                    .animation(.easeInOut(duration: 10).repeatForever(autoreverses: true), value: isAnimating)
+                
+                Circle()
+                    .fill(categoryColor.opacity(0.12))
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 100)
+                    .offset(x: isAnimating ? -210 : -250, y: isAnimating ? 160 : 200)
+                    .animation(.easeInOut(duration: 14).repeatForever(autoreverses: true), value: isAnimating)
+            }
+            
+            Circle()
+                .fill(categoryColor.opacity(0.05))
+                .frame(width: 600, height: 600)
+                .blur(radius: 120)
+                .scaleEffect(isAnimating ? 1.05 : 0.95)
+                .animation(.easeInOut(duration: 12).repeatForever(autoreverses: true), value: isAnimating)
+        }
+        .onAppear {
+            isAnimating = true
+        }
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: categoryColor)
+    }
+}
 
 #Preview {
     NewPromptView(onClose: {})
