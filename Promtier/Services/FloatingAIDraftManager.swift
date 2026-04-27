@@ -153,11 +153,14 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
                     self.isGenerating = false
                     self.executionPhase = .completed
                     self.executionTask = nil
+                    
+                    let cleanedResponse = self.cleanAIResponse(response)
+                    
                     if autoCopy {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(response, forType: .string)
+                        NSPasteboard.general.setString(cleanedResponse, forType: .string)
                     }
-                    onSuccess(response)
+                    onSuccess(cleanedResponse)
                 }
             } catch {
                 guard !Task.isCancelled else { return }
@@ -183,6 +186,31 @@ class FloatingAIDraftManager: NSObject, ObservableObject {
             isGenerating = false
         }
         executionPhase = .idle
+    }
+
+    private func cleanAIResponse(_ raw: String) -> String {
+        var cleaned = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let markers = [
+            "**Transformed Prompt:**",
+            "**Improved Prompt:**",
+            "**Revised Prompt:**",
+            "**New Prompt:**",
+            "**Final Prompt:**",
+            "**Respuesta:**",
+            "Transformed Prompt:",
+            "Improved Prompt:",
+            "Revised Prompt:"
+        ]
+        
+        for marker in markers {
+            if let range = cleaned.range(of: marker, options: [.caseInsensitive, .backwards]) {
+                cleaned = String(cleaned[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+        }
+        
+        return cleaned
     }
 
     private func composeSystemPrompt(instruction: String, content: String, imageData: Data?) -> String {
