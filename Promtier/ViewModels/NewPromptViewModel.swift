@@ -8,6 +8,7 @@ enum MagicTarget: String, CaseIterable, Identifiable {
 
 import SwiftUI
 import Combine
+import UniformTypeIdentifiers
 
 @MainActor
 final class NewPromptViewModel: ObservableObject {
@@ -78,53 +79,95 @@ final class NewPromptViewModel: ObservableObject {
         updateDraftHash()
     }
     
+    /// Carga imágenes faltantes para prompts que tienen `showcaseImageCount > 0`
+    /// pero cuyo array `showcaseImages` está vacío (carga lazy, prompts legacy, etc.)
     func loadMissingImages(promptService: PromptService) async {
-        print("🔍 loadMissingImages started for prompt: \(originalPrompt?.id.uuidString ?? "nil")")
-        guard let prompt = originalPrompt else {
-            print("❌ loadMissingImages: originalPrompt is nil")
-            return
-        }
-        if !showcaseImages.isEmpty {
-            print("⚠️ loadMissingImages: showcaseImages is not empty, count: \(showcaseImages.count)")
-            return
-        }
-        if prompt.showcaseImageCount == 0 {
-            print("⚠️ loadMissingImages: prompt.showcaseImageCount is 0")
-            return
-        }
-        
-        print("🔍 loadMissingImages: fetching paths...")
-        let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
-        print("🔍 loadMissingImages: fetched paths: \(paths)")
-        
-        var loadedImages: [Data] = []
-        if !paths.isEmpty {
-            loadedImages = promptService.loadShowcaseImages(from: paths)
-            print("🔍 loadMissingImages: loaded from paths, count: \(loadedImages.count)")
-        } 
-        
-        if loadedImages.isEmpty {
-            // Fallback: si los paths no existen en disco (iCloud desincronizado o borrados), o es legacy
-            let legacyImages = await promptService.fetchShowcaseImages(byId: prompt.id)
-            if !legacyImages.isEmpty {
-                loadedImages = legacyImages
-                print("🔍 loadMissingImages: fetched fallback images, count: \(loadedImages.count)")
-            } else if !prompt.showcaseThumbnails.isEmpty {
-                loadedImages = prompt.showcaseThumbnails
-                print("🔍 loadMissingImages: fallback to thumbnails, count: \(loadedImages.count)")
-            }
-        }
-        
+        guard let prompt = originalPrompt,
+              showcaseImages.isEmpty,
+              prompt.showcaseImageCount > 0 else { return }
+
+        let result = await ShowcaseImageLoader.loadImages(
+            for: prompt.id,
+            using: promptService,
+            knownThumbnails: prompt.showcaseThumbnails,
+            expectedCount: prompt.showcaseImageCount
+        )
+
+        guard !result.isEmpty else { return }
+
         await MainActor.run {
             if self.showcaseImages.isEmpty {
-                self.showcaseImages = loadedImages
-                print("✅ loadMissingImages: assigned loadedImages to showcaseImages. Final count: \(self.showcaseImages.count)")
-            } else {
-                print("⚠️ loadMissingImages: showcaseImages became non-empty during fetch.")
+                self.showcaseImages = result.images
             }
         }
     }
-    
+
+    // MARK: - Showcase Image Management
+
+    /// Optimiza imagen en background y devuelve los datos listos para insertar.
+    /// La inserción se delega al caller para evitar problemas con `inout` en closures.
+    func optimizeAndInsertImage(
+        _ rawData: Data,
+        at index: Int?,
+        language: AppLanguage,
+        onInsert: @MainActor @escaping (Data, Int?) -> Void,
+        onWarning: @MainActor @escaping (String) -> Void
+    ) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = PromptMediaImportPipeline.optimizeImageData(rawData)
+            DispatchQueue.main.async {
+                switch result {
+                case .failure(let failure):
+                    onWarning(PromptMediaImportPipeline.localizedMessage(for: failure, language: language))
+                case .success(let optimized):
+                    onInsert(optimized, index)
+                }
+            }
+        }
+    }
+
+    /// Presenta un NSOpenPanel para importar imágenes desde el disco.
+    /// Devuelve los archivos seleccionados al caller vía `onInsert` para cada imagen optimizada.
+    func importImagesFromDisk(
+        language: AppLanguage,
+        onInsert: @MainActor @escaping (Data, Int?) -> Void,
+        onWarning: @MainActor @escaping (String) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.image]
+
+        guard panel.runModal() == .OK else { return }
+
+        let remainingSlots = max(0, PromptMediaImportPipeline.maxSlots - showcaseImages.count)
+        guard remainingSlots > 0 else {
+            onWarning(PromptMediaImportPipeline.localizedMessage(for: .slotsFull, language: language))
+            return
+        }
+
+        for url in panel.urls.prefix(remainingSlots) {
+            guard let data = try? Data(contentsOf: url) else { continue }
+            optimizeAndInsertImage(data, at: nil, language: language, onInsert: onInsert, onWarning: onWarning)
+        }
+    }
+
+    /// Muestra un mensaje de advertencia temporal (branch message toast).
+    func showTransientWarning(_ message: String) {
+        HapticService.shared.playError()
+        withAnimation {
+            branchMessage = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            withAnimation {
+                if self?.branchMessage == message {
+                    self?.branchMessage = nil
+                }
+            }
+        }
+    }
+
     
     // MARK: - AI Magic Features
     

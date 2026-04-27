@@ -366,39 +366,32 @@ final class PromptRepository {
             ImageStore.shared.deleteAllImages(for: promptId)
         }
 
-        // Reset fields
-        entity.image1Path = nil
-        entity.image2Path = nil
-        entity.image3Path = nil
-        entity.thumb1 = nil
-        entity.thumb2 = nil
-        entity.thumb3 = nil
+        // Guardar en disco y recoger paths + thumbnails
+        let capped = Array(images.prefix(3))
+        var savedPaths: [String?] = [nil, nil, nil]
+        var thumbs: [Data?] = [nil, nil, nil]
 
-        // Clear legacy blobs
+        for (idx, data) in capped.enumerated() {
+            if let saved = try? ImageStore.shared.saveShowcaseImage(imageData: data, promptId: promptId, slot: idx + 1) {
+                savedPaths[idx] = saved.relativePath
+                thumbs[idx] = saved.thumbnailData
+            }
+        }
+
+        // Asignar a los campos indexados de la entidad
+        entity.image1Path = savedPaths[0]
+        entity.image2Path = savedPaths[1]
+        entity.image3Path = savedPaths[2]
+        entity.thumb1 = thumbs[0]
+        entity.thumb2 = thumbs[1]
+        entity.thumb3 = thumbs[2]
+
+        // Limpiar blobs legacy
         entity.image1 = nil
         entity.image2 = nil
         entity.image3 = nil
 
-        let capped = Array(images.prefix(3))
-        var savedPaths: [String] = []
-        var thumbs: [Data] = []
-
-        for (idx, data) in capped.enumerated() {
-            if let saved = try? ImageStore.shared.saveShowcaseImage(imageData: data, promptId: promptId, slot: idx + 1) {
-                savedPaths.append(saved.relativePath)
-                thumbs.append(saved.thumbnailData)
-            }
-        }
-
-        entity.image1Path = savedPaths.indices.contains(0) ? savedPaths[0] : nil
-        entity.image2Path = savedPaths.indices.contains(1) ? savedPaths[1] : nil
-        entity.image3Path = savedPaths.indices.contains(2) ? savedPaths[2] : nil
-
-        entity.thumb1 = thumbs.indices.contains(0) ? thumbs[0] : nil
-        entity.thumb2 = thumbs.indices.contains(1) ? thumbs[1] : nil
-        entity.thumb3 = thumbs.indices.contains(2) ? thumbs[2] : nil
-
-        entity.showcaseImageCount = Int16(savedPaths.count)
+        entity.showcaseImageCount = Int16(savedPaths.compactMap { $0 }.count)
     }
 
 

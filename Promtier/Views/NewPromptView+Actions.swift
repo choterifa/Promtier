@@ -62,13 +62,17 @@ extension NewPromptView {
 
             if showcaseImages.isEmpty && prompt.showcaseImageCount > 0 {
                 Task(priority: .userInitiated) {
-                    if let full = await promptService.fetchPrompt(byId: prompt.id, includeImages: true) {
-                        await MainActor.run {
-                            self.originalPrompt = full
-                            if self.showcaseImages.isEmpty {
-                                self.showcaseImages = full.showcaseImages
-                                self.mediaState.clampSelection(for: self.showcaseImages)
-                            }
+                    let result = await ShowcaseImageLoader.loadImages(
+                        for: prompt.id,
+                        using: promptService,
+                        knownThumbnails: prompt.showcaseThumbnails,
+                        expectedCount: prompt.showcaseImageCount
+                    )
+                    guard !result.isEmpty else { return }
+                    await MainActor.run {
+                        if self.showcaseImages.isEmpty {
+                            self.showcaseImages = result.images
+                            self.mediaState.clampSelection(for: self.showcaseImages)
                         }
                     }
                 }
