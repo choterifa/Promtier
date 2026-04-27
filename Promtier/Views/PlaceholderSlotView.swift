@@ -45,6 +45,7 @@ struct PlaceholderSlotView: View {
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: isTargeted)
+        .contentShape(Rectangle())
         .onHover { hovering in
             // Cambio de estado sin withAnimation global para evitar saltos
             isHovering = hovering

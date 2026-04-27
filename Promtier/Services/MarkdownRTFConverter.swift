@@ -2,19 +2,19 @@ import AppKit
 import Foundation
 
 extension NSAttributedString.Key {
-    static let promtierInlineCode = NSAttributedString.Key("com.promtier.inlineCode")
+    nonisolated static let promtierInlineCode = NSAttributedString.Key("com.promtier.inlineCode")
 }
 
-public enum PromtierRegex {
-    public static let bold = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
-    public static let italic = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
-    public static let strikethrough = try! NSRegularExpression(pattern: "~~([^~]+)~~")
-    public static let inlineCode = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
-    public static let bulletList = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
-    public static let numberedList = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
-    public static let variable = try! NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-    public static let chain = try! NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
-    public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
+public enum PromtierRegex: Sendable {
+    nonisolated public static let bold = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
+    nonisolated public static let italic = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
+    nonisolated public static let strikethrough = try! NSRegularExpression(pattern: "~~([^~]+)~~")
+    nonisolated public static let inlineCode = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
+    nonisolated public static let bulletList = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
+    nonisolated public static let numberedList = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
+    nonisolated public static let variable = try! NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    nonisolated public static let chain = try! NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
+    nonisolated public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
 }
 
 final class MarkdownRTFConverter: @unchecked Sendable {
