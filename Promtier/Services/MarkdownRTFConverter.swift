@@ -5,14 +5,19 @@ extension NSAttributedString.Key {
     static let promtierInlineCode = NSAttributedString.Key("com.promtier.inlineCode")
 }
 
+public enum PromtierRegex {
+    nonisolated(unsafe) public static let bold = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
+    nonisolated(unsafe) public static let italic = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
+    nonisolated(unsafe) public static let strikethrough = try! NSRegularExpression(pattern: "~~([^~]+)~~")
+    nonisolated(unsafe) public static let inlineCode = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
+    nonisolated(unsafe) public static let bulletList = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
+    nonisolated(unsafe) public static let numberedList = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
+    nonisolated(unsafe) public static let variable = try! NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
+    nonisolated(unsafe) public static let chain = try! NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
+    nonisolated(unsafe) public static let bracket = try! NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
+}
+
 final class MarkdownRTFConverter {
-    private static let boldRegex = try! NSRegularExpression(pattern: "\\*\\*([^\\*]+)\\*\\*|__([^_]+)__")
-    // Match standard markdown italic (*word* or _word_), ensuring it only triggers on word boundaries to avoid catching mid-word asterisks like in 'App-v*.dmg'.
-    private static let italicRegex = try! NSRegularExpression(pattern: "(?<![a-zA-Z0-9_\\*])\\*(?=\\S)([^\\n]*?)(?<=\\S)\\*(?![a-zA-Z0-9_\\*])|(?<![a-zA-Z0-9_])_(?=\\S)([^\\n]*?)(?<=\\S)_(?![a-zA-Z0-9_])")
-    private static let strikethroughRegex = try! NSRegularExpression(pattern: "~~([^~]+)~~")
-    private static let inlineCodeRegex = try! NSRegularExpression(pattern: "`([^`\\n]+)`")
-    private static let bulletListRegex = try! NSRegularExpression(pattern: "^\\s*([-*+•])\\s+", options: [.anchorsMatchLines])
-    private static let numberedListRegex = try! NSRegularExpression(pattern: "^\\s*(\\d+\\.)\\s+", options: [.anchorsMatchLines])
 
     static func parseMarkdown(_ markdown: String, baseFont: NSFont, textColor: NSColor) -> NSMutableAttributedString {
         let baseAttributes: [NSAttributedString.Key: Any] = [
@@ -23,43 +28,35 @@ final class MarkdownRTFConverter {
 
         let attributed = NSMutableAttributedString(string: markdown, attributes: baseAttributes)
 
-        applyInlineMarkdown(regex: inlineCodeRegex, markerLength: 1, to: attributed) { innerRange in
+        applyInlineMarkdown(regex: PromtierRegex.inlineCode, markerLength: 1, to: attributed) { innerRange in
             let font = NSFont.monospacedSystemFont(ofSize: max(11, baseFont.pointSize - 1), weight: .regular)
-            let foreground: NSColor
-
-            var isDark = false
-            if Thread.isMainThread {
-                isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            } else {
-                DispatchQueue.main.sync {
-                    isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            
+            let dynamicForeground = NSColor(name: nil) { appearance in
+                if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+                    return NSColor(calibratedRed: 0.88, green: 0.78, blue: 0.96, alpha: 1.0)
+                } else {
+                    return NSColor(calibratedRed: 0.46, green: 0.24, blue: 0.58, alpha: 1.0)
                 }
-            }
-
-            if isDark {
-                foreground = NSColor(calibratedRed: 0.88, green: 0.78, blue: 0.96, alpha: 1.0)
-            } else {
-                foreground = NSColor(calibratedRed: 0.46, green: 0.24, blue: 0.58, alpha: 1.0)
             }
 
             attributed.addAttributes([
                 .font: font,
-                .foregroundColor: foreground,
+                .foregroundColor: dynamicForeground,
                 .promtierInlineCode: true
             ], range: innerRange)
         }
 
-        applyInlineMarkdown(regex: boldRegex, markerLength: 2, to: attributed) { innerRange in
+        applyInlineMarkdown(regex: PromtierRegex.bold, markerLength: 2, to: attributed) { innerRange in
             let currentFont = (attributed.attribute(.font, at: innerRange.location, effectiveRange: nil) as? NSFont) ?? baseFont
             attributed.addAttribute(.font, value: toggledFont(from: currentFont, add: .boldFontMask), range: innerRange)
         }
 
-        applyInlineMarkdown(regex: italicRegex, markerLength: 1, to: attributed) { innerRange in
+        applyInlineMarkdown(regex: PromtierRegex.italic, markerLength: 1, to: attributed) { innerRange in
             let currentFont = (attributed.attribute(.font, at: innerRange.location, effectiveRange: nil) as? NSFont) ?? baseFont
             attributed.addAttribute(.font, value: toggledFont(from: currentFont, add: .italicFontMask), range: innerRange)
         }
 
-        applyInlineMarkdown(regex: strikethroughRegex, markerLength: 2, to: attributed) { innerRange in
+        applyInlineMarkdown(regex: PromtierRegex.strikethrough, markerLength: 2, to: attributed) { innerRange in
             attributed.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: innerRange)
         }
 
@@ -89,8 +86,8 @@ final class MarkdownRTFConverter {
             attributed.addAttribute(.paragraphStyle, value: paragraph, range: range)
         }
 
-        let bulletMatches = bulletListRegex.matches(in: attributed.string, range: fullRange)
-        let numberedMatches = numberedListRegex.matches(in: attributed.string, range: fullRange)
+        let bulletMatches = PromtierRegex.bulletList.matches(in: attributed.string, range: fullRange)
+        let numberedMatches = PromtierRegex.numberedList.matches(in: attributed.string, range: fullRange)
 
         for match in bulletMatches + numberedMatches {
             let lineRange = text.lineRange(for: match.range)

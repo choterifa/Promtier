@@ -142,6 +142,32 @@ struct HighlightedEditor: NSViewRepresentable {
     var isTyping: Binding<Bool>? = nil
     var onPaste: (() -> Void)? = nil
 
+    // Manejo auxiliar para evitar variables anidadas
+    private func isInsideVariable(line: String, cursorPosition: Int) -> Bool {
+        let nsLine = line as NSString
+        guard nsLine.length >= 4, cursorPosition >= 2, cursorPosition <= nsLine.length - 2 else { return false }
+        
+        let beforeCursor = nsLine.substring(to: cursorPosition) as NSString
+        let afterCursor = nsLine.substring(from: cursorPosition) as NSString
+        
+        // Buscamos el último {{ o }} antes del cursor
+        let lastOpen = beforeCursor.range(of: "{{", options: .backwards)
+        let lastClose = beforeCursor.range(of: "}}", options: .backwards)
+        
+        // Si hay un {{ y no hay un }} después de él (o el }} está antes del {{), estamos dentro
+        let hasOpenBefore = lastOpen.location != NSNotFound &&
+            (lastClose.location == NSNotFound || lastOpen.location > lastClose.location)
+            
+        guard hasOpenBefore else { return false }
+        
+        // Verificamos si hay un }} después del cursor para cerrar el bloque
+        let firstCloseAfter = afterCursor.range(of: "}}")
+        let firstOpenAfter = afterCursor.range(of: "{{")
+        
+        return firstCloseAfter.location != NSNotFound &&
+            (firstOpenAfter.location == NSNotFound || firstCloseAfter.location < firstOpenAfter.location)
+    }
+
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -241,45 +267,16 @@ struct HighlightedEditor: NSViewRepresentable {
 
             // PREVENCIÓN DE ANIDAMIENTO ROBUSTA: Si ya estamos dentro de un bloque {{...}}
             if toInsert.hasPrefix("{{") {
-                let text = textView.string as NSString
+                let nsString = textView.string as NSString
                 let sel = textView.selectedRange()
-                let lineRange = text.lineRange(for: sel)
-                let line = text.substring(with: lineRange) as NSString
+                let lineRange = nsString.lineRange(for: sel)
+                let line = nsString.substring(with: lineRange)
                 let relLoc = sel.location - lineRange.location
-
-                // 1. Buscar hacia atrás el {{ en la misma línea
-                var foundStart = false
-                if relLoc >= 2 {
-                    for i in (0...(relLoc - 2)).reversed() {
-                        let sub = line.substring(with: NSRange(location: i, length: 2))
-                        if sub == "{{" {
-                            foundStart = true
-                            break
-                        }
-                        if sub == "}}" { break } // Cierre previo, estamos fuera
-                    }
-                }
-
-                if foundStart {
-                    // 2. Buscar hacia adelante el }} en la misma línea
-                    var foundEnd = false
-                    let checkEndFrom = relLoc + sel.length
-                    if checkEndFrom <= line.length - 2 {
-                        for i in checkEndFrom...(line.length - 2) {
-                            let sub = line.substring(with: NSRange(location: i, length: 2))
-                            if sub == "}}" {
-                                foundEnd = true
-                                break
-                            }
-                            if sub == "{{" { break } // Nueva apertura antes de cierre, algo raro
-                        }
-                    }
-
-                    if foundEnd {
-                        // YA ESTAMOS DENTRO DE UNA VARIABLE, cancelar inserción para evitar anidamiento
-                        DispatchQueue.main.async { self.insertionRequest = nil }
-                        return
-                    }
+                
+                if isInsideVariable(line: line, cursorPosition: relLoc) {
+                    // YA ESTAMOS DENTRO DE UNA VARIABLE, cancelar inserción para evitar anidamiento
+                    DispatchQueue.main.async { self.insertionRequest = nil }
+                    return
                 }
             }
 
@@ -1039,10 +1036,6 @@ struct HighlightedEditor: NSViewRepresentable {
 
         // MARK: - Highlighting Logic (Rich Text + Temporary Overlays)
 
-        private static let varRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-        private static let chainRegex = try? NSRegularExpression(pattern: "\\[\\[@Prompt:([^\\]]+)\\]\\]", options: [])
-        private static let listRegex = try? NSRegularExpression(pattern: "^\\s*([-*+]|\\d+\\.)\\s+", options: [.anchorsMatchLines])
-
         private func scheduleHighlighting(
             for textView: NSTextView,
             mode: HighlightMode,
@@ -1168,9 +1161,9 @@ struct HighlightedEditor: NSViewRepresentable {
             layoutManager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: clearRange)
             layoutManager.removeTemporaryAttribute(.underlineStyle, forCharacterRange: clearRange)
 
-            let listMatches = shouldDecorateLists ? (Self.listRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
-            let variableMatches = hasVariables ? (Self.varRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
-            let chainMatches = shouldDecorateChains ? (Self.chainRegex?.matches(in: text, options: [], range: targetRange) ?? []) : []
+            let listMatches = shouldDecorateLists ? PromtierRegex.bulletList.matches(in: text, options: [], range: targetRange) + PromtierRegex.numberedList.matches(in: text, options: [], range: targetRange) : []
+            let variableMatches = hasVariables ? PromtierRegex.variable.matches(in: text, options: [], range: targetRange) : []
+            let chainMatches = shouldDecorateChains ? PromtierRegex.chain.matches(in: text, options: [], range: targetRange) : []
 
             let listMarkerColor = parent.isHaloEffectEnabled ? parent.themeColor : NSColor.systemOrange
             for match in listMatches {
@@ -1218,16 +1211,12 @@ struct HighlightedEditor: NSViewRepresentable {
         }
 
         private func unionRanges(_ a: NSRange?, _ b: NSRange, within fullRange: NSRange) -> NSRange {
-            guard let a else { return clampRange(b, within: fullRange) }
-            let start = min(a.location, b.location)
-            let end = max(a.location + a.length, b.location + b.length)
-            return clampRange(NSRange(location: start, length: max(0, end - start)), within: fullRange)
+            let combined = a.map { NSUnionRange($0, b) } ?? b
+            return NSIntersectionRange(combined, fullRange)
         }
 
         private func clampRange(_ range: NSRange, within fullRange: NSRange) -> NSRange {
-            let start = max(fullRange.location, min(range.location, fullRange.location + fullRange.length))
-            let end = max(start, min(range.location + range.length, fullRange.location + fullRange.length))
-            return NSRange(location: start, length: max(0, end - start))
+            return NSIntersectionRange(range, fullRange)
         }
 
         private func clearFullDecorations(in textView: NSTextView) {

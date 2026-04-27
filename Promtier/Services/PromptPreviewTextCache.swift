@@ -24,9 +24,6 @@ struct PromptPreviewThemeColor: Sendable {
 final class PromptPreviewTextCache: @unchecked Sendable {
     nonisolated static let shared = PromptPreviewTextCache()
 
-    nonisolated private static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
-    nonisolated private static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-
     nonisolated(unsafe) private let cache = NSCache<NSString, NSAttributedString>()
 
     private init() {
@@ -87,21 +84,17 @@ final class PromptPreviewTextCache: @unchecked Sendable {
         let nsText = attributed.string as NSString
         let fullRange = NSRange(location: 0, length: nsText.length)
 
-        if let bracketRegex = bracketRegex {
-            for match in bracketRegex.matches(in: attributed.string, options: [], range: fullRange) {
-                attributed.addAttribute(.foregroundColor, value: accentColor.withAlphaComponent(0.8), range: match.range)
-            }
+        for match in PromtierRegex.bracket.matches(in: attributed.string, options: [], range: fullRange) {
+            attributed.addAttribute(.foregroundColor, value: accentColor.withAlphaComponent(0.8), range: match.range)
         }
 
-        if let variableRegex = variableRegex {
-            let variableFont = NSFont.systemFont(ofSize: 16 * scale, weight: .bold)
-            let variableColor = NSColor.systemBlue
-            for match in variableRegex.matches(in: attributed.string, options: [], range: fullRange).reversed() {
-                attributed.addAttributes([
-                    .foregroundColor: variableColor,
-                    .font: variableFont
-                ], range: match.range)
-            }
+        let variableFont = NSFont.systemFont(ofSize: 16 * scale, weight: .bold)
+        let variableColor = NSColor.systemBlue
+        for match in PromtierRegex.variable.matches(in: attributed.string, options: [], range: fullRange).reversed() {
+            attributed.addAttributes([
+                .foregroundColor: variableColor,
+                .font: variableFont
+            ], range: match.range)
         }
 
         return attributed

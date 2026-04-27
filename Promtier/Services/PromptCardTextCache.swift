@@ -4,9 +4,6 @@ import Foundation
 final class PromptCardTextCache: @unchecked Sendable {
     nonisolated static let shared = PromptCardTextCache()
 
-    nonisolated private static let bracketRegex = try? NSRegularExpression(pattern: "[\\{\\}\\[\\]\\(\\)]", options: [])
-    nonisolated private static let variableRegex = try? NSRegularExpression(pattern: "\\{\\{([^}]+)\\}\\}", options: [])
-
     nonisolated(unsafe) private let cache = NSCache<NSString, NSAttributedString>()
     nonisolated(unsafe) private let variableCountCache = NSCache<NSString, NSNumber>()
 
@@ -27,16 +24,14 @@ final class PromptCardTextCache: @unchecked Sendable {
         var seen = Set<String>()
         var count = 0
 
-        if let variableRegex = Self.variableRegex {
-            variableRegex.enumerateMatches(in: content, options: [], range: fullRange) { match, _, _ in
-                guard let captureRange = match?.range(at: 1),
-                      let range = Range(captureRange, in: content) else { return }
+        PromtierRegex.variable.enumerateMatches(in: content, options: [], range: fullRange) { match, _, _ in
+            guard let captureRange = match?.range(at: 1),
+                  let range = Range(captureRange, in: content) else { return }
 
-                let variableName = String(content[range]).trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !variableName.isEmpty, !seen.contains(variableName) else { return }
-                seen.insert(variableName)
-                count += 1
-            }
+            let variableName = String(content[range]).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !variableName.isEmpty, !seen.contains(variableName) else { return }
+            seen.insert(variableName)
+            count += 1
         }
 
         variableCountCache.setObject(NSNumber(value: count), forKey: key as NSString)
@@ -105,21 +100,17 @@ final class PromptCardTextCache: @unchecked Sendable {
         let attributed = NSMutableAttributedString(string: text, attributes: [.font: baseFont])
 
         let accent = (categoryColor.usingColorSpace(.deviceRGB) ?? categoryColor).withAlphaComponent(0.8)
-        if let bracketRegex = bracketRegex {
-            for match in bracketRegex.matches(in: text, options: [], range: fullRange) {
-                attributed.addAttribute(.foregroundColor, value: accent, range: match.range)
-            }
+        for match in PromtierRegex.bracket.matches(in: text, options: [], range: fullRange) {
+            attributed.addAttribute(.foregroundColor, value: accent, range: match.range)
         }
 
-        if let variableRegex = variableRegex {
-            let variableFont = NSFont.systemFont(ofSize: 13 * scale, weight: .bold)
-            let variableColor = NSColor.systemBlue
-            for match in variableRegex.matches(in: text, options: [], range: fullRange).reversed() {
-                attributed.addAttributes([
-                    .foregroundColor: variableColor,
-                    .font: variableFont
-                ], range: match.range)
-            }
+        let variableFont = NSFont.systemFont(ofSize: 13 * scale, weight: .bold)
+        let variableColor = NSColor.systemBlue
+        for match in PromtierRegex.variable.matches(in: text, options: [], range: fullRange).reversed() {
+            attributed.addAttributes([
+                .foregroundColor: variableColor,
+                .font: variableFont
+            ], range: match.range)
         }
 
         return attributed
