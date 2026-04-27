@@ -7,54 +7,71 @@
 
 import SwiftUI
 
-// MARK: - Toast Notification Component
-struct PromtierToastModifier: ViewModifier {
-    @Binding var isPresented: Bool
+// MARK: - Toast Notification (Bottom Slide-In, Auto-Dismiss)
+
+/// Datos inmutables del toast activo. `nil` = oculto.
+struct PromtierToastData: Equatable {
+    let id: UUID = UUID()          // Identidad única para reiniciar auto-hide
     let icon: String
     let message: String
-    var duration: TimeInterval = 2.0
-    var iconColor: Color = .green
-    var autoHide: Bool = true
+    let iconColor: Color
+    let duration: TimeInterval
+    
+    static func == (lhs: PromtierToastData, rhs: PromtierToastData) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+/// Modifier que renderiza el toast desde abajo y lo auto-descarta.
+struct PromtierBottomToastModifier: ViewModifier {
+    @Binding var toast: PromtierToastData?
     
     func body(content: Content) -> some View {
-        content.overlay(
-            Group {
-                if isPresented {
-                    HStack(spacing: 8) {
-                        Image(systemName: icon)
-                            .foregroundColor(iconColor)
-                        Text(message)
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        Capsule()
-                            .fill(Color.primary.opacity(0.95))
-                            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-                    )
-                    .foregroundColor(Color(NSColor.windowBackgroundColor))
-                    .padding(.top, 42)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .onAppear {
-                        if autoHide {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-                                withAnimation {
-                                    isPresented = false
-                                }
-                            }
+        content.overlay(alignment: .bottom) {
+            if let t = toast {
+                HStack(spacing: 8) {
+                    Image(systemName: t.icon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(t.iconColor)
+                    Text(t.message)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(NSColor.windowBackgroundColor))
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(Color(NSColor.controlBackgroundColor).opacity(0.97))
+                        .shadow(color: .black.opacity(0.25), radius: 14, x: 0, y: -4)
+                )
+                .padding(.bottom, 18)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .id(t.id)
+                .onAppear {
+                    guard t.duration > 0 else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + t.duration) {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            if toast?.id == t.id { toast = nil }
                         }
                     }
                 }
-            },
-            alignment: .top
-        )
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: toast)
     }
 }
 
 extension View {
+    /// Muestra un toast desde la parte inferior que se auto-descarta.
+    func promtierBottomToast(_ toast: Binding<PromtierToastData?>) -> some View {
+        self.modifier(PromtierBottomToastModifier(toast: toast))
+    }
+    
+    // Backwards-compat alias para código que aún use el API antiguo
     func promtierToast(isPresented: Binding<Bool>, icon: String, message: String, duration: TimeInterval = 2.0, iconColor: Color = .green, autoHide: Bool = true) -> some View {
-        self.modifier(PromtierToastModifier(isPresented: isPresented, icon: icon, message: message, duration: duration, iconColor: iconColor, autoHide: autoHide))
+        self.modifier(PromtierBottomToastModifier(toast: .constant(
+            isPresented.wrappedValue ? PromtierToastData(icon: icon, message: message, iconColor: iconColor, duration: duration) : nil
+        )))
     }
 }
 

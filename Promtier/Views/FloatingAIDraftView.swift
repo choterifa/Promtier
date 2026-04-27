@@ -17,10 +17,7 @@ struct FloatingAIDraftView: View {
     @State private var customCommand: String = ""
     @FocusState private var isDraftFocused: Bool
     @State private var localMonitor: Any?
-    @State private var showSavedToast: Bool = false
-    @State private var toastMsg: String = ""
-    @State private var toastIcon: String = "checkmark.circle.fill"
-    @State private var toastTimer: Timer?
+    @State private var activeToast: PromtierToastData? = nil
     @State private var typewriterTimer: Timer?
     @State private var lastToastShownAt: Date = .distantPast
     @State private var isTypewriterAnimating: Bool = false
@@ -76,13 +73,7 @@ struct FloatingAIDraftView: View {
         }
         .frame(width: 740, height: 570)
         .background(Color(NSColor.windowBackgroundColor))
-        .promtierToast(
-            isPresented: $showSavedToast,
-            icon: toastIcon,
-            message: toastMsg,
-            iconColor: toastIcon == "sparkles" ? .purple : (toastIcon == "exclamationmark.triangle.fill" ? .orange : .green),
-            autoHide: false
-        )
+        .promtierBottomToast($activeToast)
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
@@ -121,11 +112,10 @@ struct FloatingAIDraftView: View {
             NSEvent.removeMonitor(monitor)
             localMonitor = nil
         }
-        toastTimer?.invalidate()
-        toastTimer = nil
         typewriterTimer?.invalidate()
         typewriterTimer = nil
         isTypewriterAnimating = false
+        activeToast = nil
     }
 
     private func setupKeyboardMonitor() {
@@ -144,8 +134,11 @@ struct FloatingAIDraftView: View {
                 if !textToCopy.isEmpty {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(textToCopy, forType: .string)
-                    showToast(message: "¡Copiado!", icon: "doc.on.clipboard.fill", hideAfter: 1.5, minInterval: 0.35)
                     HapticService.shared.playSuccess()
+                    // Breve delay para que el haptic llegue antes de cerrar
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        manager.hide()
+                    }
                     return nil
                 }
             }
@@ -197,7 +190,7 @@ struct FloatingAIDraftView: View {
         let contentToSave = manager.responseText.isEmpty ? manager.content : manager.responseText
         guard !contentToSave.isEmpty else { return }
 
-        showToast(message: "Analizando y guardando...", icon: "sparkles", hideAfter: 0, minInterval: 0, force: true)
+        showToast(message: "Analizando y guardando...", icon: "sparkles", duration: 0, iconColor: .purple, force: true)
         
         Task {
             do {
@@ -205,14 +198,14 @@ struct FloatingAIDraftView: View {
                 await MainActor.run {
                     let newPrompt = Prompt(title: metadata.title, content: metadata.content, promptDescription: metadata.description, folder: nil, icon: "sparkles", negativePrompt: metadata.negativePrompt)
                     _ = promptService.createPrompt(newPrompt)
-                    showToast(message: "¡Guardado en Galería!", icon: "square.and.arrow.down.fill", hideAfter: 2.0, minInterval: 0.2, force: true)
+                    showToast(message: "¡Guardado en Galería!", icon: "square.and.arrow.down.fill", duration: 2.5, iconColor: .green, force: true)
                     HapticService.shared.playSuccess()
                 }
             } catch {
                 await MainActor.run {
                     let newPrompt = Prompt(title: "Quick Edit \(Date().formatted(.dateTime.day().month().hour().minute()))", content: contentToSave, folder: "Sin clasificar", icon: "sparkles")
                     _ = promptService.createPrompt(newPrompt)
-                    showToast(message: "Guardado (Sin Metadata)", icon: "exclamationmark.triangle.fill", hideAfter: 2.0, minInterval: 0.2, force: true)
+                    showToast(message: "Guardado (Sin Metadata)", icon: "exclamationmark.triangle.fill", duration: 2.5, iconColor: .orange, force: true)
                     HapticService.shared.playSuccess()
                 }
             }
@@ -227,7 +220,7 @@ struct FloatingAIDraftView: View {
     
     private func runSingleAI(instruction: String, content: String, imageData: Data? = nil) {
         guard preferences.isPremiumActive else {
-            showToast(message: "Requiere Promtier Premium", icon: "lock.fill", hideAfter: 3.0, minInterval: 0, force: true)
+            showToast(message: "Requiere Promtier Premium", icon: "lock.fill", duration: 3.0, iconColor: .secondary, force: true)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 PremiumUpsellWindowManager.shared.show(featureName: "AI Draft")
             }
@@ -305,17 +298,13 @@ struct FloatingAIDraftView: View {
         }
     }
 
-    private func showToast(message: String, icon: String, hideAfter: TimeInterval, minInterval: TimeInterval, force: Bool = false) {
+    // MARK: - Toast Helper
+    private func showToast(message: String, icon: String, duration: TimeInterval = 2.0, iconColor: Color = .green, minInterval: TimeInterval = 0.35, force: Bool = false) {
         let now = Date()
         if !force && now.timeIntervalSince(lastToastShownAt) < minInterval { return }
         lastToastShownAt = now
-        toastTimer?.invalidate()
-        toastMsg = message
-        toastIcon = icon
-        withAnimation(.spring()) { showSavedToast = true }
-        guard hideAfter > 0 else { return }
-        toastTimer = Timer.scheduledTimer(withTimeInterval: hideAfter, repeats: false) { _ in
-            withAnimation { showSavedToast = false }
+        withAnimation {
+            activeToast = PromtierToastData(icon: icon, message: message, iconColor: iconColor, duration: duration)
         }
     }
 
@@ -332,15 +321,9 @@ struct FloatingAIDraftView: View {
             }
             .buttonStyle(.plain)
             
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Quick Draft")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.primary.opacity(0.9))
-                Text("EDITOR INTELIGENTE")
-                    .font(.system(size: 8, weight: .black))
-                    .foregroundColor(.blue.opacity(0.7))
-                    .tracking(1.0)
-            }
+            Text("Quick Draft")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.primary.opacity(0.9))
             
             Spacer()
             
@@ -394,7 +377,7 @@ struct FloatingAIDraftView: View {
                 
                 customCommandInput
                 
-                SendDraftButton(isEnabled: isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty) { runAI(instruction: customCommand) }
+                SendDraftButton(isEnabled: isAIAvailable && !customCommand.isEmpty && !manager.content.isEmpty && !manager.isGenerating) { runAI(instruction: customCommand) }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)

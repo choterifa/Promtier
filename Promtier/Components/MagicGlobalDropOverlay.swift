@@ -2,13 +2,15 @@ import SwiftUI
 import UniformTypeIdentifiers
 import PDFKit
 
-public struct MagicGlobalDropOverlay: ViewModifier {
+struct MagicGlobalDropOverlay: ViewModifier {
     @State private var isDragging: Bool = false
     @State private var droppedImage: NSImage? = nil
     @State private var isPulsing: Bool = false
     @State private var showUnsupportedAlert: Bool = false
     
     let isProcessing: Bool
+    let stage: MagicAnalysisStage
+    let onCancel: () -> Void
     let onImageDropped: (Data) -> Void
     
     public func body(content: Content) -> some View {
@@ -76,9 +78,37 @@ public struct MagicGlobalDropOverlay: ViewModifier {
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                         )
                     
-                    Text("Analizando archivo con IA...")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.primary)
+                    VStack(spacing: 8) {
+                        Text(stage.label)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.primary)
+                            .id(stage.label)
+                            .animation(.easeInOut, value: stage.label)
+                        
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.primary.opacity(0.1))
+                                .frame(width: 140, height: 4)
+                            
+                            Capsule()
+                                .fill(Color.blue)
+                                .frame(width: 140 * stage.progress, height: 4)
+                                .animation(.spring(), value: stage.progress)
+                        }
+                    }
+                    
+                    Button(action: onCancel) {
+                        Text("Cancelar")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(Color.primary.opacity(0.08))
+                            .cornerRadius(20)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                    
                 } else {
                     Image(systemName: "wand.and.stars.inverse")
                         .font(.system(size: 48))
@@ -185,8 +215,18 @@ public struct MagicGlobalDropOverlay: ViewModifier {
     }
 }
 
-public extension View {
-    func magicGlobalDropOverlay(isProcessing: Bool, onImageDropped: @escaping (Data) -> Void) -> some View {
-        self.modifier(MagicGlobalDropOverlay(isProcessing: isProcessing, onImageDropped: onImageDropped))
+extension View {
+    func magicGlobalDropOverlay(
+        isProcessing: Bool,
+        stage: MagicAnalysisStage = .idle,
+        onCancel: @escaping () -> Void = {},
+        onImageDropped: @escaping (Data) -> Void
+    ) -> some View {
+        self.modifier(MagicGlobalDropOverlay(
+            isProcessing: isProcessing,
+            stage: stage,
+            onCancel: onCancel,
+            onImageDropped: onImageDropped
+        ))
     }
 }

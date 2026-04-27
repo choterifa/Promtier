@@ -15,7 +15,7 @@ struct AIDraftInputColumn: View {
                 HStack(spacing: 6) {
                     Image(systemName: "text.justify.left")
                         .font(.system(size: 9, weight: .bold))
-                    Text("PROMPT ORIGINAL")
+                    Text("ORIGINAL")
                         .font(.system(size: 9, weight: .black))
                         .tracking(1.2)
                 }

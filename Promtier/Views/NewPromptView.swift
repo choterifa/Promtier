@@ -896,8 +896,24 @@ struct NewPromptView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(backgroundView)
-        .magicGlobalDropOverlay(isProcessing: viewModel.isMagicImageProcessing) { data in
-            viewModel.extractMagicPrompt(from: data, preferences: preferences, promptService: promptService)
+        .magicGlobalDropOverlay(
+            isProcessing: viewModel.isMagicImageProcessing,
+            stage: viewModel.magicAnalysisStage,
+            onCancel: { viewModel.cancelMagicAnalysis() }
+        ) { data in
+            viewModel.extractMagicPrompt(
+                from: data,
+                preferences: preferences,
+                promptService: promptService,
+                onInsertImage: { optimized, index in
+                    _ = PromptMediaImportPipeline.insertImage(
+                        optimized,
+                        at: index,
+                        into: &viewModel.showcaseImages,
+                        mediaState: &mediaState
+                    )
+                }
+            )
         }
         .sheet(item: fullScreenImageSheetItem) { item in
             FullScreenImageView(imageData: item.value)

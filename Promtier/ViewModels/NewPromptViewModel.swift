@@ -45,6 +45,8 @@ final class NewPromptViewModel: ObservableObject {
     @Published var magicTarget: MagicTarget = .content
     @Published var isGeneratingAlternativeDirect: Bool = false
     @Published var isMagicImageProcessing: Bool = false
+    @Published var magicAnalysisStage: MagicAnalysisStage = .idle
+    private var magicAnalysisTask: Task<Void, Never>?
     @Published var showingAIPrefs: Bool = false
 
     private var draftHash: Int = 0
@@ -752,7 +754,19 @@ final class NewPromptViewModel: ObservableObject {
         """
     }
 
-    func extractMagicPrompt(from data: Data, preferences: PreferencesManager, promptService: PromptService? = nil) {
+    func cancelMagicAnalysis() {
+        magicAnalysisTask?.cancel()
+        magicAnalysisTask = nil
+        isMagicImageProcessing = false
+        magicAnalysisStage = .idle
+    }
+
+    func extractMagicPrompt(
+        from data: Data,
+        preferences: PreferencesManager,
+        promptService: PromptService? = nil,
+        onInsertImage: (@MainActor (Data, Int?) -> Void)? = nil
+    ) {
         guard preferences.isPremiumActive else {
             showingPremiumFor = "ai_magic"
             return
@@ -764,8 +778,25 @@ final class NewPromptViewModel: ObservableObject {
         
         content = ""
         isMagicImageProcessing = true
+        magicAnalysisStage = .decoding
         
-        Task {
+        magicAnalysisTask = Task {
+            // Cancel check
+            if Task.isCancelled { return }
+            
+            await MainActor.run { self.magicAnalysisStage = .analyzing }
+            
+            // Auto-add the dropped image to the gallery
+            if let onInsertImage {
+                self.optimizeAndInsertImage(
+                    data,
+                    at: nil,
+                    language: preferences.language,
+                    onInsert: onInsertImage,
+                    onWarning: { _ in }
+                )
+            }
+            
             do {
                 let instruction = """
                 Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico.
@@ -787,9 +818,15 @@ final class NewPromptViewModel: ObservableObject {
                 Respond ONLY with the format requested (4 parts separated by |). Do not add quotes, markdown formatting, or introductory text.
                 """
                 
+                if Task.isCancelled { return }
+                await MainActor.run { self.magicAnalysisStage = .generating }
+                
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
                 
+                if Task.isCancelled { return }
+                
                 await MainActor.run {
+                    self.magicAnalysisStage = .populating
                     self.isMagicImageProcessing = false
                     
                     let parts = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
@@ -849,10 +886,13 @@ final class NewPromptViewModel: ObservableObject {
                             }
                         }
                     }
+                    self.magicAnalysisStage = .idle
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     self.isMagicImageProcessing = false
+                    self.magicAnalysisStage = .idle
                     self.content = "Error generando prompt: \(error.localizedDescription)"
                 }
             }

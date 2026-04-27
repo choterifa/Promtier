@@ -23,7 +23,7 @@ struct AIDraftOutputColumn: View {
             HStack(spacing: 6) {
                 Image(systemName: "text.justify.left")
                     .font(.system(size: 9, weight: .bold))
-                Text("RESULTADO IA")
+                Text("RESULTADO")
                     .font(.system(size: 9, weight: .black))
                     .tracking(1.2)
             }
@@ -112,11 +112,33 @@ struct AIDraftOutputColumn: View {
     }
     
     private var generatingOverlay: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             ProgressView().progressViewStyle(.circular).scaleEffect(0.8)
-            Text("IA trabajando...")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
+            
+            VStack(spacing: 4) {
+                Text("IA trabajando...")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Text("Esto puede tardar unos segundos")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            
+            Button(action: { manager.cancelExecution() }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 9))
+                    Text("Cancelar")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(Color.red.opacity(0.8)))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

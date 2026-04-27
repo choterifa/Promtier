@@ -60,6 +60,31 @@ struct SendDraftButton: View {
     }
 }
 
+struct CancelDraftButton: View {
+    let action: () -> Void
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(isHovered ? Color.red.opacity(0.9) : Color.red.opacity(0.8))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+            }
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = hovering
+            }
+        }
+    }
+}
+
 struct QuickDraftActionButton: View {
     let title: String
     let icon: String
