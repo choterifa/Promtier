@@ -13,6 +13,14 @@
             continueAfterRunningActions = "No"
             symbolName = "*0x198798f00">
             <Locations>
+               <Location
+                  uuid = "6E3D3F48-B79B-41A4-8E75-A8B8A96F4F36 - d46bb2e536085aee"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "*0x198798f00"
+                  usesParentBreakpointCondition = "Yes">
+               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>

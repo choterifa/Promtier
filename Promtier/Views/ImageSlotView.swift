@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import Combine
 
 struct ImageSlotView: View {
     let imageData: Data
@@ -27,9 +28,13 @@ struct ImageSlotView: View {
                     .clipped()
                     .background(Color.primary.opacity(0.03))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isTargeted || isSelected ? Color.blue.opacity(0.5) : Color.primary.opacity(0.05), lineWidth: (isTargeted || isSelected) ? 2.0 : 1)
+                    .marchingAntsBorder(
+                        isActive: isHovering || isTargeted,
+                        tintColor: tintColor,
+                        cornerRadius: 12,
+                        baseLineWidth: (isTargeted || isSelected || isHovering) ? 2.0 : 1,
+                        baseDash: isHovering ? [6, 4] : [],
+                        baseColor: isHovering ? tintColor : (isTargeted || isSelected ? tintColor.opacity(0.5) : Color.primary.opacity(0.05))
                     )
                     .onTapGesture(perform: onPreview)
                     .onDrag {

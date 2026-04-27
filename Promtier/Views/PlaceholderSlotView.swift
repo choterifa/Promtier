@@ -13,7 +13,6 @@ struct PlaceholderSlotView: View {
     
     @State private var isTargeted = false
     @State private var isHovering = false
-    @State private var dashPhase: CGFloat = 0
     @EnvironmentObject var preferences: PreferencesManager
 
     var body: some View {
@@ -35,12 +34,13 @@ struct PlaceholderSlotView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(isTargeted ? tintColor.opacity(0.1) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
                 .animation(.easeInOut(duration: 0.15), value: isHovering)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        // El lineWidth fijo para hover evita que StrokeStyle anime incorrectamente el dashPhase
-                        .stroke(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1.5, dash: isTargeted ? [] : [6, 4], dashPhase: dashPhase))
-                        .foregroundColor(isTargeted ? tintColor : .secondary.opacity(isHovering ? 1.0 : 0.8))
-                        .animation(.easeInOut(duration: 0.15), value: isHovering)
+                .marchingAntsBorder(
+                    isActive: isHovering || isTargeted,
+                    tintColor: tintColor,
+                    cornerRadius: 12,
+                    baseLineWidth: isTargeted ? 2 : 1.5,
+                    baseDash: isTargeted ? [] : [6, 4],
+                    baseColor: isTargeted ? tintColor : .secondary.opacity(isHovering ? 1.0 : 0.8)
                 )
         )
         .scaleEffect(isTargeted ? 1.05 : 1.0)

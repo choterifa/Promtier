@@ -7,6 +7,7 @@ struct MagicGlobalDropOverlay: ViewModifier {
     @State private var droppedImage: NSImage? = nil
     @State private var isPulsing: Bool = false
     @State private var showUnsupportedAlert: Bool = false
+    @State private var displayProgress: Double = 0
     
     let isProcessing: Bool
     let stage: MagicAnalysisStage
@@ -44,11 +45,18 @@ struct MagicGlobalDropOverlay: ViewModifier {
         .onChange(of: isProcessing) { _, processing in
             if processing {
                 isPulsing = true
+                displayProgress = 0 // Reset to 0 when starting
             } else {
                 isPulsing = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.droppedImage = nil
                 }
+            }
+        }
+        .onChange(of: stage) { _, newStage in
+            // Animate to new progress value smoothly from wherever we are
+            withAnimation(.linear(duration: 0.8)) {
+                displayProgress = newStage.progress
             }
         }
     }
@@ -82,26 +90,26 @@ struct MagicGlobalDropOverlay: ViewModifier {
                     VStack(spacing: 8) {
                         HStack {
                             Text(stage.label)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(.primary)
+                                .lineLimit(1)
                                 .id(stage.label)
                                 .animation(.easeInOut, value: stage.label)
                             
                             Spacer()
                             
-                            AnimatedPercentageText(progress: stage.progress)
+                            AnimatedPercentageText(progress: displayProgress)
                         }
-                        .frame(width: 180)
+                        .frame(width: 260)
                         
                         ZStack(alignment: .leading) {
                             Capsule()
                                 .fill(Color.primary.opacity(0.1))
-                                .frame(width: 180, height: 6)
+                                .frame(width: 260, height: 6)
                             
                             Capsule()
                                 .fill(Color.blue)
-                                .frame(width: 180 * stage.progress, height: 6)
-                                .animation(.linear(duration: 0.3), value: stage.progress)
+                                .frame(width: 260 * displayProgress, height: 6)
                         }
                     }
                     
@@ -263,7 +271,7 @@ struct ShimmerModifier: ViewModifier {
             .overlay(
                 GeometryReader { geo in
                     LinearGradient(
-                        gradient: Gradient(colors: [.clear, .white.opacity(0.4), .clear]),
+                        gradient: Gradient(colors: [.clear, .white.opacity(0.2), .clear]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -273,7 +281,7 @@ struct ShimmerModifier: ViewModifier {
                 .mask(content)
             )
             .onAppear {
-                withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                withAnimation(Animation.linear(duration: 3.5).repeatForever(autoreverses: false)) {
                     phase = 1
                 }
             }
