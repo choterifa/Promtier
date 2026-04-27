@@ -32,7 +32,6 @@ struct ZenEditorView: View {
     @Binding var showingPremiumFor: String?
     var originalPrompt: Prompt?
     @Binding var branchMessage: String?
-    @State private var plainTextContent: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -104,7 +103,6 @@ struct ZenEditorView: View {
                 
                 HighlightedEditor(
                     text: $content,
-                    plainText: $plainTextContent,
                     insertionRequest: $insertionRequest,
                     replaceSnippetRequest: $replaceSnippetRequest,
                     triggerAIRequest: $triggerAIRequest,

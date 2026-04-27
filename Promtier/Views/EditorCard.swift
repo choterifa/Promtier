@@ -303,7 +303,6 @@ struct EditorCard: View {
         HStack(alignment: .top, spacing: 0) {
             HighlightedEditor(
                 text: $content,
-                plainText: $plainTextContent,
                 insertionRequest: $insertionRequest,
                 replaceSnippetRequest: $replaceSnippetRequest,
                 triggerAIRequest: $triggerAIRequest,

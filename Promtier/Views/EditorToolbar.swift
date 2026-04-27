@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct EditorToolbar: View {
+struct EditorToolbar<PopoverContent: View>: View {
     @EnvironmentObject var preferences: PreferencesManager
     let color: Color
     let editorID: String
@@ -19,7 +19,7 @@ struct EditorToolbar: View {
     var onShowVariables: () -> Void
     var onShowSnippets: () -> Void
     @Binding var showingPromptChainPicker: Bool
-    var chainPopoverContent: (() -> AnyView)?
+    @ViewBuilder var chainPopoverContent: () -> PopoverContent
 
     // Zen Mode & Other
     var onZenMode: () -> Void
@@ -33,7 +33,7 @@ struct EditorToolbar: View {
          content: Binding<String>, selectedRange: Binding<NSRange?>,
          isAIGenerating: Bool, onAIAction: @escaping (AIAction) -> Void, aiEnabled: Bool,
          onShowVariables: @escaping () -> Void, onShowSnippets: @escaping () -> Void,
-         showingPromptChainPicker: Binding<Bool>, chainPopoverContent: (() -> AnyView)? = nil, onZenMode: @escaping () -> Void,
+         showingPromptChainPicker: Binding<Bool>, @ViewBuilder chainPopoverContent: @escaping () -> PopoverContent, onZenMode: @escaping () -> Void,
          onFloatingMode: (() -> Void)? = nil,
          isAutocompleting: Bool = false, onMagicAutocomplete: (() -> Void)? = nil,
          onStopAI: (() -> Void)? = nil) {
@@ -198,9 +198,7 @@ struct EditorToolbar: View {
         .buttonStyle(.plain)
         .help("Chain Another Prompt")
         .popover(isPresented: $showingPromptChainPicker, arrowEdge: .leading) {
-            if let content = chainPopoverContent {
-                content()
-            }
+            chainPopoverContent()
         }
 
         if let onFloating = onFloatingMode {

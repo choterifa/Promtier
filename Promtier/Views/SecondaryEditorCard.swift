@@ -180,7 +180,6 @@ struct SecondaryEditorCard<Actions: View>: View {
                 ZStack(alignment: .topLeading) {
                     HighlightedEditor(
                         text: $text,
-                        plainText: $plainTextContent,
                         insertionRequest: $insertionRequest,
                         replaceSnippetRequest: $replaceSnippetRequest,
                         triggerAIRequest: $triggerAIRequest,

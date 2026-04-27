@@ -11,7 +11,6 @@ import AppKit
 
 struct HighlightedEditor: NSViewRepresentable {
     @Binding var text: String
-    @Binding var plainText: String
     @Binding var insertionRequest: String?
     @Binding var replaceSnippetRequest: String?
     @Binding var triggerAIRequest: String?
@@ -116,11 +115,11 @@ struct HighlightedEditor: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
 
-        // Optimización de renderizado
-        textView.layoutManager?.allowsNonContiguousLayout = true
+        // Optimización de renderizado para scrolling suave
+        textView.layoutManager?.allowsNonContiguousLayout = false
         textView.layerContentsRedrawPolicy = .onSetNeedsDisplay
 
-        // Smooth scrolling
+        // Smooth scrolling nativo sin bounds observers pesados
         scrollView.contentView.postsBoundsChangedNotifications = false
 
         scrollView.documentView = textView
@@ -212,7 +211,6 @@ struct HighlightedEditor: NSViewRepresentable {
 
             // Actualizar el binding padre inmediatamente
             DispatchQueue.main.async {
-                self.plainText = textView.string
                 self.text = context.coordinator.serializedMarkdown(from: textView)
                 self.insertionRequest = nil
             }
@@ -236,7 +234,6 @@ struct HighlightedEditor: NSViewRepresentable {
             }
 
             DispatchQueue.main.async {
-                self.plainText = textView.string
                 self.text = context.coordinator.serializedMarkdown(from: textView)
                 self.replaceSnippetRequest = nil
                 self.showSnippets = false
@@ -326,20 +323,6 @@ struct HighlightedEditor: NSViewRepresentable {
             }
 
 	            observerTokens = [aiToken, commandToken]
-
-	            // Re-aplicar decoraciones (rango visible) al hacer scroll: mantiene el highlight al navegar docs grandes
-	            if let scrollView = textView.enclosingScrollView {
-	                scrollView.contentView.postsBoundsChangedNotifications = true
-	                let scrollToken = NotificationCenter.default.addObserver(
-	                    forName: NSView.boundsDidChangeNotification,
-	                    object: scrollView.contentView,
-	                    queue: .main
-	                ) { [weak self, weak textView] _ in
-	                    guard let self, let textView else { return }
-	                    self.scheduleHighlighting(for: textView, mode: .full, debounce: true, delayOverride: 0.05)
-	                }
-	                observerTokens.append(scrollToken)
-	            }
 	        }
 
         func teardownObservers() {
@@ -374,13 +357,6 @@ struct HighlightedEditor: NSViewRepresentable {
                 textView.setSelectedRange(NSRange(location: min(markdown.count, textView.string.utf16.count), length: 0))
             }
 
-            // Evitar "Modifying state during view update" (updateNSView/makeNSView)
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                if self.parent.plainText != textView.string {
-                    self.parent.plainText = textView.string
-                }
-            }
             lastSerializedMarkdown = markdown
             syncTypingAttributes(for: textView)
             scheduleHighlighting(for: textView, mode: .full, debounce: false, delayOverride: nil)
@@ -429,7 +405,6 @@ struct HighlightedEditor: NSViewRepresentable {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5.0, execute: workItem)
             }
 
-            self.parent.plainText = textView.string
             self.parent.selectedRange = textView.selectedRange()
             syncTypingAttributes(for: textView)
             let highlightDelay: TimeInterval? = (pendingLargeEdit || pendingLastReplacementCount > 2000) ? 0.14 : nil
@@ -1253,9 +1228,7 @@ struct HighlightedEditor: NSViewRepresentable {
         if textView.shouldChangeText(in: range, replacementString: text) {
             textView.replaceCharacters(in: range, with: text)
             textView.didChangeText()
-            // Notificar que el texto cambió para que SwiftUI lo sepa
             DispatchQueue.main.async {
-                self.plainText = textView.string
                 self.text = MarkdownRTFConverter.generateMarkdown(from: textView.attributedString())
             }
         }
