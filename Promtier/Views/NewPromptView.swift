@@ -906,6 +906,9 @@ struct NewPromptView: View {
                 }
         }
         .overlay { overlays }
+        .task(id: prompt?.id) {
+            await viewModel.loadMissingImages(promptService: promptService)
+        }
                                 .sheet(item: $diffComparison) { comparison in
                     DiffView(
                         text1: comparison.text1,

@@ -78,6 +78,53 @@ final class NewPromptViewModel: ObservableObject {
         updateDraftHash()
     }
     
+    func loadMissingImages(promptService: PromptService) async {
+        print("🔍 loadMissingImages started for prompt: \(originalPrompt?.id.uuidString ?? "nil")")
+        guard let prompt = originalPrompt else {
+            print("❌ loadMissingImages: originalPrompt is nil")
+            return
+        }
+        if !showcaseImages.isEmpty {
+            print("⚠️ loadMissingImages: showcaseImages is not empty, count: \(showcaseImages.count)")
+            return
+        }
+        if prompt.showcaseImageCount == 0 {
+            print("⚠️ loadMissingImages: prompt.showcaseImageCount is 0")
+            return
+        }
+        
+        print("🔍 loadMissingImages: fetching paths...")
+        let paths = await promptService.fetchShowcaseImagePaths(byId: prompt.id)
+        print("🔍 loadMissingImages: fetched paths: \(paths)")
+        
+        var loadedImages: [Data] = []
+        if !paths.isEmpty {
+            loadedImages = promptService.loadShowcaseImages(from: paths)
+            print("🔍 loadMissingImages: loaded from paths, count: \(loadedImages.count)")
+        } 
+        
+        if loadedImages.isEmpty {
+            // Fallback: si los paths no existen en disco (iCloud desincronizado o borrados), o es legacy
+            let legacyImages = await promptService.fetchShowcaseImages(byId: prompt.id)
+            if !legacyImages.isEmpty {
+                loadedImages = legacyImages
+                print("🔍 loadMissingImages: fetched fallback images, count: \(loadedImages.count)")
+            } else if !prompt.showcaseThumbnails.isEmpty {
+                loadedImages = prompt.showcaseThumbnails
+                print("🔍 loadMissingImages: fallback to thumbnails, count: \(loadedImages.count)")
+            }
+        }
+        
+        await MainActor.run {
+            if self.showcaseImages.isEmpty {
+                self.showcaseImages = loadedImages
+                print("✅ loadMissingImages: assigned loadedImages to showcaseImages. Final count: \(self.showcaseImages.count)")
+            } else {
+                print("⚠️ loadMissingImages: showcaseImages became non-empty during fetch.")
+            }
+        }
+    }
+    
     
     // MARK: - AI Magic Features
     
