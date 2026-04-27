@@ -118,7 +118,7 @@ class FloatingZenManager: NSObject, ObservableObject {
             if hasOpenAI || hasGemini {
                 await MainActor.run { self.isClassifying = true }
                 let folders = PromptService.shared.folders.map { $0.name }
-                if let autoCategory = await classifyCurrentPrompt(title: title, content: content, folders: folders) {
+                if let autoCategory = await classifyCurrentPromptPublic(title: title, content: content, folders: folders) {
                     await MainActor.run { self.selectedFolder = autoCategory }
                 }
                 await MainActor.run { self.isClassifying = false }
@@ -167,7 +167,7 @@ class FloatingZenManager: NSObject, ObservableObject {
             
             async let catTask: String? = {
                 if currentFolder != nil { return nil }
-                return await self.classifyCurrentPrompt(title: currentTitle, content: currentContent, folders: folders)
+                return await self.classifyCurrentPromptPublic(title: currentTitle, content: currentContent, folders: folders)
             }()
             
             async let titleTask: String? = {
@@ -215,7 +215,7 @@ class FloatingZenManager: NSObject, ObservableObject {
         }
     }
     
-    private func classifyCurrentPrompt(title: String, content: String, folders: [String]) async -> String? {
+    func classifyCurrentPromptPublic(title: String, content: String, folders: [String]) async -> String? {
         guard !folders.isEmpty else { return nil }
         
         let systemPrompt = """

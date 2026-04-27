@@ -309,7 +309,7 @@ final class GlobalHotkeyManager: ObservableObject {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             let selection = (pasteboard.changeCount != oldChangeCount) ? pasteboard.string(forType: .string) : nil
-            manager.show(content: selection ?? "", autoImprove: selection != nil)
+            manager.show(content: selection ?? "", autoImprove: false)
         }
     }
 

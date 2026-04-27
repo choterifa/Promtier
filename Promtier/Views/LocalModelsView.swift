@@ -54,13 +54,36 @@ struct LocalModelRow: View {
             HStack(alignment: .top, spacing: 12) {
                 // Icon placeholder
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.primary.opacity(0.05))
-                        .frame(width: 40, height: 40)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(
+                            colors: [Color.blue.opacity(0.12), Color.blue.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.1), lineWidth: 1)
+                        )
                     
-                    Image(systemName: "cpu.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.blue)
+                    if case .downloading(let progress) = state {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.blue.opacity(0.15), lineWidth: 2.5)
+                                .frame(width: 24, height: 24)
+                            
+                            Circle()
+                                .trim(from: 0, to: CGFloat(progress))
+                                .stroke(Color.blue, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                                .frame(width: 24, height: 24)
+                                .rotationEffect(.degrees(-90))
+                        }
+                    } else {
+                        Image(systemName: "cpu.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(.blue)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 4)
+                    }
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -131,15 +154,17 @@ struct LocalModelRow: View {
             .font(.system(size: 10, weight: .medium))
             .foregroundColor(.secondary.opacity(0.8))
         }
-        .padding(16)
+        .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.2))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(NSColor.controlBackgroundColor).opacity(0.4))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
     
     @ViewBuilder
@@ -170,42 +195,53 @@ struct LocalModelRow: View {
             }
             
         case .downloading(let progress):
-            HStack(spacing: 8) {
-                ProgressView(value: progress, total: 1.0)
-                    .progressViewStyle(.circular)
-                    .scaleEffect(0.6)
-                
-                Text("\(Int(progress * 100))%")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(.secondary)
+            HStack(spacing: 12) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                        .foregroundColor(.blue)
+                    
+                    Text("DESCARGANDO")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                .frame(width: 80, alignment: .trailing)
                 
                 Button(action: {
                     downloadManager.cancelDownload(for: model)
                 }) {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
                         .foregroundColor(.secondary.opacity(0.5))
                 }
                 .buttonStyle(.plain)
+                .help("Cancelar descarga")
             }
+            .padding(.trailing, 4)
             
         case .downloaded:
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                
-                Text("Descargado")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.green)
+            HStack(spacing: 10) {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("DESCARGADO")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundColor(.green)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.green.opacity(0.1))
+                .clipShape(Capsule())
                 
                 Button(action: {
                     downloadManager.deleteModel(model)
                 }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.6))
                         .padding(6)
-                        .background(Color.primary.opacity(0.05))
-                        .cornerRadius(4)
+                        .background(Color.primary.opacity(0.04))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .help("Borrar modelo")

@@ -66,6 +66,7 @@ struct EditorCard: View {
     }
 
     @EnvironmentObject var preferences: PreferencesManager
+    @EnvironmentObject var promptService: PromptService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     init(title: Binding<String>, content: Binding<String>, promptDescription: Binding<String>, 
@@ -290,7 +291,7 @@ struct EditorCard: View {
                         .textFieldStyle(.plain)
                         .font(.system(size: Layout.descriptionFontSize * preferences.fontSize.scale, weight: .medium))
                         .foregroundColor(.secondary.opacity(0.8))
-                        .lineLimit(2)
+                        .lineLimit(2, reservesSpace: true)
                         .frame(minHeight: Layout.descriptionMinHeight, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -504,7 +505,7 @@ struct EditorCard: View {
     // MARK: - EditorCard Magic Image
 
     private func extractMagicPrompt(from data: Data) {
-        viewModel.extractMagicPrompt(from: data, preferences: preferences)
+        viewModel.extractMagicPrompt(from: data, preferences: preferences, promptService: promptService)
     }
 }
 

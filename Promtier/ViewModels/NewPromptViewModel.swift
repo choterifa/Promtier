@@ -752,7 +752,7 @@ final class NewPromptViewModel: ObservableObject {
         """
     }
 
-    func extractMagicPrompt(from data: Data, preferences: PreferencesManager) {
+    func extractMagicPrompt(from data: Data, preferences: PreferencesManager, promptService: PromptService? = nil) {
         guard preferences.isPremiumActive else {
             showingPremiumFor = "ai_magic"
             return
@@ -767,7 +767,16 @@ final class NewPromptViewModel: ObservableObject {
         
         Task {
             do {
-                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
+                let instruction = """
+                Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico.
+                Además, genera:
+                1. Un título corto (máximo 4 palabras).
+                2. Una descripción concisa (máximo 2 líneas).
+                3. Un negative prompt práctico (cosas a evitar en la generación).
+                
+                Devuelve el resultado EXACTAMENTE en este formato usando el símbolo pipe (|) como separador:
+                Título|Descripción|Prompt|NegativePrompt
+                """
                 let systemPrompt = """
                 You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
                 
@@ -775,7 +784,7 @@ final class NewPromptViewModel: ObservableObject {
                 \(instruction)
                 
                 # IMPORTANT:
-                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
+                Respond ONLY with the format requested (4 parts separated by |). Do not add quotes, markdown formatting, or introductory text.
                 """
                 
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
@@ -783,19 +792,61 @@ final class NewPromptViewModel: ObservableObject {
                 await MainActor.run {
                     self.isMagicImageProcessing = false
                     
-                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let components = rawResponse.components(separatedBy: "PROMPT:")
+                    let parts = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
                     
-                    if components.count == 2 {
-                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        self.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
-                            self.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                    if parts.count >= 4 {
+                        withAnimation(.spring()) {
+                            let newTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                            self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            self.content = parts[2].trimmingCharacters(in: .whitespacesAndNewlines)
+                            
+                            let nPrompt = parts[3].trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !nPrompt.isEmpty {
+                                self.negativePrompt = nPrompt
+                                self.showNegativeField = true
+                            }
+                            
+                            if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
+                                self.title = newTitle.isEmpty ? "Prompt de Imagen" : newTitle
+                            }
+                        }
+                        
+                        if self.selectedFolder == nil, let service = promptService {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.autoCategorizePrompt(preferences: preferences, promptService: service)
+                            }
+                        }
+                    } else if parts.count >= 3 {
+                        withAnimation(.spring()) {
+                            let newTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                            self.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            self.content = parts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespacesAndNewlines)
+                            
+                            if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
+                                self.title = newTitle.isEmpty ? "Prompt de Imagen" : newTitle
+                            }
+                        }
+                        
+                        if self.selectedFolder == nil, let service = promptService {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.autoCategorizePrompt(preferences: preferences, promptService: service)
+                            }
                         }
                     } else {
-                        self.content = rawResponse
-                        if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
-                            self.title = "Prompt de Imagen"
+                        // Fallback a comportamiento anterior si falla el formato
+                        let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let legacyComponents = rawResponse.components(separatedBy: "PROMPT:")
+                        if legacyComponents.count == 2 {
+                            let rawTitle = legacyComponents[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            self.content = legacyComponents[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
+                                self.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                            }
+                        } else {
+                            self.content = rawResponse
+                            if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) {
+                                self.title = "Prompt de Imagen"
+                            }
                         }
                     }
                 }

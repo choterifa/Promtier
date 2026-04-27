@@ -843,7 +843,16 @@ struct FloatingZenEditorView: View {
         
         Task {
             do {
-                let instruction = "Analiza la imagen adjunta y genera un título corto (máximo 4 palabras) y un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico. Devuelve el resultado EXACTAMENTE en este formato:\nTITULO: [título aquí]\nPROMPT: [prompt completo aquí]"
+                let instruction = """
+                Analiza la imagen adjunta y genera un prompt ultra-descriptivo para recrearla usando inteligencia artificial. Incluye detalles cinemáticos, sujetos centrales, paleta de colores y estilo artístico.
+                Además, genera:
+                1. Un título corto (máximo 4 palabras).
+                2. Una descripción concisa (máximo 2 líneas).
+                3. Un negative prompt práctico (cosas a evitar en la generación).
+                
+                Devuelve el resultado EXACTAMENTE en este formato usando el símbolo pipe (|) como separador:
+                Título|Descripción|Prompt|NegativePrompt
+                """
                 let systemPrompt = """
                 You are an elite AI Art Director and Vision Assistant. Your task is to act exclusively on the provided image.
                 
@@ -851,7 +860,7 @@ struct FloatingZenEditorView: View {
                 \(instruction)
                 
                 # IMPORTANT:
-                Respond ONLY with the format requested. Do not add quotes, markdown formatting, or introductory text.
+                Respond ONLY with the format requested (4 parts separated by |). Do not add quotes, markdown formatting, or introductory text.
                 """
                 
                 let response = try await AIServiceManager.shared.generate(prompt: systemPrompt, imageData: data)
@@ -859,19 +868,50 @@ struct FloatingZenEditorView: View {
                 await MainActor.run {
                     self.isMagicImageProcessing = false
                     
-                    let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let components = rawResponse.components(separatedBy: "PROMPT:")
+                    let parts = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
                     
-                    if components.count == 2 {
-                        let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        manager.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                        if manager.title.isEmpty || manager.title == "Generando prompt..." || manager.title == "Prompt de Imagen" {
-                            manager.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                    if parts.count >= 3 {
+                        withAnimation(.spring()) {
+                            let newTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                            manager.promptDescription = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            manager.content = (parts.count >= 4 ? parts[2] : parts.dropFirst(2).joined(separator: "|")).trimmingCharacters(in: .whitespacesAndNewlines)
+                            
+                            if manager.title.isEmpty || manager.title == "Generando prompt..." || manager.title == "Prompt de Imagen" {
+                                manager.title = newTitle.isEmpty ? "Prompt de Imagen" : newTitle
+                            }
+                        }
+                        
+                        if manager.selectedFolder == nil {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                Task {
+                                    await MainActor.run { manager.isClassifying = true }
+                                    let folders = promptService.folders.map { $0.name }
+                                    let cat = await manager.classifyCurrentPromptPublic(title: manager.title, content: manager.content, folders: folders)
+                                    await MainActor.run {
+                                        if let newCat = cat {
+                                            manager.selectedFolder = newCat
+                                        }
+                                        manager.isClassifying = false
+                                    }
+                                }
+                            }
                         }
                     } else {
-                        manager.content = rawResponse
-                        if manager.title.isEmpty || manager.title == "Generando prompt..." {
-                            manager.title = "Prompt de Imagen"
+                        // Fallback
+                        let rawResponse = response.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let components = rawResponse.components(separatedBy: "PROMPT:")
+                        
+                        if components.count == 2 {
+                            let rawTitle = components[0].replacingOccurrences(of: "TITULO:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            manager.content = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            if manager.title.isEmpty || manager.title == "Generando prompt..." || manager.title == "Prompt de Imagen" {
+                                manager.title = rawTitle.isEmpty ? "Prompt de Imagen" : rawTitle
+                            }
+                        } else {
+                            manager.content = rawResponse
+                            if manager.title.isEmpty || manager.title == "Generando prompt..." {
+                                manager.title = "Prompt de Imagen"
+                            }
                         }
                     }
                 }

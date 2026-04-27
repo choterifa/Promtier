@@ -897,7 +897,7 @@ struct NewPromptView: View {
         }
         .background(backgroundView)
         .magicGlobalDropOverlay(isProcessing: viewModel.isMagicImageProcessing) { data in
-            viewModel.extractMagicPrompt(from: data, preferences: preferences)
+            viewModel.extractMagicPrompt(from: data, preferences: preferences, promptService: promptService)
         }
         .sheet(item: fullScreenImageSheetItem) { item in
             FullScreenImageView(imageData: item.value)
