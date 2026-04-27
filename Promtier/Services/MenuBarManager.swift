@@ -332,6 +332,12 @@ class MenuBarManager: NSObject, ObservableObject {
             // CONTEXTO: Filtrar origen (Navegadores o Apps permitidas)
             // Obtenemos el ID de la app de donde viene el copiado
             let sourceID = ClipboardService.shared.lastSourceAppBundleID ?? ""
+            
+            // Evitar sugerir si el copiado vino de la propia app
+            if sourceID == Bundle.main.bundleIdentifier {
+                return
+            }
+            
             let isBrowser = preferencesManager.browserBundleIDs.contains(sourceID)
             let isCustomAllowed = preferencesManager.customAllowedAppBundleIDs.contains(sourceID)
             

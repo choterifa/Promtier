@@ -553,8 +553,14 @@ final class NewPromptViewModel: ObservableObject {
     }
 
     func autoCategorizePrompt(preferences: PreferencesManager, promptService: PromptService) {
+        Task {
+            await autoCategorizePromptAsync(preferences: preferences, promptService: promptService)
+        }
+    }
+
+    private func autoCategorizePromptAsync(preferences: PreferencesManager, promptService: PromptService) async {
         guard preferences.isPremiumActive else {
-            showingPremiumFor = "ai_magic"
+            await MainActor.run { showingPremiumFor = "ai_magic" }
             return
         }
         
@@ -564,11 +570,11 @@ final class NewPromptViewModel: ObservableObject {
 
         let skipCategory = (selectedFolder != nil)
         
-        isCategorizing = true
+        await MainActor.run { isCategorizing = true }
         
         let availableFolders = promptService.folders.map { $0.name }
         if availableFolders.isEmpty {
-            isCategorizing = false
+            await MainActor.run { isCategorizing = false }
             return
         }
         
@@ -607,46 +613,44 @@ final class NewPromptViewModel: ObservableObject {
         \(formatInstruction)
         """
         
-        Task {
-            do {
-                let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
-                await MainActor.run {
-                    self.isCategorizing = false
-                    let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            let fullResponse = try await AIServiceManager.shared.generate(prompt: systemPrompt)
+            await MainActor.run {
+                self.isCategorizing = false
+                let result = fullResponse.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                    if skipCategory {
-                        if IconPickerView.allIconNames.contains(result) {
-                            withAnimation(.spring()) {
-                                self.selectedIcon = result
+                if skipCategory {
+                    if IconPickerView.allIconNames.contains(result) {
+                        withAnimation(.spring()) {
+                            self.selectedIcon = result
+                        }
+                    }
+                } else {
+                    let parts = result.components(separatedBy: "|")
+                    if parts.count == 2 {
+                        let folder = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                        let iconName = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                        withAnimation(.spring()) {
+                            if availableFolders.contains(folder) {
+                                self.selectedFolder = folder
+                            }
+                            if IconPickerView.allIconNames.contains(iconName) {
+                                self.selectedIcon = iconName
                             }
                         }
-                    } else {
-                        let parts = result.components(separatedBy: "|")
-                        if parts.count == 2 {
-                            let folder = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                            let iconName = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-                            withAnimation(.spring()) {
-                                if availableFolders.contains(folder) {
-                                    self.selectedFolder = folder
-                                }
-                                if IconPickerView.allIconNames.contains(iconName) {
-                                    self.selectedIcon = iconName
-                                }
-                            }
-                            HapticService.shared.playSuccess()
-                        }
+                        HapticService.shared.playSuccess()
                     }
                 }
-            } catch {
-                await MainActor.run {
-                    self.isCategorizing = false
-                    HapticService.shared.playError()
-                    withAnimation {
-                        self.branchMessage = self.userFacingAIErrorToast(for: error, language: preferences.language)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
-                    }
+            }
+        } catch {
+            await MainActor.run {
+                self.isCategorizing = false
+                HapticService.shared.playError()
+                withAnimation {
+                    self.branchMessage = self.userFacingAIErrorToast(for: error, language: preferences.language)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    withAnimation { if self.branchMessage?.hasPrefix("❌") == true { self.branchMessage = nil } }
                 }
             }
         }
@@ -827,7 +831,6 @@ final class NewPromptViewModel: ObservableObject {
                 
                 await MainActor.run {
                     self.magicAnalysisStage = .populating
-                    self.isMagicImageProcessing = false
                     
                     let parts = response.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
                     
@@ -847,12 +850,6 @@ final class NewPromptViewModel: ObservableObject {
                                 self.title = newTitle.isEmpty ? "Prompt de Imagen" : newTitle
                             }
                         }
-                        
-                        if self.selectedFolder == nil, let service = promptService {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                self.autoCategorizePrompt(preferences: preferences, promptService: service)
-                            }
-                        }
                     } else if parts.count >= 3 {
                         withAnimation(.spring()) {
                             let newTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -861,12 +858,6 @@ final class NewPromptViewModel: ObservableObject {
                             
                             if self.title.isEmpty || self.title == "prompt_title_placeholder".localized(for: preferences.language) || self.title == "Prompt de Imagen" {
                                 self.title = newTitle.isEmpty ? "Prompt de Imagen" : newTitle
-                            }
-                        }
-                        
-                        if self.selectedFolder == nil, let service = promptService {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                self.autoCategorizePrompt(preferences: preferences, promptService: service)
                             }
                         }
                     } else {
@@ -886,6 +877,27 @@ final class NewPromptViewModel: ObservableObject {
                             }
                         }
                     }
+                }
+                
+                if Task.isCancelled { return }
+                
+                // Sincronizar UI esperando a que finalice auto-categorization
+                if self.selectedFolder == nil, let service = promptService {
+                    await self.autoCategorizePromptAsync(preferences: preferences, promptService: service)
+                }
+                
+                if Task.isCancelled { return }
+                
+                await MainActor.run {
+                    self.magicAnalysisStage = .completed
+                    NSSound(named: "Glass")?.play()
+                }
+                
+                // Mantener el estado completado al 100% momentáneamente para dar feedback real
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                
+                await MainActor.run {
+                    self.isMagicImageProcessing = false
                     self.magicAnalysisStage = .idle
                 }
             } catch {

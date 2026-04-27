@@ -11,6 +11,7 @@ enum MagicAnalysisStage: Equatable {
     case analyzing
     case generating
     case populating
+    case completed
 
     var label: String {
         switch self {
@@ -19,6 +20,7 @@ enum MagicAnalysisStage: Equatable {
         case .analyzing:  return "Analizando composición…"
         case .generating: return "Generando prompt con IA…"
         case .populating: return "Aplicando resultados…"
+        case .completed:  return "¡Análisis completado!"
         }
     }
 
@@ -28,7 +30,8 @@ enum MagicAnalysisStage: Equatable {
         case .decoding:   return 0.15
         case .analyzing:  return 0.35
         case .generating: return 0.75
-        case .populating: return 0.95
+        case .populating: return 0.90
+        case .completed:  return 1.0
         }
     }
 

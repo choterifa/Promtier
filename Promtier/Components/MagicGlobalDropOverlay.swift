@@ -77,23 +77,31 @@ struct MagicGlobalDropOverlay: ViewModifier {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                         )
+                        .shimmer()
                     
                     VStack(spacing: 8) {
-                        Text(stage.label)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.primary)
-                            .id(stage.label)
-                            .animation(.easeInOut, value: stage.label)
+                        HStack {
+                            Text(stage.label)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.primary)
+                                .id(stage.label)
+                                .animation(.easeInOut, value: stage.label)
+                            
+                            Spacer()
+                            
+                            AnimatedPercentageText(progress: stage.progress)
+                        }
+                        .frame(width: 180)
                         
                         ZStack(alignment: .leading) {
                             Capsule()
                                 .fill(Color.primary.opacity(0.1))
-                                .frame(width: 140, height: 4)
+                                .frame(width: 180, height: 6)
                             
                             Capsule()
                                 .fill(Color.blue)
-                                .frame(width: 140 * stage.progress, height: 4)
-                                .animation(.spring(), value: stage.progress)
+                                .frame(width: 180 * stage.progress, height: 6)
+                                .animation(.linear(duration: 0.3), value: stage.progress)
                         }
                     }
                     
@@ -228,5 +236,52 @@ extension View {
             onCancel: onCancel,
             onImageDropped: onImageDropped
         ))
+    }
+}
+// MARK: - Animatable Percentage
+struct AnimatedPercentageText: View, Animatable {
+    var progress: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        Text("\(Int(progress * 100))%")
+            .font(.system(size: 14, weight: .bold, design: .monospaced))
+            .foregroundColor(.secondary)
+    }
+}
+
+// MARK: - Shimmer Effect
+struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geo in
+                    LinearGradient(
+                        gradient: Gradient(colors: [.clear, .white.opacity(0.4), .clear]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: geo.size.width * 2)
+                    .offset(x: -geo.size.width + (geo.size.width * 2 * phase))
+                }
+                .mask(content)
+            )
+            .onAppear {
+                withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+extension View {
+    func shimmer() -> some View {
+        self.modifier(ShimmerModifier())
     }
 }

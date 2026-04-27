@@ -56,25 +56,24 @@ class ClipboardService: ObservableObject {
             }
         }
         
-        // Si el cambio ocurrió mientras otra app era la activa, registrar su bundleID
-        if let frontmostApp = NSWorkspace.shared.frontmostApplication,
-           frontmostApp.bundleIdentifier != Bundle.main.bundleIdentifier {
+        // Registrar el bundleID de la app activa cuando ocurre el cambio
+        if let frontmostApp = NSWorkspace.shared.frontmostApplication {
             self.lastSourceAppBundleID = frontmostApp.bundleIdentifier
         }
     }
     
     // MARK: - Métodos principales
     
-    /// Copia texto al clipboard del sistema
     func copyToClipboard(_ text: String, addToHistory: Bool = true) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        
+        self.lastSourceAppBundleID = Bundle.main.bundleIdentifier
 
         finalizeCopy(plainText: text, addToHistory: addToHistory)
     }
 
-    /// Copia rich text al clipboard conservando un fallback de texto plano
     func copyRichTextToClipboard(_ attributedText: NSAttributedString, addToHistory: Bool = true) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -87,6 +86,8 @@ class ClipboardService: ObservableObject {
             pasteboard.setData(rtfData, forType: .rtf)
         }
         pasteboard.setString(attributedText.string, forType: .string)
+        
+        self.lastSourceAppBundleID = Bundle.main.bundleIdentifier
 
         finalizeCopy(plainText: attributedText.string, addToHistory: addToHistory)
     }
